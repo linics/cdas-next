@@ -256,7 +256,7 @@ def wait_text(page: Page, text: str) -> None:
 
 
 def attachment_download_href(page: Page, filename: str) -> str:
-    link = page.get_by_role("link", name=filename, exact=True).last
+    link = page.locator("li").filter(has_text=filename).get_by_role("link").last
     link.wait_for(state="visible", timeout=30_000)
     href = link.get_attribute("href")
     if not href or not re.fullmatch(r"/attachments/[0-9a-f-]{36}/download", href):
@@ -265,7 +265,7 @@ def attachment_download_href(page: Page, filename: str) -> str:
 
 
 def assert_attachment_download(page: Page, filename: str, expected_sha256: str) -> None:
-    link = page.get_by_role("link", name=filename, exact=True).last
+    link = page.locator("li").filter(has_text=filename).get_by_role("link").last
     with page.expect_download(timeout=30_000) as event:
         link.click()
     download = event.value

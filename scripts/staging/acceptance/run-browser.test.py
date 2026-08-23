@@ -129,6 +129,7 @@ class BrowserContractTests(unittest.TestCase):
         self.assertIn("OTHER_STUDENT_ATTACHMENT_404", source)
         self.assertIn("CLOSED_STUDENT_ATTACHMENT_READABLE", source)
         self.assertIn("expect_download", source)
+        self.assertIn('locator("li").filter(has_text=filename).get_by_role("link")', source)
         self.assertIn("other_student_context.close()", source)
         self.assertIn('teacher.goto(f"{remote}{activity_href}"', source)
         self.assertNotIn("release_href.rsplit", source)
