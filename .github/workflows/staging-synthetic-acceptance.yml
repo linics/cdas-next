@@ -45,7 +45,10 @@ jobs:
       - name: Install exact application dependencies
         run: pnpm install --frozen-lockfile
       - name: Bind source fingerprint to this checkout
-        run: echo "CDAS_SOURCE_FINGERPRINT=$(pnpm exec tsx -e \"import { createSourceFingerprint } from './scripts/staging/source-fingerprint.ts'; console.log(createSourceFingerprint())\")" >> "$GITHUB_ENV"
+        run: |
+          source_fingerprint="$(pnpm exec tsx -e 'import { createSourceFingerprint } from "./scripts/staging/source-fingerprint.ts"; console.log(createSourceFingerprint())')"
+          [[ "$source_fingerprint" =~ ^[a-f0-9]{64}$ ]]
+          printf 'CDAS_SOURCE_FINGERPRINT=%s\n' "$source_fingerprint" >> "$GITHUB_ENV"
       - name: Validate protected staging configuration
         id: preflight
         continue-on-error: true
@@ -189,7 +192,10 @@ jobs:
       - name: Install exact application dependencies
         run: pnpm install --frozen-lockfile
       - name: Bind source fingerprint to this checkout
-        run: echo "CDAS_SOURCE_FINGERPRINT=$(pnpm exec tsx -e \"import { createSourceFingerprint } from './scripts/staging/source-fingerprint.ts'; console.log(createSourceFingerprint())\")" >> "$GITHUB_ENV"
+        run: |
+          source_fingerprint="$(pnpm exec tsx -e 'import { createSourceFingerprint } from "./scripts/staging/source-fingerprint.ts"; console.log(createSourceFingerprint())')"
+          [[ "$source_fingerprint" =~ ^[a-f0-9]{64}$ ]]
+          printf 'CDAS_SOURCE_FINGERPRINT=%s\n' "$source_fingerprint" >> "$GITHUB_ENV"
       - name: Download same-run staging Go evidence
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
