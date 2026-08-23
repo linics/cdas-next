@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, realpath, rm, symlink, unlink, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import path from "node:path";
-import { ClerkApiProvider, NeonApiProvider, verifyDownloadedAcceptanceArtifact } from "./providers";
+import { ClerkApiProvider, minimalCommandEnvironment, NeonApiProvider, verifyDownloadedAcceptanceArtifact } from "./providers";
 import { VercelApiProvider } from "./remote-providers";
 import { parseStagingEnvironmentFile, validateConfig } from "./contracts";
 
@@ -17,6 +18,38 @@ function response(body: unknown, status = 200): Response { return new Response(J
 function queuedFetch(responses: readonly Response[], requests: Request[]): typeof fetch { let index = 0; return (async (input: RequestInfo | URL, init?: RequestInit) => { requests.push(new Request(input, init)); const next = responses[index++]; if (!next) throw new Error("unexpected request"); return next; }) as typeof fetch; }
 
 describe("provider fail-closed contracts", () => {
+  it("keeps GitHub CLI state outside the repository by passing through absolute home paths", () => {
+    const environment = minimalCommandEnvironment({ github: true });
+    expect(environment.HOME).toBe(process.env.HOME);
+    expect(path.isAbsolute(environment.HOME ?? "")).toBe(true);
+    expect(path.isAbsolute(environment.GH_CONFIG_DIR ?? "")).toBe(true);
+    expect(minimalCommandEnvironment()).not.toHaveProperty("HOME");
+    expect(minimalCommandEnvironment()).not.toHaveProperty("GH_CONFIG_DIR");
+  });
+  it("rejects GitHub CLI home paths inside the repository, including symlink targets", async () => {
+    const sandbox = await mkdtemp(path.join(tmpdir(), "cdas-github-home-"));
+    try {
+      const repository = path.join(sandbox, "repo");
+      const outside = path.join(sandbox, "outside");
+      const linked = path.join(sandbox, "linked-home");
+      await mkdir(path.join(repository, "inside"), { recursive: true });
+      await mkdir(outside);
+      await symlink(path.join(repository, "inside"), linked);
+      expect(() => minimalCommandEnvironment({ github: true, repositoryRoot: repository, environment: { PATH: "/bin", HOME: outside, GH_CONFIG_DIR: path.join(outside, "gh") } })).not.toThrow();
+      expect(() => minimalCommandEnvironment({ github: true, repositoryRoot: repository, environment: { PATH: "/bin", HOME: path.join(repository, "inside") } })).toThrow("DEVELOPMENT_INFRA_GITHUB_HOME_UNSAFE");
+      expect(() => minimalCommandEnvironment({ github: true, repositoryRoot: repository, environment: { PATH: "/bin", HOME: linked } })).toThrow("DEVELOPMENT_INFRA_GITHUB_HOME_UNSAFE");
+      const outsideLink = path.join(sandbox, "outside-link");
+      await symlink(outside, outsideLink);
+      const fixed = minimalCommandEnvironment({ github: true, repositoryRoot: repository, environment: { PATH: "/bin", HOME: outsideLink, GH_CONFIG_DIR: path.join(outsideLink, "gh") } });
+      await unlink(outsideLink);
+      await symlink(path.join(repository, "inside"), outsideLink);
+      const canonicalOutside = await realpath(outside);
+      expect(fixed.HOME).toBe(canonicalOutside);
+      expect(fixed.GH_CONFIG_DIR).toBe(path.join(canonicalOutside, "gh"));
+    } finally {
+      await rm(sandbox, { recursive: true, force: true });
+    }
+  });
   it("creates a zero-result Clerk identity and validates the created response", async () => {
     const calls: Request[] = [];
     const client = new ClerkApiProvider(config.clerkSecretKey, queuedFetch([response([]), response({ id: "user_one", external_id: "x", first_name: "A", last_name: "B" })], calls));

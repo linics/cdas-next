@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { existsSync, realpathSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -16,9 +17,37 @@ export interface CommandRunner {
   run(command: string, args: readonly string[], options?: Readonly<{ env?: Readonly<Record<string, string>>; cwd?: string; input?: string; timeoutMs?: number }>): Promise<Readonly<{ stdout: string; stderr: string }>>;
 }
 
-export function minimalCommandEnvironment(options: Readonly<{ github?: boolean }> = {}): Readonly<Record<string, string>> {
-  const base: Record<string, string> = { PATH: process.env.PATH ?? "" };
-  if (options.github) base.GH_CONFIG_DIR = process.env.GH_CONFIG_DIR ?? path.join(process.env.HOME ?? "", ".config", "gh");
+function canonicalProspectivePath(target: string): string {
+  let existing = path.resolve(target);
+  const missing: string[] = [];
+  while (!existsSync(existing)) {
+    const parent = path.dirname(existing);
+    if (parent === existing) throw new Error("DEVELOPMENT_INFRA_GITHUB_HOME_UNSAFE");
+    missing.unshift(path.basename(existing));
+    existing = parent;
+  }
+  return path.join(realpathSync(existing), ...missing);
+}
+
+function isInside(root: string, candidate: string): boolean {
+  const relative = path.relative(root, candidate);
+  return relative === "" || (!relative.startsWith(`..${path.sep}`) && relative !== ".." && !path.isAbsolute(relative));
+}
+
+export function minimalCommandEnvironment(options: Readonly<{ github?: boolean; repositoryRoot?: string; environment?: Readonly<Record<string, string | undefined>> }> = {}): Readonly<Record<string, string>> {
+  const source = options.environment ?? process.env;
+  const base: Record<string, string> = { PATH: source.PATH ?? "" };
+  if (options.github) {
+    const home = source.HOME ?? "";
+    const config = source.GH_CONFIG_DIR ?? path.join(home, ".config", "gh");
+    if (!path.isAbsolute(home) || !path.isAbsolute(config)) throw new Error("DEVELOPMENT_INFRA_GITHUB_HOME_UNSAFE");
+    const repositoryRoot = canonicalProspectivePath(options.repositoryRoot ?? process.cwd());
+    const canonicalHome = canonicalProspectivePath(home);
+    const canonicalConfig = canonicalProspectivePath(config);
+    if (isInside(repositoryRoot, canonicalHome) || isInside(repositoryRoot, canonicalConfig)) throw new Error("DEVELOPMENT_INFRA_GITHUB_HOME_UNSAFE");
+    base.HOME = canonicalHome;
+    base.GH_CONFIG_DIR = canonicalConfig;
+  }
   return base;
 }
 
