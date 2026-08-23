@@ -444,7 +444,10 @@ def run() -> None:
             assert_origin(teacher.url, remote)
             teacher.get_by_role("button", name="准备关闭活动", exact=True).click()
             confirm(teacher, "确认关闭这个活动", "确认并关闭活动")
-            teacher.get_by_role("button", name="准备关闭活动", exact=True).wait_for(state="detached")
+            wait_text(
+                teacher,
+                "活动已关闭；新的学生保存与正式提交已停止，现有记录仍可查看。",
+            )
             index["05-teacher-closed.png"] = screenshot(teacher, output, "05-teacher-closed")
 
             # This stale form posts through the existing Server Action after the
