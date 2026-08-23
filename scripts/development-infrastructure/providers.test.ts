@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { mkdir, mkdtemp, realpath, rm, symlink, unlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { ClerkApiProvider, minimalCommandEnvironment, NeonApiProvider, verifyDownloadedAcceptanceArtifact } from "./providers";
+import { ClerkApiProvider, deployMigrationsWithMinimalEnvironment, minimalCommandEnvironment, NeonApiProvider, verifyDownloadedAcceptanceArtifact } from "./providers";
 import { VercelApiProvider } from "./remote-providers";
 import { parseStagingEnvironmentFile, validateConfig } from "./contracts";
 
@@ -74,9 +74,9 @@ describe("provider fail-closed contracts", () => {
     const branch = { id: "branch", name: "cdas-next-development", init_source: "schema-only", parent_id: null, primary: false, default: false };
     const endpoint = { id: "endpoint", branch_id: "branch", type: "read_write", suspend_timeout_seconds: 300 };
     const fetcher = queuedFetch([
-      response({ branches: [branch] }), response({ endpoints: [endpoint] }), response({ roles: [{ name: "cdas_staging_owner" }] }), response({ databases: [{ name: "cdas_next_staging", owner_name: "cdas_staging_owner" }] }), response({ uri: "postgresql://cdas_staging_owner:password@ep-pooler.example.neon.tech/cdas_next_staging?sslmode=require" }), response({ uri: "postgresql://cdas_staging_owner:password@ep.example.neon.tech/cdas_next_staging?sslmode=require" }),
+      response({ branches: [branch] }), response({ endpoints: [endpoint] }), response({ roles: [{ name: "cdas_staging_owner" }] }), response({ databases: [{ name: "cdas_next_staging", owner_name: "cdas_staging_owner" }] }), response({ uri: "postgresql://cdas_staging_owner:password@ep-pooler.example.neon.tech/cdas_next_staging?sslmode=require&channel_binding=require" }), response({ uri: "postgresql://cdas_staging_owner:password@ep.example.neon.tech/cdas_next_staging?sslmode=require&channel_binding=require" }),
     ], requests);
-    await expect(new NeonApiProvider(config, fetcher).ensureIsolatedDatabase()).resolves.toEqual({ pooledUrl: "postgresql://cdas_staging_owner:password@ep-pooler.example.neon.tech/cdas_next_staging?sslmode=require", directUrl: "postgresql://cdas_staging_owner:password@ep.example.neon.tech/cdas_next_staging?sslmode=require" });
+    await expect(new NeonApiProvider(config, fetcher).ensureIsolatedDatabase()).resolves.toEqual({ pooledUrl: "postgresql://cdas_staging_owner:password@ep-pooler.example.neon.tech/cdas_next_staging?sslmode=require&channel_binding=require", directUrl: "postgresql://cdas_staging_owner:password@ep.example.neon.tech/cdas_next_staging?sslmode=require&channel_binding=require" });
     expect(requests.map((item) => item.method)).toEqual(["GET", "GET", "GET", "GET", "GET", "GET"]);
     expect(requests[2]?.url).toContain("/branches/branch/roles");
     expect(requests[3]?.url).toContain("/branches/branch/databases");
@@ -84,7 +84,7 @@ describe("provider fail-closed contracts", () => {
   it("uses bounded exact-name Neon branch pagination and rejects duplicate or looping pages", async () => {
     const branch = { id: "branch", name: "cdas-next-development", init_source: "schema-only", parent_id: null, primary: false, default: false };
     const requests: Request[] = [];
-    const safe = queuedFetch([response({ branches: [], pagination: { next: "page-2" } }), response({ branches: [branch], pagination: { next: null } }), response({ endpoints: [{ id: "e", branch_id: "branch", type: "read_write", suspend_timeout_seconds: 0 }] }), response({ roles: [{ name: "cdas_staging_owner" }] }), response({ databases: [{ name: "cdas_next_staging", owner_name: "cdas_staging_owner" }] }), response({ uri: "postgresql://cdas_staging_owner:password@ep-pooler.example.neon.tech/cdas_next_staging?sslmode=require" }), response({ uri: "postgresql://cdas_staging_owner:password@ep.example.neon.tech/cdas_next_staging?sslmode=require" })], requests);
+    const safe = queuedFetch([response({ branches: [], pagination: { next: "page-2" } }), response({ branches: [branch], pagination: { next: null } }), response({ endpoints: [{ id: "e", branch_id: "branch", type: "read_write", suspend_timeout_seconds: 0 }] }), response({ roles: [{ name: "cdas_staging_owner" }] }), response({ databases: [{ name: "cdas_next_staging", owner_name: "cdas_staging_owner" }] }), response({ uri: "postgresql://cdas_staging_owner:password@ep-pooler.example.neon.tech/cdas_next_staging?sslmode=require&channel_binding=require" }), response({ uri: "postgresql://cdas_staging_owner:password@ep.example.neon.tech/cdas_next_staging?sslmode=require&channel_binding=require" })], requests);
     await expect(new NeonApiProvider(config, safe).ensureIsolatedDatabase()).resolves.toBeDefined();
     expect(requests[0]?.url).toContain("search=cdas-next-development");
     expect(requests[1]?.url).toContain("cursor=page-2");
@@ -96,7 +96,7 @@ describe("provider fail-closed contracts", () => {
     const branch = { id: "branch", name: "cdas-next-development", init_source: "schema-only", parent_id: null, primary: false, default: false };
     const endpoint = { id: "endpoint", branch_id: "branch", type: "read_write", suspend_timeout_seconds: 300 };
     const fetcher = queuedFetch([
-      response({ branches: [] }), response({ project: { id: "project_123", default_endpoint_settings: { suspend_timeout_seconds: 0 } } }), response({ branch, endpoints: [endpoint] }), response({ roles: [] }), response({ role: { name: "cdas_staging_owner" } }), response({ databases: [] }), response({ database: { name: "cdas_next_staging", owner_name: "cdas_staging_owner" } }), response({ uri: "postgresql://cdas_staging_owner:password@ep-pooler.example.neon.tech/cdas_next_staging?sslmode=require" }), response({ uri: "postgresql://cdas_staging_owner:password@ep.example.neon.tech/cdas_next_staging?sslmode=require" }),
+      response({ branches: [] }), response({ project: { id: "project_123", default_endpoint_settings: { suspend_timeout_seconds: 0 } } }), response({ branch, endpoints: [endpoint] }), response({ roles: [] }), response({ role: { name: "cdas_staging_owner" } }), response({ databases: [] }), response({ database: { name: "cdas_next_staging", owner_name: "cdas_staging_owner" } }), response({ uri: "postgresql://cdas_staging_owner:password@ep-pooler.example.neon.tech/cdas_next_staging?sslmode=require&channel_binding=require" }), response({ uri: "postgresql://cdas_staging_owner:password@ep.example.neon.tech/cdas_next_staging?sslmode=require&channel_binding=require" }),
     ], requests);
     await new NeonApiProvider(config, fetcher).ensureIsolatedDatabase();
     expect(requests.map((request) => request.method)).toEqual(["GET", "GET", "POST", "GET", "POST", "GET", "POST", "GET", "GET"]);
@@ -110,7 +110,7 @@ describe("provider fail-closed contracts", () => {
     const branch = { id: "branch", name: "cdas-next-development", init_source: "schema-only", parent_id: null, primary: false, default: false };
     const endpoint = { id: "endpoint", branch_id: "branch", type: "read_write", suspend_timeout_seconds: 300 };
     const fetcher = queuedFetch([
-      response({ branches: [branch] }), response({ endpoints: [] }), response({ project: { id: "project_123", default_endpoint_settings: { suspend_timeout_seconds: 0 } } }), response({ endpoint }), response({ roles: [{ name: "cdas_staging_owner" }] }), response({ databases: [{ name: "cdas_next_staging", owner_name: "cdas_staging_owner" }] }), response({ uri: "postgresql://cdas_staging_owner:password@ep-pooler.example.neon.tech/cdas_next_staging?sslmode=require" }), response({ uri: "postgresql://cdas_staging_owner:password@ep.example.neon.tech/cdas_next_staging?sslmode=require" }),
+      response({ branches: [branch] }), response({ endpoints: [] }), response({ project: { id: "project_123", default_endpoint_settings: { suspend_timeout_seconds: 0 } } }), response({ endpoint }), response({ roles: [{ name: "cdas_staging_owner" }] }), response({ databases: [{ name: "cdas_next_staging", owner_name: "cdas_staging_owner" }] }), response({ uri: "postgresql://cdas_staging_owner:password@ep-pooler.example.neon.tech/cdas_next_staging?sslmode=require&channel_binding=require" }), response({ uri: "postgresql://cdas_staging_owner:password@ep.example.neon.tech/cdas_next_staging?sslmode=require&channel_binding=require" }),
     ], requests);
     await new NeonApiProvider(config, fetcher).ensureIsolatedDatabase();
     expect(requests[3]?.method).toBe("POST");
@@ -144,11 +144,52 @@ describe("provider fail-closed contracts", () => {
   });
   it("accepts Neon optional root fields and zero timeout but rejects negative timeout", async () => {
     const branch = { id: "branch", name: "cdas-next-development", init_source: "parent-schema", default: false };
-    const safe = queuedFetch([response({ branches: [branch] }), response({ endpoints: [{ id: "e", branch_id: "branch", type: "read_write", suspend_timeout_seconds: 0 }] }), response({ roles: [{ name: "cdas_staging_owner" }] }), response({ databases: [{ name: "cdas_next_staging", owner_name: "cdas_staging_owner" }] }), response({ uri: "postgresql://cdas_staging_owner:password@ep-pooler.example.neon.tech/cdas_next_staging?sslmode=require" }), response({ uri: "postgresql://cdas_staging_owner:password@ep.example.neon.tech/cdas_next_staging?sslmode=require" })], []);
+    const safe = queuedFetch([response({ branches: [branch] }), response({ endpoints: [{ id: "e", branch_id: "branch", type: "read_write", suspend_timeout_seconds: 0 }] }), response({ roles: [{ name: "cdas_staging_owner" }] }), response({ databases: [{ name: "cdas_next_staging", owner_name: "cdas_staging_owner" }] }), response({ uri: "postgresql://cdas_staging_owner:password@ep-pooler.example.neon.tech/cdas_next_staging?sslmode=require&channel_binding=require" }), response({ uri: "postgresql://cdas_staging_owner:password@ep.example.neon.tech/cdas_next_staging?sslmode=require&channel_binding=require" })], []);
     await expect(new NeonApiProvider(config, safe).ensureIsolatedDatabase()).resolves.toBeDefined();
     const unsafe = queuedFetch([response({ branches: [branch] }), response({ endpoints: [{ id: "e", branch_id: "branch", type: "read_write", suspend_timeout_seconds: -1 }] })], []);
     await expect(new NeonApiProvider(config, unsafe).ensureIsolatedDatabase()).rejects.toThrow("DEVELOPMENT_INFRA_NEON_ENDPOINT_UNSAFE");
     await expect(new NeonApiProvider(config, queuedFetch([response({ branches: [{ ...branch, parent_id: "source-branch" }] })], [])).ensureIsolatedDatabase()).rejects.toThrow("DEVELOPMENT_INFRA_NEON_BRANCH_UNSAFE");
+  });
+  it.each([
+    ["missing", "sslmode=require"],
+    ["disabled", "sslmode=require&channel_binding=disable"],
+    ["duplicate", "sslmode=require&channel_binding=require&channel_binding=require"],
+  ] as const)("rejects a %s Neon channel-binding policy before requesting the direct URL", async (_name, query) => {
+    const requests: Request[] = [];
+    const branch = { id: "branch", name: "cdas-next-development", init_source: "schema-only", default: false };
+    const fetcher = queuedFetch([
+      response({ branches: [branch] }), response({ endpoints: [{ id: "e", branch_id: "branch", type: "read_write", suspend_timeout_seconds: 0 }] }), response({ roles: [{ name: "cdas_staging_owner" }] }), response({ databases: [{ name: "cdas_next_staging", owner_name: "cdas_staging_owner" }] }), response({ uri: `postgresql://cdas_staging_owner:password@ep-pooler.example.neon.tech/cdas_next_staging?${query}` }), response({ uri: "postgresql://cdas_staging_owner:password@ep.example.neon.tech/cdas_next_staging?sslmode=require&channel_binding=require" }),
+    ], requests);
+    await expect(new NeonApiProvider(config, fetcher).ensureIsolatedDatabase()).rejects.toThrow("DEVELOPMENT_INFRA_NEON_CONNECTION_UNSAFE");
+    expect(requests).toHaveLength(5);
+  });
+  it.each([
+    ["missing", "sslmode=require"],
+    ["disabled", "sslmode=require&channel_binding=disable"],
+    ["duplicate", "sslmode=require&channel_binding=require&channel_binding=require"],
+  ] as const)("rejects a %s Neon channel-binding policy on the direct URL", async (_name, query) => {
+    const requests: Request[] = [];
+    const branch = { id: "branch", name: "cdas-next-development", init_source: "schema-only", default: false };
+    const fetcher = queuedFetch([
+      response({ branches: [branch] }), response({ endpoints: [{ id: "e", branch_id: "branch", type: "read_write", suspend_timeout_seconds: 0 }] }), response({ roles: [{ name: "cdas_staging_owner" }] }), response({ databases: [{ name: "cdas_next_staging", owner_name: "cdas_staging_owner" }] }), response({ uri: "postgresql://cdas_staging_owner:password@ep-pooler.example.neon.tech/cdas_next_staging?sslmode=require&channel_binding=require" }), response({ uri: `postgresql://cdas_staging_owner:password@ep.example.neon.tech/cdas_next_staging?${query}` }),
+    ], requests);
+    await expect(new NeonApiProvider(config, fetcher).ensureIsolatedDatabase()).rejects.toThrow("DEVELOPMENT_INFRA_NEON_CONNECTION_UNSAFE");
+    expect(requests).toHaveLength(6);
+  });
+  it("extends only the Prisma migration cold-start timeout and preserves channel binding", async () => {
+    const calls: Array<Readonly<{ command: string; args: readonly string[]; env?: Readonly<Record<string, string>> }>> = [];
+    const runner = { run: async (command: string, args: readonly string[], options?: Readonly<{ env?: Readonly<Record<string, string>> }>) => { calls.push({ command, args, env: options?.env }); return { stdout: "", stderr: "" }; } };
+    const pooledUrl = "postgresql://role:password@ep-pooler.example.neon.tech/database?sslmode=require&channel_binding=require";
+    const directUrl = "postgresql://role:password@ep.example.neon.tech/database?sslmode=require&channel_binding=require&connect_timeout=5";
+    await deployMigrationsWithMinimalEnvironment({ pooledUrl, directUrl }, runner);
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).toMatchObject({ command: "pnpm", args: ["db:deploy"] });
+    expect(calls[0]?.env?.DATABASE_URL).toBe(pooledUrl);
+    const migrationUrl = new URL(calls[0]?.env?.DIRECT_URL ?? "");
+    expect(migrationUrl.searchParams.get("connect_timeout")).toBe("60");
+    expect(migrationUrl.searchParams.get("channel_binding")).toBe("require");
+    expect(migrationUrl.searchParams.get("sslmode")).toBe("require");
+    expect(directUrl).toContain("connect_timeout=5");
   });
   it("refuses unsafe Vercel build command before any preview configuration", async () => {
     const fetcher: typeof fetch = (async () => response({ name: "cdas-next", link: { type: "github", repoId: 1 }, buildCommand: "pnpm db:deploy && pnpm build" })) as typeof fetch;

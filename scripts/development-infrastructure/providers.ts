@@ -199,17 +199,29 @@ export class NeonApiProvider implements NeonProvider {
     const database = databaseMatches[0] ? object(databaseMatches[0]) : object(object(await json(this.fetcher, this.url(`/branches/${encodeURIComponent(branchId)}/databases`), this.init("POST", { database: { name: this.config.neonDatabaseName, owner_name: roleName } }))).database);
     if (database.name !== this.config.neonDatabaseName || database.owner_name !== roleName) throw new Error("DEVELOPMENT_INFRA_NEON_DATABASE_UNSAFE");
     const connection = async (pooled: boolean) => object(await json(this.fetcher, this.url(`/connection_uri?branch_id=${encodeURIComponent(branchId)}&endpoint_id=${encodeURIComponent(endpointId)}&database_name=${encodeURIComponent(this.config.neonDatabaseName)}&role_name=${encodeURIComponent(roleName)}&pooled=${pooled}`), this.init()));
-    const pooled = text((await connection(true)).uri); const direct = text((await connection(false)).uri);
-    const pooledTarget = new URL(pooled); const directTarget = new URL(direct);
-    const valid = (target: URL) => ["postgres:", "postgresql:"].includes(target.protocol) && target.hostname.endsWith(".neon.tech") && target.hostname !== "neon.tech" && decodeURIComponent(target.username) === roleName && target.password.length > 0 && target.pathname === `/${this.config.neonDatabaseName}` && target.searchParams.get("sslmode") === "require";
+    const pooled = text((await connection(true)).uri);
+    const pooledTarget = new URL(pooled);
+    const requiredParameter = (target: URL, name: string, value: string) => {
+      const matches = target.searchParams.getAll(name);
+      return matches.length === 1 && matches[0] === value;
+    };
+    const valid = (target: URL) => ["postgres:", "postgresql:"].includes(target.protocol) && target.hostname.endsWith(".neon.tech") && target.hostname !== "neon.tech" && decodeURIComponent(target.username) === roleName && target.password.length > 0 && target.pathname === `/${this.config.neonDatabaseName}` && requiredParameter(target, "sslmode", "require") && requiredParameter(target, "channel_binding", "require");
     const cluster = (hostname: string) => hostname.replace(/-pooler(?=\.)/u, "");
-    if (!valid(pooledTarget) || !valid(directTarget) || cluster(pooledTarget.hostname) !== cluster(directTarget.hostname) || !pooledTarget.hostname.includes("pooler") || directTarget.hostname.includes("pooler")) throw new Error("DEVELOPMENT_INFRA_NEON_CONNECTION_UNSAFE");
+    if (!valid(pooledTarget) || !pooledTarget.hostname.includes("pooler")) throw new Error("DEVELOPMENT_INFRA_NEON_CONNECTION_UNSAFE");
+    const direct = text((await connection(false)).uri);
+    const directTarget = new URL(direct);
+    if (!valid(directTarget) || cluster(pooledTarget.hostname) !== cluster(directTarget.hostname) || directTarget.hostname.includes("pooler")) throw new Error("DEVELOPMENT_INFRA_NEON_CONNECTION_UNSAFE");
     return { pooledUrl: pooled, directUrl: direct };
   }
 }
 
 export async function deployMigrationsWithMinimalEnvironment(connection: NeonConnection, runner: CommandRunner): Promise<void> {
-  await runner.run("pnpm", ["db:deploy"], { env: { PATH: process.env.PATH ?? "", DATABASE_URL: connection.pooledUrl, DIRECT_URL: connection.directUrl, AI_PROVIDER_DISABLED: "1", NEXT_TELEMETRY_DISABLED: "1" } });
+  const migrationUrl = new URL(connection.directUrl);
+  // Prisma's native schema engine can time out while Neon resumes a compute even
+  // when the JavaScript driver connects successfully. Keep channel binding and
+  // give only the migration connection a bounded cold-start window.
+  migrationUrl.searchParams.set("connect_timeout", "60");
+  await runner.run("pnpm", ["db:deploy"], { env: { PATH: process.env.PATH ?? "", DATABASE_URL: connection.pooledUrl, DIRECT_URL: migrationUrl.toString(), AI_PROVIDER_DISABLED: "1", NEXT_TELEMETRY_DISABLED: "1" } });
 }
 
 export async function verifyDownloadedAcceptanceArtifact(run: WorkflowRun, runner: CommandRunner, context: ArtifactValidationContext = { environment: {} }): Promise<void> {
