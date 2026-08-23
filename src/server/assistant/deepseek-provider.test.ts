@@ -24,7 +24,7 @@ describe("DeepSeek provider boundary", () => {
   it("sends the server-only key and direct model ID to the official API", () => {
     const model = createDeepSeekModel({
       apiKey: "deepseek-secret-key",
-      model: "deepseek-v4-flash-vision-exp",
+      model: "deepseek-v4-flash",
     });
 
     expect(mocks.createOpenAICompatible).toHaveBeenCalledWith({
@@ -33,7 +33,7 @@ describe("DeepSeek provider boundary", () => {
       apiKey: "deepseek-secret-key",
     });
     expect(mocks.chatModel).toHaveBeenCalledWith(
-      "deepseek-v4-flash-vision-exp",
+      "deepseek-v4-flash",
     );
     expect(model).toEqual({ provider: "deepseek.chat" });
   });

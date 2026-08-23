@@ -124,6 +124,11 @@ const submissionHistorySchema = z
 
 export const teacherFeedbackWorkspaceSchema = z
   .object({
+    actor: z
+      .object({
+        displayName: visibleTextSchema,
+      })
+      .strict(),
     student: z
       .object({
         id: z.uuid(),
@@ -310,7 +315,7 @@ export async function getTeacherFeedbackWorkspace(
   const [actor, submission] = await Promise.all([
     database.appUser.findFirst({
       where: { id: context.actorId, role: "TEACHER" },
-      select: { id: true },
+      select: { id: true, displayName: true },
     }),
     database.submission.findFirst({
       where: {
@@ -338,6 +343,7 @@ export async function getTeacherFeedbackWorkspace(
   }
 
   return teacherFeedbackWorkspaceSchema.parse({
+    actor: { displayName: actor.displayName },
     student: submission.student,
     submission: mapSubmissionHistory(submission),
   });

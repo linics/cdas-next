@@ -139,7 +139,10 @@ export type TeacherPublishConfirmation = z.infer<
 >;
 
 export class TeacherActivityQueryError extends Error {
-  constructor(public readonly code: "NOT_FOUND") {
+  constructor(
+    public readonly code: "NOT_FOUND" | "WRONG_ROLE",
+    public readonly actorName?: string,
+  ) {
     super(code);
     this.name = "TeacherActivityQueryError";
   }
@@ -177,13 +180,20 @@ function isCurrentMembership(
 async function requireTeacher(
   database: PrismaClient,
   actorId: string,
+  wrongRoleCode: "NOT_FOUND" | "WRONG_ROLE" = "NOT_FOUND",
 ): Promise<TeacherIdentity> {
   const actor = await database.appUser.findUnique({
     where: { id: actorId },
     select: { role: true, displayName: true },
   });
-  if (!actor || actor.role !== "TEACHER") {
+  if (!actor) {
     throw new TeacherActivityQueryError("NOT_FOUND");
+  }
+  if (actor.role !== "TEACHER") {
+    throw new TeacherActivityQueryError(
+      wrongRoleCode,
+      wrongRoleCode === "WRONG_ROLE" ? actor.displayName : undefined,
+    );
   }
   return teacherIdentitySchema.parse({ displayName: actor.displayName });
 }
@@ -205,8 +215,12 @@ export async function getTeacherActivityDashboard(
 ): Promise<TeacherActivityDashboard> {
   emptyInputSchema.parse(rawInput);
   const context = resolveCommandContext(commandContext, ["UI"]);
-  const [actor, drafts, releases, classrooms] = await Promise.all([
-    requireTeacher(database, context.actorId),
+  const actor = await requireTeacher(
+    database,
+    context.actorId,
+    "WRONG_ROLE",
+  );
+  const [drafts, releases, classrooms] = await Promise.all([
     database.activityDraft.findMany({
       where: { ownerId: context.actorId },
       orderBy: [{ updatedAt: "desc" }, { id: "asc" }],

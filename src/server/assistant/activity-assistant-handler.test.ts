@@ -167,7 +167,7 @@ function startedRun(id: string) {
     id,
     actorId,
     status: "RUNNING" as const,
-    model: "deepseek-v4-flash-vision-exp",
+    model: "deepseek-v4-flash",
     startedAt: now.toISOString(),
   };
 }
@@ -264,7 +264,7 @@ describe("activity assistant route handler", () => {
     mocks.authenticate.mockResolvedValue(teacher);
     mocks.getConfig.mockReturnValue({
       apiKey: "deepseek-test-key",
-      model: "deepseek-v4-flash-vision-exp",
+      model: "deepseek-v4-flash",
       approvalSecret: "s".repeat(32),
     });
     mocks.createModel.mockReturnValue(successfulModel());
@@ -273,7 +273,7 @@ describe("activity assistant route handler", () => {
       id: runId,
       actorId,
       status: "RUNNING",
-      model: "deepseek-v4-flash-vision-exp",
+      model: "deepseek-v4-flash",
       startedAt: now.toISOString(),
     });
     mocks.finishRun.mockResolvedValue({

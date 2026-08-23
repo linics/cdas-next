@@ -55,7 +55,10 @@ vi.mock("../../server/auth/current-actor", () => ({
 }));
 vi.mock("../../server/queries/student-releases", () => ({
   StudentReleaseListQueryError: class StudentReleaseListQueryError extends Error {
-    constructor(public readonly code: string) {
+    constructor(
+      public readonly code: string,
+      public readonly actorName?: string,
+    ) {
       super(code);
       this.name = "StudentReleaseListQueryError";
     }
@@ -76,6 +79,7 @@ const pendingReleaseId = "10000000-0000-4000-8000-000000000001";
 const feedbackReleaseId = "20000000-0000-4000-8000-000000000002";
 const historyReleaseId = "30000000-0000-4000-8000-000000000003";
 const releaseList = {
+  actor: { displayName: "测试学生" },
   releases: [
     {
       id: pendingReleaseId,
@@ -189,7 +193,9 @@ describe("student dashboard page", () => {
     expect(markup).toContain(`/student/releases/${historyReleaseId}`);
     expect(markup).not.toContain("创建活动");
     expect(markup).not.toContain("打开导航");
-    expect(markup).not.toContain("<button");
+    expect(markup).toContain("当前账号：测试学生 · 学生");
+    expect(markup).toContain("退出登录");
+    expect(markup).toContain('data-clerk-sign-out="true"');
     expect(mocks.listStudentReleases).toHaveBeenCalledWith(
       mocks.database,
       trustedContext,
@@ -198,12 +204,32 @@ describe("student dashboard page", () => {
   });
 
   it("renders a truthful empty state without a fake action", async () => {
-    mocks.listStudentReleases.mockResolvedValue({ releases: [] });
+    mocks.listStudentReleases.mockResolvedValue({
+      actor: { displayName: "测试学生" },
+      releases: [],
+    });
 
     const markup = await renderPage();
 
     expect(markup).toContain("还没有对你开放的学习活动");
     expect(markup).not.toContain("创建活动");
     expect(markup).not.toContain("提交活动");
+  });
+
+  it("guides a teacher back without rendering student resources", async () => {
+    const { StudentReleaseListQueryError } = await import(
+      "../../server/queries/student-releases"
+    );
+    mocks.listStudentReleases.mockRejectedValue(
+      new StudentReleaseListQueryError("WRONG_ROLE", "林老师"),
+    );
+
+    const markup = await renderPage();
+
+    expect(markup).toContain("当前登录的是教师账号");
+    expect(markup).toContain('href="/teacher"');
+    expect(markup).toContain("当前账号：林老师 · 教师");
+    expect(markup).toContain("退出登录");
+    expect(markup).not.toContain("待提交活动");
   });
 });

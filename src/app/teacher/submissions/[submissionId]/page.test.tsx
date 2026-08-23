@@ -95,6 +95,7 @@ const trustedContext = {
 const secretSubmissionBody = "学生正式提交的私密证据";
 const currentFeedbackBody = "当前已确认的教师反馈";
 const workspace = {
+  actor: { displayName: "林老师" },
   student: {
     id: "30000000-0000-4000-8000-000000000003",
     displayName: "陈同学",
@@ -206,6 +207,8 @@ describe("teacher feedback page access boundary", () => {
       { submissionId },
     );
     expect(markup).toContain("陈同学");
+    expect(markup).toContain("当前账号：林老师 · 教师");
+    expect(markup).toContain("退出登录");
     expect(markup).toContain(secretSubmissionBody);
     expect(markup).toContain(currentFeedbackBody);
     expect(markup).toContain('data-feedback-composer="true"');

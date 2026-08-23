@@ -74,7 +74,7 @@ pnpm e2e:closed-loop
 
 ```dotenv
 DEEPSEEK_API_KEY=配置在本机密钥文件或受保护环境
-AI_MODEL=deepseek-v4-flash-vision-exp
+AI_MODEL=deepseek-v4-flash
 AI_TOOL_APPROVAL_SECRET=至少32字节的随机值
 ```
 
@@ -121,7 +121,7 @@ pnpm e2e:real-model
 | `DEV_TEST_STUDENT_CLERK_ID` | 浏览器门禁的既有 Clerk development 学生用户 ID | 空 |
 | `AI_PROVIDER_DISABLED` | 关闭模型调用并验证业务降级 | `1` |
 | `DEEPSEEK_API_KEY` | DeepSeek 官方 API 的服务端密钥；关闭模型时不需要 | 空 |
-| `AI_MODEL` | DeepSeek 模型 ID | `deepseek-v4-flash-vision-exp` |
+| `AI_MODEL` | DeepSeek 模型 ID | `deepseek-v4-flash` |
 | `AI_TOOL_APPROVAL_SECRET` | AI SDK 工具审批签名密钥，至少 32 字节 | 空 |
 | `E2E_REAL_MODEL_ACK` | 单次真实模型合成数据 smoke 的显式成本确认 | 空 |
 

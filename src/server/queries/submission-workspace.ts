@@ -25,6 +25,9 @@ const preservedNonBlankTextSchema = z
   .refine((value) => value.trim().length > 0, "Text must not be blank");
 
 const studentWorkspaceSchema = z.strictObject({
+  actor: z.strictObject({
+    displayName: preservedNonBlankTextSchema,
+  }),
   access: z.strictObject({
     canWrite: z.boolean(),
   }),
@@ -123,7 +126,7 @@ export async function getStudentReleaseWorkspace(
   const [actor, release] = await Promise.all([
     database.appUser.findUnique({
       where: { id: context.actorId },
-      select: { role: true },
+      select: { role: true, displayName: true },
     }),
     database.activityRelease.findUnique({
       where: { id: input.releaseId },
@@ -202,6 +205,7 @@ export async function getStudentReleaseWorkspace(
   const content = activityContentSchema.parse(release.snapshot.content);
 
   const workspace = {
+    actor: { displayName: actor.displayName },
     access: {
       canWrite: release.status === "ACTIVE" && hasCurrentMembership,
     },

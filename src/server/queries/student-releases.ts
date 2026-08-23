@@ -18,6 +18,11 @@ const releaseStatusSchema = z.enum(["ACTIVE", "CLOSED", "ARCHIVED"]);
 
 export const studentReleaseListSchema = z
   .object({
+    actor: z
+      .object({
+        displayName: z.string().trim().min(1),
+      })
+      .strict(),
     releases: z.array(
       z
         .object({
@@ -65,7 +70,10 @@ export type StudentReleaseListInput = z.input<typeof queryInputSchema>;
 export type StudentReleaseList = z.infer<typeof studentReleaseListSchema>;
 
 export class StudentReleaseListQueryError extends Error {
-  constructor(public readonly code: "NOT_FOUND") {
+  constructor(
+    public readonly code: "NOT_FOUND" | "WRONG_ROLE",
+    public readonly actorName?: string,
+  ) {
     super(code);
     this.name = "StudentReleaseListQueryError";
   }
@@ -79,12 +87,18 @@ export async function listStudentReleases(
   queryInputSchema.parse(rawInput);
   const context = resolveCommandContext(commandContext, ["UI", "AGENT"]);
 
-  const actor = await database.appUser.findFirst({
-    where: { id: context.actorId, role: "STUDENT" },
-    select: { id: true },
+  const actor = await database.appUser.findUnique({
+    where: { id: context.actorId },
+    select: { role: true, displayName: true },
   });
   if (!actor) {
     throw new StudentReleaseListQueryError("NOT_FOUND");
+  }
+  if (actor.role !== "STUDENT") {
+    throw new StudentReleaseListQueryError(
+      "WRONG_ROLE",
+      actor.displayName,
+    );
   }
 
   const candidates = await database.activityRelease.findMany({
@@ -186,5 +200,8 @@ export async function listStudentReleases(
     ];
   });
 
-  return studentReleaseListSchema.parse({ releases });
+  return studentReleaseListSchema.parse({
+    actor: { displayName: actor.displayName },
+    releases,
+  });
 }

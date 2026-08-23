@@ -82,7 +82,7 @@ describe("evaluateStagingPreflight", () => {
       AI_PROVIDER_DISABLED: "0",
       STAGING_AI_ACK: stagingAiAcknowledgement,
       DEEPSEEK_API_KEY: "deepseek-key-that-is-not-recorded",
-      AI_MODEL: "deepseek-v4-flash-vision-exp",
+      AI_MODEL: "deepseek-v4-flash",
       AI_TOOL_APPROVAL_SECRET: "a".repeat(32),
     });
 

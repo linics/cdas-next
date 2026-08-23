@@ -279,6 +279,8 @@ describeWithDatabase("student release list query", () => {
       {},
     );
 
+    expect(result.actor).toEqual({ displayName: "发布列表学生" });
+
     expect(result.releases.map((release) => release.id)).toEqual([
       fixture.feedbackReleaseId,
       fixture.draftReleaseId,
@@ -349,7 +351,10 @@ describeWithDatabase("student release list query", () => {
         commandContext(fixture.otherStudentId, fixture.now),
         {},
       ),
-    ).resolves.toEqual({ releases: [] });
+    ).resolves.toEqual({
+      actor: { displayName: "无班级学生" },
+      releases: [],
+    });
   });
 
   it("does not expose the student list to a teacher", async () => {
@@ -361,6 +366,8 @@ describeWithDatabase("student release list query", () => {
         commandContext(fixture.teacherId, fixture.now),
         {},
       ),
-    ).rejects.toEqual(new StudentReleaseListQueryError("NOT_FOUND"));
+    ).rejects.toEqual(
+      new StudentReleaseListQueryError("WRONG_ROLE", "发布列表教师"),
+    );
   });
 });

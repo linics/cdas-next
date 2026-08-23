@@ -94,6 +94,7 @@ const trustedContext = {
   clock: () => new Date("2026-08-18T12:00:00.000Z"),
 };
 const workspace = {
+  actor: { displayName: "陈同学" },
   access: { canWrite: true },
   release: {
     id: releaseId,
@@ -238,6 +239,8 @@ describe("student release page access boundary", () => {
   it("does not load a feedback workspace before a submission exists", async () => {
     const markup = await renderPage();
 
+    expect(markup).toContain("当前账号：陈同学 · 学生");
+    expect(markup).toContain("退出登录");
     expect(markup).toContain("还没有正式修订");
     expect(mocks.getStudentFeedbackWorkspace).not.toHaveBeenCalled();
   });

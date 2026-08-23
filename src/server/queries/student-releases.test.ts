@@ -21,15 +21,17 @@ function context(source: CommandContext["source"]): CommandContext {
 }
 
 function databaseDouble(options?: { role?: "STUDENT" | "TEACHER" }) {
-  const appUserFindFirst = vi.fn().mockResolvedValue(
-    options?.role === "TEACHER" ? null : { id: randomUUID() },
-  );
+  const appUserFindUnique = vi.fn().mockResolvedValue({
+    role: options?.role ?? "STUDENT",
+    displayName:
+      options?.role === "TEACHER" ? "错误角色教师" : "测试学生",
+  });
   const releaseFindMany = vi.fn().mockResolvedValue([]);
   const database = {
-    appUser: { findFirst: appUserFindFirst },
+    appUser: { findUnique: appUserFindUnique },
     activityRelease: { findMany: releaseFindMany },
   } as unknown as PrismaClient;
-  return { database, appUserFindFirst, releaseFindMany };
+  return { database, appUserFindUnique, releaseFindMany };
 }
 
 describe("listStudentReleases input and role boundary", () => {
@@ -43,7 +45,7 @@ describe("listStudentReleases input and role boundary", () => {
         { releaseId: randomUUID() } as never,
       ),
     ).rejects.toBeInstanceOf(ZodError);
-    expect(fake.appUserFindFirst).not.toHaveBeenCalled();
+    expect(fake.appUserFindUnique).not.toHaveBeenCalled();
     expect(fake.releaseFindMany).not.toHaveBeenCalled();
   });
 
@@ -52,16 +54,21 @@ describe("listStudentReleases input and role boundary", () => {
 
     await expect(
       listStudentReleases(fake.database, context("AGENT"), {}),
-    ).resolves.toEqual({ releases: [] });
+    ).resolves.toEqual({
+      actor: { displayName: "测试学生" },
+      releases: [],
+    });
     expect(fake.releaseFindMany).toHaveBeenCalledOnce();
   });
 
-  it("returns not found for non-students without scanning releases", async () => {
+  it("returns a root-only role mismatch without scanning releases", async () => {
     const fake = databaseDouble({ role: "TEACHER" });
 
     await expect(
       listStudentReleases(fake.database, context("UI"), {}),
-    ).rejects.toEqual(new StudentReleaseListQueryError("NOT_FOUND"));
+    ).rejects.toEqual(
+      new StudentReleaseListQueryError("WRONG_ROLE", "错误角色教师"),
+    );
     expect(fake.releaseFindMany).not.toHaveBeenCalled();
   });
 
@@ -71,6 +78,6 @@ describe("listStudentReleases input and role boundary", () => {
     await expect(
       listStudentReleases(fake.database, context("SYSTEM"), {}),
     ).rejects.toThrow("Command source SYSTEM is not allowed");
-    expect(fake.appUserFindFirst).not.toHaveBeenCalled();
+    expect(fake.appUserFindUnique).not.toHaveBeenCalled();
   });
 });

@@ -329,7 +329,10 @@ export default async function StudentReleasePage({
       : "尚未创建草稿";
 
   return (
-    <WorkspaceShell audience="学生">
+    <WorkspaceShell
+      audience="学生"
+      actorName={workspace.actor.displayName}
+    >
       <div className={styles.releasePage}>
         <Link className={styles.backLink} href="/student">← 返回我的活动</Link>
         <header className={styles.releaseHeader}>

@@ -167,7 +167,7 @@ export default async function TeacherSubmissionPage({
   const revisions = [...submission.revisions].reverse();
 
   return (
-    <TeacherPage>
+    <TeacherPage actorName={workspace.actor.displayName}>
       <div>
         <header className={styles.pageHeader}>
           <div>

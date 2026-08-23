@@ -11,7 +11,7 @@ import {
 const validEnvironment = {
   AI_PROVIDER_DISABLED: "0",
   DEEPSEEK_API_KEY: "deepseek-test-key",
-  AI_MODEL: "deepseek-v4-flash-vision-exp",
+  AI_MODEL: "deepseek-v4-flash",
   AI_TOOL_APPROVAL_SECRET: "s".repeat(32),
 };
 
@@ -19,7 +19,7 @@ describe("activity assistant configuration", () => {
   it("returns the complete DeepSeek and approval boundary", () => {
     expect(getActivityAssistantConfig(validEnvironment)).toEqual({
       apiKey: "deepseek-test-key",
-      model: "deepseek-v4-flash-vision-exp",
+      model: "deepseek-v4-flash",
       approvalSecret: "s".repeat(32),
     });
   });

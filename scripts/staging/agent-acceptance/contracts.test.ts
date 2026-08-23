@@ -20,7 +20,7 @@ function environment(extra: Record<string, string | undefined> = {}) {
     AI_PROVIDER_DISABLED: "0",
     STAGING_AI_ACK: "synthetic-data-cost-approved",
     DEEPSEEK_API_KEY: "deepseek-key-012345",
-    AI_MODEL: "deepseek-v4-flash-vision-exp",
+    AI_MODEL: "deepseek-v4-flash",
     AI_TOOL_APPROVAL_SECRET: "a".repeat(32),
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_0123456789abcdef",
     CLERK_SECRET_KEY: "sk_test_0123456789abcdef",

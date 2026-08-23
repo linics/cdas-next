@@ -226,6 +226,7 @@ describeWithDatabase("submission workspace queries", () => {
       { releaseId: fixture.releaseId },
     );
 
+    expect(workspace.actor).toEqual({ displayName: "当前学生" });
     expect(workspace.access.canWrite).toBe(true);
     expect(workspace.release).toMatchObject({
       title: "校园水表观察",

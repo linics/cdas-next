@@ -5,7 +5,10 @@ import { notFound } from "next/navigation";
 import { ZodError } from "zod";
 import { LocalizedDateTime } from "../_components/localized-date-time";
 import { EmptyState, StatusBadge } from "../_components/ui";
-import { WorkspaceShell } from "../_components/workspace-shell";
+import {
+  WorkspaceRoleGate,
+  WorkspaceShell,
+} from "../_components/workspace-shell";
 import { AuthenticationError } from "../../server/auth/current-actor";
 import { createUiCommandContext } from "../../server/commands/create-ui-command-context";
 import { getDatabaseClient } from "../../server/db/client";
@@ -265,8 +268,20 @@ export default async function StudentDashboardPage() {
       return <AccessUnavailable code={error.code} />;
     }
     if (
-      error instanceof StudentReleaseListQueryError ||
-      error instanceof ZodError
+      error instanceof StudentReleaseListQueryError &&
+      error.code === "WRONG_ROLE" &&
+      error.actorName
+    ) {
+      return (
+        <WorkspaceRoleGate
+          actorName={error.actorName}
+          currentAudience="教师"
+          requestedAudience="学生"
+        />
+      );
+    }
+    if (
+      error instanceof StudentReleaseListQueryError || error instanceof ZodError
     ) {
       notFound();
     }
@@ -288,7 +303,10 @@ export default async function StudentDashboardPage() {
   ).length;
 
   return (
-    <WorkspaceShell audience="学生">
+    <WorkspaceShell
+      audience="学生"
+      actorName={releaseList.actor.displayName}
+    >
       <div className={styles.dashboardMain}>
         <header className={styles.dashboardHeader}>
           <div>

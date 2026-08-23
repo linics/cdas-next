@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ZodError } from "zod";
 import { LocalizedDateTime } from "../_components/localized-date-time";
+import { WorkspaceRoleGate } from "../_components/workspace-shell";
 import { AuthenticationError } from "../../server/auth/current-actor";
 import { createUiCommandContext } from "../../server/commands/create-ui-command-context";
 import { getDatabaseClient } from "../../server/db/client";
@@ -36,6 +37,19 @@ export default async function TeacherDashboardPage() {
   } catch (error) {
     if (error instanceof AuthenticationError) {
       return <TeacherAccessGate code={error.code} returnPath="/teacher" />;
+    }
+    if (
+      error instanceof TeacherActivityQueryError &&
+      error.code === "WRONG_ROLE" &&
+      error.actorName
+    ) {
+      return (
+        <WorkspaceRoleGate
+          actorName={error.actorName}
+          currentAudience="学生"
+          requestedAudience="教师"
+        />
+      );
     }
     if (error instanceof TeacherActivityQueryError || error instanceof ZodError) {
       notFound();

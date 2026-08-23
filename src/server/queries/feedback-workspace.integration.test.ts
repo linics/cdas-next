@@ -336,6 +336,7 @@ describeWithDatabase("feedback workspace queries", () => {
       { submissionId: fixture.submissionId },
     );
 
+    expect(workspace.actor).toEqual({ displayName: "反馈工作台教师" });
     expect(workspace.student).toEqual({
       id: fixture.studentId,
       displayName: "反馈工作台学生",
