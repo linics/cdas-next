@@ -12,7 +12,7 @@ describe("GitHub CLI provider", () => {
       if (command === "git" && args[0] === "rev-parse") return { stdout: `${"a".repeat(40)}\n`, stderr: "" };
       if (command === "git" && args[0] === "remote") return { stdout: "git@github.com:owner/repo.git\n", stderr: "" };
       if (command === "git" && args[0] === "status") return { stdout: "", stderr: "" };
-      if (command === "git" && args[0] === "ls-remote") return { stdout: `${"b".repeat(40)}\trefs/heads/codex/test\n`, stderr: "" };
+      if (command === "gh" && args[1]?.includes("/git/ref/heads/")) return { stdout: `${"b".repeat(40)}\n`, stderr: "" };
       return { stdout: "owner/repo\t42\n", stderr: "" };
     } };
     await expect(new GitHubCliProvider(runner).repositoryTarget()).rejects.toThrow("DEVELOPMENT_INFRA_GIT_REMOTE_STALE");
@@ -25,13 +25,15 @@ describe("GitHub CLI provider", () => {
       if (command === "git" && args[0] === "rev-parse") return { stdout: `${"a".repeat(40)}\n`, stderr: "" };
       if (command === "git" && args[0] === "remote") return { stdout: "git@github.com:owner/repo.git\n", stderr: "" };
       if (command === "git" && args[0] === "status") return { stdout: dirty ? " M package.json\n" : "", stderr: "" };
-      if (command === "git" && args[0] === "ls-remote") return { stdout: `${"a".repeat(40)}\trefs/heads/codex/test\n`, stderr: "" };
+      if (command === "gh" && args[1]?.includes("/git/ref/heads/")) return { stdout: `${"a".repeat(40)}\n`, stderr: "" };
       return { stdout: "owner/repo\t42\n", stderr: "" };
     } });
     await expect(new GitHubCliProvider(build(false)).repositoryTarget()).resolves.toEqual(target());
     await expect(new GitHubCliProvider(build(true)).repositoryTarget()).rejects.toThrow("DEVELOPMENT_INFRA_GIT_TARGET_UNSAFE");
     expect(calls.some((call) => call.command === "gh" && call.args.join(" ") === "api repos/{owner}/{repo} --jq [.full_name,.id] | @tsv")).toBe(true);
+    expect(calls.some((call) => call.command === "gh" && call.args.join(" ") === "api repos/{owner}/{repo}/git/ref/heads/codex/test --jq .object.sha")).toBe(true);
     expect(calls.some((call) => call.args.includes("databaseId"))).toBe(false);
+    expect(calls.some((call) => call.args.includes("ls-remote"))).toBe(false);
   });
   it("rejects a lookalike non-GitHub origin", async () => {
     const runner: CommandRunner = { run: async (command, args) => {

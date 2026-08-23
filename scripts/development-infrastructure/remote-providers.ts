@@ -86,8 +86,8 @@ export class GitHubCliProvider implements GitHubProvider {
     const match = /^([^/]+)\/([^/]+)$/u.exec(ownerAndName ?? "");
     const remoteMatch = /^(?:git@github\.com:|https:\/\/github\.com\/|ssh:\/\/git@github\.com\/)([^/]+)\/([^/]+?)(?:\.git)?$/u.exec(remote.stdout.trim());
     if (status.stdout !== "" || !match || !remoteMatch || remoteMatch[1] !== match[1] || remoteMatch[2] !== match[2] || !/^codex\/[a-z0-9._/-]+$/u.test(current) || !/^[a-f0-9]{40}$/u.test(commit) || !/^\d+$/u.test(databaseId ?? "")) throw new Error("DEVELOPMENT_INFRA_GIT_TARGET_UNSAFE");
-    const remoteRef = await this.runner.run("git", ["ls-remote", "--exit-code", "origin", `refs/heads/${current}`], { env: minimalCommandEnvironment() });
-    const remoteSha = /^([a-f0-9]{40})\s+refs\/heads\//mu.exec(remoteRef.stdout)?.[1] ?? "";
+    const remoteRef = await this.gh(["api", `repos/{owner}/{repo}/git/ref/heads/${current}`, "--jq", ".object.sha"]);
+    const remoteSha = remoteRef.stdout.trim();
     if (remoteSha !== commit) throw new Error("DEVELOPMENT_INFRA_GIT_REMOTE_STALE");
     return { owner: match[1], name: match[2], branch: current, sha: commit, repositoryId: Number(databaseId) };
   }
