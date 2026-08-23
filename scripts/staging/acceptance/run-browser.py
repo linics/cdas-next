@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import base64
 import hashlib
 import ipaddress
 import json
@@ -254,6 +255,27 @@ def wait_text(page: Page, text: str) -> None:
     page.get_by_text(text, exact=False).last.wait_for(state="visible", timeout=30_000)
 
 
+def attachment_download_href(page: Page, filename: str) -> str:
+    link = page.get_by_role("link", name=filename, exact=True).last
+    link.wait_for(state="visible", timeout=30_000)
+    href = link.get_attribute("href")
+    if not href or not re.fullmatch(r"/attachments/[0-9a-f-]{36}/download", href):
+        raise AcceptanceFailure("STAGING_ACCEPTANCE_ATTACHMENT_LINK_INVALID")
+    return href
+
+
+def assert_attachment_download(page: Page, filename: str, expected_sha256: str) -> None:
+    link = page.get_by_role("link", name=filename, exact=True).last
+    with page.expect_download(timeout=30_000) as event:
+        link.click()
+    download = event.value
+    if download.suggested_filename != filename:
+        raise AcceptanceFailure("STAGING_ACCEPTANCE_ATTACHMENT_FILENAME_MISMATCH")
+    downloaded_path = download.path()
+    if not downloaded_path or hashlib.sha256(Path(downloaded_path).read_bytes()).hexdigest() != expected_sha256:
+        raise AcceptanceFailure("STAGING_ACCEPTANCE_ATTACHMENT_CONTENT_MISMATCH")
+
+
 def confirm(page: Page, title: str, button: str) -> None:
     dialog = page.get_by_role("dialog").filter(has_text=title)
     dialog.wait_for(state="visible", timeout=30_000)
@@ -309,6 +331,11 @@ def run() -> None:
     title = f"CDAS staging acceptance {marker_value}"
     evidence = f"Synthetic text evidence for {marker_value}."
     feedback_text = f"Synthetic teacher feedback for {marker_value}."
+    attachment_filename = f"synthetic-{marker_value}.png"
+    attachment_bytes = base64.b64decode(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+    )
+    attachment_sha256 = hashlib.sha256(attachment_bytes).hexdigest()
     index: dict[str, str] = {}
     checks: list[dict[str, str]] = []
 
@@ -380,6 +407,15 @@ def run() -> None:
             student.locator("#text-evidence").fill(evidence)
             student.get_by_role("button", name="保存草稿", exact=True).click()
             wait_text(student, "草稿已保存")
+            student.locator('input[type="file"]').set_input_files({
+                "name": attachment_filename,
+                "mimeType": "image/png",
+                "buffer": attachment_bytes,
+            })
+            wait_text(student, "文件已上传并完成内容验证，可正式提交。")
+            attachment_href = attachment_download_href(student, attachment_filename)
+            assert_attachment_download(student, attachment_filename, attachment_sha256)
+            checks.append({"code": "STUDENT_PRIVATE_ATTACHMENT_UPLOAD_AND_DOWNLOAD", "status": "PASS"})
             student.get_by_role("button", name="正式提交", exact=True).click()
             confirm(student, "确认正式提交？", "确认正式提交")
             wait_text(student, "第 1 版已正式提交")
@@ -400,6 +436,10 @@ def run() -> None:
                 raise AcceptanceFailure("STAGING_ACCEPTANCE_SUBMISSION_LINK_MISSING")
             submission.click()
             assert_origin(teacher.url, remote)
+            if attachment_download_href(teacher, attachment_filename) != attachment_href:
+                raise AcceptanceFailure("STAGING_ACCEPTANCE_ATTACHMENT_LINK_CHANGED")
+            assert_attachment_download(teacher, attachment_filename, attachment_sha256)
+            checks.append({"code": "TEACHER_FORMAL_ATTACHMENT_DOWNLOAD", "status": "PASS"})
             feedback(teacher, feedback_text)
             teacher.locator('[aria-labelledby^="feedback-history-"]').last.get_by_text(
                 feedback_text,
@@ -420,9 +460,14 @@ def run() -> None:
                 raise AcceptanceFailure("STAGING_ACCEPTANCE_OTHER_STUDENT_SUBMISSION_LEAK")
             primary_display_name = required("STAGING_ACCEPTANCE_TEST_STUDENT_NAME")
             page_text = other_student.locator("body").inner_text()
-            if evidence in page_text or feedback_text in page_text or primary_display_name in page_text:
+            if evidence in page_text or feedback_text in page_text or primary_display_name in page_text or attachment_filename in page_text:
                 raise AcceptanceFailure("STAGING_ACCEPTANCE_OTHER_STUDENT_SUBMISSION_LEAK")
             checks.append({"code": "OTHER_STUDENT_SUBMISSION_CONTENT_HIDDEN", "status": "PASS"})
+            denied_attachment = other_student.goto(f"{remote}{attachment_href}", wait_until="domcontentloaded")
+            assert_origin(other_student.url, remote)
+            if not denied_attachment or denied_attachment.status != 404:
+                raise AcceptanceFailure("STAGING_ACCEPTANCE_OTHER_STUDENT_ATTACHMENT_NOT_HIDDEN")
+            checks.append({"code": "OTHER_STUDENT_ATTACHMENT_404", "status": "PASS"})
             denied_other = other_student.goto(f"{remote}{submission_href}", wait_until="domcontentloaded")
             assert_origin(other_student.url, remote)
             if not denied_other or denied_other.status != 404:
@@ -462,6 +507,10 @@ def run() -> None:
             if readonly.input_value() != evidence or readonly.is_editable() or any(student.get_by_role("button", name=label, exact=True).count() for label in ("保存草稿", "正式提交", "正式迟交", "开始重交")):
                 raise AcceptanceFailure("STAGING_ACCEPTANCE_CLOSED_READONLY_FAILED")
             wait_text(student, feedback_text)
+            if attachment_download_href(student, attachment_filename) != attachment_href:
+                raise AcceptanceFailure("STAGING_ACCEPTANCE_CLOSED_ATTACHMENT_LINK_CHANGED")
+            assert_attachment_download(student, attachment_filename, attachment_sha256)
+            checks.append({"code": "CLOSED_STUDENT_ATTACHMENT_READABLE", "status": "PASS"})
             checks.append({"code": "CLOSED_STUDENT_READONLY", "status": "PASS"})
             denied = teacher.goto(f"{remote}{activity_href}", wait_until="domcontentloaded")
             assert_origin(teacher.url, remote)
