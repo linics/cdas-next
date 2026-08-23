@@ -310,7 +310,7 @@ def sign_out_and_relogin(page: Page, remote: str, role: str) -> None:
         page.wait_for_url(re.compile(r"/$"), timeout=60_000)
         assert_origin(page.url, remote)
         page.wait_for_function(
-            "() => Boolean(window.Clerk?.loaded && window.Clerk.status === 'ready' && window.Clerk.user === null)",
+            "() => Boolean(window.Clerk?.loaded && window.Clerk.status === 'ready' && !window.Clerk.user && !window.Clerk.session)",
             timeout=60_000,
         )
         page.get_by_role("heading", name="开始今天的学习活动", exact=True).wait_for(
