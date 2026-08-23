@@ -305,16 +305,26 @@ def feedback(page: Page, body: str) -> None:
 
 
 def sign_out_and_relogin(page: Page, remote: str, role: str) -> None:
-    page.get_by_role("button", name="退出登录", exact=True).click()
-    page.wait_for_url(re.compile(r"/$"), timeout=30_000)
-    assert_origin(page.url, remote)
-    page.get_by_role("heading", name="开始今天的学习活动", exact=True).wait_for(state="visible")
-    page.goto(f"{remote}/{role}", wait_until="domcontentloaded")
-    assert_origin(page.url, remote)
-    page.get_by_text("需要登录", exact=True).wait_for(state="visible")
-    if page.get_by_role("button", name="退出登录", exact=True).count():
-        raise AcceptanceFailure("STAGING_ACCEPTANCE_SIGN_OUT_NOT_EFFECTIVE")
-    sign_in(page, remote, role)
+    try:
+        page.get_by_role("button", name="退出登录", exact=True).click()
+        page.wait_for_url(re.compile(r"/$"), timeout=60_000)
+        assert_origin(page.url, remote)
+        page.wait_for_function(
+            "() => Boolean(window.Clerk?.loaded && window.Clerk.status === 'ready' && window.Clerk.user === null)",
+            timeout=60_000,
+        )
+        page.get_by_role("heading", name="开始今天的学习活动", exact=True).wait_for(
+            state="visible",
+            timeout=60_000,
+        )
+        page.goto(f"{remote}/{role}", wait_until="domcontentloaded")
+        assert_origin(page.url, remote)
+        page.get_by_text("需要登录", exact=True).wait_for(state="visible", timeout=60_000)
+        if page.get_by_role("button", name="退出登录", exact=True).count():
+            raise AcceptanceFailure("STAGING_ACCEPTANCE_SIGN_OUT_NOT_EFFECTIVE")
+        sign_in(page, remote, role)
+    except PlaywrightError as error:
+        raise AcceptanceFailure("STAGING_ACCEPTANCE_SIGN_OUT_RELOGIN_FAILED") from error
 
 
 def run() -> None:

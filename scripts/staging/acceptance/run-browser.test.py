@@ -115,6 +115,8 @@ class BrowserContractTests(unittest.TestCase):
         self.assertLess(source.index("assert_origin(page.url, remote)\n        ticket = issue_ticket"), source.index("ticket = issue_ticket") + 1)
         self.assertIn("window.top !== window", source)
         self.assertIn("退出登录", source)
+        self.assertIn("window.Clerk.user === null", source)
+        self.assertIn("STAGING_ACCEPTANCE_SIGN_OUT_RELOGIN_FAILED", source)
         self.assertIn("AI_DISABLED_MANUAL_PATH", source)
         self.assertIn("TEACHER_STUDENT_RESOURCE_HIDDEN", source)
         self.assertIn("OTHER_STUDENT", source)
