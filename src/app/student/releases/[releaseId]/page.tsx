@@ -7,7 +7,7 @@ import { LocalizedDateTime } from "../../../_components/localized-date-time";
 import { InlineAlert, StatusBadge } from "../../../_components/ui";
 import { WorkspaceShell } from "../../../_components/workspace-shell";
 import { AuthenticationError } from "../../../../server/auth/current-actor";
-import { createAttachmentStorageFromEnvironment } from "../../../../server/attachments/s3-attachment-storage";
+import { createAttachmentStorageFromEnvironment } from "../../../../server/attachments/vercel-blob-attachment-storage";
 import { createUiCommandContext } from "../../../../server/commands/create-ui-command-context";
 import { getDatabaseClient } from "../../../../server/db/client";
 import {

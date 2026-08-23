@@ -2,7 +2,7 @@ import { ZodError } from "zod";
 import { AuthenticationError } from "../../../../server/auth/current-actor";
 import { createSubmissionAttachmentDownload } from "../../../../server/attachments/submission-attachment-service";
 import { SubmissionAttachmentAccessError } from "../../../../server/attachments/submission-attachment-access";
-import { createAttachmentStorageFromEnvironment } from "../../../../server/attachments/s3-attachment-storage";
+import { createAttachmentStorageFromEnvironment } from "../../../../server/attachments/vercel-blob-attachment-storage";
 import { createUiCommandContext } from "../../../../server/commands/create-ui-command-context";
 import { getDatabaseClient } from "../../../../server/db/client";
 
@@ -19,13 +19,20 @@ export async function GET(
   }
   try {
     const { attachmentId } = await params;
-    const url = await createSubmissionAttachmentDownload(
+    const { attachment, stream } = await createSubmissionAttachmentDownload(
       getDatabaseClient(),
       storage,
       await createUiCommandContext(),
       attachmentId,
     );
-    return Response.redirect(url, 307);
+    return new Response(stream, {
+      headers: {
+        "Content-Type": attachment.mediaType,
+        "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(attachment.originalFilename)}`,
+        "X-Content-Type-Options": "nosniff",
+        "Cache-Control": "private, no-store",
+      },
+    });
   } catch (error) {
     if (
       error instanceof AuthenticationError ||

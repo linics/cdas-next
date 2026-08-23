@@ -29,8 +29,23 @@ export class VercelApiProvider implements VercelProvider {
     if (!(buildCommand === null || buildCommand === "" || buildCommand === "pnpm db:generate && pnpm build")) throw new Error("DEVELOPMENT_INFRA_VERCEL_BUILD_COMMAND_UNSAFE");
     const deploymentType = project.ssoProtection && typeof project.ssoProtection === "object" && !Array.isArray(project.ssoProtection) ? (project.ssoProtection as Record<string, unknown>).deploymentType : undefined;
     if (!["all", "all_except_custom_domains", "preview", "prod_deployment_urls_and_all_previews"].includes(String(deploymentType))) throw new Error("DEVELOPMENT_INFRA_VERCEL_PROTECTION_UNSAFE");
+    const targets = object(project.targets);
+    const productionTarget = object(targets.production);
+    const previewTarget = object(targets.preview);
+    if (productionTarget.plan !== "hobby" || previewTarget.plan !== "hobby") throw new Error("DEVELOPMENT_INFRA_VERCEL_PLAN_NOT_HOBBY");
+    if (this.teamId && project.accountId !== this.teamId) throw new Error("DEVELOPMENT_INFRA_VERCEL_TEAM_MISMATCH");
     this.protectionBypass = project.protectionBypass;
     this.branch = repository.branch;
+  }
+  async assertPrivateBlobConnection(): Promise<void> {
+    if (!this.branch) throw new Error("DEVELOPMENT_INFRA_VERCEL_PROJECT_NOT_ASSERTED");
+    const listed = object(await api(this.fetcher, this.endpoint(`/v10/projects/${encodeURIComponent(this.projectName)}/env`), this.token));
+    const existing = Array.isArray(listed.envs) ? listed.envs.map(object) : (() => { throw new Error("DEVELOPMENT_INFRA_PROVIDER_SCHEMA_INVALID"); })();
+    if (existing.some((entry) => entry.key === "BLOB_READ_WRITE_TOKEN")) throw new Error("DEVELOPMENT_INFRA_VERCEL_BLOB_LONG_LIVED_TOKEN_UNSAFE");
+    for (const key of ["BLOB_STORE_ID", "BLOB_WEBHOOK_PUBLIC_KEY"] as const) {
+      const matches = existing.filter((entry) => entry.key === key && isSinglePreviewTarget(entry.target) && (entry.gitBranch === undefined || entry.gitBranch === null || entry.gitBranch === ""));
+      if (matches.length !== 1 || typeof matches[0]?.id !== "string" || !matches[0].id) throw new Error("DEVELOPMENT_INFRA_VERCEL_BLOB_CONNECTION_UNSAFE");
+    }
   }
   async ensurePreviewEnvironment(values: Readonly<Record<string, string>>): Promise<void> {
     const listed = object(await api(this.fetcher, this.endpoint(`/v10/projects/${encodeURIComponent(this.projectName)}/env`), this.token));

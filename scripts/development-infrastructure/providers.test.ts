@@ -16,6 +16,7 @@ NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_abcdefghijk
 `));
 function response(body: unknown, status = 200): Response { return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } }); }
 function queuedFetch(responses: readonly Response[], requests: Request[]): typeof fetch { let index = 0; return (async (input: RequestInfo | URL, init?: RequestInit) => { requests.push(new Request(input, init)); const next = responses[index++]; if (!next) throw new Error("unexpected request"); return next; }) as typeof fetch; }
+const hobbyTargets = { production: { plan: "hobby" }, preview: { plan: "hobby" } } as const;
 
 describe("provider fail-closed contracts", () => {
   it("keeps GitHub CLI state outside the repository by passing through absolute home paths", () => {
@@ -199,9 +200,26 @@ describe("provider fail-closed contracts", () => {
     const fetcher: typeof fetch = (async () => response({ name: "cdas-next", link: { type: "github", repoId: 1 }, buildCommand: null, ssoProtection: { deploymentType: "unknown" } })) as typeof fetch;
     await expect(new VercelApiProvider("t", "cdas-next", undefined, fetcher).assertProject({ owner: "o", name: "r", branch: "codex/x", sha: "a".repeat(40), repositoryId: 1 })).rejects.toThrow("DEVELOPMENT_INFRA_VERCEL_PROTECTION_UNSAFE");
   });
+  it("requires both current Vercel targets to remain on Hobby", async () => {
+    const project = { name: "cdas-next", link: { type: "github", repoId: 1 }, buildCommand: null, ssoProtection: { deploymentType: "preview" }, targets: { production: { plan: "hobby" }, preview: { plan: "pro" } } };
+    await expect(new VercelApiProvider("t", "cdas-next", undefined, queuedFetch([response(project)], [])).assertProject({ owner: "o", name: "r", branch: "codex/x", sha: "a".repeat(40), repositoryId: 1 })).rejects.toThrow("DEVELOPMENT_INFRA_VERCEL_PLAN_NOT_HOBBY");
+  });
+  it("requires one Preview OIDC Blob connection and rejects a long-lived Blob token", async () => {
+    const project = { name: "cdas-next", link: { type: "github", repoId: 1 }, buildCommand: null, ssoProtection: { deploymentType: "preview" }, targets: hobbyTargets };
+    const oidcEnvironment = { envs: [
+      { id: "store", key: "BLOB_STORE_ID", target: ["preview"] },
+      { id: "webhook", key: "BLOB_WEBHOOK_PUBLIC_KEY", target: ["preview"] },
+    ] };
+    const safe = new VercelApiProvider("t", "cdas-next", undefined, queuedFetch([response(project), response(oidcEnvironment)], []));
+    await safe.assertProject({ owner: "o", name: "r", branch: "codex/x", sha: "a".repeat(40), repositoryId: 1 });
+    await expect(safe.assertPrivateBlobConnection()).resolves.toBeUndefined();
+    const longLived = new VercelApiProvider("t", "cdas-next", undefined, queuedFetch([response(project), response({ envs: [...oidcEnvironment.envs, { id: "rw", key: "BLOB_READ_WRITE_TOKEN", target: ["preview"] }] })], []));
+    await longLived.assertProject({ owner: "o", name: "r", branch: "codex/x", sha: "a".repeat(40), repositoryId: 1 });
+    await expect(longLived.assertPrivateBlobConnection()).rejects.toThrow("DEVELOPMENT_INFRA_VERCEL_BLOB_LONG_LIVED_TOKEN_UNSAFE");
+  });
   it("writes only the exact target preview branch and validates Vercel responses", async () => {
     const requests: Request[] = [];
-    const project = { name: "cdas-next", link: { type: "github", repoId: 1, org: "o", repo: "r" }, buildCommand: "pnpm db:generate && pnpm build", ssoProtection: { deploymentType: "preview" }, protectionBypass: { ["A".repeat(32)]: { createdAt: 1 } } };
+    const project = { name: "cdas-next", link: { type: "github", repoId: 1, org: "o", repo: "r" }, buildCommand: "pnpm db:generate && pnpm build", ssoProtection: { deploymentType: "preview" }, targets: hobbyTargets, protectionBypass: { ["A".repeat(32)]: { createdAt: 1 } } };
     const existing = { id: "env", key: "DATABASE_URL", type: "encrypted", target: ["preview"], gitBranch: "codex/x" };
     const client = new VercelApiProvider("t", "cdas-next", undefined, queuedFetch([response(project), response({ envs: [existing, { ...existing, gitBranch: "codex/other" }] }), response(existing)], requests));
     await client.assertProject({ owner: "o", name: "r", branch: "codex/x", sha: "a".repeat(40), repositoryId: 1 });
@@ -212,7 +230,7 @@ describe("provider fail-closed contracts", () => {
     expect(requests).toHaveLength(3);
   });
   it("accepts the official Vercel env create envelope and rejects failed or plaintext entries", async () => {
-    const project = { name: "cdas-next", link: { type: "github", repoId: 1 }, buildCommand: null, ssoProtection: { deploymentType: "all" }, protectionBypass: {} };
+    const project = { name: "cdas-next", link: { type: "github", repoId: 1 }, buildCommand: null, ssoProtection: { deploymentType: "all" }, targets: hobbyTargets, protectionBypass: {} };
     const created = { id: "env", key: "DATABASE_URL", type: "encrypted", target: ["preview"], gitBranch: "codex/x" };
     const client = new VercelApiProvider("t", "cdas-next", undefined, queuedFetch([response(project), response({ envs: [] }), response({ created, failed: [] })], []));
     await client.assertProject({ owner: "o", name: "r", branch: "codex/x", sha: "a".repeat(40), repositoryId: 1 });
@@ -225,7 +243,7 @@ describe("provider fail-closed contracts", () => {
     await expect(plaintext.ensurePreviewEnvironment({ DATABASE_URL: "value" })).rejects.toThrow("DEVELOPMENT_INFRA_VERCEL_ENV_RESPONSE_UNSAFE");
   });
   it("normalizes Vercel preview targets from string or single-element array only", async () => {
-    const project = { name: "cdas-next", link: { type: "github", repoId: 1 }, buildCommand: null, ssoProtection: { deploymentType: "preview" }, protectionBypass: {} };
+    const project = { name: "cdas-next", link: { type: "github", repoId: 1 }, buildCommand: null, ssoProtection: { deploymentType: "preview" }, targets: hobbyTargets, protectionBypass: {} };
     const entry = { id: "env", key: "DATABASE_URL", type: "encrypted", target: "preview", gitBranch: "codex/x" };
     const patch = new VercelApiProvider("t", "cdas-next", undefined, queuedFetch([response(project), response({ envs: [entry] }), response(entry)], []));
     await patch.assertProject({ owner: "o", name: "r", branch: "codex/x", sha: "a".repeat(40), repositoryId: 1 });
@@ -239,7 +257,7 @@ describe("provider fail-closed contracts", () => {
   });
   it("accepts Vercel bypass only when the derived secret is a protectionBypass map key", async () => {
     const secret = "B".repeat(32);
-    const project = { name: "cdas-next", link: { type: "github", repoId: 1 }, buildCommand: null, ssoProtection: { deploymentType: "preview" }, protectionBypass: {} };
+    const project = { name: "cdas-next", link: { type: "github", repoId: 1 }, buildCommand: null, ssoProtection: { deploymentType: "preview" }, targets: hobbyTargets, protectionBypass: {} };
     const client = new VercelApiProvider("t", "cdas-next", undefined, queuedFetch([response(project), response({ protectionBypass: { [secret]: { createdAt: 1 } } })], []));
     await client.assertProject({ owner: "o", name: "r", branch: "codex/x", sha: "a".repeat(40), repositoryId: 1 });
     await expect(client.ensureProtectionBypass(secret)).resolves.toBeUndefined();
@@ -259,7 +277,7 @@ describe("provider fail-closed contracts", () => {
   it("accepts only exactly-bound Vercel READY Preview and rejects ERROR", async () => {
     const target = { owner: "o", name: "r", branch: "codex/x", sha: "a".repeat(40), repositoryId: 1 };
     const requests: Request[] = [];
-    const protectedProject = { name: "cdas-next", link: { type: "github", repoId: 1, org: "o", repo: "r" }, buildCommand: "pnpm db:generate && pnpm build", ssoProtection: { deploymentType: "preview" }, protectionBypass: {} };
+    const protectedProject = { name: "cdas-next", link: { type: "github", repoId: 1, org: "o", repo: "r" }, buildCommand: "pnpm db:generate && pnpm build", ssoProtection: { deploymentType: "preview" }, targets: hobbyTargets, protectionBypass: {} };
     const success = new VercelApiProvider("t", "cdas-next", undefined, queuedFetch([response({ id: "deployment" }), response({ readyState: "READY", url: "cdas-next-abc.vercel.app", gitSource: { sha: target.sha, ref: target.branch, repoId: 1 } }), response(protectedProject)], requests), async () => undefined);
     await expect(success.deployPreview(target)).resolves.toEqual({ url: "https://cdas-next-abc.vercel.app", sha: target.sha });
     expect(await requests[0]?.json()).toEqual({ name: "cdas-next", gitSource: { type: "github", repoId: 1, ref: target.branch, sha: target.sha } });

@@ -197,7 +197,7 @@
 
 ## D-025：附件证据采用私有 S3、托管扫描与不可变修订关联
 
-- 状态：已接受
+- 状态：已接受；存储供应商与扫描语义由 D-026 替代
 - 日期：2026-08-24
 - 用户场景：学生在已保存的文字工作草稿中补充图片、PDF 或 Word 证据；教师在反馈页面读取正式修订的附件；学生重交时沿用上一正式版附件并可显式调整。
 - 决策：每个工作草稿最多关联 5 个附件，单文件最多 20 MiB；首个切片只接受 JPEG、PNG、WebP、PDF、DOC 与 DOCX。文件进入 AWS S3 私有桶，五分钟预签名 PUT 绑定精确 Content-Type、Content-Length、SSE-S3 与 `If-None-Match: *`，随机且唯一的对象 key 不允许覆盖既有对象。GuardDuty Malware Protection 通过对象标签返回扫描结果；只有 `GuardDutyMalwareScanStatus=NO_THREATS_FOUND` 映射为 `READY`，威胁、不可支持、拒绝访问或扫描失败均映射为 `REJECTED`，无已知终态时保持 `SCAN_PENDING`。
@@ -205,12 +205,22 @@
 - 授权：storage key 和预签名 URL 都不是读取权限。学生只可操作和下载自己的附件；教师只可下载自己发布且仍管理班级的正式修订附件。每次签名与状态转换前都由服务端按当前资源关系重新授权；其他学生、其他教师和历史成员写入均拒绝。
 - 降级与非目标：D-015 的非空文字正式提交门槛继续有效；对象存储或扫描不可用时，学生仍能完成纯文字闭环。附件单独提交、PPT/Excel/CSV、视频、OCR、文档解析、多模态模型与附件 Agent 工具不进入本切片。AWS 测试资源和 GuardDuty 费用须在明确启用后再做真实 staging 验收。
 
+## D-026：开发阶段附件改用 Hobby 上的 Vercel Private Blob 与 OIDC
+
+- 状态：已接受
+- 日期：2026-08-24
+- 决策：D-025 的数据库所有权、工作副本、`READY` 门槛、append-only 正式修订关联和单文件限制继续有效；对象存储改为新加坡区域的 Vercel Private Blob。创建前必须自动确认目标项目当前 Production 与 Preview target 均为 Hobby，创建界面或接口不得要求付款方式、Pro Trial 或升级。若出现任何账单要求立即停止；Hobby 配额耗尽时允许附件不可用，不允许转成付费或追加用量。
+- 身份与上传：项目仅连接 Preview，使用 Vercel 自动提供、短期轮换的 OIDC 与 `BLOB_STORE_ID`；禁止创建或配置长期 `BLOB_READ_WRITE_TOKEN`。浏览器上传前由 Route Handler 重新验证当前 Clerk/UI actor、学生所有权、active 工作副本、精确 storage key、媒体类型与最大字节数，再签发五分钟、不可覆盖且不追加随机后缀的私有预签名上传。
+- 内容验证：Vercel Blob 不提供 GuardDuty 等价的恶意文件扫描，因此不得把上传完成描述为“病毒扫描通过”。沿用数据库 `SCAN_PENDING` 名称以避免无价值迁移，但其当前语义只是验证 Private Blob 元数据与声明完全一致，并核对 JPEG、PNG、WebP、PDF、DOC 或 DOCX 的文件头；匹配才进入 `READY`，不匹配进入 `REJECTED`。更深的压缩包结构检查与恶意文件扫描属于后续独立能力。
+- 下载与降级：每次下载先按业务资源关系重新授权，再由服务器读取并代理私有 Blob，响应使用 `Content-Disposition: attachment`、`nosniff` 与 `private, no-store`；不得把永久 Blob URL 或 OIDC 信息返回浏览器。Blob、OIDC 或配额不可用时只暂停附件，移除未完成附件后纯文字保存与正式提交继续运行。
+- 理由：Private Blob 与现有 Vercel Preview 同一管理面，Hobby 明确在免费额度内使用且超额后暂停而不产生额外费用。OIDC 避免长期存储读写密钥；显式缩小“内容验证”声明则避免把文件头检查伪称为恶意文件扫描。
+
 ## 尚未决定
 
 以下生产选择仍需在真实账号和学生数据进入前完成小型验证或合规审查：
 
 - Neon 是否满足目标地区的数据驻留、备份与恢复要求
-- S3 区域、保留/删除策略与恶意文件扫描配置
+- Vercel Blob 的正式数据保留/删除策略，以及真实学生文件进入前是否增加独立恶意文件扫描
 - Clerk 的学校数据条款、账号开通与角色配置流程
 - 模型供应商、区域、日志保留和关闭模型时的降级行为
 - Vercel 部署区域、观测数据范围与故障恢复方案

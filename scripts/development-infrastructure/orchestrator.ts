@@ -26,8 +26,13 @@ export async function reconcileDevelopmentInfrastructure(config: DevelopmentInfr
   const repository = await providers.github.repositoryTarget();
 
   progress("DEVELOPMENT_INFRA_PHASE_READ_ONLY_IDENTITY");
-  await providers.clerk.assertDevelopmentInstance();
-  await providers.vercel.assertProject(repository);
+  await Promise.all([
+    providers.clerk.assertDevelopmentInstance(),
+    (async () => {
+      await providers.vercel.assertProject(repository);
+      await providers.vercel.assertPrivateBlobConnection();
+    })(),
+  ]);
 
   progress("DEVELOPMENT_INFRA_PHASE_CLERK");
   const [teacher, student, otherStudent] = await Promise.all([
@@ -49,6 +54,7 @@ export async function reconcileDevelopmentInfrastructure(config: DevelopmentInfr
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: config.clerkPublishableKey,
     CLERK_SECRET_KEY: config.clerkSecretKey,
     AI_PROVIDER_DISABLED: "1",
+    ATTACHMENT_STORAGE_ENABLED: "1",
     STAGING_HEALTH_PROOF_SECRET: secrets.healthProofSecret,
     NEXT_PUBLIC_CLERK_KEYLESS_DISABLED: "1",
   });

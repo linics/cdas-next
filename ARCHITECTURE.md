@@ -123,6 +123,6 @@ ActionIntent 的 action、payload、hash、目标、预期版本、创建者和�
 - Clerk 只回答调用者身份。角色、班级成员关系和资源归属保存在 PostgreSQL。
 - AI SDK 的签名 `toolApproval` 只负责交互暂停与响应验签；ActionIntent 绑定精确参数、版本和确认人。
 - 模型失败不能阻止普通教师和学生流程；默认可以通过 `AI_PROVIDER_DISABLED=1` 完全关闭。
-- D-025 附件切片使用 AWS S3 私有桶、随机唯一 key、五分钟预签名 URL、create-only PUT 与 GuardDuty Malware Protection。对象 URL 和 storage key 都不能作为权限凭证；签名前必须按当前 Submission、学生或发布教师关系重新授权。
-- 对象签名、HEAD 元数据验证、扫描标签读取和下载签名全部在 PostgreSQL 事务外；事务只提交已验证的状态转换和工作副本/不可变修订关联。
+- D-025/D-026 附件切片使用 Vercel Private Blob、随机唯一 key、五分钟 OIDC 预签名上传、不可覆盖对象和声明类型/大小/文件头验证。永久对象 URL 和 storage key 都不能作为权限凭证；签名前必须按当前 Submission、学生或发布教师关系重新授权。
+- OIDC 签名、对象元数据与文件头读取、私有下载流全部在 PostgreSQL 事务外；事务只提交已验证的状态转换和工作副本/不可变修订关联。当前格式验证不声称是恶意文件扫描。
 - 日志与 tracing 默认不记录完整 Prompt、学生证据、反馈正文或附件内容。

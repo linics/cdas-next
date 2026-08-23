@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { uploadPresigned as uploadBlob } from "@vercel/blob/client";
 import { useRouter } from "next/navigation";
 import {
   MAX_ATTACHMENT_BYTES,
@@ -53,9 +54,9 @@ function formattedBytes(bytes: number): string {
 
 const statusCopy = {
   UPLOAD_PENDING: "等待上传",
-  SCAN_PENDING: "安全检查中",
+  SCAN_PENDING: "内容验证中",
   READY: "可正式提交",
-  REJECTED: "安全检查未通过",
+  REJECTED: "内容验证未通过",
 } as const;
 
 export function AttachmentEditor({
@@ -98,18 +99,16 @@ export function AttachmentEditor({
           byteSize: file.size,
           idempotencyKey: `attachment_${crypto.randomUUID()}`,
         });
-        if (!reserved.ok || !reserved.upload || !reserved.workingVersion) {
-          throw new Error(reserved.ok ? "无法创建上传地址。" : reserved.message);
+        if (!reserved.ok || !reserved.pathname || !reserved.workingVersion) {
+          throw new Error(reserved.ok ? "无法创建附件上传。" : reserved.message);
         }
         version = reserved.workingVersion;
-        const response = await fetch(reserved.upload.url, {
-          method: "PUT",
-          headers: reserved.upload.headers,
-          body: file,
+        await uploadBlob(reserved.pathname, file, {
+          access: "private",
+          contentType: inferredMediaType(file),
+          handleUploadUrl: "/attachments/upload",
+          clientPayload: reserved.attachmentId,
         });
-        if (!response.ok) {
-          throw new Error(`${file.name} 上传失败，请移除后重试。`);
-        }
         const finalized = await finalizeAttachmentUploadAction({
           releaseId,
           attachmentId: reserved.attachmentId,
@@ -117,8 +116,18 @@ export function AttachmentEditor({
         if (!finalized.ok) {
           throw new Error(finalized.message);
         }
+        const verified = await refreshAttachmentScanAction({
+          releaseId,
+          attachmentId: reserved.attachmentId,
+        });
+        if (!verified.ok) {
+          throw new Error(verified.message);
+        }
+        if (verified.status === "REJECTED") {
+          throw new Error(`${file.name} 的内容与声明格式不一致，请移除后重新选择文件。`);
+        }
       }
-      setMessage("文件已上传，安全检查完成后即可正式提交。");
+      setMessage("文件已上传并完成内容验证，可正式提交。");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "附件上传失败。");
     } finally {
@@ -137,10 +146,10 @@ export function AttachmentEditor({
     setMessage(
       result.ok
         ? result.status === "READY"
-          ? "安全检查已通过。"
+          ? "内容验证已通过。"
           : result.status === "REJECTED"
-            ? "文件未通过安全检查，请移除后改用其他文件。"
-            : "安全检查仍在进行。"
+            ? "文件内容与声明格式不一致，请移除后改用其他文件。"
+            : "内容验证仍在进行。"
         : result.message,
     );
     setBusy(false);
@@ -215,7 +224,7 @@ export function AttachmentEditor({
       ) : canWrite && !enabled ? (
         <p className={styles.attachmentEmpty}>附件存储尚未启用，文字提交不受影响。</p>
       ) : null}
-      <p className={styles.attachmentHelp}>单文件最大 20 MB；未通过安全检查的文件不能进入正式修订。</p>
+      <p className={styles.attachmentHelp}>单文件最大 20 MB；未通过内容验证的文件不能进入正式修订。</p>
       {message ? <p className={styles.attachmentMessage} role="status">{message}</p> : null}
     </section>
   );

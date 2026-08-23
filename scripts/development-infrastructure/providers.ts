@@ -60,6 +60,7 @@ export interface NeonProvider {
 }
 export interface VercelProvider {
   assertProject(repository: RepositoryTarget): Promise<void>;
+  assertPrivateBlobConnection(): Promise<void>;
   ensurePreviewEnvironment(values: Readonly<Record<string, string>>): Promise<void>;
   ensureProtectionBypass(secret: string): Promise<void>;
   deployPreview(repository: RepositoryTarget): Promise<PreviewDeployment>;

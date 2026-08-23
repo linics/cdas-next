@@ -61,12 +61,11 @@
   "dependencies": {
     "@ai-sdk/openai-compatible": "3.0.35",
     "@ai-sdk/react": "4.0.69",
-    "@aws-sdk/client-s3": "3.1116.0",
-    "@aws-sdk/s3-request-presigner": "3.1116.0",
     "@clerk/nextjs": "7.7.7",
     "@next/env": "16.3.1",
     "@prisma/adapter-pg": "7.9.1",
     "@prisma/client": "7.9.1",
+    "@vercel/blob": "2.8.0",
     "ai": "7.0.66",
     "canonicalize": "4.0.0",
     "next": "16.3.1",

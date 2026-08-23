@@ -52,9 +52,9 @@
 
 - 是提交中的可核验内容。
 - 非空文本证据正文直接固化在不可变 SubmissionRevision，且仍是正式提交的必要条件。
-- D-025 增加 SubmissionAttachment：业务记录保存所属 Submission 与学生、类型、文件名、媒体类型、大小、私有 storage key、上传/扫描时间和状态；文件内容保存在私有对象存储，storage key 不构成读取权限。
+- D-025/D-026 增加 SubmissionAttachment：业务记录保存所属 Submission 与学生、类型、文件名、媒体类型、大小、私有 storage key、上传/验证时间和状态；文件内容保存在 Vercel Private Blob，storage key 不构成读取权限。
 - 工作草稿通过 SubmissionWorkingCopyAttachment 维护最多 5 个可调整关联；正式提交只复制 `READY` 资产到 append-only SubmissionRevisionAttachment。重交复制上一正式修订的附件关联，不覆盖旧版。
-- 首个附件切片接受 JPEG、PNG、WebP、PDF、DOC 与 DOCX，单文件最大 20 MiB。类型、大小、所有权、对象元数据和托管安全检查全部通过后才能进入正式修订。
+- 首个附件切片接受 JPEG、PNG、WebP、PDF、DOC 与 DOCX，单文件最大 20 MiB。类型、大小、所有权、对象元数据和文件头格式全部通过后才能进入正式修订；这项验证不声称是恶意文件扫描。
 
 ### TeacherFeedback（教师反馈）
 
@@ -127,7 +127,7 @@ upload_pending → scan_pending → ready
                               ↘ rejected
 ```
 
-`ready` 与 `rejected` 是终态。对象上传和安全扫描在数据库事务外完成；状态转换只记录外部边界已经验证的结果。正式修订附件关联一经创建不可更新或删除。
+`ready` 与 `rejected` 是终态。数据库保留 `scan_pending` 作为既有内部状态名，但 D-026 起其语义是对象内容验证。上传、元数据读取和文件头验证都在数据库事务外完成；状态转换只记录外部边界已经验证的结果。正式修订附件关联一经创建不可更新或删除。
 
 ## 不变量
 
@@ -137,10 +137,10 @@ upload_pending → scan_pending → ready
 - 每个 Submission 的学生在提交时必须属于目标班级。
 - 每个发布实例与学生至多有一个 Submission；每次正式提交产生递增且不可变的 SubmissionRevision。
 - 正式提交必须包含非空文本证据。
-- 每个工作草稿与正式修订最多关联 5 个附件；附件声明大小为 1 至 20 MiB，类型与媒体类型必须属于 D-025 白名单。
+- 每个工作草稿与正式修订最多关联 5 个附件；附件声明大小为 1 至 20 MiB，类型与媒体类型必须属于 D-025/D-026 白名单。
 - Attachment 的学生必须与所属 Submission 学生一致；工作副本和正式修订附件必须属于同一 Submission。
 - 正式修订只能关联同一工作副本中已经 `READY` 的附件；正式附件关联不可更新或删除，工作副本被正式修订消费前必须完整复制其附件关联。
-- S3 对象元数据、扫描标签和下载 URL 必须在数据库事务外读取或签发；每次下载仍按学生所有权或发布教师与班级管理关系重新授权。
+- Private Blob 的 OIDC 签名、对象元数据、文件头与下载流必须在数据库事务外处理；永久 Blob URL 不返回浏览器，每次下载仍按学生所有权或发布教师与班级管理关系重新授权并强制作为附件响应。
 - 文本证据统一为 NFC 与 `\n` 换行，最多 20,000 个 Unicode code point；只含 Unicode White_Space、格式控制字符（Cf）或独立变体选择符的内容视为无证据。
 - 每个 TeacherFeedback 的教师必须有权管理目标班级和发布实例。
 - TeacherFeedback 必须指向该 Submission 当前的正式修订；若学生在确认后已产生新修订，保存反馈必须失败并要求重新确认。

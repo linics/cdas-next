@@ -8,7 +8,7 @@ import {
   createSubmissionAttachmentUpload,
   refreshSubmissionAttachmentScan,
 } from "../../../../server/attachments/submission-attachment-service";
-import { createAttachmentStorageFromEnvironment } from "../../../../server/attachments/s3-attachment-storage";
+import { createAttachmentStorageFromEnvironment } from "../../../../server/attachments/vercel-blob-attachment-storage";
 import {
   removeSubmissionAttachment,
   SubmissionAttachmentCommandError,
@@ -42,11 +42,7 @@ export type AttachmentActionResult =
       status: "UPLOAD_PENDING" | "SCAN_PENDING" | "READY" | "REJECTED";
       workingCopyId?: string;
       workingVersion?: number;
-      upload?: Readonly<{
-        url: string;
-        headers: Readonly<Record<string, string>>;
-        expiresAt: string;
-      }>;
+      pathname?: string;
     }>
   | Readonly<{ ok: false; message: string }>;
 
@@ -93,7 +89,6 @@ export async function reserveAttachmentUploadAction(
     }
     const result = await createSubmissionAttachmentUpload(
       getDatabaseClient(),
-      storage,
       await createUiCommandContext(),
       {
         releaseId: input.releaseId,
@@ -112,7 +107,7 @@ export async function reserveAttachmentUploadAction(
       workingCopyId: result.workingCopyId,
       workingVersion: result.workingVersion,
       status: "UPLOAD_PENDING",
-      upload: result.upload,
+      pathname: result.pathname,
     };
   } catch (error) {
     return failure(error);

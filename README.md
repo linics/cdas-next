@@ -103,9 +103,9 @@ pnpm e2e:real-model
 - PostgreSQL 17、Prisma 7 与可审查 SQL migration
 - Vercel AI SDK 的结构化工具 UI；服务端 ActionIntent 才是可信确认
 - Vitest；数据库约束通过真实 PostgreSQL 验证
-- 附件切片使用私有 S3、预签名 URL 和 GuardDuty Malware Protection；未配置时纯文字流程保持可用
+- 附件切片使用 Vercel Private Blob、短期 OIDC 预签名上传和文件头格式验证；未配置或 Hobby 配额暂停时纯文字流程保持可用
 
-生产候选为 Vercel、Neon、Clerk 与 AWS S3，但在真实学生数据进入前仍需完成数据驻留、DPA、保留和删除审查。
+生产候选为 Vercel、Neon、Clerk 与 Vercel Private Blob，但在真实学生数据进入前仍需完成数据驻留、DPA、保留、删除和恶意文件处理审查。
 
 ## 配置
 
@@ -124,16 +124,13 @@ pnpm e2e:real-model
 | `AI_MODEL` | DeepSeek 模型 ID | `deepseek-v4-flash` |
 | `AI_TOOL_APPROVAL_SECRET` | AI SDK 工具审批签名密钥，至少 32 字节 | 空 |
 | `E2E_REAL_MODEL_ACK` | 单次真实模型合成数据 smoke 的显式成本确认 | 空 |
-| `ATTACHMENT_STORAGE_ENABLED` | 设为 `1` 才启用附件上传与下载签名 | 空 |
-| `AWS_REGION` | 附件 S3 桶与 GuardDuty 扫描区域 | 空 |
-| `AWS_S3_ATTACHMENT_BUCKET` | 私有附件桶名称 | 空 |
-| `AWS_ACCESS_KEY_ID` | AWS SDK 服务端测试身份；可由其他官方 credential provider 代替 | 空 |
-| `AWS_SECRET_ACCESS_KEY` | AWS SDK 服务端测试凭证；不得进入 Git | 空 |
-| `AWS_SESSION_TOKEN` | 临时 AWS 凭证需要时提供 | 空 |
+| `ATTACHMENT_STORAGE_ENABLED` | 设为 `1` 才启用附件上传与下载 | 空 |
+| `BLOB_STORE_ID` | Vercel Private Blob store 连接产生的项目变量 | 空 |
+| `BLOB_WEBHOOK_PUBLIC_KEY` | 验证 Private Blob 上传完成协议的项目公钥 | 空 |
 
 密钥不得进入浏览器业务代码、migration、fixture 或 Git 历史。
 
-附件默认关闭。启用后，学生先保存文字草稿，再从活动页直接上传最多 5 个 JPEG/PNG/WebP、PDF、DOC/DOCX 文件；单文件最大 20 MiB。上传完成后页面显示托管安全检查状态，只有通过检查的附件能随正式提交固化。对象存储或扫描不可用时，移除未完成附件即可继续纯文字提交。
+附件默认关闭。启用后，学生先保存文字草稿，再从活动页直接上传最多 5 个 JPEG/PNG/WebP、PDF、DOC/DOCX 文件；单文件最大 20 MiB。上传使用 Vercel 自动轮换的短期 OIDC，不配置长期 `BLOB_READ_WRITE_TOKEN`。对象元数据和文件头格式一致后附件才能随正式提交固化；这不是恶意文件扫描，下载始终经过业务授权并强制作为附件响应。Blob 达到 Hobby 免费配额或暂不可用时，移除未完成附件即可继续纯文字提交，不升级套餐或产生超额费用。
 
 ## 连接真实 Clerk 账号
 
@@ -178,4 +175,4 @@ pnpm --silent bootstrap:clerk -- \
 
 ## 当前边界
 
-当前尚未完成的是在实际受保护 staging、独立 Clerk development/test instance 与外部 PostgreSQL 上产出生产相似证据，以及在配置真实 DeepSeek 凭据后执行已经固化的模型 smoke；本机 Clerk 双账号与隔离 PostgreSQL 闭环、仅存在但尚未运行的外部门禁都不能替代这些证据。附件、教师自助成员管理、RAG、多 Agent、自动评分、小组、多阶段流转、互评、自评、旧 `/api/v2` 兼容和旧数据库迁移均不在本阶段范围。旧项目只提供场景、样例和测试思想，不复制认证、API、数据库或页面代码。
+受保护 Preview、Clerk development、隔离 Neon 与合成教学闭环已经建立；当前附件能力仍只面向开发期合成数据，真实学生文件进入前还要完成保留、删除和恶意文件处理决策。教师自助成员管理、RAG、多 Agent、自动评分、小组、多阶段流转、互评、自评、旧 `/api/v2` 兼容和旧数据库迁移均不在本阶段范围。旧项目只提供场景、样例和测试思想，不复制认证、API、数据库或页面代码。

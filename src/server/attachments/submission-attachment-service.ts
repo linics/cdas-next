@@ -19,7 +19,6 @@ const attachmentIdSchema = z.uuid();
 
 export async function createSubmissionAttachmentUpload(
   database: PrismaClient,
-  storage: AttachmentStorage,
   commandContext: CommandContext,
   input: ReserveSubmissionAttachmentInput,
 ) {
@@ -28,16 +27,11 @@ export async function createSubmissionAttachmentUpload(
     commandContext,
     input,
   );
-  const upload = await storage.createUploadTarget({
-    storageKey: reserved.storageKey,
-    mediaType: reserved.mediaType,
-    byteSize: reserved.byteSize,
-  });
   return {
     attachmentId: reserved.attachmentId,
     workingCopyId: reserved.workingCopyId,
     workingVersion: reserved.workingVersion,
-    upload,
+    pathname: reserved.storageKey,
   };
 }
 
@@ -110,9 +104,6 @@ export async function createSubmissionAttachmentDownload(
     commandContext,
     { attachmentId },
   );
-  return storage.createDownloadUrl({
-    storageKey: attachment.storageKey,
-    mediaType: attachment.mediaType,
-    filename: attachment.originalFilename,
-  });
+  const download = await storage.getDownload(attachment.storageKey);
+  return { ...download, attachment };
 }
