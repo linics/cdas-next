@@ -1,10 +1,10 @@
 import { readFile } from "node:fs/promises";
-import { createHash } from "node:crypto";
 import path from "node:path";
 
 import { isAcceptanceGate } from "./gate";
 import { isPassingImmediateHealthEvidence } from "./immediate-health";
 import { writeAcceptanceArtifact } from "./output";
+import { isPassingBrowserEvidence } from "./browser-evidence-contract";
 import {
   isPassingBootstrapEvidence,
   isPassingIdentityEvidence,
@@ -15,21 +15,7 @@ function exactObject(value: unknown, keys: readonly string[]): value is Record<s
 }
 
 async function passingEvidence(value: unknown, marker: string, directory: string): Promise<boolean> {
-  const keys = ["schema", "status", "runMarker", "githubRunId", "githubRunAttempt", "deploymentId", "sourceFingerprint", "fixtureNamespace", "generatedAt", "checks", "artifactSha256", "realStudentDataAllowed", "productionDecision"];
-  if (!exactObject(value, keys) || value.schema !== "staging-synthetic-acceptance-evidence.v1" || value.status !== "PASS" || value.runMarker !== marker || value.githubRunId !== process.env.GITHUB_RUN_ID || value.githubRunAttempt !== process.env.GITHUB_RUN_ATTEMPT || value.deploymentId !== process.env.CDAS_DEPLOYMENT_ID || value.sourceFingerprint !== process.env.CDAS_SOURCE_FINGERPRINT || value.realStudentDataAllowed !== false || value.productionDecision !== "NO_GO" || typeof value.generatedAt !== "string" || Number.isNaN(Date.parse(value.generatedAt))) return false;
-  if (!exactObject(value.fixtureNamespace, ["classroomDerived", "marker"]) || value.fixtureNamespace.classroomDerived !== true || value.fixtureNamespace.marker !== marker) return false;
-  const expectedChecks = ["STUDENT_TEACHER_RESOURCE_HIDDEN", "STUDENT_FEEDBACK_VISIBLE", "STALE_STUDENT_WRITE_REJECTED_AFTER_CLOSE", "CLOSED_STUDENT_READONLY"];
-  const evidenceChecks: unknown[] = Array.isArray(value.checks) ? value.checks : [];
-  if (evidenceChecks.length !== expectedChecks.length || !evidenceChecks.every((item) => exactObject(item, ["code", "status"]) && item.status === "PASS") || new Set(evidenceChecks.map((item) => (item as Record<string, unknown>).code)).size !== expectedChecks.length || !expectedChecks.every((code) => evidenceChecks.some((item) => (item as Record<string, unknown>).code === code))) return false;
-  if (!exactObject(value.artifactSha256, ["01-draft-ready.png", "02-published.png", "03-student-submitted.png", "04-teacher-feedback.png", "05-teacher-closed.png", "06-student-closed-readonly.png"])) return false;
-  for (const [name, hash] of Object.entries(value.artifactSha256)) {
-    if (typeof hash !== "string" || !/^[a-f0-9]{64}$/u.test(hash)) return false;
-    try {
-      const actual = createHash("sha256").update(await readFile(path.join(directory, name))).digest("hex");
-      if (actual !== hash) return false;
-    } catch { return false; }
-  }
-  return true;
+  return isPassingBrowserEvidence(value, marker, directory, process.env);
 }
 
 function passingVerify(value: unknown): boolean {
