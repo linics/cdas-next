@@ -1,50 +1,52 @@
 @import "tailwindcss";
 
 :root {
-  /* UI UX Pro Max — Minimalism & Swiss Style + Swiss Modernism 2.0
-     Style search: monochrome #000/#FFF, radius 0, shadow none, single accent.
-     Color search: Portfolio/Personal monochrome + blue accent #2563EB.
-     Aggregator button radius/shadow tables are ignored; style guidelines win. */
-  --color-primary: #000000;
+  /* UI UX Pro Max — Apple HIG grouped UI (not marketing Bento, not Liquid Glass).
+     Style: Bento Box Grid tokens for #F5F5F7 / 12–20px radius / soft shadow only.
+     Color: Spatial Computing OS notes document Apple system blue #007AFF and red #FF3B30.
+     Type: Spatial Clear / system sans = Inter via next/font (SF Pro is not on Google Fonts).
+     Aggregator LMS teal+orange is rejected. Dense workbench uses iOS grouped lists, not giant tiles. */
+  --color-primary: #007aff;
   --color-on-primary: #ffffff;
-  --color-secondary: #18181b;
-  --color-on-secondary: #ffffff;
-  --color-accent: #2563eb;
+  --color-secondary: #e5e5ea;
+  --color-on-secondary: #1d1d1f;
+  --color-accent: #007aff;
   --color-on-accent: #ffffff;
-  --color-background: #ffffff;
-  --color-foreground: #000000;
+  --color-background: #f5f5f7;
+  --color-foreground: #1d1d1f;
   --color-card: #ffffff;
-  --color-card-foreground: #000000;
-  --color-muted: #f5f5f5;
-  --color-muted-foreground: #3f3f46;
-  --color-border: #000000;
-  --color-destructive: #dc2626;
+  --color-card-foreground: #1d1d1f;
+  --color-muted: #f2f2f7;
+  --color-muted-foreground: #6e6e73;
+  --color-border: #d2d2d7;
+  --color-destructive: #ff3b30;
   --color-on-destructive: #ffffff;
-  --color-ring: #000000;
+  --color-ring: #007aff;
 
   --space-xs: 4px;
   --space-sm: 8px;
-  --space-md: 16px;
-  --space-lg: 24px;
-  --space-xl: 32px;
-  --space-2xl: 48px;
-  --space-3xl: 64px;
-  --spacing: 2rem;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 20px;
+  --space-2xl: 32px;
+  --space-3xl: 48px;
+  --spacing: 1.25rem;
   --grid-columns: 12;
-  --grid-gap: 1rem;
+  --grid-gap: 16px;
   --base-unit: 8px;
-  --content-width: 1200px;
+  --content-width: 980px;
 
-  --shadow-sm: none;
-  --shadow-md: none;
-  --shadow-lg: none;
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 4%);
+  --shadow-md: 0 4px 16px rgb(0 0 0 / 6%);
+  --shadow-lg: 0 8px 28px rgb(0 0 0 / 8%);
   --shadow-xl: none;
-  --shadow: none;
+  --shadow: 0 1px 2px rgb(0 0 0 / 4%);
   --gradient: none;
-  --border-radius: 0px;
-  --radius: 0px;
-  --radius-sm: 0px;
-  --radius-md: 0px;
+  --border-radius: 12px;
+  --radius: 12px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
 
   --icon-sm: 16px;
   --icon-md: 20px;
@@ -53,42 +55,42 @@
   --surface-page: var(--color-background);
   --surface: var(--color-card);
   --surface-subtle: var(--color-muted);
-  --surface-hover: var(--color-muted);
+  --surface-hover: #e5e5ea;
   --text: var(--color-foreground);
   --text-secondary: var(--color-muted-foreground);
   --border: var(--color-border);
-  --border-strong: var(--color-foreground);
+  --border-strong: #c7c7cc;
   --primary: var(--color-primary);
-  --primary-hover: #18181b;
-  --primary-soft: var(--color-muted);
-  --success: var(--color-foreground);
-  --warning: var(--color-foreground);
+  --primary-hover: #0066d6;
+  --primary-soft: #e8f1ff;
+  --success: #34c759;
+  --warning: #ff9f0a;
   --danger: var(--color-destructive);
-  --shadow-overlay: none;
-  --shadow-raise: none;
-  --motion-fast: 220ms ease;
+  --shadow-overlay: 0 8px 28px rgb(0 0 0 / 12%);
+  --shadow-raise: var(--shadow-sm);
+  --motion-fast: 200ms ease;
   --z-nav: 20;
   --z-overlay: 100;
-  --toolbar-height: 64px;
+  --toolbar-height: 52px;
   --focus-ring: var(--color-ring);
-  --success-soft: var(--color-muted);
-  --success-strong: var(--color-foreground);
-  --warning-soft: var(--color-muted);
-  --warning-strong: var(--color-foreground);
-  --danger-soft: #ffffff;
-  --danger-strong: var(--color-destructive);
+  --success-soft: #eafaf0;
+  --success-strong: #248a3d;
+  --warning-soft: #fff4e0;
+  --warning-strong: #c93400;
+  --danger-soft: #ffeceb;
+  --danger-strong: #d70015;
   --neutral-soft: var(--color-muted);
   --neutral-strong: var(--color-muted-foreground);
-  --alert-warning-soft: var(--color-card);
-  --alert-danger-soft: var(--color-card);
-  --alert-success-soft: var(--color-card);
+  --alert-warning-soft: #fff4e0;
+  --alert-danger-soft: #ffeceb;
+  --alert-success-soft: #eafaf0;
   --background: var(--color-background);
   --foreground: var(--color-foreground);
   --muted: var(--color-muted-foreground);
   --line: var(--color-border);
   --accent: var(--color-accent);
-  --accent-strong: #1d4ed8;
-  --accent-soft: var(--color-muted);
+  --accent-strong: #0066d6;
+  --accent-soft: #e8f1ff;
 }
 
 * { box-sizing: border-box; }
@@ -104,16 +106,17 @@ body {
   margin: 0;
   background: var(--color-background);
   color: var(--color-foreground);
-  font-family: var(--font-inter), Inter, Helvetica, "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  font-family: var(--font-inter), Inter, -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
   font-size: 16px;
-  line-height: 1.5;
+  line-height: 1.375;
   font-weight: 400;
   text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
 }
 
 h1, h2, h3, h4 {
-  font-weight: 500;
-  letter-spacing: -0.03em;
+  font-weight: 600;
+  letter-spacing: -0.022em;
   color: var(--color-foreground);
 }
 
@@ -140,13 +143,13 @@ input:focus-visible,
 textarea:focus-visible,
 select:focus-visible,
 [tabindex="-1"]:focus-visible {
-  outline: 2px solid var(--color-ring);
+  outline: 3px solid var(--color-ring);
   outline-offset: 2px;
 }
 
 ::selection {
-  background: var(--color-foreground);
-  color: var(--color-background);
+  background: #b3d7ff;
+  color: var(--color-foreground);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -157,5 +160,12 @@ select:focus-visible,
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --shadow-sm: none;
+    --shadow-md: none;
   }
 }

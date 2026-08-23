@@ -9,7 +9,7 @@ import {
 
 const decorative = {
   size: 20,
-  weight: "light",
+  weight: "regular",
   "aria-hidden": true,
 } as const;
 
