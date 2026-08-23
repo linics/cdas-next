@@ -52,17 +52,18 @@ describe("provider fail-closed contracts", () => {
   });
   it("creates a zero-result Clerk identity and validates the created response", async () => {
     const calls: Request[] = [];
-    const client = new ClerkApiProvider(config.clerkSecretKey, queuedFetch([response([]), response({ id: "user_one", external_id: "x", first_name: "A", last_name: "B" })], calls));
-    await expect(client.ensureSyntheticIdentity("x", "A", "B")).resolves.toEqual({ id: "user_one", externalId: "x" });
+    const client = new ClerkApiProvider(config.clerkSecretKey, queuedFetch([response([]), response({ id: "user_one", external_id: "x", username: "synthetic_x", first_name: "A", last_name: "B" })], calls));
+    await expect(client.ensureSyntheticIdentity("x", "synthetic_x", "A", "B")).resolves.toEqual({ id: "user_one", externalId: "x" });
     expect(calls.map((request) => request.method)).toEqual(["GET", "POST"]);
     expect(calls[1]?.headers.get("authorization")).toMatch(/^Bearer /u);
+    await expect(calls[1]?.json()).resolves.toMatchObject({ external_id: "x", username: "synthetic_x", skip_password_requirement: true });
   });
   it("reuses exactly one matching Clerk identity and rejects conflict/multiple/api error", async () => {
-    const existing = { id: "user_one", external_id: "x", first_name: "A", last_name: "B" };
-    await expect(new ClerkApiProvider(config.clerkSecretKey, queuedFetch([response([existing])], [])).ensureSyntheticIdentity("x", "A", "B")).resolves.toEqual({ id: "user_one", externalId: "x" });
-    await expect(new ClerkApiProvider(config.clerkSecretKey, queuedFetch([response([{ ...existing, last_name: "Wrong" }])], [])).ensureSyntheticIdentity("x", "A", "B")).rejects.toThrow("DEVELOPMENT_INFRA_CLERK_IDENTITY_CONFLICT");
-    await expect(new ClerkApiProvider(config.clerkSecretKey, queuedFetch([response([existing, existing])], [])).ensureSyntheticIdentity("x", "A", "B")).rejects.toThrow("DEVELOPMENT_INFRA_CLERK_IDENTITY_AMBIGUOUS");
-    await expect(new ClerkApiProvider(config.clerkSecretKey, queuedFetch([response({}, 403)], [])).ensureSyntheticIdentity("x", "A", "B")).rejects.toThrow("DEVELOPMENT_INFRA_PROVIDER_REQUEST_403");
+    const existing = { id: "user_one", external_id: "x", username: "synthetic_x", first_name: "A", last_name: "B" };
+    await expect(new ClerkApiProvider(config.clerkSecretKey, queuedFetch([response([existing])], [])).ensureSyntheticIdentity("x", "synthetic_x", "A", "B")).resolves.toEqual({ id: "user_one", externalId: "x" });
+    await expect(new ClerkApiProvider(config.clerkSecretKey, queuedFetch([response([{ ...existing, username: "wrong" }])], [])).ensureSyntheticIdentity("x", "synthetic_x", "A", "B")).rejects.toThrow("DEVELOPMENT_INFRA_CLERK_IDENTITY_CONFLICT");
+    await expect(new ClerkApiProvider(config.clerkSecretKey, queuedFetch([response([existing, existing])], [])).ensureSyntheticIdentity("x", "synthetic_x", "A", "B")).rejects.toThrow("DEVELOPMENT_INFRA_CLERK_IDENTITY_AMBIGUOUS");
+    await expect(new ClerkApiProvider(config.clerkSecretKey, queuedFetch([response({}, 403)], [])).ensureSyntheticIdentity("x", "synthetic_x", "A", "B")).rejects.toThrow("DEVELOPMENT_INFRA_PROVIDER_REQUEST_403");
   });
   it("refuses a non schema-only Neon branch before migrations or connections", async () => {
     const fetcher: typeof fetch = (async () => response({ branches: [{ id: "b", name: "cdas-next-development", branch_type: "copy-on-write", parent_id: null }] })) as typeof fetch;

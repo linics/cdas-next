@@ -9,6 +9,11 @@ export const syntheticExternalIds = {
   student: "cdas-staging-synthetic-student",
   otherStudent: "cdas-staging-synthetic-other-student",
 } as const;
+export const syntheticUsernames = {
+  teacher: "cdas_staging_synthetic_teacher",
+  student: "cdas_staging_synthetic_student",
+  otherStudent: "cdas_staging_synthetic_other_student",
+} as const;
 
 export type DevelopmentInfrastructureConfig = Readonly<{
   masterSecret: string;

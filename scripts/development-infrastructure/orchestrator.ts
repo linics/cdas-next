@@ -1,5 +1,5 @@
 import type { DevelopmentInfrastructureConfig } from "./contracts";
-import { deriveInfrastructureSecrets, infrastructureEnvironment, syntheticExternalIds } from "./contracts";
+import { deriveInfrastructureSecrets, infrastructureEnvironment, syntheticExternalIds, syntheticUsernames } from "./contracts";
 import type { InfrastructureProviders } from "./providers";
 import { createSourceFingerprint } from "../staging/source-fingerprint";
 import { acceptanceOtherStudentDisplayName, acceptanceStudentDisplayName, acceptanceTeacherDisplayName } from "../staging/acceptance/contracts";
@@ -31,9 +31,9 @@ export async function reconcileDevelopmentInfrastructure(config: DevelopmentInfr
 
   progress("DEVELOPMENT_INFRA_PHASE_CLERK");
   const [teacher, student, otherStudent] = await Promise.all([
-    providers.clerk.ensureSyntheticIdentity(syntheticExternalIds.teacher, "CDAS Staging Synthetic", "Teacher"),
-    providers.clerk.ensureSyntheticIdentity(syntheticExternalIds.student, "CDAS Staging Synthetic", "Student"),
-    providers.clerk.ensureSyntheticIdentity(syntheticExternalIds.otherStudent, "CDAS Staging Synthetic Other", "Student"),
+    providers.clerk.ensureSyntheticIdentity(syntheticExternalIds.teacher, syntheticUsernames.teacher, "CDAS Staging Synthetic", "Teacher"),
+    providers.clerk.ensureSyntheticIdentity(syntheticExternalIds.student, syntheticUsernames.student, "CDAS Staging Synthetic", "Student"),
+    providers.clerk.ensureSyntheticIdentity(syntheticExternalIds.otherStudent, syntheticUsernames.otherStudent, "CDAS Staging Synthetic Other", "Student"),
   ]);
   if (new Set([teacher.id, student.id, otherStudent.id]).size !== 3) throw new Error("DEVELOPMENT_INFRA_CLERK_IDENTITIES_NOT_DISTINCT");
 

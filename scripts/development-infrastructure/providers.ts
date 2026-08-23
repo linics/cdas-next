@@ -53,7 +53,7 @@ export function minimalCommandEnvironment(options: Readonly<{ github?: boolean; 
 
 export interface ClerkProvider {
   assertDevelopmentInstance(): Promise<void>;
-  ensureSyntheticIdentity(externalId: string, firstName: string, lastName: string): Promise<ClerkIdentity>;
+  ensureSyntheticIdentity(externalId: string, username: string, firstName: string, lastName: string): Promise<ClerkIdentity>;
 }
 export interface NeonProvider {
   ensureIsolatedDatabase(): Promise<NeonConnection>;
@@ -112,15 +112,15 @@ export class ClerkApiProvider implements ClerkProvider {
     const payload = object(await json(this.fetcher, "https://api.clerk.com/v1/instance", { headers: headers(this.secretKey) }));
     if (payload.environment_type !== "development") throw new Error("DEVELOPMENT_INFRA_CLERK_INSTANCE_NOT_DEVELOPMENT");
   }
-  async ensureSyntheticIdentity(externalId: string, firstName: string, lastName: string): Promise<ClerkIdentity> {
+  async ensureSyntheticIdentity(externalId: string, username: string, firstName: string, lastName: string): Promise<ClerkIdentity> {
     const query = new URLSearchParams({ external_id: externalId, limit: "2" });
     const listed = await json(this.fetcher, `https://api.clerk.com/v1/users?${query}`, { headers: headers(this.secretKey) });
     if (!Array.isArray(listed)) throw new Error("DEVELOPMENT_INFRA_PROVIDER_SCHEMA_INVALID");
     if (listed.length > 1) throw new Error("DEVELOPMENT_INFRA_CLERK_IDENTITY_AMBIGUOUS");
-    const user = listed[0] ?? object(await json(this.fetcher, "https://api.clerk.com/v1/users", { method: "POST", headers: headers(this.secretKey), body: JSON.stringify({ external_id: externalId, first_name: firstName, last_name: lastName, skip_password_requirement: true }) }));
+    const user = listed[0] ?? object(await json(this.fetcher, "https://api.clerk.com/v1/users", { method: "POST", headers: headers(this.secretKey), body: JSON.stringify({ external_id: externalId, username, first_name: firstName, last_name: lastName, skip_password_requirement: true }) }));
     const target = object(user);
     const id = text(target.id);
-    if (!/^user_[A-Za-z0-9]+$/u.test(id) || target.external_id !== externalId || target.first_name !== firstName || target.last_name !== lastName) throw new Error("DEVELOPMENT_INFRA_CLERK_IDENTITY_CONFLICT");
+    if (!/^user_[A-Za-z0-9]+$/u.test(id) || target.external_id !== externalId || target.username !== username || target.first_name !== firstName || target.last_name !== lastName) throw new Error("DEVELOPMENT_INFRA_CLERK_IDENTITY_CONFLICT");
     return { id, externalId };
   }
 }
