@@ -258,8 +258,10 @@ describe("provider fail-closed contracts", () => {
   });
   it("accepts only exactly-bound Vercel READY Preview and rejects ERROR", async () => {
     const target = { owner: "o", name: "r", branch: "codex/x", sha: "a".repeat(40), repositoryId: 1 };
-    const success = new VercelApiProvider("t", "cdas-next", undefined, queuedFetch([response({ id: "deployment" }), response({ readyState: "READY", url: "cdas-next-abc.vercel.app", gitSource: { sha: target.sha, ref: target.branch, repoId: 1 } })], []), async () => undefined);
+    const requests: Request[] = [];
+    const success = new VercelApiProvider("t", "cdas-next", undefined, queuedFetch([response({ id: "deployment" }), response({ readyState: "READY", url: "cdas-next-abc.vercel.app", gitSource: { sha: target.sha, ref: target.branch, repoId: 1 } })], requests), async () => undefined);
     await expect(success.deployPreview(target)).resolves.toEqual({ url: "https://cdas-next-abc.vercel.app", sha: target.sha });
+    expect(await requests[0]?.json()).toEqual({ name: "cdas-next", gitSource: { type: "github", repoId: 1, ref: target.branch, sha: target.sha } });
     const error = new VercelApiProvider("t", "cdas-next", undefined, queuedFetch([response({ id: "deployment" }), response({ readyState: "ERROR" })], []), async () => undefined);
     await expect(error.deployPreview(target)).rejects.toThrow("DEVELOPMENT_INFRA_VERCEL_DEPLOYMENT_FAILED");
   });

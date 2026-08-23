@@ -57,7 +57,7 @@ export class VercelApiProvider implements VercelProvider {
     }
   }
   async deployPreview(repository: RepositoryTarget): Promise<PreviewDeployment> {
-    const created = object(await api(this.fetcher, this.endpoint("/v13/deployments?forceNew=1"), this.token, "POST", { name: this.projectName, target: "preview", gitSource: { type: "github", repoId: repository.repositoryId, ref: repository.branch, sha: repository.sha } }));
+    const created = object(await api(this.fetcher, this.endpoint("/v13/deployments?forceNew=1"), this.token, "POST", { name: this.projectName, gitSource: { type: "github", repoId: repository.repositoryId, ref: repository.branch, sha: repository.sha } }));
     const id = string(created.id);
     for (let attempt = 0; attempt < 90; attempt += 1) {
       const deployment = object(await api(this.fetcher, this.endpoint(`/v13/deployments/${encodeURIComponent(id)}?withGitRepoInfo=true`), this.token));
