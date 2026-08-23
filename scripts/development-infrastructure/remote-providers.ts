@@ -80,7 +80,7 @@ export class GitHubCliProvider implements GitHubProvider {
   private async gh(args: readonly string[], input?: string): Promise<Readonly<{ stdout: string; stderr: string }>> { return this.runner.run("gh", args, { env: minimalCommandEnvironment({ github: true }), input }); }
   async repositoryTarget(): Promise<RepositoryTarget> {
     const [branch, sha, repo, remote, status] = await Promise.all([
-      this.runner.run("git", ["branch", "--show-current"], { env: minimalCommandEnvironment() }), this.runner.run("git", ["rev-parse", "HEAD"], { env: minimalCommandEnvironment() }), this.gh(["repo", "view", "--json", "nameWithOwner,databaseId", "--jq", "[.nameWithOwner,.databaseId] | @tsv"]), this.runner.run("git", ["remote", "get-url", "origin"], { env: minimalCommandEnvironment() }), this.runner.run("git", ["status", "--porcelain"], { env: minimalCommandEnvironment() }),
+      this.runner.run("git", ["branch", "--show-current"], { env: minimalCommandEnvironment() }), this.runner.run("git", ["rev-parse", "HEAD"], { env: minimalCommandEnvironment() }), this.gh(["api", "repos/{owner}/{repo}", "--jq", "[.full_name,.id] | @tsv"]), this.runner.run("git", ["remote", "get-url", "origin"], { env: minimalCommandEnvironment() }), this.runner.run("git", ["status", "--porcelain"], { env: minimalCommandEnvironment() }),
     ]);
     const current = branch.stdout.trim(); const commit = sha.stdout.trim(); const [ownerAndName, databaseId] = repo.stdout.trim().split("\t");
     const match = /^([^/]+)\/([^/]+)$/u.exec(ownerAndName ?? "");

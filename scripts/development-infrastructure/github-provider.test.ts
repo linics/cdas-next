@@ -18,7 +18,9 @@ describe("GitHub CLI provider", () => {
     await expect(new GitHubCliProvider(runner).repositoryTarget()).rejects.toThrow("DEVELOPMENT_INFRA_GIT_REMOTE_STALE");
   });
   it("accepts a clean working tree and rejects a dirty one", async () => {
+    const calls: Call[] = [];
     const build = (dirty: boolean): CommandRunner => ({ run: async (command, args) => {
+      calls.push({ command, args });
       if (command === "git" && args[0] === "branch") return { stdout: "codex/test\n", stderr: "" };
       if (command === "git" && args[0] === "rev-parse") return { stdout: `${"a".repeat(40)}\n`, stderr: "" };
       if (command === "git" && args[0] === "remote") return { stdout: "git@github.com:owner/repo.git\n", stderr: "" };
@@ -28,6 +30,8 @@ describe("GitHub CLI provider", () => {
     } });
     await expect(new GitHubCliProvider(build(false)).repositoryTarget()).resolves.toEqual(target());
     await expect(new GitHubCliProvider(build(true)).repositoryTarget()).rejects.toThrow("DEVELOPMENT_INFRA_GIT_TARGET_UNSAFE");
+    expect(calls.some((call) => call.command === "gh" && call.args.join(" ") === "api repos/{owner}/{repo} --jq [.full_name,.id] | @tsv")).toBe(true);
+    expect(calls.some((call) => call.args.includes("databaseId"))).toBe(false);
   });
   it("rejects a lookalike non-GitHub origin", async () => {
     const runner: CommandRunner = { run: async (command, args) => {
