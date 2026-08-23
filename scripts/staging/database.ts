@@ -123,16 +123,39 @@ export function evaluateDatabaseInspection(
   expectedMigrationNames: readonly string[],
 ): DatabaseVerificationResult {
   const actualNames = inspection.migrations.map((migration) => migration.migrationName);
-  const actualNameSet = new Set(actualNames);
   const expectedNameSet = new Set(expectedMigrationNames);
-  const hasDuplicateNames = actualNameSet.size !== actualNames.length;
   const unknownMigrations = actualNames.some((name) => !expectedNameSet.has(name));
-  const pendingMigrations = expectedMigrationNames.some(
-    (name) => !actualNameSet.has(name),
+  const successfulMigrationCounts = new Map(
+    expectedMigrationNames.map((name) => [
+      name,
+      inspection.migrations.filter(
+        (migration) =>
+          migration.migrationName === name &&
+          migration.finished &&
+          !migration.rolledBack &&
+          !migration.hasLogs,
+      ).length,
+    ]),
   );
-  const failedMigration = inspection.migrations.some(
-    (migration) =>
-      !migration.finished || migration.rolledBack || migration.hasLogs,
+  const pendingOrDuplicateSuccessfulMigration = expectedMigrationNames.some(
+    (name) => successfulMigrationCounts.get(name) !== 1,
+  );
+  // `prisma migrate resolve --rolled-back` intentionally retains a failed
+  // attempt before a later successful retry. That append-only recovery history
+  // is healthy only when the same known migration has exactly one clean success.
+  const failedMigration =
+    pendingOrDuplicateSuccessfulMigration ||
+    inspection.migrations.some((migration) => {
+      const successful =
+        migration.finished && !migration.rolledBack && !migration.hasLogs;
+      const resolvedHistoricalAttempt =
+        migration.rolledBack &&
+        !migration.finished &&
+        successfulMigrationCounts.get(migration.migrationName) === 1;
+      return !successful && !resolvedHistoricalAttempt;
+    });
+  const pendingMigrations = expectedMigrationNames.some(
+    (name) => successfulMigrationCounts.get(name) !== 1,
   );
   const expectedHistoryKeys = Object.keys(historyProtectionDefinitionManifest);
   const exactHistoryObjectSet =
@@ -149,7 +172,7 @@ export function evaluateDatabaseInspection(
     check("POSTGRESQL_17_OR_NEWER", inspection.serverVersionNumber >= 170000),
     check("PRISMA_MIGRATIONS_TABLE_PRESENT", inspection.migrationsTablePresent),
     check("PRISMA_MIGRATIONS_NO_FAILED_ROWS", !failedMigration),
-    check("PRISMA_MIGRATIONS_NO_UNKNOWN", !unknownMigrations && !hasDuplicateNames),
+    check("PRISMA_MIGRATIONS_NO_UNKNOWN", !unknownMigrations),
     check("PRISMA_MIGRATIONS_NO_PENDING", !pendingMigrations),
     check("HISTORY_PROTECTION_OBJECTS_PRESENT", exactHistoryObjectSet),
     check("HISTORY_PROTECTION_DEFINITIONS_MATCH", exactHistoryHashSet),

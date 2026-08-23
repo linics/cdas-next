@@ -32,6 +32,27 @@ describe("evaluateDatabaseInspection", () => {
     expect(result.productionDecision).toBe("NO_GO");
   });
 
+  it("accepts append-only rolled-back attempts followed by one clean successful retry", () => {
+    const result = evaluateDatabaseInspection(
+      {
+        ...healthyInspection,
+        migrations: [
+          {
+            migrationName: expectedMigrations[0]!,
+            finished: false,
+            rolledBack: true,
+            hasLogs: true,
+          },
+          ...healthyInspection.migrations,
+        ],
+      },
+      "cdas_next_staging",
+      expectedMigrations,
+    );
+
+    expect(result.status).toBe("PASS");
+  });
+
   it.each([
     ["wrong database", { databaseName: "other" }, "DATABASE_EXPECTED_NAME"],
     ["old PostgreSQL", { serverVersionNumber: 160999 }, "POSTGRESQL_17_OR_NEWER"],
@@ -39,6 +60,9 @@ describe("evaluateDatabaseInspection", () => {
     ["pending migration", { migrations: [healthyInspection.migrations[0]] }, "PRISMA_MIGRATIONS_NO_PENDING"],
     ["unknown migration", { migrations: [...healthyInspection.migrations, { migrationName: "unknown", finished: true, rolledBack: false, hasLogs: false }] }, "PRISMA_MIGRATIONS_NO_UNKNOWN"],
     ["failed migration", { migrations: [{ ...healthyInspection.migrations[0], hasLogs: true }, healthyInspection.migrations[1]] }, "PRISMA_MIGRATIONS_NO_FAILED_ROWS"],
+    ["unresolved retry alongside a success", { migrations: [{ migrationName: expectedMigrations[0], finished: false, rolledBack: false, hasLogs: true }, ...healthyInspection.migrations] }, "PRISMA_MIGRATIONS_NO_FAILED_ROWS"],
+    ["rolled-back attempt without a successful retry", { migrations: [{ migrationName: expectedMigrations[0], finished: false, rolledBack: true, hasLogs: true }, healthyInspection.migrations[1]] }, "PRISMA_MIGRATIONS_NO_FAILED_ROWS"],
+    ["duplicate successful migration", { migrations: [...healthyInspection.migrations, healthyInspection.migrations[0]] }, "PRISMA_MIGRATIONS_NO_FAILED_ROWS"],
     ["missing history protection object", { historyProtectionObjectNames: Object.keys(historyProtectionDefinitionManifest).slice(1) }, "HISTORY_PROTECTION_OBJECTS_PRESENT"],
     ["extra history protection object", { historyProtectionObjectNames: [...Object.keys(historyProtectionDefinitionManifest), "trigger:public.other.duplicate"] }, "HISTORY_PROTECTION_OBJECTS_PRESENT"],
     ["duplicate history protection identity", { historyProtectionObjectNames: [...Object.keys(historyProtectionDefinitionManifest), Object.keys(historyProtectionDefinitionManifest)[0]!] }, "HISTORY_PROTECTION_OBJECTS_PRESENT"],
