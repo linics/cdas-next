@@ -1,7 +1,11 @@
 import { createHash } from "node:crypto";
 
 import { isSafeStagingRunMarker, type CheckStatus, type StagingCheck } from "../contracts";
-import { isPublicHostname } from "../../../src/server/staging/deployment-proof";
+import {
+  isAllowedVercelPreviewBaseUrl,
+  isValidVercelAutomationBypassSecret,
+  isValidVercelProjectName,
+} from "../preview-protection";
 
 export type AcceptanceEnvironment = Readonly<Record<string, string | undefined>>;
 
@@ -48,24 +52,6 @@ function check(code: string, condition: boolean, present?: boolean): AcceptanceC
     : { code, status: condition ? "PASS" : "FAIL", present };
 }
 
-function isRemoteHttpsRoot(raw: string): boolean {
-  try {
-    const url = new URL(raw);
-    return (
-      url.protocol === "https:" &&
-      Boolean(url.hostname) &&
-      isPublicHostname(url.hostname) &&
-      !url.username &&
-      !url.password &&
-      !url.search &&
-      !url.hash &&
-      (url.pathname === "" || url.pathname === "/")
-    );
-  } catch {
-    return false;
-  }
-}
-
 function isPositiveInteger(raw: string): boolean {
   return /^[1-9][0-9]*$/u.test(raw);
 }
@@ -107,12 +93,31 @@ export function acceptanceNamespace(marker: string): AcceptanceNamespace {
   };
 }
 
-export function evaluateAcceptanceReadiness(environment: AcceptanceEnvironment): AcceptanceReadiness {
+export function evaluateAcceptanceReadiness(
+  environment: AcceptanceEnvironment,
+  options: Readonly<{ requireBypassSecret?: boolean }> = {},
+): AcceptanceReadiness {
   const marker = value(environment, "STAGING_RUN_MARKER");
   const baseUrl = value(environment, "STAGING_BASE_URL");
+  const projectName = value(environment, "STAGING_VERCEL_PROJECT_NAME");
+  const deploymentProtectionMode = value(
+    environment,
+    "STAGING_DEPLOYMENT_PROTECTION_REQUIRED",
+  );
+  const bypassChecks = options.requireBypassSecret === false
+    ? []
+    : [check(
+      "STAGING_ACCEPTANCE_VERCEL_AUTOMATION_BYPASS_SECRET",
+      isValidVercelAutomationBypassSecret(
+        value(environment, "STAGING_VERCEL_AUTOMATION_BYPASS_SECRET"),
+      ),
+      Boolean(value(environment, "STAGING_VERCEL_AUTOMATION_BYPASS_SECRET")),
+    )];
   const checks: AcceptanceCheck[] = [
     check("STAGING_ACCEPTANCE_MARKER", isSafeStagingRunMarker(marker), Boolean(marker)),
-    check("STAGING_ACCEPTANCE_BASE_URL", isRemoteHttpsRoot(baseUrl), Boolean(baseUrl)),
+    check("STAGING_ACCEPTANCE_VERCEL_PROJECT_NAME", isValidVercelProjectName(projectName), Boolean(projectName)),
+    check("STAGING_ACCEPTANCE_BASE_URL", isAllowedVercelPreviewBaseUrl(baseUrl, projectName), Boolean(baseUrl)),
+    check("STAGING_ACCEPTANCE_DEPLOYMENT_PROTECTION_REQUIRED", deploymentProtectionMode === "1", Boolean(deploymentProtectionMode)),
     check("STAGING_ACCEPTANCE_AI_DISABLED", value(environment, "AI_PROVIDER_DISABLED") === "1"),
     check("STAGING_ACCEPTANCE_TEST_CLERK_INSTANCE", /^pk_test_[A-Za-z0-9_-]{10,}$/u.test(value(environment, "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY")), Boolean(value(environment, "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY"))),
     check("STAGING_ACCEPTANCE_TEST_CLERK_SECRET", /^sk_test_[A-Za-z0-9_-]{10,}$/u.test(value(environment, "CLERK_SECRET_KEY")), Boolean(value(environment, "CLERK_SECRET_KEY"))),
@@ -123,6 +128,7 @@ export function evaluateAcceptanceReadiness(environment: AcceptanceEnvironment):
     check("STAGING_ACCEPTANCE_TEACHER_NAME", value(environment, "STAGING_ACCEPTANCE_TEST_TEACHER_NAME") === acceptanceTeacherDisplayName, Boolean(value(environment, "STAGING_ACCEPTANCE_TEST_TEACHER_NAME"))),
     check("STAGING_ACCEPTANCE_STUDENT_NAME", value(environment, "STAGING_ACCEPTANCE_TEST_STUDENT_NAME") === acceptanceStudentDisplayName, Boolean(value(environment, "STAGING_ACCEPTANCE_TEST_STUDENT_NAME"))),
     check("STAGING_ACCEPTANCE_OTHER_STUDENT_NAME", value(environment, "STAGING_ACCEPTANCE_TEST_OTHER_STUDENT_NAME") === acceptanceOtherStudentDisplayName, Boolean(value(environment, "STAGING_ACCEPTANCE_TEST_OTHER_STUDENT_NAME"))),
+    ...bypassChecks,
     check("STAGING_ACCEPTANCE_GITHUB_RUN", isPositiveInteger(value(environment, "GITHUB_RUN_ID")), Boolean(value(environment, "GITHUB_RUN_ID"))),
     check("STAGING_ACCEPTANCE_GITHUB_ATTEMPT", isPositiveInteger(value(environment, "GITHUB_RUN_ATTEMPT")), Boolean(value(environment, "GITHUB_RUN_ATTEMPT"))),
     check("STAGING_ACCEPTANCE_DEPLOYMENT_SHA", /^[a-f0-9]{40}$/u.test(value(environment, "CDAS_DEPLOYMENT_ID")), Boolean(value(environment, "CDAS_DEPLOYMENT_ID"))),
@@ -144,6 +150,7 @@ export function redactAcceptanceText(value: string): string {
     .replace(/\b(?:pk|sk)_(?:test|live)_[A-Za-z0-9_-]+\b/gu, "[REDACTED_CLERK_KEY]")
     .replace(/\b(?:Bearer|Cookie)\s+[^\s"']+/giu, "$1 [REDACTED]")
     .replace(/\b(?:ticket|token)=?[A-Za-z0-9._-]+/giu, "$1=[REDACTED]")
+    .replace(/\b(STAGING_VERCEL_AUTOMATION_BYPASS_SECRET|x-vercel-protection-bypass)(?:\s*[:=]\s*|\s+)[^\s"']+/giu, "$1=[REDACTED]")
     .replace(/\b(?:DEEPSEEK_API_KEY|AI_TOOL_APPROVAL_SECRET)=[^\s"']+/gu, "$1=[REDACTED]");
 }
 

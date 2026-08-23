@@ -15,6 +15,7 @@ const names = [
   "06-student-closed-readonly.png",
 ] as const;
 const codes = [
+  "VERCEL_PROTECTION_BYPASS_SCOPED",
   "AI_DISABLED_MANUAL_PATH",
   "TEACHER_SIGN_OUT_AND_RELOGIN",
   "STUDENT_SIGN_OUT_AND_RELOGIN",

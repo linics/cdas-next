@@ -48,11 +48,67 @@ class BrowserContractTests(unittest.TestCase):
         self.assertEqual(MODULE.canonical_origin("https://staging.example.test:443/"), expected)
         self.assertEqual(MODULE.canonical_origin("https://[2606:4700::6810:85e5]:443/"), "https://[2606:4700::6810:85e5]")
 
+    def test_vercel_bypass_is_scoped_to_exact_origin_and_preserves_headers(self):
+        expected = "https://staging.example.test"
+        secret = "A" * 32
+        headers = MODULE.origin_scoped_bypass_headers(
+            "https://staging.example.test:443/student",
+            expected,
+            secret,
+            {"accept": "text/html"},
+        )
+        self.assertEqual(headers["accept"], "text/html")
+        self.assertEqual(headers["x-vercel-protection-bypass"], secret)
+        self.assertEqual(headers["x-vercel-set-bypass-cookie"], "true")
+        for target in (
+            "https://staging.example.test:444/student",
+            "https://user@staging.example.test/student",
+            "https://staging.example.test.evil.test/student",
+            "https://clerk.example.test/sign-in",
+            "https://cdn.example.test/asset.js",
+        ):
+            scoped = MODULE.origin_scoped_bypass_headers(target, expected, secret, {"accept": "text/html"})
+            self.assertEqual(scoped, {"accept": "text/html"})
+
+    def test_vercel_bypass_removes_polluted_headers_before_origin_check(self):
+        expected = "https://staging.example.test"
+        secret = "A" * 32
+        polluted = {
+            "accept": "text/html",
+            "X-Vercel-Protection-Bypass": "attacker-value",
+            "x-vercel-set-bypass-cookie": "true",
+        }
+        scoped = MODULE.origin_scoped_bypass_headers(
+            "https://clerk.example.test/continue",
+            expected,
+            secret,
+            polluted,
+        )
+        self.assertEqual(scoped, {"accept": "text/html"})
+        protected = MODULE.origin_scoped_bypass_headers(
+            "https://staging.example.test/student",
+            expected,
+            secret,
+            polluted,
+        )
+        self.assertEqual(protected["x-vercel-protection-bypass"], secret)
+        self.assertEqual(protected["x-vercel-set-bypass-cookie"], "true")
+
+    def test_vercel_bypass_rejects_malformed_secret_without_echoing_it(self):
+        malformed = "not-a-valid-secret"
+        with self.assertRaisesRegex(MODULE.AcceptanceFailure, "STAGING_VERCEL_AUTOMATION_BYPASS_SECRET_INVALID") as error:
+            MODULE.origin_scoped_bypass_headers("https://staging.example.test", "https://staging.example.test", malformed)
+        self.assertNotIn(malformed, str(error.exception))
+
     def test_base_url_rejects_empty_user_info_and_zero_port(self):
-        for candidate in ("https://@staging.example.test", "https://staging.example.test:0"):
-            with self.subTest(candidate=candidate), patch.dict(environ, {"STAGING_BASE_URL": candidate}):
+        for candidate in ("https://@cdas-next-preview.vercel.app", "https://cdas-next-preview.vercel.app:0", "https://other-preview.vercel.app"):
+            with self.subTest(candidate=candidate), patch.dict(environ, {"STAGING_BASE_URL": candidate, "STAGING_VERCEL_PROJECT_NAME": "cdas-next"}):
                 with self.assertRaisesRegex(MODULE.AcceptanceFailure, "STAGING_ACCEPTANCE_BASE_URL_INVALID"):
                     MODULE.base_url()
+
+    def test_base_url_allows_only_configured_vercel_preview_root(self):
+        with patch.dict(environ, {"STAGING_BASE_URL": "https://cdas-next-preview-linics1.vercel.app:443/", "STAGING_VERCEL_PROJECT_NAME": "cdas-next"}):
+            self.assertEqual(MODULE.base_url(), "https://cdas-next-preview-linics1.vercel.app:443")
 
     def test_source_locks_ticket_origin_logout_and_new_evidence(self):
         source = MODULE_PATH.read_text(encoding="utf-8")
@@ -71,6 +127,13 @@ class BrowserContractTests(unittest.TestCase):
         self.assertNotIn("release_href.rsplit", source)
         self.assertNotIn("localStorage", source)
         self.assertNotIn("document.cookie", source)
+        self.assertNotIn("extra_http_headers", source)
+        self.assertNotIn("?x-vercel-protection-bypass", source)
+        self.assertIn("install_origin_scoped_bypass", source)
+        self.assertLess(
+            source.index('sign_in(teacher, remote, "teacher")'),
+            source.index('checks.append({"code": "VERCEL_PROTECTION_BYPASS_SCOPED"'),
+        )
 
     def test_browser_checks_local_prerequisite_artifacts_before_clerk(self):
         with patch.object(MODULE.subprocess, "run", return_value=subprocess.CompletedProcess([], 0, "", "")) as run:

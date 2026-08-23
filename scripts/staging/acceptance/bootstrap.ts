@@ -29,7 +29,7 @@ function required(name: string): string {
 async function main(): Promise<void> {
   nextEnvironment.loadEnvConfig(process.cwd());
   const marker = required("STAGING_RUN_MARKER");
-  const readiness = evaluateAcceptanceReadiness(process.env);
+  const readiness = evaluateAcceptanceReadiness(process.env, { requireBypassSecret: false });
   if (readiness.status !== "PASS") throw new Error("STAGING_ACCEPTANCE_READINESS_FAILED");
   await assertBootstrapPrerequisites(process.env);
   const namespace = acceptanceNamespace(marker);

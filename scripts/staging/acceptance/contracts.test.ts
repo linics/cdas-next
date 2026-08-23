@@ -11,7 +11,11 @@ import {
   redactAcceptanceText,
   stableAcceptanceErrorCode,
 } from "./contracts";
-import { createAcceptanceGate, isAcceptanceGate } from "./gate";
+import {
+  createAcceptanceGate,
+  isAcceptanceGate,
+  isCoreAcceptanceGate,
+} from "./gate";
 import { createSourceFingerprint } from "../source-fingerprint";
 import {
   isExactPassingApplicationEvidence,
@@ -29,7 +33,9 @@ const marker = "cdas-staging-12345678-1";
 function environment(overrides: Record<string, string | undefined> = {}) {
   return {
     STAGING_RUN_MARKER: marker,
-    STAGING_BASE_URL: "https://staging.example.test",
+    STAGING_BASE_URL: "https://cdas-next-preview123-linics1.vercel.app",
+    STAGING_VERCEL_PROJECT_NAME: "cdas-next",
+    STAGING_DEPLOYMENT_PROTECTION_REQUIRED: "1",
     AI_PROVIDER_DISABLED: "1",
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_0123456789abcdef",
     CLERK_SECRET_KEY: "sk_test_0123456789abcdef",
@@ -39,6 +45,7 @@ function environment(overrides: Record<string, string | undefined> = {}) {
     STAGING_ACCEPTANCE_TEST_TEACHER_NAME: acceptanceTeacherDisplayName,
     STAGING_ACCEPTANCE_TEST_STUDENT_NAME: acceptanceStudentDisplayName,
     STAGING_ACCEPTANCE_TEST_OTHER_STUDENT_NAME: acceptanceOtherStudentDisplayName,
+    STAGING_VERCEL_AUTOMATION_BYPASS_SECRET: "A".repeat(32),
     GITHUB_RUN_ID: "12345678",
     GITHUB_RUN_ATTEMPT: "1",
     CDAS_DEPLOYMENT_ID: "a".repeat(40),
@@ -64,9 +71,13 @@ describe("staging synthetic acceptance contracts", () => {
       { STAGING_ACCEPTANCE_WRITES_ATTESTED: undefined },
       { CLERK_SECRET_KEY: "sk_live_0123456789abcdef" },
       { STAGING_BASE_URL: "http://localhost:3000" },
+      { STAGING_VERCEL_PROJECT_NAME: "invalid_project" },
+      { STAGING_DEPLOYMENT_PROTECTION_REQUIRED: "" },
+      { STAGING_BASE_URL: "https://other-preview.vercel.app" },
       { AI_PROVIDER_DISABLED: "0" },
       { STAGING_TEST_OTHER_STUDENT_CLERK_ID: "user_TestStudent123" },
       { STAGING_ACCEPTANCE_TEST_OTHER_STUDENT_NAME: "Wrong name" },
+      { STAGING_VERCEL_AUTOMATION_BYPASS_SECRET: "not-valid" },
     ]) {
       expect(evaluateAcceptanceReadiness(environment(invalid)).status).toBe("FAIL");
     }
@@ -74,10 +85,13 @@ describe("staging synthetic acceptance contracts", () => {
   });
 
   it("redacts forbidden connection, credential, cookie, ticket, and AI key shapes", () => {
-    const output = redactAcceptanceText("postgresql://user:pass@db/x Bearer abc Cookie session=x pk_test_secret sk_test_secret ticket=abc DEEPSEEK_API_KEY=secret");
+    const output = redactAcceptanceText("postgresql://user:pass@db/x Bearer abc Cookie session=x pk_test_secret sk_test_secret ticket=abc DEEPSEEK_API_KEY=secret STAGING_VERCEL_AUTOMATION_BYPASS_SECRET=secret x-vercel-protection-bypass: secret x-vercel-protection-bypass secret");
     expect(output).not.toContain("postgresql://");
     expect(output).not.toContain("pk_test_secret");
     expect(output).not.toContain("ticket=abc");
+    expect(output).not.toContain("STAGING_VERCEL_AUTOMATION_BYPASS_SECRET=secret");
+    expect(output).not.toContain("x-vercel-protection-bypass: secret");
+    expect(output).not.toContain("x-vercel-protection-bypass secret");
     expect(output).toContain("[REDACTED_DATABASE_URL]");
   });
 
@@ -103,6 +117,15 @@ describe("staging synthetic acceptance contracts", () => {
     expect(isAcceptanceGate(passing, { ...input, STAGING_ACCEPTANCE_WRITES_ATTESTED: "false" })).toBe(false);
     expect(isAcceptanceGate(passing, { ...input, STAGING_TEST_OTHER_STUDENT_CLERK_ID: "user_ChangedOtherStudent123" })).toBe(false);
     expect(isAcceptanceGate(passing, { ...input, STAGING_ACCEPTANCE_TEST_OTHER_STUDENT_NAME: "Changed Other Student" })).toBe(false);
+    expect(isAcceptanceGate(passing, { ...input, STAGING_VERCEL_AUTOMATION_BYPASS_SECRET: "B".repeat(32) })).toBe(false);
+    expect(isAcceptanceGate(passing, { ...input, STAGING_VERCEL_PROJECT_NAME: "other-project" })).toBe(false);
+    expect(isAcceptanceGate(passing, { ...input, STAGING_DEPLOYMENT_PROTECTION_REQUIRED: "" })).toBe(false);
+    expect(isCoreAcceptanceGate(passing, { ...input, DIRECT_URL: "postgresql://u:p@other.example.test/staging_cdas?sslmode=require" })).toBe(false);
+    expect(isCoreAcceptanceGate({ ...passing, coreBindingMac: "0".repeat(64) }, input)).toBe(false);
+    expect(isCoreAcceptanceGate(passing, { ...input, STAGING_VERCEL_AUTOMATION_BYPASS_SECRET: "B".repeat(32) })).toBe(true);
+    expect(isAcceptanceGate(passing, { ...input, STAGING_VERCEL_AUTOMATION_BYPASS_SECRET: "B".repeat(32) })).toBe(false);
+    expect(isCoreAcceptanceGate({ ...passing, bypassBindingMac: "0".repeat(64) }, input)).toBe(true);
+    expect(isAcceptanceGate({ ...passing, bypassBindingMac: "0".repeat(64) }, input)).toBe(false);
   });
 
   it("does not call Clerk before readiness and maps all three tickets at 60 seconds", async () => {
@@ -151,6 +174,7 @@ describe("staging synthetic acceptance contracts", () => {
 
   it("accepts only exact immediate application health evidence bound to this run", () => {
     const applicationChecks = [
+      "APPLICATION_DEPLOYMENT_ACCESS_MODE_VERIFIED",
       "APPLICATION_HEALTH_HTTP_200",
       "APPLICATION_HEALTH_NO_STORE",
       "APPLICATION_HEALTH_EXACT_BODY",
@@ -219,6 +243,7 @@ describe("staging synthetic acceptance contracts", () => {
       productionDecision: "NO_GO",
     };
     expect(isPassingBootstrapEvidence(bootstrap, environment())).toBe(true);
+    expect(isPassingBootstrapEvidence(undefined, environment())).toBe(false);
     expect(isPassingBootstrapEvidence({ ...bootstrap, resources: { ...bootstrap.resources, classroom: "EXISTING" } }, environment())).toBe(false);
   });
 
@@ -241,11 +266,63 @@ describe("staging synthetic acceptance contracts", () => {
     expect(
       workflow.match(/STAGING_TEST_OTHER_STUDENT_CLERK_ID:/gu),
     ).toHaveLength(8);
+    expect(
+      workflow.match(/STAGING_VERCEL_AUTOMATION_BYPASS_SECRET:/gu),
+    ).toHaveLength(7);
+    expect(
+      workflow.match(/STAGING_BASE_URL: \$\{\{ secrets\.STAGING_BASE_URL \}\}/gu),
+    ).toHaveLength(11);
+    expect(workflow).not.toContain("STAGING_BASE_URL: ${{ vars.STAGING_BASE_URL }}");
+    expect(
+      workflow.match(/STAGING_VERCEL_PROJECT_NAME: \$\{\{ vars\.STAGING_VERCEL_PROJECT_NAME \}\}/gu),
+    ).toHaveLength(11);
+    expect(
+      workflow.match(/STAGING_DEPLOYMENT_PROTECTION_REQUIRED: "1"/gu),
+    ).toHaveLength(2);
     const preflight = workflow.slice(
       workflow.indexOf("id: preflight"),
       workflow.indexOf("- name: Build production application"),
     );
     expect(preflight).not.toContain("STAGING_TEST_OTHER_STUDENT_CLERK_ID");
+    expect(preflight).not.toContain("STAGING_VERCEL_AUTOMATION_BYPASS_SECRET");
+    const build = workflow.slice(
+      workflow.indexOf("- name: Build production application"),
+      workflow.indexOf("- name: Verify external PostgreSQL metadata"),
+    );
+    const database = workflow.slice(
+      workflow.indexOf("- name: Verify external PostgreSQL metadata"),
+      workflow.indexOf("- name: Verify Prisma schema drift"),
+    );
+    const schema = workflow.slice(
+      workflow.indexOf("- name: Verify Prisma schema drift"),
+      workflow.indexOf("- name: Verify remote health contract"),
+    );
+    const artifact = workflow.slice(
+      workflow.indexOf("- name: Preserve sanitized staging readiness evidence"),
+      workflow.indexOf("- name: Enforce staging Go/No-Go decision"),
+    );
+    for (const leastPrivilegeRegion of [build, database, schema, artifact]) {
+      expect(leastPrivilegeRegion).not.toContain(
+        "STAGING_VERCEL_AUTOMATION_BYPASS_SECRET",
+      );
+    }
+    const identityStep = workflow.slice(
+      workflow.indexOf("id: identity"),
+      workflow.indexOf("id: immediate-health"),
+    );
+    const bootstrapStepSecretScope = workflow.slice(
+      workflow.indexOf("id: bootstrap"),
+      workflow.indexOf("id: browser"),
+    );
+    const verifyStep = workflow.slice(
+      workflow.indexOf("id: verify"),
+      workflow.indexOf("id: final"),
+    );
+    for (const databaseOrIdentityStep of [identityStep, bootstrapStepSecretScope, verifyStep]) {
+      expect(databaseOrIdentityStep).not.toContain(
+        "STAGING_VERCEL_AUTOMATION_BYPASS_SECRET",
+      );
+    }
     const sameRunGateAssertion = workflow.slice(
       workflow.indexOf("- name: Enforce same-run acceptance gate"),
       workflow.indexOf("\n\n  acceptance:"),
@@ -253,6 +330,9 @@ describe("staging synthetic acceptance contracts", () => {
     expect(sameRunGateAssertion).toContain('AI_PROVIDER_DISABLED: "1"');
     expect(sameRunGateAssertion).toContain(
       "STAGING_TEST_OTHER_STUDENT_CLERK_ID:",
+    );
+    expect(sameRunGateAssertion).toContain(
+      "STAGING_VERCEL_AUTOMATION_BYPASS_SECRET:",
     );
   });
 });

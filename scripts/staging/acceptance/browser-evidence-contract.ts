@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 const checks = [
+  "VERCEL_PROTECTION_BYPASS_SCOPED",
   "AI_DISABLED_MANUAL_PATH",
   "TEACHER_SIGN_OUT_AND_RELOGIN",
   "STUDENT_SIGN_OUT_AND_RELOGIN",

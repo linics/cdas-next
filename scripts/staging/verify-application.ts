@@ -4,10 +4,20 @@ import { randomBytes } from "node:crypto";
 import {
   evaluateHealthResponse,
   failedApplicationVerification,
+  isVercelDeploymentProtectionResponse,
 } from "./application";
+import {
+  isDeploymentProtectionRequired,
+  isPublicHttpsRoot,
+  isValidDeploymentProtectionMode,
+} from "./contracts";
 import { writeStagingArtifact } from "./output";
 import { createDeploymentConfigurationProof } from "../../src/server/staging/deployment-proof";
 import { createSourceFingerprint } from "./source-fingerprint";
+import {
+  isAllowedVercelPreviewBaseUrl,
+  stagingHealthRequestHeaders,
+} from "./preview-protection";
 
 async function main(): Promise<void> {
   nextEnvironment.loadEnvConfig(process.cwd());
@@ -36,18 +46,51 @@ async function main(): Promise<void> {
     return;
   }
   try {
-    const baseUrl = new URL(process.env.STAGING_BASE_URL ?? "");
+    const rawBaseUrl = process.env.STAGING_BASE_URL ?? "";
+    const deploymentProtectionMode = process.env.STAGING_DEPLOYMENT_PROTECTION_REQUIRED?.trim() ?? "";
+    if (!isValidDeploymentProtectionMode(deploymentProtectionMode)) {
+      throw new Error("STAGING_DEPLOYMENT_PROTECTION_MODE_INVALID");
+    }
+    const deploymentProtectionRequired = isDeploymentProtectionRequired(
+      deploymentProtectionMode,
+    );
+    if (deploymentProtectionRequired
+      ? !isAllowedVercelPreviewBaseUrl(rawBaseUrl, process.env.STAGING_VERCEL_PROJECT_NAME ?? "")
+      : !isPublicHttpsRoot(rawBaseUrl)) {
+      throw new Error("STAGING_BASE_URL_INVALID");
+    }
+    const baseUrl = new URL(rawBaseUrl);
     const healthUrl = new URL("/api/health", baseUrl);
+    if (deploymentProtectionRequired) {
+      const protection = await fetch(healthUrl, {
+        headers: { accept: "application/json" },
+        redirect: "manual",
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (!isVercelDeploymentProtectionResponse({
+        status: protection.status,
+        server: protection.headers.get("server"),
+        vercelId: protection.headers.get("x-vercel-id"),
+        location: protection.headers.get("location"),
+        healthUrl: healthUrl.toString(),
+      })) {
+        throw new Error("APPLICATION_DEPLOYMENT_PROTECTION_NOT_ENFORCED");
+      }
+    }
     const response = await fetch(healthUrl, {
       headers: {
-        accept: "application/json",
-        "x-cdas-health-challenge": challenge,
+        ...stagingHealthRequestHeaders(
+          deploymentProtectionRequired,
+          process.env,
+          challenge,
+        ),
       },
       redirect: "error",
       signal: AbortSignal.timeout(10_000),
     });
     const body: unknown = await response.json().catch(() => null);
     const result = evaluateHealthResponse({
+      deploymentAccessModeVerified: true,
       status: response.status,
       cacheControl: response.headers.get("cache-control"),
       body,
@@ -60,8 +103,16 @@ async function main(): Promise<void> {
     if (result.status !== "PASS") {
       process.exitCode = 1;
     }
-  } catch {
-    const result = failedApplicationVerification("APPLICATION_HEALTH_REQUEST_FAILED");
+  } catch (error) {
+    const code = error instanceof Error && [
+      "STAGING_VERCEL_AUTOMATION_BYPASS_SECRET_INVALID",
+      "STAGING_DEPLOYMENT_PROTECTION_MODE_INVALID",
+      "STAGING_BASE_URL_INVALID",
+      "APPLICATION_DEPLOYMENT_PROTECTION_NOT_ENFORCED",
+    ].includes(error.message)
+      ? error.message
+      : "APPLICATION_HEALTH_REQUEST_FAILED";
+    const result = failedApplicationVerification(code);
     await writeStagingArtifact(marker, "application.json", result);
     process.stdout.write(`${JSON.stringify(result)}\n`);
     process.exitCode = 1;

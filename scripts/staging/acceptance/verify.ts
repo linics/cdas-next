@@ -2,7 +2,7 @@ import { Client } from "pg";
 
 import { acceptanceNamespace, stableAcceptanceErrorCode } from "./contracts";
 import { writeAcceptanceArtifact } from "./output";
-import { assertBrowserPrerequisites } from "./prerequisites";
+import { assertPostBrowserPrerequisites } from "./prerequisites";
 
 type Check = Readonly<{ code: string; status: "PASS" | "FAIL" }>;
 
@@ -10,7 +10,7 @@ function required(name: string): string { const value = process.env[name]?.trim(
 
 async function main(): Promise<void> {
   const marker = required("STAGING_RUN_MARKER");
-  await assertBrowserPrerequisites(process.env);
+  await assertPostBrowserPrerequisites(process.env);
   const namespace = acceptanceNamespace(marker);
   const client = new Client({ connectionString: required("DIRECT_URL") });
   const checks: Check[] = [];

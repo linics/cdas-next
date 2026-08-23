@@ -11,6 +11,7 @@ from pathlib import Path
 import re
 import subprocess
 import sys
+from typing import Mapping
 from datetime import datetime, timezone
 from urllib.parse import urlsplit
 
@@ -45,14 +46,42 @@ def marker() -> str:
 
 def base_url() -> str:
     raw = required("STAGING_BASE_URL")
+    project = required("STAGING_VERCEL_PROJECT_NAME")
+    if not is_allowed_vercel_preview_base_url(raw, project):
+        raise AcceptanceFailure("STAGING_ACCEPTANCE_BASE_URL_INVALID")
+    return raw.rstrip("/")
+
+
+def valid_vercel_project_name(value: str) -> bool:
+    return bool(re.fullmatch(r"[a-z0-9](?:[a-z0-9-]{0,98}[a-z0-9])?", value.lower()))
+
+
+def is_allowed_vercel_preview_base_url(raw: str, project_name: str) -> bool:
+    project = project_name.strip().lower()
+    if not valid_vercel_project_name(project):
+        return False
     try:
         parsed = urlsplit(raw)
         port = parsed.port
     except ValueError as error:
-        raise AcceptanceFailure("STAGING_ACCEPTANCE_BASE_URL_INVALID") from error
-    if parsed.scheme != "https" or not parsed.hostname or not is_public_hostname(parsed.hostname) or port == 0 or parsed.path not in {"", "/"} or parsed.query or parsed.fragment or parsed.username is not None or parsed.password is not None:
-        raise AcceptanceFailure("STAGING_ACCEPTANCE_BASE_URL_INVALID")
-    return raw.rstrip("/")
+        return False
+    hostname = (parsed.hostname or "").lower()
+    suffix = ".vercel.app"
+    prefix = f"{project}-"
+    deployment = hostname[len(prefix):-len(suffix)] if hostname.startswith(prefix) and hostname.endswith(suffix) else ""
+    return (
+        parsed.scheme == "https"
+        and port in {None, 443}
+        and parsed.path in {"", "/"}
+        and not parsed.query
+        and not parsed.fragment
+        and parsed.username is None
+        and parsed.password is None
+        and hostname.startswith(prefix)
+        and hostname.endswith(suffix)
+        and bool(re.fullmatch(r"[a-z0-9](?:[a-z0-9-]{0,251}[a-z0-9])?", deployment))
+        and "." not in deployment
+    )
 
 
 def canonical_origin(value: str) -> str:
@@ -86,6 +115,45 @@ def exact_origin(candidate: str, expected: str) -> bool:
         )
     except ValueError:
         return False
+
+
+def valid_vercel_automation_bypass_secret(value: str) -> bool:
+    return bool(re.fullmatch(r"[A-Za-z0-9]{32}", value))
+
+
+def origin_scoped_bypass_headers(
+    candidate: str,
+    expected: str,
+    secret: str,
+    headers: Mapping[str, str] | None = None,
+) -> dict[str, str]:
+    """Adds Vercel bypass headers only to the exact protected app origin."""
+    if not valid_vercel_automation_bypass_secret(secret):
+        raise AcceptanceFailure("STAGING_VERCEL_AUTOMATION_BYPASS_SECRET_INVALID")
+    result = {
+        name: value
+        for name, value in (headers or {}).items()
+        if name.lower() not in {
+            "x-vercel-protection-bypass",
+            "x-vercel-set-bypass-cookie",
+        }
+    }
+    if exact_origin(candidate, expected):
+        result["x-vercel-protection-bypass"] = secret
+        result["x-vercel-set-bypass-cookie"] = "true"
+    return result
+
+
+def install_origin_scoped_bypass(context, expected: str, secret: str) -> None:
+    def continue_request(route) -> None:
+        route.continue_(headers=origin_scoped_bypass_headers(
+            route.request.url,
+            expected,
+            secret,
+            route.request.headers,
+        ))
+
+    context.route("**/*", continue_request)
 
 
 def assert_origin(candidate: str, expected: str) -> None:
@@ -145,8 +213,10 @@ def sign_in(page: Page, remote: str, role: str) -> None:
     destination = "teacher" if role == "teacher" else "student"
     ticket = ""
     try:
-        page.goto(remote, wait_until="domcontentloaded")
+        initial = page.goto(remote, wait_until="domcontentloaded")
         assert_origin(page.url, remote)
+        if not initial or initial.status != 200:
+            raise AcceptanceFailure("STAGING_ACCEPTANCE_PROTECTED_PREVIEW_INITIAL_REQUEST_FAILED")
         page.wait_for_function("() => Boolean(window.Clerk?.loaded && window.Clerk.status === 'ready' && window.Clerk.client)", timeout=60_000)
         assert_origin(page.url, remote)
         ticket = issue_ticket("OTHER_STUDENT" if role == "other_student" else role.upper())
@@ -228,6 +298,9 @@ def sign_out_and_relogin(page: Page, remote: str, role: str) -> None:
 def run() -> None:
     marker_value = marker()
     remote = base_url()
+    bypass_secret = required("STAGING_VERCEL_AUTOMATION_BYPASS_SECRET")
+    if not valid_vercel_automation_bypass_secret(bypass_secret):
+        raise AcceptanceFailure("STAGING_VERCEL_AUTOMATION_BYPASS_SECRET_INVALID")
     if os.environ.get("AI_PROVIDER_DISABLED") != "1":
         raise AcceptanceFailure("STAGING_ACCEPTANCE_AI_NOT_DISABLED")
     assert_browser_prerequisites()
@@ -244,6 +317,8 @@ def run() -> None:
         teacher_context = browser.new_context(locale="zh-CN", timezone_id="Asia/Taipei", viewport={"width": 1440, "height": 1000})
         student_context = browser.new_context(locale="zh-CN", timezone_id="Asia/Taipei", viewport={"width": 1440, "height": 1000})
         other_student_context = browser.new_context(locale="zh-CN", timezone_id="Asia/Taipei", viewport={"width": 1440, "height": 1000})
+        for context in (teacher_context, student_context, other_student_context):
+            install_origin_scoped_bypass(context, remote, bypass_secret)
         teacher = teacher_context.new_page()
         student = student_context.new_page()
         other_student = other_student_context.new_page()
@@ -252,6 +327,7 @@ def run() -> None:
         other_student.set_default_timeout(30_000)
         try:
             sign_in(teacher, remote, "teacher")
+            checks.append({"code": "VERCEL_PROTECTION_BYPASS_SCOPED", "status": "PASS"})
             checks.append({"code": "AI_DISABLED_MANUAL_PATH", "status": "PASS"})
             response = teacher.goto(f"{remote}/student", wait_until="domcontentloaded")
             assert_origin(teacher.url, remote)

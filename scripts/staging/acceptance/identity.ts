@@ -19,7 +19,7 @@ export async function verifyAcceptanceIdentities(
   environment: AcceptanceEnvironment,
   client: AcceptanceIdentityClient,
 ): Promise<readonly IdentityCheck[]> {
-  if (evaluateAcceptanceReadiness(environment).status !== "PASS") {
+  if (evaluateAcceptanceReadiness(environment, { requireBypassSecret: false }).status !== "PASS") {
     throw new Error("STAGING_ACCEPTANCE_READINESS_FAILED");
   }
   const teacherId = environment.STAGING_TEST_TEACHER_CLERK_ID?.trim() ?? "";

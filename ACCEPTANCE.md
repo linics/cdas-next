@@ -216,10 +216,16 @@ Agent 不是新的业务主体。审计中的 actor 始终是登录用户，`age
 
 场景: 受保护 staging 的合成真实账号验收不扩大业务权限
   假如同一次受保护 GitHub run 已生成并校验 staging GO 证据
-  并且该证据以健康证明密钥绑定 run、部署源码、数据库、Clerk test instance、合成教师与两个学生及 base URL
+  并且该证据以健康证明密钥绑定 run、部署源码、数据库、Clerk test instance、合成教师与两个学生、GitHub Environment secret 中的 base URL、Vercel project name 及有效的 Vercel Automation Bypass secret
+  并且 Vercel Preview 在未提供显式部署标识时以其 Git commit SHA 作为构建期部署标识
   当额外的“合成写入、短期 Clerk ticket、保留不清理”人工证明均为 true
   并且写入前重新验证当前远端 health proof 仍与该 run 精确一致
   并且三个 Clerk test 用户均可读取、签发 60 秒 ticket 并立即撤销
+  并且 base URL 必须是该 project 的精确 HTTPS `.vercel.app` Preview 根地址，不能由普通 Environment Variable 替换为自定义域或其他主机
+  并且只有本合成验收 workflow 将 `STAGING_DEPLOYMENT_PROTECTION_REQUIRED` 固定为 `1`；共享 staging verifier 在该值缺失时只验证通用公开 HTTPS 根地址，既不要求 project 也不读取 bypass secret
+  并且 Vercel Deployment Protection 保持启用；每次发送 bypass 前，独立无 cookie、无 bypass 的 health 请求必须得到 Vercel SSO `302`、`server: Vercel`、`x-vercel-id` 与精确绑定 health URL 的 64 位 nonce challenge
+  并且两次 health 请求与三个全新浏览器上下文只对精确的 staging scheme、host 和有效 port 通过 `x-vercel-protection-bypass` 请求头访问
+  并且 Clerk、CDN、重定向与任何其他 origin 均不接收 bypass 或 set-bypass-cookie 请求头，bypass secret 不进入 URL、截图、artifact 或验收记录
   那么 acceptance-only operator 只能以唯一 `cdas-staging-*` namespace 先预配置教师与主学生，再追加或精确重入同班第三学生；该 operator 不扩大产品成员管理权限
   并且班级恰有两个活跃学生成员，且两个学生 Clerk subject 均不同
   并且真实浏览器必须经现有第一方 UI 完成手工草稿、发布、文本提交、教师反馈、学生查看与关闭

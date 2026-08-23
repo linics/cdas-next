@@ -2,8 +2,9 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import type { AcceptanceEnvironment } from "./contracts";
-import { isAcceptanceGate } from "./gate";
+import { isAcceptanceGate, isCoreAcceptanceGate } from "./gate";
 import { isPassingImmediateHealthEvidence } from "./immediate-health";
+import { isPassingBrowserEvidence } from "./browser-evidence-contract";
 
 function exactObject(value: unknown, keys: readonly string[]): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value) &&
@@ -65,7 +66,7 @@ export async function assertPreWritePrerequisites(
     readArtifact(directory, "gate.json"),
     readArtifact(directory, "immediate-health.json"),
   ]);
-  if (!isAcceptanceGate(gate, environment) ||
+  if (!isCoreAcceptanceGate(gate, environment) ||
     !isPassingImmediateHealthEvidence(immediateHealth, environment)) {
     throw new Error("STAGING_ACCEPTANCE_PREWRITE_GATE_NOT_GO");
   }
@@ -82,7 +83,7 @@ export async function assertIdentityPrerequisites(
     path.join(process.cwd(), "output", "staging-acceptance", marker),
     "gate.json",
   );
-  if (!isAcceptanceGate(gate, environment)) {
+  if (!isCoreAcceptanceGate(gate, environment)) {
     throw new Error("STAGING_ACCEPTANCE_GATE_NOT_GO");
   }
 }
@@ -112,5 +113,30 @@ export async function assertBrowserPrerequisites(
   );
   if (!isPassingBootstrapEvidence(bootstrap, environment)) {
     throw new Error("STAGING_ACCEPTANCE_BOOTSTRAP_NOT_VERIFIED");
+  }
+  const gate = await readArtifact(
+    path.join(process.cwd(), "output", "staging-acceptance", marker),
+    "gate.json",
+  );
+  if (!isAcceptanceGate(gate, environment)) {
+    throw new Error("STAGING_ACCEPTANCE_GATE_NOT_GO");
+  }
+}
+
+export async function assertPostBrowserPrerequisites(
+  environment: AcceptanceEnvironment,
+): Promise<void> {
+  await assertBootstrapPrerequisites(environment);
+  const marker = environment.STAGING_RUN_MARKER?.trim() ?? "";
+  const directory = path.join(process.cwd(), "output", "staging-acceptance", marker);
+  const [gate, bootstrap, browser] = await Promise.all([
+    readArtifact(directory, "gate.json"),
+    readArtifact(directory, "bootstrap.json"),
+    readArtifact(directory, "evidence.json"),
+  ]);
+  if (!isCoreAcceptanceGate(gate, environment) ||
+    !isPassingBootstrapEvidence(bootstrap, environment) ||
+    !(await isPassingBrowserEvidence(browser, marker, directory, environment))) {
+    throw new Error("STAGING_ACCEPTANCE_POST_BROWSER_NOT_GO");
   }
 }
