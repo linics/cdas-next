@@ -103,7 +103,7 @@ pnpm e2e:real-model
 - PostgreSQL 17、Prisma 7 与可审查 SQL migration
 - Vercel AI SDK 的结构化工具 UI；服务端 ActionIntent 才是可信确认
 - Vitest；数据库约束通过真实 PostgreSQL 验证
-- 附件切片计划使用私有 S3、预签名 URL 和托管恶意文件扫描
+- 附件切片使用私有 S3、预签名 URL 和 GuardDuty Malware Protection；未配置时纯文字流程保持可用
 
 生产候选为 Vercel、Neon、Clerk 与 AWS S3，但在真实学生数据进入前仍需完成数据驻留、DPA、保留和删除审查。
 
@@ -124,8 +124,16 @@ pnpm e2e:real-model
 | `AI_MODEL` | DeepSeek 模型 ID | `deepseek-v4-flash` |
 | `AI_TOOL_APPROVAL_SECRET` | AI SDK 工具审批签名密钥，至少 32 字节 | 空 |
 | `E2E_REAL_MODEL_ACK` | 单次真实模型合成数据 smoke 的显式成本确认 | 空 |
+| `ATTACHMENT_STORAGE_ENABLED` | 设为 `1` 才启用附件上传与下载签名 | 空 |
+| `AWS_REGION` | 附件 S3 桶与 GuardDuty 扫描区域 | 空 |
+| `AWS_S3_ATTACHMENT_BUCKET` | 私有附件桶名称 | 空 |
+| `AWS_ACCESS_KEY_ID` | AWS SDK 服务端测试身份；可由其他官方 credential provider 代替 | 空 |
+| `AWS_SECRET_ACCESS_KEY` | AWS SDK 服务端测试凭证；不得进入 Git | 空 |
+| `AWS_SESSION_TOKEN` | 临时 AWS 凭证需要时提供 | 空 |
 
 密钥不得进入浏览器业务代码、migration、fixture 或 Git 历史。
+
+附件默认关闭。启用后，学生先保存文字草稿，再从活动页直接上传最多 5 个 JPEG/PNG/WebP、PDF、DOC/DOCX 文件；单文件最大 20 MiB。上传完成后页面显示托管安全检查状态，只有通过检查的附件能随正式提交固化。对象存储或扫描不可用时，移除未完成附件即可继续纯文字提交。
 
 ## 连接真实 Clerk 账号
 

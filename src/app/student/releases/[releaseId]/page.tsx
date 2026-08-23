@@ -7,6 +7,7 @@ import { LocalizedDateTime } from "../../../_components/localized-date-time";
 import { InlineAlert, StatusBadge } from "../../../_components/ui";
 import { WorkspaceShell } from "../../../_components/workspace-shell";
 import { AuthenticationError } from "../../../../server/auth/current-actor";
+import { createAttachmentStorageFromEnvironment } from "../../../../server/attachments/s3-attachment-storage";
 import { createUiCommandContext } from "../../../../server/commands/create-ui-command-context";
 import { getDatabaseClient } from "../../../../server/db/client";
 import {
@@ -198,6 +199,18 @@ function RevisionHistory({
                 <div className={styles.revisionText}>
                   {revision.textEvidence}
                 </div>
+                {revision.attachments.length > 0 ? (
+                  <ul className={styles.formalAttachmentList}>
+                    {revision.attachments.map((attachment) => (
+                      <li key={attachment.id}>
+                        <a href={`/attachments/${attachment.id}/download`}>
+                          {attachment.filename}
+                        </a>
+                        <span>{Math.ceil(attachment.byteSize / 1024)} KB</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
 
                 <section
                   className={styles.feedbackSection}
@@ -327,6 +340,8 @@ export default async function StudentReleasePage({
     : workspace.submission && workspace.submission.latestRevisionNumber > 0
       ? `第 ${workspace.submission.latestRevisionNumber} 版已正式提交`
       : "尚未创建草稿";
+  const attachmentStorageEnabled =
+    createAttachmentStorageFromEnvironment() !== null;
 
   return (
     <WorkspaceShell
@@ -380,6 +395,7 @@ export default async function StudentReleasePage({
               submission={workspace.submission}
               canWrite={canWrite}
               isPastDue={isPastDue}
+              attachmentStorageEnabled={attachmentStorageEnabled}
               readOnlyMessage={readOnlyMessage}
               workingCopyUpdatedLabel={
                 workspace.submission?.workingCopy

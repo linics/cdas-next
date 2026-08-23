@@ -43,6 +43,7 @@ export class SubmitSubmissionRevisionError extends Error {
       | "NO_WORKING_COPY"
       | "STALE_WORKING_COPY"
       | "NO_EVIDENCE"
+      | "ATTACHMENTS_NOT_READY"
       | "IDEMPOTENCY_MISMATCH"
       | "CONCURRENT_WRITE",
   ) {
@@ -171,7 +172,18 @@ async function runTransaction(
             studentId: context.actorId,
           },
         },
-        include: { workingCopy: true },
+        include: {
+          workingCopy: {
+            include: {
+              attachments: {
+                orderBy: { position: "asc" },
+                include: {
+                  attachment: { select: { status: true } },
+                },
+              },
+            },
+          },
+        },
       });
 
       if (!submission || !submission.workingCopy) {
@@ -192,6 +204,15 @@ async function runTransaction(
       }
       if (!hasMeaningfulTextEvidence(workingCopy.textEvidence)) {
         throw new SubmitSubmissionRevisionError("NO_EVIDENCE");
+      }
+      if (
+        workingCopy.attachments.some(
+          ({ attachment }) => attachment.status !== "READY",
+        )
+      ) {
+        throw new SubmitSubmissionRevisionError(
+          "ATTACHMENTS_NOT_READY",
+        );
       }
 
       const revisionNumber = submission.latestRevisionNumber + 1;
@@ -224,6 +245,31 @@ async function runTransaction(
           submittedAt: now,
         },
       });
+
+      if (workingCopy.attachments.length > 0) {
+        const copiedAttachments =
+          await transaction.submissionRevisionAttachment.createMany({
+            data: workingCopy.attachments.map((entry) => ({
+              submissionRevisionId: revision.id,
+              attachmentId: entry.attachmentId,
+              position: entry.position,
+              createdAt: now,
+            })),
+          });
+        if (copiedAttachments.count !== workingCopy.attachments.length) {
+          throw new SubmitSubmissionRevisionError("CONCURRENT_WRITE");
+        }
+
+        const removedAttachmentLinks =
+          await transaction.submissionWorkingCopyAttachment.deleteMany({
+            where: { workingCopyId: workingCopy.id },
+          });
+        if (
+          removedAttachmentLinks.count !== workingCopy.attachments.length
+        ) {
+          throw new SubmitSubmissionRevisionError("CONCURRENT_WRITE");
+        }
+      }
 
       const removedWorkingCopy =
         await transaction.submissionWorkingCopy.deleteMany({

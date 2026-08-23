@@ -23,6 +23,14 @@ const isoDateSchema = z.iso.datetime({ offset: true });
 const preservedNonBlankTextSchema = z
   .string()
   .refine((value) => value.trim().length > 0, "Text must not be blank");
+const attachmentSchema = z.strictObject({
+  id: z.uuid(),
+  kind: z.enum(["IMAGE", "PDF", "WORD"]),
+  filename: preservedNonBlankTextSchema,
+  mediaType: preservedNonBlankTextSchema,
+  byteSize: z.int().positive(),
+  status: z.enum(["UPLOAD_PENDING", "SCAN_PENDING", "READY", "REJECTED"]),
+});
 
 const studentWorkspaceSchema = z.strictObject({
   actor: z.strictObject({
@@ -55,6 +63,7 @@ const studentWorkspaceSchema = z.strictObject({
           version: z.int().positive(),
           textEvidence: z.string(),
           updatedAt: isoDateSchema,
+          attachments: z.array(attachmentSchema).max(5),
         })
         .nullable(),
       revisions: z.array(
@@ -64,6 +73,9 @@ const studentWorkspaceSchema = z.strictObject({
           textEvidence: preservedNonBlankTextSchema,
           isLate: z.boolean(),
           submittedAt: isoDateSchema,
+          attachments: z.array(
+            attachmentSchema.extend({ status: z.literal("READY") }),
+          ).max(5),
         }),
       ),
     })
@@ -113,6 +125,13 @@ export class SubmissionWorkspaceQueryError extends Error {
     super(code);
     this.name = "SubmissionWorkspaceQueryError";
   }
+}
+
+function formalAttachmentStatus(status: string): "READY" {
+  if (status !== "READY") {
+    throw new Error("Formal revision references a non-ready attachment");
+  }
+  return "READY";
 }
 
 export async function getStudentReleaseWorkspace(
@@ -165,6 +184,21 @@ export async function getStudentReleaseWorkspace(
                 version: true,
                 textEvidence: true,
                 updatedAt: true,
+                attachments: {
+                  orderBy: { position: "asc" },
+                  select: {
+                    attachment: {
+                      select: {
+                        id: true,
+                        kind: true,
+                        originalFilename: true,
+                        mediaType: true,
+                        byteSize: true,
+                        status: true,
+                      },
+                    },
+                  },
+                },
               },
             },
             revisions: {
@@ -175,6 +209,21 @@ export async function getStudentReleaseWorkspace(
                 textEvidence: true,
                 isLate: true,
                 submittedAt: true,
+                attachments: {
+                  orderBy: { position: "asc" },
+                  select: {
+                    attachment: {
+                      select: {
+                        id: true,
+                        kind: true,
+                        originalFilename: true,
+                        mediaType: true,
+                        byteSize: true,
+                        status: true,
+                      },
+                    },
+                  },
+                },
               },
             },
           },
@@ -234,6 +283,16 @@ export async function getStudentReleaseWorkspace(
                 version: submission.workingCopy.version,
                 textEvidence: submission.workingCopy.textEvidence,
                 updatedAt: submission.workingCopy.updatedAt.toISOString(),
+                attachments: submission.workingCopy.attachments.map(
+                  ({ attachment }) => ({
+                    id: attachment.id,
+                    kind: attachment.kind,
+                    filename: attachment.originalFilename,
+                    mediaType: attachment.mediaType,
+                    byteSize: attachment.byteSize,
+                    status: attachment.status,
+                  }),
+                ),
               }
             : null,
           revisions: submission.revisions.map((revision) => ({
@@ -242,6 +301,14 @@ export async function getStudentReleaseWorkspace(
             textEvidence: revision.textEvidence,
             isLate: revision.isLate,
             submittedAt: revision.submittedAt.toISOString(),
+            attachments: revision.attachments.map(({ attachment }) => ({
+              id: attachment.id,
+              kind: attachment.kind,
+              filename: attachment.originalFilename,
+              mediaType: attachment.mediaType,
+              byteSize: attachment.byteSize,
+              status: formalAttachmentStatus(attachment.status),
+            })),
           })),
         }
       : null,

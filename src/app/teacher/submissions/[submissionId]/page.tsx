@@ -120,6 +120,18 @@ function SubmissionRevision({
 
       <p className={styles.formalLabel}>正式修订 · 内容不可覆盖</p>
       <div className={styles.submissionBody}>{revision.textEvidence}</div>
+      {revision.attachments.length > 0 ? (
+        <ul className={styles.formalAttachmentList}>
+          {revision.attachments.map((attachment) => (
+            <li key={attachment.id}>
+              <a href={`/attachments/${attachment.id}/download`}>
+                {attachment.filename}
+              </a>
+              <span>{Math.ceil(attachment.byteSize / 1024)} KB</span>
+            </li>
+          ))}
+        </ul>
+      ) : null}
       <FeedbackHistory revision={revision} />
     </article>
   );

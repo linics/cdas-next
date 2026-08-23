@@ -206,6 +206,15 @@ function failedActionState(
     );
   }
 
+  if (code === "ATTACHMENTS_NOT_READY") {
+    return actionState(
+      operation,
+      "error",
+      "仍有附件正在上传或安全检查，完成后才能正式提交。工作草稿仍然保留。",
+      idempotencyKey,
+    );
+  }
+
   if (code === "RELEASE_NOT_ACTIVE") {
     return actionState(
       operation,

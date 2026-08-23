@@ -208,6 +208,12 @@ async function runTransaction(
                 revisionNumber: submission.latestRevisionNumber,
               },
             },
+            include: {
+              attachments: {
+                orderBy: { position: "asc" },
+                select: { attachmentId: true, position: true },
+              },
+            },
           });
 
         if (!currentRevision) {
@@ -237,6 +243,21 @@ async function runTransaction(
             updatedAt: now,
           },
         });
+
+        if (currentRevision.attachments.length > 0) {
+          const copiedAttachments =
+            await transaction.submissionWorkingCopyAttachment.createMany({
+              data: currentRevision.attachments.map((entry) => ({
+                workingCopyId: created.id,
+                attachmentId: entry.attachmentId,
+                position: entry.position,
+                addedAt: now,
+              })),
+            });
+          if (copiedAttachments.count !== currentRevision.attachments.length) {
+            throw new StartSubmissionResubmissionError("CONCURRENT_WRITE");
+          }
+        }
 
         workingCopyId = created.id;
         workingVersion = created.version;

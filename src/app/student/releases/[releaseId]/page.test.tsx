@@ -130,6 +130,7 @@ const submittedWorkspace = {
         textEvidence: "第一版正式观察记录",
         isLate: false,
         submittedAt: "2026-08-18T10:30:00.000Z",
+        attachments: [],
       },
       {
         id: secondRevisionId,
@@ -137,6 +138,7 @@ const submittedWorkspace = {
         textEvidence: "第二版正式观察记录",
         isLate: true,
         submittedAt: "2026-08-18T11:30:00.000Z",
+        attachments: [],
       },
     ],
   },

@@ -1499,6 +1499,96 @@ VALUES (
 DO $test$
 BEGIN
   BEGIN
+    INSERT INTO submission_attachments (
+      id,
+      submission_id,
+      student_id,
+      kind,
+      original_filename,
+      media_type,
+      byte_size,
+      storage_key
+    )
+    VALUES (
+      '00000000-0000-4000-8000-000000000089',
+      '00000000-0000-4000-8000-000000000080',
+      '00000000-0000-4000-8000-000000000001',
+      'PDF',
+      '越权.pdf',
+      'application/pdf',
+      1024,
+      'submission/owner-mismatch'
+    );
+    RAISE EXCEPTION 'attachment ownership mismatch was accepted';
+  EXCEPTION WHEN check_violation THEN
+    NULL;
+  END;
+END
+$test$;
+
+INSERT INTO submission_attachments (
+  id,
+  submission_id,
+  student_id,
+  kind,
+  original_filename,
+  media_type,
+  byte_size,
+  storage_key
+)
+VALUES
+  (
+    '00000000-0000-4000-8000-000000000086',
+    '00000000-0000-4000-8000-000000000080',
+    '00000000-0000-4000-8000-000000000002',
+    'IMAGE',
+    '观察.jpg',
+    'image/jpeg',
+    1024,
+    'submission/ready-image'
+  ),
+  (
+    '00000000-0000-4000-8000-000000000087',
+    '00000000-0000-4000-8000-000000000080',
+    '00000000-0000-4000-8000-000000000002',
+    'PDF',
+    '记录.pdf',
+    'application/pdf',
+    2048,
+    'submission/scanning-pdf'
+  );
+
+UPDATE submission_attachments
+SET status = 'SCAN_PENDING', uploaded_at = now()
+WHERE id IN (
+  '00000000-0000-4000-8000-000000000086',
+  '00000000-0000-4000-8000-000000000087'
+);
+
+UPDATE submission_attachments
+SET status = 'READY', scanned_at = now()
+WHERE id = '00000000-0000-4000-8000-000000000086';
+
+INSERT INTO submission_working_copy_attachments (
+  working_copy_id,
+  attachment_id,
+  position
+)
+VALUES
+  (
+    '00000000-0000-4000-8000-000000000081',
+    '00000000-0000-4000-8000-000000000086',
+    0
+  ),
+  (
+    '00000000-0000-4000-8000-000000000081',
+    '00000000-0000-4000-8000-000000000087',
+    1
+  );
+
+DO $test$
+BEGIN
+  BEGIN
     DELETE FROM submission_working_copies
     WHERE id = '00000000-0000-4000-8000-000000000081';
     RAISE EXCEPTION 'unsubmitted working copy deletion was accepted';
@@ -1571,8 +1661,89 @@ VALUES (
   now()
 );
 
+INSERT INTO submission_revision_attachments (
+  submission_revision_id,
+  attachment_id,
+  position
+)
+VALUES (
+  '00000000-0000-4000-8000-000000000082',
+  '00000000-0000-4000-8000-000000000086',
+  0
+);
+
+DO $test$
+BEGIN
+  BEGIN
+    INSERT INTO submission_revision_attachments (
+      submission_revision_id,
+      attachment_id,
+      position
+    )
+    VALUES (
+      '00000000-0000-4000-8000-000000000082',
+      '00000000-0000-4000-8000-000000000087',
+      1
+    );
+    RAISE EXCEPTION 'unscanned attachment entered formal history';
+  EXCEPTION WHEN check_violation THEN
+    NULL;
+  END;
+END
+$test$;
+
+UPDATE submission_attachments
+SET status = 'READY', scanned_at = now()
+WHERE id = '00000000-0000-4000-8000-000000000087';
+
+INSERT INTO submission_revision_attachments (
+  submission_revision_id,
+  attachment_id,
+  position
+)
+VALUES (
+  '00000000-0000-4000-8000-000000000082',
+  '00000000-0000-4000-8000-000000000087',
+  1
+);
+
+DELETE FROM submission_working_copy_attachments
+WHERE working_copy_id = '00000000-0000-4000-8000-000000000081';
+
 DELETE FROM submission_working_copies
 WHERE id = '00000000-0000-4000-8000-000000000081';
+
+DO $test$
+BEGIN
+  BEGIN
+    UPDATE submission_revision_attachments
+    SET position = 2
+    WHERE submission_revision_id = '00000000-0000-4000-8000-000000000082'
+      AND attachment_id = '00000000-0000-4000-8000-000000000086';
+    RAISE EXCEPTION 'formal attachment position was rewritten';
+  EXCEPTION WHEN SQLSTATE '55000' THEN
+    NULL;
+  END;
+
+  BEGIN
+    DELETE FROM submission_revision_attachments
+    WHERE submission_revision_id = '00000000-0000-4000-8000-000000000082'
+      AND attachment_id = '00000000-0000-4000-8000-000000000086';
+    RAISE EXCEPTION 'formal attachment history was deleted';
+  EXCEPTION WHEN SQLSTATE '55000' THEN
+    NULL;
+  END;
+
+  BEGIN
+    UPDATE submission_attachments
+    SET status = 'REJECTED'
+    WHERE id = '00000000-0000-4000-8000-000000000086';
+    RAISE EXCEPTION 'ready attachment lifecycle moved backwards';
+  EXCEPTION WHEN SQLSTATE '55000' THEN
+    NULL;
+  END;
+END
+$test$;
 
 DO $test$
 BEGIN

@@ -1,6 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
 import { createPublishedActivity } from "../../test/fixtures/published-activity";
+import {
+  getAuthorizedSubmissionAttachmentDownload,
+  getWritableSubmissionAttachmentStorageRecord,
+} from "../attachments/submission-attachment-access";
 import { createDatabaseClient } from "../db/client";
 import type { CommandContext } from "./command-context";
 import {
@@ -15,6 +19,12 @@ import {
   submitSubmissionRevision,
   SubmitSubmissionRevisionError,
 } from "./submit-submission-revision";
+import {
+  markSubmissionAttachmentUploaded,
+  recordSubmissionAttachmentScan,
+  removeSubmissionAttachment,
+  reserveSubmissionAttachment,
+} from "./submission-attachment-commands";
 
 const databaseUrl = process.env.TEST_DATABASE_URL;
 const describeWithDatabase = databaseUrl ? describe : describe.skip;
@@ -436,6 +446,209 @@ describeWithDatabase("submission text commands", () => {
         data: { textEvidence: "不应覆盖的内容" },
       }),
     ).rejects.toThrow(/append-only/);
+  });
+
+  it("blocks unscanned assets and preserves ready attachments across submit and resubmit", async () => {
+    const fixture = await createSubmissionFixture({ dueAt: null });
+    const initial = await saveInitialText(fixture, "附件配套文字证据");
+    const uploadedAt = new Date(fixture.now.getTime() + 1_000);
+    const scannedAt = new Date(fixture.now.getTime() + 2_000);
+
+    const attachments = await Promise.all(
+      [
+        {
+          kind: "IMAGE" as const,
+          originalFilename: "观察.jpg",
+          mediaType: "image/jpeg",
+          byteSize: 1_024,
+        },
+        {
+          kind: "PDF" as const,
+          originalFilename: "记录.pdf",
+          mediaType: "application/pdf",
+          byteSize: 2_048,
+        },
+      ].map((attachment, position) =>
+        database!.submissionAttachment.create({
+          data: {
+            submissionId: initial.submissionId,
+            studentId: fixture.studentId,
+            ...attachment,
+            storageKey: `submissions/${initial.submissionId}/${randomUUID()}`,
+            createdAt: fixture.now,
+            workingCopies: {
+              create: {
+                workingCopyId: initial.workingCopyId,
+                position,
+                addedAt: fixture.now,
+              },
+            },
+          },
+        }),
+      ),
+    );
+
+    await database!.submissionAttachment.updateMany({
+      where: { id: { in: attachments.map(({ id }) => id) } },
+      data: { status: "SCAN_PENDING", uploadedAt },
+    });
+    await database!.submissionAttachment.update({
+      where: { id: attachments[0]!.id },
+      data: { status: "READY", scannedAt },
+    });
+
+    await expect(
+      submitSubmissionRevision(
+        database!,
+        commandContext(fixture.studentId, scannedAt),
+        {
+          releaseId: fixture.releaseId,
+          expectedWorkingCopyId: initial.workingCopyId,
+          expectedWorkingVersion: initial.workingVersion,
+          idempotencyKey: `submit_${randomUUID()}`,
+        },
+      ),
+    ).rejects.toEqual(
+      new SubmitSubmissionRevisionError("ATTACHMENTS_NOT_READY"),
+    );
+    expect(
+      await database!.submissionWorkingCopy.count({
+        where: { id: initial.workingCopyId },
+      }),
+    ).toBe(1);
+
+    await database!.submissionAttachment.update({
+      where: { id: attachments[1]!.id },
+      data: { status: "READY", scannedAt },
+    });
+    const submitted = await submitSubmissionRevision(
+      database!,
+      commandContext(fixture.studentId, scannedAt),
+      {
+        releaseId: fixture.releaseId,
+        expectedWorkingCopyId: initial.workingCopyId,
+        expectedWorkingVersion: initial.workingVersion,
+        idempotencyKey: `submit_${randomUUID()}`,
+      },
+    );
+
+    expect(
+      await database!.submissionRevisionAttachment.findMany({
+        where: { submissionRevisionId: submitted.revisionId },
+        orderBy: { position: "asc" },
+        select: { attachmentId: true, position: true },
+      }),
+    ).toEqual([
+      { attachmentId: attachments[0]!.id, position: 0 },
+      { attachmentId: attachments[1]!.id, position: 1 },
+    ]);
+
+    const resubmission = await startSubmissionResubmission(
+      database!,
+      commandContext(fixture.studentId, scannedAt),
+      {
+        releaseId: fixture.releaseId,
+        expectedLatestRevisionNumber: 1,
+        idempotencyKey: `restart_${randomUUID()}`,
+      },
+    );
+    expect(
+      await database!.submissionWorkingCopyAttachment.findMany({
+        where: { workingCopyId: resubmission.workingCopyId },
+        orderBy: { position: "asc" },
+        select: { attachmentId: true, position: true },
+      }),
+    ).toEqual([
+      { attachmentId: attachments[0]!.id, position: 0 },
+      { attachmentId: attachments[1]!.id, position: 1 },
+    ]);
+
+    await expect(
+      getAuthorizedSubmissionAttachmentDownload(
+        database!,
+        commandContext(fixture.studentId, scannedAt),
+        { attachmentId: attachments[0]!.id },
+      ),
+    ).resolves.toMatchObject({ id: attachments[0]!.id });
+    await expect(
+      getAuthorizedSubmissionAttachmentDownload(
+        database!,
+        commandContext(fixture.teacherId, scannedAt),
+        { attachmentId: attachments[0]!.id },
+      ),
+    ).resolves.toMatchObject({ id: attachments[0]!.id });
+    await expect(
+      getAuthorizedSubmissionAttachmentDownload(
+        database!,
+        commandContext(fixture.nonmemberId, scannedAt),
+        { attachmentId: attachments[0]!.id },
+      ),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    await expect(
+      getWritableSubmissionAttachmentStorageRecord(
+        database!,
+        commandContext(fixture.teacherId, scannedAt),
+        { attachmentId: attachments[0]!.id },
+      ),
+    ).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+
+  it("reserves, scans, and removes working-copy attachments with one version token", async () => {
+    const fixture = await createSubmissionFixture({ dueAt: null });
+    const initial = await saveInitialText(fixture, "附件命令测试文字");
+    const context = commandContext(fixture.studentId, fixture.now);
+
+    const first = await reserveSubmissionAttachment(database!, context, {
+      releaseId: fixture.releaseId,
+      expectedWorkingCopyId: initial.workingCopyId,
+      expectedWorkingVersion: initial.workingVersion,
+      filename: "观察.jpg",
+      mediaType: "image/jpeg",
+      byteSize: 1_024,
+      idempotencyKey: `attachment_${randomUUID()}`,
+    });
+    const second = await reserveSubmissionAttachment(database!, context, {
+      releaseId: fixture.releaseId,
+      expectedWorkingCopyId: initial.workingCopyId,
+      expectedWorkingVersion: first.workingVersion,
+      filename: "记录.pdf",
+      mediaType: "application/pdf",
+      byteSize: 2_048,
+      idempotencyKey: `attachment_${randomUUID()}`,
+    });
+    expect(second.workingVersion).toBe(initial.workingVersion + 2);
+
+    await expect(
+      markSubmissionAttachmentUploaded(database!, context, {
+        attachmentId: first.attachmentId,
+        observedMediaType: "image/png",
+        observedByteSize: first.byteSize,
+      }),
+    ).rejects.toMatchObject({ code: "ATTACHMENT_OBJECT_MISMATCH" });
+    await markSubmissionAttachmentUploaded(database!, context, {
+      attachmentId: first.attachmentId,
+      observedMediaType: first.mediaType,
+      observedByteSize: first.byteSize,
+    });
+    await recordSubmissionAttachmentScan(database!, context, {
+      attachmentId: first.attachmentId,
+      decision: "READY",
+    });
+
+    const removed = await removeSubmissionAttachment(database!, context, {
+      releaseId: fixture.releaseId,
+      attachmentId: first.attachmentId,
+      expectedWorkingCopyId: initial.workingCopyId,
+      expectedWorkingVersion: second.workingVersion,
+      idempotencyKey: `remove_attachment_${randomUUID()}`,
+    });
+    expect(removed.workingVersion).toBe(second.workingVersion + 1);
+    expect(
+      await database!.submissionWorkingCopyAttachment.findMany({
+        where: { workingCopyId: initial.workingCopyId },
+        select: { attachmentId: true, position: true },
+      }),
+    ).toEqual([{ attachmentId: second.attachmentId, position: 0 }]);
   });
 
   it("returns one revision for concurrent retries", async () => {

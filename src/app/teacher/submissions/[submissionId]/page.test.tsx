@@ -133,6 +133,7 @@ const workspace = {
         textEvidence: secretSubmissionBody,
         isLate: false,
         submittedAt: "2026-08-18T11:00:00.000Z",
+        attachments: [],
         feedback: {
           id: "70000000-0000-4000-8000-000000000007",
           currentVersion: 1,

@@ -8,6 +8,7 @@ import {
   MAX_TEXT_EVIDENCE_CODE_POINTS,
 } from "../../../../domain/submission/text-evidence";
 import type { StudentReleaseWorkspace } from "../../../../server/queries/submission-workspace";
+import { AttachmentEditor } from "./attachment-editor";
 import {
   saveWorkingCopyAction,
   startResubmissionAction,
@@ -26,6 +27,7 @@ type SubmissionEditorProps = Readonly<{
   submission: Submission;
   canWrite: boolean;
   isPastDue: boolean;
+  attachmentStorageEnabled: boolean;
   readOnlyMessage: string;
   workingCopyUpdatedLabel: ReactNode;
   idempotencySeeds: Readonly<{
@@ -93,6 +95,7 @@ export function SubmissionEditor({
   submission,
   canWrite,
   isPastDue,
+  attachmentStorageEnabled,
   readOnlyMessage,
   workingCopyUpdatedLabel,
   idempotencySeeds,
@@ -106,6 +109,10 @@ export function SubmissionEditor({
   const textOverLimit = codePointCount > MAX_TEXT_EVIDENCE_CODE_POINTS;
   const hasVisibleSavedText = hasMeaningfulTextEvidence(savedText);
   const hasUnsavedChanges = text !== savedText;
+  const attachmentsReady =
+    workingCopy?.attachments.every(
+      (attachment) => attachment.status === "READY",
+    ) ?? true;
 
   const [saveState, saveAction, savePending] = useActionState(
     saveWorkingCopyAction,
@@ -286,6 +293,15 @@ export function SubmissionEditor({
       )}
       <ActionNotice state={saveState} />
 
+      {workingCopy ? (
+        <AttachmentEditor
+          releaseId={releaseId}
+          workingCopy={workingCopy}
+          enabled={attachmentStorageEnabled}
+          canWrite={canWrite}
+        />
+      ) : null}
+
       {canWrite && workingCopy ? (
         <div className={styles.commitArea}>
           <div>
@@ -314,6 +330,7 @@ export function SubmissionEditor({
                 anyPending ||
                 hasUnsavedChanges ||
                 !hasVisibleSavedText ||
+                !attachmentsReady ||
                 textOverLimit
               }
             >
@@ -346,6 +363,8 @@ export function SubmissionEditor({
             <p className={styles.commitHint}>请先保存当前修改，再正式提交。</p>
           ) : !hasVisibleSavedText ? (
             <p className={styles.commitHint}>至少保存一段可见文字后才能正式提交。</p>
+          ) : !attachmentsReady ? (
+            <p className={styles.commitHint}>请等待所有附件通过安全检查，或移除未通过的附件。</p>
           ) : null}
         </div>
       ) : null}

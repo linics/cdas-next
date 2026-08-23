@@ -56,6 +56,7 @@ CDAS 助手是嵌入产品的上下文助手，不是独立聊天机器人，也
 - `publish_activity_release`
 - `save_teacher_feedback`
 - 关闭活动、删除和成员变更工具均留待后续；第一阶段不向 Agent 开放关闭 Release 工具。
+- D-025 的附件预留、上传、扫描刷新、移除与下载不作为 Agent 工具；学生与教师通过普通界面完成，模型不能取得 storage key、预签名 URL 或附件内容。
 
 高影响工具必须暂停，展示完整参数与影响范围，并等待用户明确确认。
 

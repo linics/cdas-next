@@ -21,6 +21,13 @@ const feedbackSourceSchema = z.enum(["MANUAL", "AI_ASSISTED"]);
 const visibleTextSchema = z
   .string()
   .refine(hasMeaningfulTextEvidence, "Text must contain visible content");
+const formalAttachmentSchema = z.strictObject({
+  id: z.uuid(),
+  kind: z.enum(["IMAGE", "PDF", "WORD"]),
+  filename: visibleTextSchema,
+  mediaType: visibleTextSchema,
+  byteSize: z.int().positive(),
+});
 
 const releaseSchema = z
   .object({
@@ -92,6 +99,7 @@ const formalSubmissionRevisionSchema = z
     textEvidence: visibleTextSchema,
     isLate: z.boolean(),
     submittedAt: isoDateSchema,
+    attachments: z.array(formalAttachmentSchema).max(5),
     feedback: confirmedFeedbackSchema.nullable(),
   })
   .strict();
@@ -192,6 +200,21 @@ const safeSubmissionSelect = {
       textEvidence: true,
       isLate: true,
       submittedAt: true,
+      attachments: {
+        orderBy: { position: "asc" as const },
+        select: {
+          attachment: {
+            select: {
+              id: true,
+              kind: true,
+              originalFilename: true,
+              mediaType: true,
+              byteSize: true,
+              status: true,
+            },
+          },
+        },
+      },
       feedback: {
         select: {
           id: true,
@@ -240,6 +263,16 @@ function mapSubmissionHistory(
       textEvidence: string;
       isLate: boolean;
       submittedAt: Date;
+      attachments: Array<{
+        attachment: {
+          id: string;
+          kind: "IMAGE" | "PDF" | "WORD";
+          originalFilename: string;
+          mediaType: string;
+          byteSize: number;
+          status: "UPLOAD_PENDING" | "SCAN_PENDING" | "READY" | "REJECTED";
+        };
+      }>;
       feedback: {
         id: string;
         version: number;
@@ -283,6 +316,20 @@ function mapSubmissionHistory(
       textEvidence: revision.textEvidence,
       isLate: revision.isLate,
       submittedAt: revision.submittedAt.toISOString(),
+      attachments: revision.attachments.map(({ attachment }) => {
+        if (attachment.status !== "READY") {
+          throw new Error(
+            "Formal revision references a non-ready attachment",
+          );
+        }
+        return {
+          id: attachment.id,
+          kind: attachment.kind,
+          filename: attachment.originalFilename,
+          mediaType: attachment.mediaType,
+          byteSize: attachment.byteSize,
+        };
+      }),
       feedback: revision.feedback
           ? {
             id: revision.feedback.id,

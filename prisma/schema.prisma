@@ -63,6 +63,19 @@ enum FeedbackRevisionSource {
   AI_ASSISTED
 }
 
+enum AttachmentKind {
+  IMAGE
+  PDF
+  WORD
+}
+
+enum AttachmentStatus {
+  UPLOAD_PENDING
+  SCAN_PENDING
+  READY
+  REJECTED
+}
+
 model AppUser {
   id                    String                    @id @default(uuid()) @db.Uuid
   authSubject           String                    @unique @map("auth_subject")
@@ -80,6 +93,7 @@ model AppUser {
   auditEntries          ActionAudit[]
   agentRuns             AgentRun[]
   submissions           Submission[]              @relation("SubmissionStudent")
+  submissionAttachments SubmissionAttachment[]    @relation("SubmissionAttachmentStudent")
   feedback              TeacherFeedback[]         @relation("TeacherFeedbackTeacher")
   feedbackConfirmations TeacherFeedbackRevision[] @relation("TeacherFeedbackConfirmer")
 
@@ -211,6 +225,7 @@ model Submission {
   student              AppUser                @relation("SubmissionStudent", fields: [studentId], references: [id], onDelete: Restrict)
   workingCopy          SubmissionWorkingCopy?
   revisions            SubmissionRevision[]
+  attachments          SubmissionAttachment[]
 
   @@unique([releaseId, studentId])
   @@index([studentId, createdAt])
@@ -218,33 +233,86 @@ model Submission {
 }
 
 model SubmissionWorkingCopy {
-  id                 String     @id @default(uuid()) @db.Uuid
-  submissionId       String     @unique @map("submission_id") @db.Uuid
-  baseRevisionNumber Int        @default(0) @map("base_revision_number")
-  version            Int        @default(1)
-  textEvidence       String     @default("") @map("text_evidence") @db.Text
-  createdAt          DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt          DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
-  submission         Submission @relation(fields: [submissionId], references: [id], onDelete: Restrict)
+  id                 String                            @id @default(uuid()) @db.Uuid
+  submissionId       String                            @unique @map("submission_id") @db.Uuid
+  baseRevisionNumber Int                               @default(0) @map("base_revision_number")
+  version            Int                               @default(1)
+  textEvidence       String                            @default("") @map("text_evidence") @db.Text
+  createdAt          DateTime                          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime                          @updatedAt @map("updated_at") @db.Timestamptz(3)
+  submission         Submission                        @relation(fields: [submissionId], references: [id], onDelete: Restrict)
+  attachments        SubmissionWorkingCopyAttachment[]
 
   @@map("submission_working_copies")
 }
 
 model SubmissionRevision {
-  id                   String           @id @default(uuid()) @db.Uuid
-  submissionId         String           @map("submission_id") @db.Uuid
-  revisionNumber       Int              @map("revision_number")
-  baseRevisionNumber   Int              @map("base_revision_number")
-  sourceWorkingCopyId  String           @unique @map("source_working_copy_id") @db.Uuid
-  sourceWorkingVersion Int              @map("source_working_version")
-  textEvidence         String           @map("text_evidence") @db.Text
-  isLate               Boolean          @map("is_late")
-  submittedAt          DateTime         @map("submitted_at") @db.Timestamptz(3)
-  submission           Submission       @relation(fields: [submissionId], references: [id], onDelete: Restrict)
+  id                   String                         @id @default(uuid()) @db.Uuid
+  submissionId         String                         @map("submission_id") @db.Uuid
+  revisionNumber       Int                            @map("revision_number")
+  baseRevisionNumber   Int                            @map("base_revision_number")
+  sourceWorkingCopyId  String                         @unique @map("source_working_copy_id") @db.Uuid
+  sourceWorkingVersion Int                            @map("source_working_version")
+  textEvidence         String                         @map("text_evidence") @db.Text
+  isLate               Boolean                        @map("is_late")
+  submittedAt          DateTime                       @map("submitted_at") @db.Timestamptz(3)
+  submission           Submission                     @relation(fields: [submissionId], references: [id], onDelete: Restrict)
   feedback             TeacherFeedback?
+  attachments          SubmissionRevisionAttachment[]
 
   @@unique([submissionId, revisionNumber])
   @@map("submission_revisions")
+}
+
+model SubmissionAttachment {
+  id               String                            @id @default(uuid()) @db.Uuid
+  submissionId     String                            @map("submission_id") @db.Uuid
+  studentId        String                            @map("student_id") @db.Uuid
+  kind             AttachmentKind
+  originalFilename String                            @map("original_filename") @db.VarChar(255)
+  mediaType        String                            @map("media_type") @db.VarChar(127)
+  byteSize         Int                               @map("byte_size")
+  storageKey       String                            @unique @map("storage_key") @db.VarChar(512)
+  status           AttachmentStatus                  @default(UPLOAD_PENDING)
+  createdAt        DateTime                          @default(now()) @map("created_at") @db.Timestamptz(3)
+  uploadedAt       DateTime?                         @map("uploaded_at") @db.Timestamptz(3)
+  scannedAt        DateTime?                         @map("scanned_at") @db.Timestamptz(3)
+  submission       Submission                        @relation(fields: [submissionId], references: [id], onDelete: Restrict)
+  student          AppUser                           @relation("SubmissionAttachmentStudent", fields: [studentId], references: [id], onDelete: Restrict)
+  workingCopies    SubmissionWorkingCopyAttachment[]
+  revisions        SubmissionRevisionAttachment[]
+
+  @@index([submissionId, status, createdAt])
+  @@index([studentId, createdAt])
+  @@map("submission_attachments")
+}
+
+model SubmissionWorkingCopyAttachment {
+  workingCopyId String                @map("working_copy_id") @db.Uuid
+  attachmentId  String                @map("attachment_id") @db.Uuid
+  position      Int
+  addedAt       DateTime              @default(now()) @map("added_at") @db.Timestamptz(3)
+  workingCopy   SubmissionWorkingCopy @relation(fields: [workingCopyId], references: [id], onDelete: Restrict)
+  attachment    SubmissionAttachment  @relation(fields: [attachmentId], references: [id], onDelete: Restrict)
+
+  @@id([workingCopyId, attachmentId])
+  @@unique([workingCopyId, position], map: "submission_working_copy_attachments_position_key")
+  @@index([attachmentId])
+  @@map("submission_working_copy_attachments")
+}
+
+model SubmissionRevisionAttachment {
+  submissionRevisionId String               @map("submission_revision_id") @db.Uuid
+  attachmentId         String               @map("attachment_id") @db.Uuid
+  position             Int
+  createdAt            DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  submissionRevision   SubmissionRevision   @relation(fields: [submissionRevisionId], references: [id], onDelete: Restrict)
+  attachment           SubmissionAttachment @relation(fields: [attachmentId], references: [id], onDelete: Restrict)
+
+  @@id([submissionRevisionId, attachmentId])
+  @@unique([submissionRevisionId, position], map: "submission_revision_attachments_position_key")
+  @@index([attachmentId])
+  @@map("submission_revision_attachments")
 }
 
 model TeacherFeedback {
