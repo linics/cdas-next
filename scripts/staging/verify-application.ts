@@ -18,9 +18,10 @@ import {
   isAllowedVercelPreviewBaseUrl,
   stagingHealthRequestHeaders,
 } from "./preview-protection";
+import { shouldLoadLocalStagingEnvironment } from "./verify-application-env";
 
 async function main(): Promise<void> {
-  nextEnvironment.loadEnvConfig(process.cwd());
+  if (shouldLoadLocalStagingEnvironment(process.env)) nextEnvironment.loadEnvConfig(process.cwd());
   const marker = process.env.STAGING_RUN_MARKER?.trim() ?? "";
   const challenge = randomBytes(32).toString("hex");
   const sourceFingerprint = createSourceFingerprint();
