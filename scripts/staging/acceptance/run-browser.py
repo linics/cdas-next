@@ -349,7 +349,7 @@ def run() -> None:
             index["01-draft-ready.png"] = screenshot(teacher, output, "01-draft-ready")
             preview.click()
             assert_origin(teacher.url, remote)
-            teacher.locator("select[name=classroomId]").select_option(label=classroom_name)
+            teacher.locator("select[name=classroomId]").select_option(label=f"{classroom_name} · 2 名当前成员")
             teacher.get_by_role("button", name="准备精确发布确认", exact=True).click()
             confirm(teacher, "确认发布活动", "确认并发布")
             wait_text(teacher, "活动已发布")
