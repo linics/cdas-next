@@ -28,20 +28,22 @@
 
 .eyebrow {
   margin: 0;
-  color: var(--color-muted-foreground);
-  font-size: 14px;
-  font-weight: 600;
+  color: var(--color-foreground);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
 }
 
 .workspaceStatus,
 .manualMode {
   display: inline-flex;
-  border-radius: var(--border-radius);
+  border-radius: 0;
   background: var(--color-muted);
   padding: 6px 10px;
   color: var(--color-primary);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .contextFacts {
@@ -55,8 +57,8 @@
 
 .contextFacts > div {
   min-width: 0;
-  border: 2px solid var(--color-border);
-  border-radius: var(--border-radius);
+  border: 1px solid var(--color-border);
+  border-radius: 0;
   background: var(--color-card);
   padding: var(--space-xl);
 }
@@ -64,7 +66,7 @@
 .contextFacts dt {
   color: var(--color-muted-foreground);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .contextFacts dd {
@@ -93,7 +95,7 @@
   align-items: flex-end;
   justify-content: space-between;
   gap: var(--space-xl);
-  border-bottom: 2px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
   padding-bottom: var(--space-xl);
 }
 
@@ -110,8 +112,8 @@
 .revisionList { display: grid; gap: var(--space-lg); margin-top: var(--space-xl); }
 
 .submissionRevision {
-  border: 2px solid var(--color-border);
-  border-radius: var(--border-radius);
+  border: 1px solid var(--color-border);
+  border-radius: 0;
   background: var(--color-card);
   padding: var(--space-2xl);
 }
@@ -137,7 +139,7 @@
 .revisionIndex {
   color: var(--color-muted-foreground);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .revisionHeading h3 {
@@ -160,12 +162,12 @@
 }
 
 .revisionBadges span {
-  border-radius: var(--border-radius);
+  border-radius: 0;
   background: var(--color-muted);
   padding: 5px 8px;
   color: var(--color-muted-foreground);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .revisionBadges span[data-late="true"] {
@@ -177,7 +179,7 @@
   margin: var(--space-xl) 0 var(--space-md);
   color: var(--color-muted-foreground);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .submissionBody,
@@ -188,7 +190,7 @@
 }
 
 .submissionBody {
-  border-left: 3px solid var(--color-primary);
+  border-left: 1px solid var(--color-primary);
   padding-left: var(--space-xl);
   font-size: 16px;
   line-height: 1.65;
@@ -196,7 +198,7 @@
 
 .feedbackHistory {
   margin-top: var(--space-2xl);
-  border-top: 2px solid var(--color-border);
+  border-top: 1px solid var(--color-border);
   padding-top: var(--space-xl);
 }
 
@@ -223,7 +225,7 @@
   display: grid;
   grid-template-columns: 130px minmax(0, 1fr);
   gap: var(--space-xl);
-  border-top: 2px solid var(--color-border);
+  border-top: 1px solid var(--color-border);
   padding: var(--space-xl) 0;
 }
 
@@ -234,7 +236,7 @@
 
 .feedbackMeta > span {
   color: var(--color-primary);
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .feedbackMeta p { margin: var(--space-sm) 0 0; }
@@ -249,8 +251,8 @@
 .confirmationPanel {
   display: grid;
   gap: var(--space-xl);
-  border: 2px solid var(--color-border);
-  border-radius: var(--border-radius);
+  border: 1px solid var(--color-border);
+  border-radius: 0;
   background: var(--color-card);
   padding: var(--space-2xl);
 }
@@ -276,13 +278,13 @@
 }
 
 .composerForm { display: grid; gap: 10px; }
-.composerForm > label { font-size: 16px; font-weight: 600; }
+.composerForm > label { font-size: 16px; font-weight: 500; }
 
 .composerForm textarea {
   width: 100%;
   min-height: 240px;
-  border: 2px solid var(--color-border);
-  border-radius: var(--border-radius);
+  border: 1px solid var(--color-border);
+  border-radius: 0;
   background: var(--color-card);
   padding: var(--space-lg);
   color: var(--color-foreground);
@@ -312,12 +314,12 @@
 
 .fieldMeta span[data-over-limit="true"] {
   color: var(--danger);
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .prepareRow {
   align-items: center;
-  border-top: 2px solid var(--color-border);
+  border-top: 1px solid var(--color-border);
   padding-top: var(--space-xl);
   color: var(--color-muted-foreground);
   font-size: 14px;
@@ -333,13 +335,13 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-sm);
-  border: 2px solid var(--color-border);
-  border-radius: var(--border-radius);
+  border: 1px solid var(--color-border);
+  border-radius: 0;
   background: var(--color-card);
   padding: var(--space-lg) var(--space-xl);
   color: var(--color-foreground);
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
   transition: opacity var(--motion-fast), background var(--motion-fast), border-color var(--motion-fast);
 }
@@ -347,9 +349,9 @@
 .prepareButton,
 .confirmButton,
 .signInButton {
-  border-color: var(--color-accent);
-  background: var(--color-accent);
-  color: var(--color-on-accent);
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
 }
 
 .prepareButton:hover:not(:disabled),
@@ -381,8 +383,8 @@
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  border: 2px solid var(--color-border);
-  border-radius: var(--border-radius);
+  border: 1px solid var(--color-border);
+  border-radius: 0;
   background: var(--color-muted);
   padding: var(--space-lg);
   color: var(--color-muted-foreground);
@@ -398,9 +400,9 @@
 }
 
 .actionNotice[data-tone="conflict"] {
-  border-color: var(--color-accent);
-  background: var(--warning-soft);
-  color: var(--warning-strong);
+  border-color: var(--color-foreground);
+  background: var(--color-muted);
+  color: var(--color-foreground);
 }
 
 .actionNotice[data-tone="error"] {
@@ -415,14 +417,14 @@
   background: transparent;
   color: inherit;
   font: inherit;
-  font-weight: 600;
+  font-weight: 500;
   text-decoration: underline;
   cursor: pointer;
 }
 
 .confirmationBody {
-  border: 2px solid var(--color-border);
-  border-radius: var(--border-radius);
+  border: 1px solid var(--color-border);
+  border-radius: 0;
   background: var(--color-muted);
   padding: var(--space-lg);
   color: var(--color-foreground);
@@ -443,7 +445,7 @@
 
 .railNote {
   margin-top: var(--space-xl);
-  border-left: 3px solid var(--color-primary);
+  border-left: 1px solid var(--color-primary);
   padding-left: var(--space-lg);
 }
 

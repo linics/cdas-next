@@ -16,9 +16,11 @@
 .eyebrow,
 .speaker {
   margin: 0;
-  color: var(--color-muted-foreground);
-  font-size: 14px;
-  font-weight: 600;
+  color: var(--color-foreground);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
 }
 
 .header h2 {
@@ -27,12 +29,12 @@
 }
 
 .availability {
-  border-radius: var(--border-radius);
+  border-radius: 0;
   background: var(--color-muted);
   padding: 6px 10px;
   color: var(--color-primary);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .availability[data-busy="true"] {
@@ -43,7 +45,7 @@
 .boundaryNote,
 .emptyPrompt {
   margin: 0;
-  border-left: 3px solid var(--color-primary);
+  border-left: 1px solid var(--color-primary);
   padding-left: var(--space-lg);
   color: var(--color-muted-foreground);
   font-size: 14px;
@@ -52,8 +54,8 @@
 
 .transcript {
   display: grid;
-  border: 2px solid var(--color-border);
-  border-radius: var(--border-radius);
+  border: 1px solid var(--color-border);
+  border-radius: 0;
   background: var(--color-card);
 }
 
@@ -61,7 +63,7 @@
   display: grid;
   grid-template-columns: 110px minmax(0, 1fr);
   gap: var(--space-xl);
-  border-bottom: 2px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
   padding: var(--space-xl);
 }
 
@@ -81,8 +83,8 @@
 .toolResult,
 .approval {
   margin-top: var(--space-lg);
-  border: 2px solid var(--color-border);
-  border-radius: var(--border-radius);
+  border: 1px solid var(--color-border);
+  border-radius: 0;
   background: var(--color-muted);
   padding: var(--space-lg);
 }
@@ -101,7 +103,7 @@
 .inlineActions a {
   color: var(--color-primary);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
   text-decoration: underline;
   text-underline-offset: 3px;
 }
@@ -120,7 +122,7 @@
 .approval dd {
   margin: var(--space-sm) 0 0;
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .inlineActions,
@@ -134,13 +136,13 @@
 .inlineActions button,
 .composerFooter button {
   min-height: 44px;
-  border: 2px solid var(--color-accent);
-  border-radius: var(--border-radius);
-  background: var(--color-accent);
+  border: 1px solid var(--color-primary);
+  border-radius: 0;
+  background: var(--color-primary);
   padding: var(--space-lg) var(--space-xl);
-  color: var(--color-on-accent);
+  color: var(--color-on-primary);
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
   transition: opacity var(--motion-fast), background var(--motion-fast), border-color var(--motion-fast);
 }
@@ -156,13 +158,13 @@
 }
 
 .composer { display: grid; gap: var(--space-md); }
-.composer label { font-size: 16px; font-weight: 600; }
+.composer label { font-size: 16px; font-weight: 500; }
 
 .composer textarea {
   width: 100%;
   min-height: 112px;
-  border: 2px solid var(--color-border);
-  border-radius: var(--border-radius);
+  border: 1px solid var(--color-border);
+  border-radius: 0;
   background: var(--color-card);
   padding: var(--space-lg);
   color: var(--color-foreground);

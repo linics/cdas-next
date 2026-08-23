@@ -1,31 +1,39 @@
 @import "tailwindcss";
 
 :root {
-  /* UI UX Pro Max — Flat Design + LMS (design-system/uipro-max-lms/MASTER.md) */
-  --color-primary: #0d9488;
-  --color-on-primary: #000000;
-  --color-secondary: #14b8a6;
-  --color-on-secondary: #0f172a;
-  --color-accent: #ea580c;
-  --color-on-accent: #000000;
-  --color-background: #f0fdfa;
-  --color-foreground: #134e4a;
+  /* UI UX Pro Max — Minimalism & Swiss Style + Swiss Modernism 2.0
+     Style search: monochrome #000/#FFF, radius 0, shadow none, single accent.
+     Color search: Portfolio/Personal monochrome + blue accent #2563EB.
+     Aggregator button radius/shadow tables are ignored; style guidelines win. */
+  --color-primary: #000000;
+  --color-on-primary: #ffffff;
+  --color-secondary: #18181b;
+  --color-on-secondary: #ffffff;
+  --color-accent: #2563eb;
+  --color-on-accent: #ffffff;
+  --color-background: #ffffff;
+  --color-foreground: #000000;
   --color-card: #ffffff;
-  --color-card-foreground: #134e4a;
-  --color-muted: #e8f1f4;
-  --color-muted-foreground: #475569;
-  --color-border: #99f6e4;
+  --color-card-foreground: #000000;
+  --color-muted: #f5f5f5;
+  --color-muted-foreground: #3f3f46;
+  --color-border: #000000;
   --color-destructive: #dc2626;
   --color-on-destructive: #ffffff;
-  --color-ring: #0d9488;
+  --color-ring: #000000;
 
-  --space-xs: 2px;
-  --space-sm: 4px;
-  --space-md: 8px;
-  --space-lg: 12px;
-  --space-xl: 16px;
-  --space-2xl: 24px;
-  --space-3xl: 32px;
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+  --space-3xl: 64px;
+  --spacing: 2rem;
+  --grid-columns: 12;
+  --grid-gap: 1rem;
+  --base-unit: 8px;
+  --content-width: 1200px;
 
   --shadow-sm: none;
   --shadow-md: none;
@@ -33,10 +41,10 @@
   --shadow-xl: none;
   --shadow: none;
   --gradient: none;
-  --border-radius: 2px;
-  --radius: 2px;
-  --radius-sm: 2px;
-  --radius-md: 2px;
+  --border-radius: 0px;
+  --radius: 0px;
+  --radius-sm: 0px;
+  --radius-md: 0px;
 
   --icon-sm: 16px;
   --icon-md: 20px;
@@ -45,42 +53,42 @@
   --surface-page: var(--color-background);
   --surface: var(--color-card);
   --surface-subtle: var(--color-muted);
-  --surface-hover: #ccfbf1;
+  --surface-hover: var(--color-muted);
   --text: var(--color-foreground);
   --text-secondary: var(--color-muted-foreground);
   --border: var(--color-border);
-  --border-strong: var(--color-secondary);
+  --border-strong: var(--color-foreground);
   --primary: var(--color-primary);
-  --primary-hover: #0f766e;
+  --primary-hover: #18181b;
   --primary-soft: var(--color-muted);
-  --success: #115e59;
-  --warning: #c2410c;
+  --success: var(--color-foreground);
+  --warning: var(--color-foreground);
   --danger: var(--color-destructive);
   --shadow-overlay: none;
   --shadow-raise: none;
-  --motion-fast: 200ms ease;
+  --motion-fast: 220ms ease;
   --z-nav: 20;
   --z-overlay: 100;
-  --toolbar-height: 56px;
+  --toolbar-height: 64px;
   --focus-ring: var(--color-ring);
-  --success-soft: #ccfbf1;
-  --success-strong: #115e59;
-  --warning-soft: #ffedd5;
-  --warning-strong: #9a3412;
-  --danger-soft: #fee2e2;
-  --danger-strong: #991b1b;
+  --success-soft: var(--color-muted);
+  --success-strong: var(--color-foreground);
+  --warning-soft: var(--color-muted);
+  --warning-strong: var(--color-foreground);
+  --danger-soft: #ffffff;
+  --danger-strong: var(--color-destructive);
   --neutral-soft: var(--color-muted);
   --neutral-strong: var(--color-muted-foreground);
-  --alert-warning-soft: #fff7ed;
-  --alert-danger-soft: #fef2f2;
-  --alert-success-soft: #f0fdfa;
+  --alert-warning-soft: var(--color-card);
+  --alert-danger-soft: var(--color-card);
+  --alert-success-soft: var(--color-card);
   --background: var(--color-background);
   --foreground: var(--color-foreground);
   --muted: var(--color-muted-foreground);
   --line: var(--color-border);
   --accent: var(--color-accent);
-  --accent-strong: #c2410c;
-  --accent-soft: #ffedd5;
+  --accent-strong: #1d4ed8;
+  --accent-soft: var(--color-muted);
 }
 
 * { box-sizing: border-box; }
@@ -96,15 +104,16 @@ body {
   margin: 0;
   background: var(--color-background);
   color: var(--color-foreground);
-  font-family: var(--font-plus-jakarta), "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  font-family: var(--font-inter), Inter, Helvetica, "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
   font-size: 16px;
-  line-height: 1.55;
+  line-height: 1.5;
   font-weight: 400;
   text-rendering: optimizeLegibility;
 }
 
 h1, h2, h3, h4 {
-  font-weight: 700;
+  font-weight: 500;
+  letter-spacing: -0.03em;
   color: var(--color-foreground);
 }
 
@@ -131,13 +140,13 @@ input:focus-visible,
 textarea:focus-visible,
 select:focus-visible,
 [tabindex="-1"]:focus-visible {
-  outline: 3px solid var(--color-ring);
-  outline-offset: 3px;
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
 }
 
 ::selection {
-  background: var(--color-muted);
-  color: var(--color-foreground);
+  background: var(--color-foreground);
+  color: var(--color-background);
 }
 
 @media (prefers-reduced-motion: reduce) {

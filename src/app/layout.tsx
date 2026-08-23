@@ -1,14 +1,14 @@
 import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import { Inter } from "next/font/google";
 import type { ReactNode } from "react";
 import { isClerkAuthenticationAvailable } from "../server/auth/clerk-availability";
 import "./globals.css";
 
-const plusJakartaSans = Plus_Jakarta_Sans({
+const inter = Inter({
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-plus-jakarta",
+  variable: "--font-inter",
 });
 
 export const metadata: Metadata = {
@@ -18,8 +18,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   const document = (
-    <html className={plusJakartaSans.variable} lang="zh-CN">
-      <body className={plusJakartaSans.className}>{children}</body>
+    <html className={inter.variable} lang="zh-CN">
+      <body className={inter.className}>{children}</body>
     </html>
   );
 

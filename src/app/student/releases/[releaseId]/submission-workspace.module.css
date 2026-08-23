@@ -12,15 +12,17 @@
   gap: var(--space-sm);
   color: var(--color-primary);
   font-size: 15px;
-  font-weight: 650;
+  font-weight: 500;
   cursor: pointer;
 }
 
 .eyebrow {
   margin: 0;
-  color: var(--color-muted-foreground);
-  font-size: 14px;
-  font-weight: 650;
+  color: var(--color-foreground);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
 }
 
 .releaseHeader {
@@ -28,7 +30,7 @@
   align-items: end;
   justify-content: space-between;
   gap: var(--space-2xl);
-  border-bottom: 2px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
   padding: var(--space-xl) 0 var(--space-2xl);
 }
 
@@ -56,8 +58,8 @@
 
 .releaseFacts > div {
   min-width: 0;
-  border: 2px solid var(--color-border);
-  border-radius: var(--border-radius);
+  border: 1px solid var(--color-border);
+  border-radius: 0;
   background: var(--color-card);
   padding: var(--space-xl);
 }
@@ -70,7 +72,7 @@
 .releaseFacts dd {
   margin: 5px 0 0;
   font-size: 16px;
-  font-weight: 650;
+  font-weight: 500;
 }
 
 .lateNotice { margin-top: var(--space-2xl); }
@@ -86,8 +88,8 @@
 .submissionColumn { min-width: 0; }
 
 .editorSection {
-  border: 2px solid var(--color-border);
-  border-radius: var(--border-radius);
+  border: 1px solid var(--color-border);
+  border-radius: 0;
   background: var(--color-card);
   padding: clamp(var(--space-xl), 4vw, var(--space-3xl));
 }
@@ -112,12 +114,12 @@
 .draftBadge,
 .formalBadge {
   flex: 0 0 auto;
-  border-radius: var(--border-radius);
+  border-radius: 0;
   background: var(--color-muted);
   padding: var(--space-sm) 10px;
   color: var(--color-muted-foreground);
   font-size: 14px;
-  font-weight: 650;
+  font-weight: 500;
 }
 
 .formalBadge {
@@ -138,7 +140,7 @@
   display: block;
   margin-bottom: var(--space-md);
   font-size: 16px;
-  font-weight: 650;
+  font-weight: 500;
 }
 
 .writingField textarea {
@@ -146,8 +148,8 @@
   width: 100%;
   min-height: 300px;
   resize: vertical;
-  border: 2px solid var(--color-border);
-  border-radius: var(--border-radius);
+  border: 1px solid var(--color-border);
+  border-radius: 0;
   background: var(--color-card);
   padding: 14px;
   color: var(--color-foreground);
@@ -170,7 +172,7 @@
 
 .fieldMeta p { margin: 0; }
 .fieldMeta span { white-space: nowrap; font-variant-numeric: tabular-nums; }
-.fieldMeta span[data-over-limit="true"] { color: var(--danger); font-weight: 700; }
+.fieldMeta span[data-over-limit="true"] { color: var(--danger); font-weight: 500; }
 
 .saveRow {
   display: flex;
@@ -188,7 +190,7 @@
 .saveRow > span[data-dirty="true"],
 .commitHint {
   color: var(--warning);
-  font-weight: 650;
+  font-weight: 500;
 }
 
 .primaryButton,
@@ -198,24 +200,24 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-sm);
-  border-radius: var(--border-radius);
+  border-radius: 0;
   padding: 0 var(--space-xl);
   font-size: 15px;
-  font-weight: 650;
+  font-weight: 500;
   cursor: pointer;
   transition: opacity var(--motion-fast), background var(--motion-fast), border-color var(--motion-fast);
 }
 
 .primaryButton {
-  border: 2px solid var(--color-accent);
-  background: var(--color-accent);
-  color: var(--color-on-accent);
+  border: 1px solid var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
 }
 
 .primaryButton:hover:not(:disabled) { opacity: 0.9; }
 
 .secondaryButton {
-  border: 2px solid var(--color-primary);
+  border: 1px solid var(--color-primary);
   background: transparent;
   color: var(--color-primary);
 }
@@ -235,7 +237,7 @@
   align-items: center;
   gap: 20px 28px;
   margin-top: var(--space-2xl);
-  border-top: 2px solid var(--color-border);
+  border-top: 1px solid var(--color-border);
   padding-top: var(--space-2xl);
 }
 
@@ -273,7 +275,7 @@
   padding: 0;
   color: var(--color-primary);
   font-size: 15px;
-  font-weight: 650;
+  font-weight: 500;
   cursor: pointer;
 }
 
@@ -281,7 +283,7 @@
   display: flex;
   gap: 10px;
   margin-top: var(--space-xl);
-  border-top: 2px solid var(--color-border);
+  border-top: 1px solid var(--color-border);
   padding-top: var(--space-xl);
   color: var(--color-muted-foreground);
 }
@@ -292,7 +294,7 @@
 
 .historyHeading {
   align-items: end;
-  border-bottom: 2px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
   padding-bottom: 14px;
 }
 
@@ -303,17 +305,17 @@
 
 .emptyHistory {
   margin: 0;
-  border-bottom: 2px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
   padding: var(--space-2xl) 0;
   color: var(--color-muted-foreground);
   font-size: 16px;
 }
 
-.revisionList { border-bottom: 2px solid var(--color-border); }
+.revisionList { border-bottom: 1px solid var(--color-border); }
 
 .revision { padding: var(--space-2xl) 0; }
 
-.revision + .revision { border-top: 2px solid var(--color-border); }
+.revision + .revision { border-top: 1px solid var(--color-border); }
 
 .revision header,
 .revision header > div:first-child,
@@ -332,7 +334,7 @@
 .revisionNumber {
   color: var(--color-muted-foreground);
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .revision h3 { margin: 0; font-size: 18px; }
@@ -350,7 +352,7 @@
 }
 
 .revisionBadges span {
-  border-radius: var(--border-radius);
+  border-radius: 0;
   background: var(--color-muted);
   padding: var(--space-sm) var(--space-md);
   color: var(--color-muted-foreground);
@@ -366,7 +368,7 @@
   margin: 18px 0 var(--space-md);
   color: var(--success);
   font-size: 14px;
-  font-weight: 650;
+  font-weight: 500;
 }
 
 .revisionText,
@@ -379,13 +381,13 @@
 }
 
 .revisionText {
-  border-left: 3px solid var(--color-primary);
+  border-left: 1px solid var(--color-primary);
   padding-left: 14px;
 }
 
 .feedbackSection {
   margin-top: var(--space-2xl);
-  border-top: 2px solid var(--color-border);
+  border-top: 1px solid var(--color-border);
   padding-top: var(--space-xl);
 }
 
@@ -416,7 +418,7 @@
   display: grid;
   grid-template-columns: minmax(170px, 0.4fr) minmax(0, 1fr);
   gap: var(--space-xl);
-  border-top: 2px solid var(--color-border);
+  border-top: 1px solid var(--color-border);
   padding: 18px 0;
 }
 
@@ -424,7 +426,7 @@
 
 .feedbackVersionMeta > span {
   margin-left: 6px;
-  border-radius: var(--border-radius);
+  border-radius: 0;
   background: var(--color-muted);
   padding: 3px 7px;
   color: var(--color-primary);
@@ -448,7 +450,7 @@
 .releaseBrief {
   position: sticky;
   top: var(--space-2xl);
-  border-left: 2px solid var(--color-border);
+  border-left: 1px solid var(--color-border);
   padding-left: var(--space-2xl);
 }
 
@@ -463,7 +465,7 @@
 }
 
 .releaseBrief section {
-  border-top: 2px solid var(--color-border);
+  border-top: 1px solid var(--color-border);
   padding: 18px 0;
 }
 
@@ -518,7 +520,7 @@
   align-items: center;
   color: var(--color-primary);
   font-size: 15px;
-  font-weight: 650;
+  font-weight: 500;
   cursor: pointer;
 }
 
@@ -527,13 +529,13 @@
   align-items: center;
   gap: var(--space-sm);
   min-height: 44px;
-  border: 2px solid var(--color-accent);
-  border-radius: var(--border-radius);
-  background: var(--color-accent);
+  border: 1px solid var(--color-primary);
+  border-radius: 0;
+  background: var(--color-primary);
   padding: 0 var(--space-xl);
-  color: var(--color-on-accent);
+  color: var(--color-on-primary);
   font-size: 15px;
-  font-weight: 650;
+  font-weight: 500;
   cursor: pointer;
   transition: opacity var(--motion-fast);
 }
@@ -544,7 +546,7 @@
   .workspaceGrid { grid-template-columns: 1fr; }
   .releaseBrief {
     position: static;
-    border-top: 2px solid var(--color-border);
+    border-top: 1px solid var(--color-border);
     border-left: 0;
     padding: var(--space-2xl) 0 0;
   }
