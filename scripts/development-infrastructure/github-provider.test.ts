@@ -56,7 +56,9 @@ describe("GitHub CLI provider", () => {
     const secret = calls.find((call) => call.args[0] === "secret");
     expect(secret?.args.join(" ")).not.toContain("postgresql://secret");
     expect(secret?.input).toBe("postgresql://secret");
-    expect(calls.find((call) => call.args.includes("PUT"))?.input).toContain("prevent_self_review");
+    expect(JSON.parse(calls.find((call) => call.args.includes("PUT"))?.input ?? "null")).toEqual({
+      deployment_branch_policy: { protected_branches: false, custom_branch_policies: true },
+    });
   });
   it("removes only legacy codex wildcard then re-reads one exact current policy", async () => {
     const calls: Call[] = []; let reads = 0;

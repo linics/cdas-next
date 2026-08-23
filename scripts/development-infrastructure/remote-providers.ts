@@ -94,7 +94,11 @@ export class GitHubCliProvider implements GitHubProvider {
   }
   async ensureEnvironment(repository: RepositoryTarget): Promise<void> {
     const environmentPath = `repos/${repository.owner}/${repository.name}/environments/${infrastructureEnvironment}`;
-    await this.gh(["api", "--method", "PUT", environmentPath, "--input", "-"], JSON.stringify({ wait_timer: 0, prevent_self_review: false, deployment_branch_policy: { protected_branches: false, custom_branch_policies: true } }));
+    // GitHub treats even a zero wait_timer as configuring a wait-timer rule,
+    // which is unavailable for private repositories on some plans. Omitting
+    // unrelated protection fields preserves their existing defaults while the
+    // supported deployment-branch policy remains explicit and fail-closed.
+    await this.gh(["api", "--method", "PUT", environmentPath, "--input", "-"], JSON.stringify({ deployment_branch_policy: { protected_branches: false, custom_branch_policies: true } }));
     const listPolicies = async () => {
       const pages = JSON.parse((await this.gh(["api", `${environmentPath}/deployment-branch-policies`, "--paginate", "--slurp"])).stdout) as unknown;
       if (!Array.isArray(pages) || pages.length === 0) throw new Error("DEVELOPMENT_INFRA_GITHUB_POLICY_SCHEMA_INVALID");
