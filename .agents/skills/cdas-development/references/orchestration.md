@@ -56,6 +56,8 @@ Stop rather than expanding scope when escalation would require new user authorit
 
 ## Verification Gates
 
+Scale evidence to delivery risk. Small, low-risk edits get focused tests plus the minimum relevant static check. Run the full matrix once per completed substantial slice, before a release boundary, or after a protected invariant changes; do not duplicate it in both the primary thread and verifier by default. A P2/T2-only failure is backlog, not a reason for another remote retry.
+
 For ordinary application changes, run the focused relevant tests, then:
 
 ```sh
@@ -88,3 +90,5 @@ The primary thread must verify the actual diff and explicitly check:
 - no model, authentication-provider, or object-storage call occurs inside a database transaction;
 - normal, unauthorized, missing-or-concurrent, repeated, and external-failure paths are covered proportionally to risk;
 - AI unavailability does not break the core teacher-student workflow.
+
+Only P0/P1 findings, protected-invariant violations, or failures of the accepted user journey block acceptance. Summarize lower-severity findings once and continue delivery.
