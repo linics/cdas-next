@@ -145,14 +145,28 @@ export class NeonApiProvider implements NeonProvider {
     }
     const matches = branches.filter((entry) => object(entry).name === this.config.neonBranchName);
     if (matches.length > 1) throw new Error("DEVELOPMENT_INFRA_NEON_BRANCH_AMBIGUOUS");
-    const branch = matches[0] ? object(matches[0]) : object(object(await json(this.fetcher, this.url("/branches"), this.init("POST", { branch: { name: this.config.neonBranchName, init_source: "schema-only" } }))).branch);
+    let createdEndpoint: Record<string, unknown> | undefined;
+    let branch: Record<string, unknown>;
+    if (matches[0]) {
+      branch = object(matches[0]);
+    } else {
+      const created = object(await json(this.fetcher, this.url("/branches"), this.init("POST", { branch: { name: this.config.neonBranchName, init_source: "schema-only" }, endpoints: [{ type: "read_write", suspend_timeout_seconds: 300 }] })));
+      branch = object(created.branch);
+      if (!Array.isArray(created.endpoints) || created.endpoints.length !== 1) throw new Error("DEVELOPMENT_INFRA_NEON_ENDPOINT_AMBIGUOUS");
+      createdEndpoint = object(created.endpoints[0]);
+    }
     const branchId = text(branch.id);
     if (branch.name !== this.config.neonBranchName || branch.init_source !== "schema-only" || !(branch.parent_id === undefined || branch.parent_id === null) || !(branch.primary === undefined || branch.primary === false) || branch.default !== false) throw new Error("DEVELOPMENT_INFRA_NEON_BRANCH_UNSAFE");
-    const endpointPage = object(await json(this.fetcher, this.url("/endpoints"), this.init()));
-    const endpoints = endpointPage.endpoints; if (!Array.isArray(endpoints)) throw new Error("DEVELOPMENT_INFRA_PROVIDER_SCHEMA_INVALID");
-    const endpointMatches = endpoints.map(object).filter((item) => item.branch_id === branchId && item.type === "read_write");
-    if (endpointMatches.length > 1) throw new Error("DEVELOPMENT_INFRA_NEON_ENDPOINT_AMBIGUOUS");
-    const endpoint = endpointMatches[0] ?? object(object(await json(this.fetcher, this.url("/endpoints"), this.init("POST", { endpoint: { branch_id: branchId, type: "read_write", suspend_timeout_seconds: 300 } }))).endpoint);
+    let endpoint: Record<string, unknown>;
+    if (createdEndpoint) {
+      endpoint = createdEndpoint;
+    } else {
+      const endpointPage = object(await json(this.fetcher, this.url("/endpoints"), this.init()));
+      const endpoints = endpointPage.endpoints; if (!Array.isArray(endpoints)) throw new Error("DEVELOPMENT_INFRA_PROVIDER_SCHEMA_INVALID");
+      const endpointMatches = endpoints.map(object).filter((item) => item.branch_id === branchId && item.type === "read_write");
+      if (endpointMatches.length > 1) throw new Error("DEVELOPMENT_INFRA_NEON_ENDPOINT_AMBIGUOUS");
+      endpoint = endpointMatches[0] ?? object(object(await json(this.fetcher, this.url("/endpoints"), this.init("POST", { endpoint: { branch_id: branchId, type: "read_write", suspend_timeout_seconds: 300 } }))).endpoint);
+    }
     if (endpoint.branch_id !== branchId || endpoint.type !== "read_write" || typeof endpoint.suspend_timeout_seconds !== "number" || endpoint.suspend_timeout_seconds < 0) throw new Error("DEVELOPMENT_INFRA_NEON_ENDPOINT_UNSAFE");
     const endpointId = text(endpoint.id);
     const rolesPage = object(await json(this.fetcher, this.url(`/branches/${encodeURIComponent(branchId)}/roles`), this.init()));
