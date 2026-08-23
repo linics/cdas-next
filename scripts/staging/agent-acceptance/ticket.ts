@@ -1,0 +1,3 @@
+import { evaluateAgentAcceptanceReadiness, type AgentAcceptanceEnvironment } from "./contracts";
+export type AgentTicketClient={signInTokens:{createSignInToken(input:{userId:string;expiresInSeconds:number}):Promise<{token:string}>}};
+export async function issueAgentTeacherTicket(e:AgentAcceptanceEnvironment,client:AgentTicketClient){if(evaluateAgentAcceptanceReadiness(e).status!=="PASS")throw new Error("STAGING_AGENT_ACCEPTANCE_READINESS_FAILED");const ticket=await client.signInTokens.createSignInToken({userId:e.STAGING_TEST_TEACHER_CLERK_ID?.trim()??"",expiresInSeconds:60});if(!ticket.token)throw new Error("STAGING_AGENT_ACCEPTANCE_TICKET_INVALID");return ticket.token;}

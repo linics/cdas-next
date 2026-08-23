@@ -1,0 +1,4 @@
+interface:
+  display_name: "CDAS Development"
+  short_description: "Orchestrate bounded CDAS Next development safely"
+  default_prompt: "Use $cdas-development to implement this CDAS Next change with bounded subagents and verified acceptance checks."

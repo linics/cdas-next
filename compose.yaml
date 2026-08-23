@@ -1,0 +1,55 @@
+services:
+  database:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: cdas_next
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d cdas_next"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+    ports:
+      - "${CDAS_POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - cdas_next_postgres:/var/lib/postgresql/data
+
+  test-database:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: cdas_next_test
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d cdas_next_test"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+    ports:
+      - "${CDAS_TEST_POSTGRES_PORT:-5433}:5432"
+    # Integration fixtures are append-only by design. Keep them out of the
+    # developer database and discard them when this container is recreated.
+    tmpfs:
+      - /var/lib/postgresql/data
+
+  e2e-database:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: cdas_next_e2e
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d cdas_next_e2e"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+    ports:
+      - "${CDAS_E2E_POSTGRES_PORT:-5434}:5432"
+    # Browser runs reset only this named service. Keep their fixtures separate
+    # from both developer data and command/SQL integration-test fixtures.
+    tmpfs:
+      - /var/lib/postgresql/data
+
+volumes:
+  cdas_next_postgres:

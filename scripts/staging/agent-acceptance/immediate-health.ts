@@ -1,0 +1,8 @@
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import { expectedEvidenceChecks } from "../decision";
+import { safeStagingRunDirectory } from "../output";
+import { writeAgentArtifact } from "./output";
+function exactApplication(value:unknown){if(!value||typeof value!=="object"||Array.isArray(value))return false;const x=value as Record<string,unknown>;const codes=expectedEvidenceChecks["staging-application.v1"];return x.schema==="staging-application.v1"&&x.status==="PASS"&&x.stagingSyntheticDecision==="GO"&&x.realStudentDataAllowed===false&&x.productionDecision==="NO_GO"&&Array.isArray(x.checks)&&x.checks.length===codes.length&&x.checks.every(c=>c&&typeof c==="object"&&(c as Record<string,unknown>).status==="PASS"&&codes.includes((c as Record<string,unknown>).code as never));}
+async function main(){const marker=process.env.STAGING_RUN_MARKER?.trim()??"";let application:unknown;try{application=JSON.parse(await readFile(path.join(safeStagingRunDirectory(marker),"application.json"),"utf8"));}catch{}const pass=process.env.STAGING_IMMEDIATE_HEALTH_OUTCOME==="success"&&exactApplication(application);const evidence={schema:"staging-agent-acceptance-immediate-health.v1",status:pass?"PASS":"FAIL",checks:expectedEvidenceChecks["staging-application.v1"].map(code=>({code,status:pass?"PASS":"FAIL"})),realStudentDataAllowed:false,productionDecision:"NO_GO"};await writeAgentArtifact(marker,"immediate-health.json",evidence);process.stdout.write(`${JSON.stringify({schema:evidence.schema,status:evidence.status})}\n`);if(!pass)process.exitCode=1;}
+void main().catch(()=>{process.stdout.write('{"schema":"staging-agent-acceptance-immediate-health.v1","status":"FAIL"}\n');process.exitCode=1;});

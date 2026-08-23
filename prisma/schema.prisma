@@ -1,0 +1,376 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  TEACHER
+  STUDENT
+}
+
+enum DraftStatus {
+  EDITING
+  READY_FOR_PREVIEW
+  SEALED
+}
+
+enum DraftRevisionSource {
+  MANUAL
+  AGENT
+  RESTORE
+}
+
+enum ReleaseStatus {
+  ACTIVE
+  CLOSED
+  ARCHIVED
+}
+
+enum ActionIntentStatus {
+  PREPARED
+  CONFIRMED
+  REJECTED
+  EXECUTED
+  EXPIRED
+}
+
+enum InvocationSource {
+  UI
+  AGENT
+  SYSTEM
+}
+
+enum AuditOutcome {
+  SUCCEEDED
+  DENIED
+  CONFLICTED
+  FAILED
+}
+
+enum AgentRunStatus {
+  RUNNING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+enum FeedbackRevisionSource {
+  MANUAL
+  AI_ASSISTED
+}
+
+model AppUser {
+  id                    String                    @id @default(uuid()) @db.Uuid
+  authSubject           String                    @unique @map("auth_subject")
+  role                  UserRole
+  displayName           String                    @map("display_name")
+  createdAt             DateTime                  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt             DateTime                  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  classrooms            Classroom[]               @relation("ClassroomManager")
+  memberships           ClassroomMembership[]     @relation("StudentMemberships")
+  drafts                ActivityDraft[]           @relation("DraftOwner")
+  releases              ActivityRelease[]         @relation("ReleasePublisher")
+  actionIntents         ActionIntent[]            @relation("ActionIntentActor")
+  actionDecisions       ActionIntent[]            @relation("ActionIntentDecider")
+  idempotency           IdempotencyRecord[]
+  auditEntries          ActionAudit[]
+  agentRuns             AgentRun[]
+  submissions           Submission[]              @relation("SubmissionStudent")
+  feedback              TeacherFeedback[]         @relation("TeacherFeedbackTeacher")
+  feedbackConfirmations TeacherFeedbackRevision[] @relation("TeacherFeedbackConfirmer")
+
+  @@map("app_users")
+}
+
+model Classroom {
+  id          String                @id @default(uuid()) @db.Uuid
+  name        String
+  managerId   String                @map("manager_id") @db.Uuid
+  version     Int                   @default(1)
+  createdAt   DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime              @updatedAt @map("updated_at") @db.Timestamptz(3)
+  manager     AppUser               @relation("ClassroomManager", fields: [managerId], references: [id], onDelete: Restrict)
+  memberships ClassroomMembership[]
+  releases    ActivityRelease[]
+
+  @@index([managerId])
+  @@map("classrooms")
+}
+
+model ClassroomMembership {
+  id          String    @id @default(uuid()) @db.Uuid
+  classroomId String    @map("classroom_id") @db.Uuid
+  studentId   String    @map("student_id") @db.Uuid
+  joinedAt    DateTime  @default(now()) @map("joined_at") @db.Timestamptz(3)
+  endedAt     DateTime? @map("ended_at") @db.Timestamptz(3)
+  classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Restrict)
+  student     AppUser   @relation("StudentMemberships", fields: [studentId], references: [id], onDelete: Restrict)
+
+  @@index([classroomId, studentId])
+  @@index([studentId, joinedAt, endedAt])
+  @@map("classroom_memberships")
+}
+
+model ActivityDraft {
+  id                   String                  @id @default(uuid()) @db.Uuid
+  ownerId              String                  @map("owner_id") @db.Uuid
+  status               DraftStatus             @default(EDITING)
+  version              Int                     @default(1)
+  title                String
+  summary              String
+  learningObjectives   String[]                @default([]) @map("learning_objectives")
+  taskInstructions     String                  @map("task_instructions")
+  evidenceRequirements String[]                @default([]) @map("evidence_requirements")
+  feedbackCriteria     String[]                @default([]) @map("feedback_criteria")
+  createdAt            DateTime                @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt            DateTime                @updatedAt @map("updated_at") @db.Timestamptz(3)
+  sealedAt             DateTime?               @map("sealed_at") @db.Timestamptz(3)
+  owner                AppUser                 @relation("DraftOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  revisions            ActivityDraftRevision[]
+  release              ActivityRelease?
+
+  @@index([ownerId, status, updatedAt])
+  @@map("activity_drafts")
+}
+
+model ActivityDraftRevision {
+  id                   String                    @id @default(uuid()) @db.Uuid
+  draftId              String                    @map("draft_id") @db.Uuid
+  version              Int
+  source               DraftRevisionSource
+  title                String
+  summary              String
+  learningObjectives   String[]                  @default([]) @map("learning_objectives")
+  taskInstructions     String                    @map("task_instructions")
+  evidenceRequirements String[]                  @default([]) @map("evidence_requirements")
+  feedbackCriteria     String[]                  @default([]) @map("feedback_criteria")
+  agentRunId           String?                   @unique @map("agent_run_id") @db.Uuid
+  createdAt            DateTime                  @default(now()) @map("created_at") @db.Timestamptz(3)
+  draft                ActivityDraft             @relation(fields: [draftId], references: [id], onDelete: Restrict)
+  agentRun             AgentRun?                 @relation(fields: [agentRunId], references: [id], onDelete: Restrict)
+  releaseSnapshots     ActivityReleaseSnapshot[]
+
+  @@unique([draftId, version])
+  @@map("activity_draft_revisions")
+}
+
+model ActivityRelease {
+  id                  String                   @id @default(uuid()) @db.Uuid
+  sourceDraftId       String                   @unique @map("source_draft_id") @db.Uuid
+  publisherId         String                   @map("publisher_id") @db.Uuid
+  classroomId         String                   @map("classroom_id") @db.Uuid
+  actionIntentId      String                   @unique @map("action_intent_id") @db.Uuid
+  closeActionIntentId String?                  @unique @map("close_action_intent_id") @db.Uuid
+  status              ReleaseStatus            @default(ACTIVE)
+  publishedAt         DateTime                 @default(now()) @map("published_at") @db.Timestamptz(3)
+  dueAt               DateTime?                @map("due_at") @db.Timestamptz(3)
+  closedAt            DateTime?                @map("closed_at") @db.Timestamptz(3)
+  archivedAt          DateTime?                @map("archived_at") @db.Timestamptz(3)
+  sourceDraft         ActivityDraft            @relation(fields: [sourceDraftId], references: [id], onDelete: Restrict)
+  publisher           AppUser                  @relation("ReleasePublisher", fields: [publisherId], references: [id], onDelete: Restrict)
+  classroom           Classroom                @relation(fields: [classroomId], references: [id], onDelete: Restrict)
+  actionIntent        ActionIntent             @relation("PublishActionIntent", fields: [actionIntentId], references: [id], onDelete: Restrict)
+  closeActionIntent   ActionIntent?            @relation("CloseActionIntent", fields: [closeActionIntentId], references: [id], onDelete: Restrict)
+  snapshot            ActivityReleaseSnapshot?
+  submissions         Submission[]
+
+  @@unique([id, sourceDraftId])
+  @@index([classroomId, status, publishedAt])
+  @@index([publisherId, publishedAt])
+  @@map("activity_releases")
+}
+
+model ActivityReleaseSnapshot {
+  releaseId          String                @id @map("release_id") @db.Uuid
+  sourceDraftId      String                @map("source_draft_id") @db.Uuid
+  sourceDraftVersion Int                   @map("source_draft_version")
+  schemaVersion      Int                   @default(1) @map("schema_version")
+  content            Json
+  contentHash        String                @map("content_hash") @db.Char(64)
+  createdAt          DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  release            ActivityRelease       @relation(fields: [releaseId, sourceDraftId], references: [id, sourceDraftId], onDelete: Restrict)
+  sourceRevision     ActivityDraftRevision @relation(fields: [sourceDraftId, sourceDraftVersion], references: [draftId, version], onDelete: Restrict)
+
+  @@unique([releaseId, sourceDraftId])
+  @@index([sourceDraftId, sourceDraftVersion])
+  @@map("activity_release_snapshots")
+}
+
+model Submission {
+  id                   String                 @id @default(uuid()) @db.Uuid
+  releaseId            String                 @map("release_id") @db.Uuid
+  studentId            String                 @map("student_id") @db.Uuid
+  latestRevisionNumber Int                    @default(0) @map("latest_revision_number")
+  createdAt            DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt            DateTime               @updatedAt @map("updated_at") @db.Timestamptz(3)
+  release              ActivityRelease        @relation(fields: [releaseId], references: [id], onDelete: Restrict)
+  student              AppUser                @relation("SubmissionStudent", fields: [studentId], references: [id], onDelete: Restrict)
+  workingCopy          SubmissionWorkingCopy?
+  revisions            SubmissionRevision[]
+
+  @@unique([releaseId, studentId])
+  @@index([studentId, createdAt])
+  @@map("submissions")
+}
+
+model SubmissionWorkingCopy {
+  id                 String     @id @default(uuid()) @db.Uuid
+  submissionId       String     @unique @map("submission_id") @db.Uuid
+  baseRevisionNumber Int        @default(0) @map("base_revision_number")
+  version            Int        @default(1)
+  textEvidence       String     @default("") @map("text_evidence") @db.Text
+  createdAt          DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+  submission         Submission @relation(fields: [submissionId], references: [id], onDelete: Restrict)
+
+  @@map("submission_working_copies")
+}
+
+model SubmissionRevision {
+  id                   String           @id @default(uuid()) @db.Uuid
+  submissionId         String           @map("submission_id") @db.Uuid
+  revisionNumber       Int              @map("revision_number")
+  baseRevisionNumber   Int              @map("base_revision_number")
+  sourceWorkingCopyId  String           @unique @map("source_working_copy_id") @db.Uuid
+  sourceWorkingVersion Int              @map("source_working_version")
+  textEvidence         String           @map("text_evidence") @db.Text
+  isLate               Boolean          @map("is_late")
+  submittedAt          DateTime         @map("submitted_at") @db.Timestamptz(3)
+  submission           Submission       @relation(fields: [submissionId], references: [id], onDelete: Restrict)
+  feedback             TeacherFeedback?
+
+  @@unique([submissionId, revisionNumber])
+  @@map("submission_revisions")
+}
+
+model TeacherFeedback {
+  id                   String                    @id @default(uuid()) @db.Uuid
+  submissionRevisionId String                    @unique @map("submission_revision_id") @db.Uuid
+  teacherId            String                    @map("teacher_id") @db.Uuid
+  version              Int
+  createdAt            DateTime                  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt            DateTime                  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  submissionRevision   SubmissionRevision        @relation(fields: [submissionRevisionId], references: [id], onDelete: Restrict)
+  teacher              AppUser                   @relation("TeacherFeedbackTeacher", fields: [teacherId], references: [id], onDelete: Restrict)
+  revisions            TeacherFeedbackRevision[]
+
+  @@index([teacherId, updatedAt])
+  @@map("teacher_feedback")
+}
+
+model TeacherFeedbackRevision {
+  id                String                 @id @default(uuid()) @db.Uuid
+  teacherFeedbackId String                 @map("teacher_feedback_id") @db.Uuid
+  version           Int
+  body              String                 @db.Text
+  bodyHash          String                 @map("body_hash") @db.Char(64)
+  source            FeedbackRevisionSource
+  confirmedById     String                 @map("confirmed_by_id") @db.Uuid
+  actionIntentId    String                 @unique @map("action_intent_id") @db.Uuid
+  agentRunId        String?                @map("agent_run_id") @db.Uuid
+  confirmedAt       DateTime               @default(now()) @map("confirmed_at") @db.Timestamptz(3)
+  feedback          TeacherFeedback        @relation(fields: [teacherFeedbackId], references: [id], onDelete: Restrict)
+  confirmedBy       AppUser                @relation("TeacherFeedbackConfirmer", fields: [confirmedById], references: [id], onDelete: Restrict)
+  actionIntent      ActionIntent           @relation(fields: [actionIntentId], references: [id], onDelete: Restrict)
+  agentRun          AgentRun?              @relation(fields: [agentRunId], references: [id], onDelete: Restrict)
+
+  @@unique([teacherFeedbackId, version])
+  @@index([agentRunId])
+  @@map("teacher_feedback_revisions")
+}
+
+model AgentRun {
+  id                String                    @id @default(uuid()) @db.Uuid
+  actorId           String                    @map("actor_id") @db.Uuid
+  status            AgentRunStatus            @default(RUNNING)
+  model             String
+  startedAt         DateTime                  @default(now()) @map("started_at") @db.Timestamptz(3)
+  completedAt       DateTime?                 @map("completed_at") @db.Timestamptz(3)
+  failureCode       String?                   @map("failure_code")
+  actor             AppUser                   @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  draftRevision     ActivityDraftRevision?
+  intents           ActionIntent[]
+  auditEntries      ActionAudit[]
+  feedbackRevisions TeacherFeedbackRevision[]
+
+  @@index([actorId, startedAt])
+  @@map("agent_runs")
+}
+
+model ActionIntent {
+  id               String                   @id @default(uuid()) @db.Uuid
+  actorId          String                   @map("actor_id") @db.Uuid
+  decidedById      String?                  @map("decided_by_id") @db.Uuid
+  agentRunId       String?                  @map("agent_run_id") @db.Uuid
+  actionName       String                   @map("action_name")
+  payload          Json
+  payloadHash      String                   @map("payload_hash") @db.Char(64)
+  targetType       String                   @map("target_type")
+  targetId         String                   @map("target_id") @db.Uuid
+  expectedVersion  Int?                     @map("expected_version")
+  status           ActionIntentStatus       @default(PREPARED)
+  expiresAt        DateTime                 @map("expires_at") @db.Timestamptz(3)
+  decidedAt        DateTime?                @map("decided_at") @db.Timestamptz(3)
+  executedAt       DateTime?                @map("executed_at") @db.Timestamptz(3)
+  createdAt        DateTime                 @default(now()) @map("created_at") @db.Timestamptz(3)
+  actor            AppUser                  @relation("ActionIntentActor", fields: [actorId], references: [id], onDelete: Restrict)
+  decidedBy        AppUser?                 @relation("ActionIntentDecider", fields: [decidedById], references: [id], onDelete: Restrict)
+  agentRun         AgentRun?                @relation(fields: [agentRunId], references: [id], onDelete: Restrict)
+  auditEntries     ActionAudit[]
+  feedbackRevision TeacherFeedbackRevision?
+  publishRelease   ActivityRelease?         @relation("PublishActionIntent")
+  closedRelease    ActivityRelease?         @relation("CloseActionIntent")
+
+  @@index([actorId, status, expiresAt])
+  @@index([targetType, targetId])
+  @@map("action_intents")
+}
+
+model IdempotencyRecord {
+  id             String   @id @default(uuid()) @db.Uuid
+  actorId        String   @map("actor_id") @db.Uuid
+  commandName    String   @map("command_name")
+  idempotencyKey String   @map("idempotency_key")
+  requestHash    String   @map("request_hash") @db.Char(64)
+  response       Json
+  resourceType   String?  @map("resource_type")
+  resourceId     String?  @map("resource_id") @db.Uuid
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  actor          AppUser  @relation(fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@unique([actorId, commandName, idempotencyKey])
+  @@index([resourceType, resourceId])
+  @@map("idempotency_records")
+}
+
+model ActionAudit {
+  id               String           @id @default(uuid()) @db.Uuid
+  actorId          String           @map("actor_id") @db.Uuid
+  agentRunId       String?          @map("agent_run_id") @db.Uuid
+  actionIntentId   String?          @map("action_intent_id") @db.Uuid
+  source           InvocationSource
+  actionName       String           @map("action_name")
+  targetType       String           @map("target_type")
+  targetId         String           @map("target_id") @db.Uuid
+  requestHash      String           @map("request_hash") @db.Char(64)
+  idempotencyKey   String?          @map("idempotency_key")
+  outcome          AuditOutcome
+  errorCode        String?          @map("error_code")
+  beforeVersion    Int?             @map("before_version")
+  afterVersion     Int?             @map("after_version")
+  resultResourceId String?          @map("result_resource_id") @db.Uuid
+  traceId          String           @map("trace_id")
+  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  actor            AppUser          @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  agentRun         AgentRun?        @relation(fields: [agentRunId], references: [id], onDelete: Restrict)
+  actionIntent     ActionIntent?    @relation(fields: [actionIntentId], references: [id], onDelete: Restrict)
+
+  @@index([actorId, createdAt])
+  @@index([targetType, targetId, createdAt])
+  @@index([traceId])
+  @@map("action_audits")
+}

@@ -1,0 +1,198 @@
+import type { ReactNode } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const mocks = vi.hoisted(() => ({
+  database: { kind: "teacher-release-submissions-page-database" },
+  getDatabaseClient: vi.fn(),
+  createUiCommandContext: vi.fn(),
+  getTeacherReleaseSubmissions: vi.fn(),
+  notFound: vi.fn(() => {
+    throw new Error("NEXT_NOT_FOUND");
+  }),
+}));
+
+vi.mock("server-only", () => ({}));
+vi.mock("@clerk/nextjs", () => ({
+  SignInButton: ({ children }: { children: ReactNode }) => (
+    <span data-clerk-sign-in="true">{children}</span>
+  ),
+  SignOutButton: ({ children }: { children: ReactNode }) => (
+    <span data-clerk-sign-out="true">{children}</span>
+  ),
+}));
+vi.mock("next/link", () => ({
+  default: ({
+    children,
+    href,
+    ...props
+  }: {
+    children: ReactNode;
+    href: string;
+  }) => (
+    <a href={href} {...props}>
+      {children}
+    </a>
+  ),
+}));
+vi.mock("next/navigation", () => ({
+  notFound: mocks.notFound,
+  usePathname: () => `/teacher/releases/${releaseId}/submissions`,
+}));
+vi.mock("../../../../../server/db/client", () => ({
+  getDatabaseClient: mocks.getDatabaseClient,
+}));
+vi.mock(
+  "../../../../../server/commands/create-ui-command-context",
+  () => ({ createUiCommandContext: mocks.createUiCommandContext }),
+);
+vi.mock("../../../../../server/auth/current-actor", () => ({
+  AuthenticationError: class AuthenticationError extends Error {
+    constructor(public readonly code: string) {
+      super(code);
+      this.name = "AuthenticationError";
+    }
+  },
+}));
+vi.mock("../../../../../server/queries/submission-workspace", () => ({
+  SubmissionWorkspaceQueryError: class SubmissionWorkspaceQueryError extends Error {
+    constructor(public readonly code: string) {
+      super(code);
+      this.name = "SubmissionWorkspaceQueryError";
+    }
+  },
+  getTeacherReleaseSubmissions: mocks.getTeacherReleaseSubmissions,
+}));
+
+import { AuthenticationError } from "../../../../../server/auth/current-actor";
+import { SubmissionWorkspaceQueryError } from "../../../../../server/queries/submission-workspace";
+import TeacherReleaseSubmissionsPage from "./page";
+
+const releaseId = "10000000-0000-4000-8000-000000000001";
+const submissionId = "20000000-0000-4000-8000-000000000002";
+const studentId = "30000000-0000-4000-8000-000000000003";
+const trustedContext = {
+  actorId: "40000000-0000-4000-8000-000000000004",
+  source: "UI" as const,
+  traceId: "teacher-release-page-trace",
+  clock: () => new Date("2026-08-18T12:00:00.000Z"),
+};
+const workspace = {
+  actor: { displayName: "林老师" },
+  release: {
+    id: releaseId,
+    title: "校园水表观察",
+    classroomName: "七年一班",
+    status: "ACTIVE",
+    publishedAt: "2026-08-18T10:00:00.000Z",
+    dueAt: "2026-08-20T12:00:00.000Z",
+    publisherAuthSubject: "clerk_auth_subject",
+  },
+  submissions: [
+    {
+      submissionId,
+      student: { id: studentId, displayName: "陈同学" },
+      workingCopy: { textEvidence: "学生工作副本正文" },
+      currentRevision: {
+        id: "50000000-0000-4000-8000-000000000005",
+        revisionNumber: 2,
+        isLate: true,
+        submittedAt: "2026-08-19T13:00:00.000Z",
+        textEvidence: "学生正式提交正文",
+        feedback: {
+          currentVersion: 3,
+          body: "教师正式反馈正文",
+        },
+      },
+    },
+  ],
+};
+
+async function renderPage(): Promise<string> {
+  const page = await TeacherReleaseSubmissionsPage({
+    params: Promise.resolve({ releaseId }),
+  });
+  return renderToStaticMarkup(page);
+}
+
+describe("teacher release submissions page boundary", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.getDatabaseClient.mockReturnValue(mocks.database);
+    mocks.createUiCommandContext.mockResolvedValue(trustedContext);
+    mocks.getTeacherReleaseSubmissions.mockResolvedValue(workspace);
+  });
+
+  it("does not open the database or query release data when auth is not configured", async () => {
+    mocks.createUiCommandContext.mockRejectedValue(
+      new AuthenticationError("AUTH_NOT_CONFIGURED"),
+    );
+
+    const markup = await renderPage();
+
+    expect(markup).toContain("教师工作台当前没有开放");
+    expect(markup).not.toContain("校园水表观察");
+    expect(markup).not.toContain("陈同学");
+    expect(markup).not.toContain("准备关闭活动");
+    expect(mocks.getDatabaseClient).not.toHaveBeenCalled();
+    expect(mocks.getTeacherReleaseSubmissions).not.toHaveBeenCalled();
+  });
+
+  it("does not render a close write entrypoint for an unauthorized actor", async () => {
+    mocks.createUiCommandContext.mockRejectedValue(
+      new AuthenticationError("USER_NOT_PROVISIONED"),
+    );
+
+    const markup = await renderPage();
+
+    expect(markup).toContain('data-clerk-sign-out="true"');
+    expect(markup).toContain("退出当前账号");
+    expect(markup).not.toContain("准备关闭活动");
+    expect(markup).not.toContain("确认并关闭活动");
+    expect(mocks.getDatabaseClient).not.toHaveBeenCalled();
+    expect(mocks.getTeacherReleaseSubmissions).not.toHaveBeenCalled();
+  });
+
+  it("renders only safe release and current formal revision metadata", async () => {
+    const markup = await renderPage();
+
+    expect(mocks.getTeacherReleaseSubmissions).toHaveBeenCalledWith(
+      mocks.database,
+      trustedContext,
+      { releaseId },
+    );
+    expect(markup).toContain("校园水表观察");
+    expect(markup).toContain("七年一班");
+    expect(markup).toContain("陈同学");
+    expect(markup).toContain("正式修订 2");
+    expect(markup).toContain("已反馈 v3");
+    expect(markup).toContain("迟交");
+    expect(markup).not.toContain("学生工作副本正文");
+    expect(markup).not.toContain("学生正式提交正文");
+    expect(markup).not.toContain("教师正式反馈正文");
+    expect(markup).not.toContain("clerk_auth_subject");
+    expect(markup).toContain("准备关闭活动");
+    expect(markup).not.toContain("确认并关闭活动");
+  });
+
+  it("does not render a close write entrypoint for a closed release", async () => {
+    mocks.getTeacherReleaseSubmissions.mockResolvedValue({
+      ...workspace,
+      release: { ...workspace.release, status: "CLOSED" },
+    });
+
+    const markup = await renderPage();
+
+    expect(markup).not.toContain("准备关闭活动");
+    expect(markup).not.toContain("确认并关闭活动");
+  });
+
+  it("maps a hidden unauthorized release to not found", async () => {
+    mocks.getTeacherReleaseSubmissions.mockRejectedValue(
+      new SubmissionWorkspaceQueryError("NOT_FOUND"),
+    );
+
+    await expect(renderPage()).rejects.toThrow("NEXT_NOT_FOUND");
+    expect(mocks.notFound).toHaveBeenCalledOnce();
+  });
+});

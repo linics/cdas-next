@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+:root {
+  --surface-page: #f7f8fa;
+  --surface: #ffffff;
+  --surface-subtle: #f1f4f8;
+  --text: #172033;
+  --text-secondary: #526075;
+  --border: #dbe1ea;
+  --border-strong: #aeb9c8;
+  --primary: #174ea6;
+  --primary-hover: #123c82;
+  --primary-soft: #e8f0fe;
+  --success: #16794c;
+  --warning: #9a5a00;
+  --danger: #b42318;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --shadow-overlay: 0 16px 48px rgb(23 32 51 / 20%);
+  --motion-fast: 160ms ease;
+  --z-nav: 20;
+  --z-overlay: 100;
+  --toolbar-height: 64px;
+  /* Compatibility aliases used by existing route modules during UI-202/203. */
+  --background: var(--surface-page);
+  --foreground: var(--text);
+  --muted: var(--text-secondary);
+  --line: var(--border);
+  --accent: var(--primary);
+  --accent-strong: var(--primary-hover);
+  --accent-soft: var(--primary-soft);
+}
+
+* { box-sizing: border-box; }
+html { background: var(--surface-page); }
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background: var(--surface-page);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  font-size: 16px;
+  line-height: 1.55;
+  text-rendering: optimizeLegibility;
+}
+button, input, textarea, select { font: inherit; }
+button, a { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+button { cursor: pointer; }
+a { color: inherit; text-decoration: none; }
+button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, [tabindex="-1"]:focus-visible { outline: 3px solid #6e9eea; outline-offset: 3px; }
+::selection { background: var(--primary-soft); color: var(--text); }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; } }

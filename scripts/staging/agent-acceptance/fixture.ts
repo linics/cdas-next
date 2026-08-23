@@ -1,0 +1,4 @@
+import type { createDatabaseClient } from "../../../src/server/db/client";
+type Db=ReturnType<typeof createDatabaseClient>;
+export async function probeAgentNamespace(db:Db,id:string,name:string,teacher:string,student:string){const classroom=await db.classroom.findUnique({where:{id},select:{name:true,manager:{select:{authSubject:true}},memberships:{select:{student:{select:{authSubject:true}},endedAt:true}}}});if(!classroom)return "ABSENT" as const;return classroom.name===name&&classroom.manager.authSubject===teacher&&classroom.memberships.length===1&&classroom.memberships[0]?.student.authSubject===student&&classroom.memberships[0]?.endedAt===null?"MATCHING" as const:"COLLISION" as const;}
+export async function assertNoAgentBusinessHistory(db:Db,teacher:string,title:string){if(await db.activityDraft.count({where:{owner:{authSubject:teacher},title}}))throw new Error("STAGING_AGENT_ACCEPTANCE_BUSINESS_HISTORY_ALREADY_EXISTS");}

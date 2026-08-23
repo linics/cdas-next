@@ -1,0 +1,318 @@
+name: protected staging Agent acceptance
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_real_model:
+        description: Run the metered staging Agent acceptance after protected approval.
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: staging-agent-acceptance
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    environment: staging-agent-acceptance
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      NODE_ENV: production
+      STAGING_DATA_ACK: synthetic-data-only-approved
+      STAGING_RUN_MARKER: cdas-staging-agent-${{ github.run_id }}-${{ github.run_attempt }}
+      STAGING_AGENT_RUN_MODEL_ATTESTED: ${{ inputs.run_real_model }}
+      STAGING_SYNTHETIC_ONLY_ATTESTED: ${{ vars.STAGING_SYNTHETIC_ONLY_ATTESTED }}
+      STAGING_CLERK_INSTANCE_ATTESTED: ${{ vars.STAGING_CLERK_INSTANCE_ATTESTED }}
+      STAGING_DATABASE_ISOLATION_ATTESTED: ${{ vars.STAGING_DATABASE_ISOLATION_ATTESTED }}
+      STAGING_HOSTING_ACCESS_ATTESTED: ${{ vars.STAGING_HOSTING_ACCESS_ATTESTED }}
+      STAGING_ROLLBACK_OWNER_ATTESTED: ${{ vars.STAGING_ROLLBACK_OWNER_ATTESTED }}
+      STAGING_RETENTION_ATTESTED: ${{ vars.STAGING_RETENTION_ATTESTED }}
+      STAGING_AGENT_WRITES_ATTESTED: ${{ vars.STAGING_AGENT_WRITES_ATTESTED }}
+      STAGING_AGENT_CLERK_TOKENS_ATTESTED: ${{ vars.STAGING_AGENT_CLERK_TOKENS_ATTESTED }}
+      STAGING_AGENT_MODEL_COST_ATTESTED: ${{ vars.STAGING_AGENT_MODEL_COST_ATTESTED }}
+      STAGING_AGENT_RETENTION_ATTESTED: ${{ vars.STAGING_AGENT_RETENTION_ATTESTED }}
+      STAGING_AGENT_IDENTITIES_RESERVED_ATTESTED: ${{ vars.STAGING_AGENT_IDENTITIES_RESERVED_ATTESTED }}
+      STAGING_ACCEPTANCE_TEST_TEACHER_NAME: CDAS Staging Synthetic Teacher
+      STAGING_ACCEPTANCE_TEST_STUDENT_NAME: CDAS Staging Synthetic Student
+      STAGING_BASE_URL: ${{ vars.STAGING_BASE_URL }}
+      STAGING_DATABASE_NAME: ${{ vars.STAGING_DATABASE_NAME }}
+      CDAS_DEPLOYMENT_ID: ${{ github.sha }}
+      AI_PROVIDER_DISABLED: "0"
+      STAGING_AI_ACK: synthetic-data-cost-approved
+      AI_MODEL: ${{ vars.STAGING_AI_MODEL }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+        with:
+          version: 11.5.0
+      - name: Install Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Install exact application dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Bind source fingerprint to this checkout
+        run: echo "CDAS_SOURCE_FINGERPRINT=$(pnpm exec tsx -e \"import { createSourceFingerprint } from './scripts/staging/source-fingerprint.ts'; console.log(createSourceFingerprint())\")" >> "$GITHUB_ENV"
+      - name: Validate protected Agent staging configuration
+        id: preflight
+        continue-on-error: true
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.STAGING_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+          CLERK_SECRET_KEY: ${{ secrets.STAGING_CLERK_SECRET_KEY }}
+          STAGING_TEST_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_TEACHER_CLERK_ID }}
+          STAGING_TEST_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_STUDENT_CLERK_ID }}
+          AI_GATEWAY_API_KEY: ${{ secrets.STAGING_AI_GATEWAY_API_KEY }}
+          AI_TOOL_APPROVAL_SECRET: ${{ secrets.STAGING_AI_TOOL_APPROVAL_SECRET }}
+          STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
+        run: pnpm staging:preflight
+      - name: Build production application with exact staging configuration
+        id: build
+        if: ${{ steps.preflight.outcome == 'success' }}
+        continue-on-error: true
+        env:
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.STAGING_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+          AI_GATEWAY_API_KEY: ${{ secrets.STAGING_AI_GATEWAY_API_KEY }}
+          AI_TOOL_APPROVAL_SECRET: ${{ secrets.STAGING_AI_TOOL_APPROVAL_SECRET }}
+        run: pnpm build
+      - name: Verify external PostgreSQL metadata in read-only transactions
+        id: database
+        if: ${{ steps.preflight.outcome == 'success' }}
+        continue-on-error: true
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
+        run: pnpm staging:verify-database
+      - name: Verify Prisma schema drift without deploying migrations
+        id: schema-diff
+        if: ${{ steps.preflight.outcome == 'success' }}
+        continue-on-error: true
+        env:
+          DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
+        run: pnpm exec prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code
+      - name: Verify remote AI-enabled health contract
+        id: application
+        if: ${{ steps.preflight.outcome == 'success' }}
+        continue-on-error: true
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.STAGING_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+          CLERK_SECRET_KEY: ${{ secrets.STAGING_CLERK_SECRET_KEY }}
+          AI_GATEWAY_API_KEY: ${{ secrets.STAGING_AI_GATEWAY_API_KEY }}
+          AI_TOOL_APPROVAL_SECRET: ${{ secrets.STAGING_AI_TOOL_APPROVAL_SECRET }}
+          STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
+        run: pnpm staging:verify-application
+      - name: Aggregate same-run staging Go/No-Go evidence
+        id: aggregate
+        if: always()
+        env:
+          STAGING_BUILD_OUTCOME: ${{ steps.build.outcome }}
+          STAGING_SCHEMA_DIFF_OUTCOME: ${{ steps.schema-diff.outcome }}
+        run: pnpm staging:aggregate
+      - name: Bind Agent approval and configuration to same-run GO
+        id: agent-gate
+        if: always()
+        continue-on-error: true
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.STAGING_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+          CLERK_SECRET_KEY: ${{ secrets.STAGING_CLERK_SECRET_KEY }}
+          STAGING_TEST_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_TEACHER_CLERK_ID }}
+          STAGING_TEST_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_STUDENT_CLERK_ID }}
+          AI_GATEWAY_API_KEY: ${{ secrets.STAGING_AI_GATEWAY_API_KEY }}
+          AI_TOOL_APPROVAL_SECRET: ${{ secrets.STAGING_AI_TOOL_APPROVAL_SECRET }}
+          STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
+        run: pnpm staging:agent:gate
+      - name: Preserve sanitized same-run gate evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: staging-agent-gate-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            output/staging/
+            output/staging-agent-acceptance/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Enforce base staging Go/No-Go decision
+        if: always()
+        run: pnpm staging:assert-decision
+      - name: Enforce same-run Agent gate
+        if: always()
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.STAGING_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+          CLERK_SECRET_KEY: ${{ secrets.STAGING_CLERK_SECRET_KEY }}
+          STAGING_TEST_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_TEACHER_CLERK_ID }}
+          STAGING_TEST_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_STUDENT_CLERK_ID }}
+          AI_GATEWAY_API_KEY: ${{ secrets.STAGING_AI_GATEWAY_API_KEY }}
+          AI_TOOL_APPROVAL_SECRET: ${{ secrets.STAGING_AI_TOOL_APPROVAL_SECRET }}
+          STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
+        run: pnpm staging:agent:assert-gate
+
+  acceptance:
+    needs: gate
+    if: ${{ always() }}
+    environment: staging-agent-acceptance
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      NODE_ENV: production
+      STAGING_DATA_ACK: synthetic-data-only-approved
+      STAGING_RUN_MARKER: cdas-staging-agent-${{ github.run_id }}-${{ github.run_attempt }}
+      STAGING_AGENT_RUN_MODEL_ATTESTED: ${{ inputs.run_real_model }}
+      STAGING_SYNTHETIC_ONLY_ATTESTED: ${{ vars.STAGING_SYNTHETIC_ONLY_ATTESTED }}
+      STAGING_CLERK_INSTANCE_ATTESTED: ${{ vars.STAGING_CLERK_INSTANCE_ATTESTED }}
+      STAGING_DATABASE_ISOLATION_ATTESTED: ${{ vars.STAGING_DATABASE_ISOLATION_ATTESTED }}
+      STAGING_HOSTING_ACCESS_ATTESTED: ${{ vars.STAGING_HOSTING_ACCESS_ATTESTED }}
+      STAGING_ROLLBACK_OWNER_ATTESTED: ${{ vars.STAGING_ROLLBACK_OWNER_ATTESTED }}
+      STAGING_RETENTION_ATTESTED: ${{ vars.STAGING_RETENTION_ATTESTED }}
+      STAGING_AGENT_WRITES_ATTESTED: ${{ vars.STAGING_AGENT_WRITES_ATTESTED }}
+      STAGING_AGENT_CLERK_TOKENS_ATTESTED: ${{ vars.STAGING_AGENT_CLERK_TOKENS_ATTESTED }}
+      STAGING_AGENT_MODEL_COST_ATTESTED: ${{ vars.STAGING_AGENT_MODEL_COST_ATTESTED }}
+      STAGING_AGENT_RETENTION_ATTESTED: ${{ vars.STAGING_AGENT_RETENTION_ATTESTED }}
+      STAGING_AGENT_IDENTITIES_RESERVED_ATTESTED: ${{ vars.STAGING_AGENT_IDENTITIES_RESERVED_ATTESTED }}
+      STAGING_ACCEPTANCE_TEST_TEACHER_NAME: CDAS Staging Synthetic Teacher
+      STAGING_ACCEPTANCE_TEST_STUDENT_NAME: CDAS Staging Synthetic Student
+      STAGING_BASE_URL: ${{ vars.STAGING_BASE_URL }}
+      STAGING_DATABASE_NAME: ${{ vars.STAGING_DATABASE_NAME }}
+      CDAS_DEPLOYMENT_ID: ${{ github.sha }}
+      AI_PROVIDER_DISABLED: "0"
+      STAGING_AI_ACK: synthetic-data-cost-approved
+      AI_MODEL: ${{ vars.STAGING_AI_MODEL }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Download same-run gate evidence
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: staging-agent-gate-${{ github.run_id }}-${{ github.run_attempt }}
+          path: output
+      - name: Install pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+        with:
+          version: 11.5.0
+      - name: Install Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Install exact application dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Bind source fingerprint to this checkout
+        run: echo "CDAS_SOURCE_FINGERPRINT=$(pnpm exec tsx -e \"import { createSourceFingerprint } from './scripts/staging/source-fingerprint.ts'; console.log(createSourceFingerprint())\")" >> "$GITHUB_ENV"
+      - name: Assert downloaded evidence before any external write or model call
+        id: gate
+        continue-on-error: true
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.STAGING_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+          CLERK_SECRET_KEY: ${{ secrets.STAGING_CLERK_SECRET_KEY }}
+          STAGING_TEST_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_TEACHER_CLERK_ID }}
+          STAGING_TEST_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_STUDENT_CLERK_ID }}
+          AI_GATEWAY_API_KEY: ${{ secrets.STAGING_AI_GATEWAY_API_KEY }}
+          AI_TOOL_APPROVAL_SECRET: ${{ secrets.STAGING_AI_TOOL_APPROVAL_SECRET }}
+          STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
+        run: pnpm staging:agent:assert-gate
+      - name: Install Chromium after the protected gate
+        id: chromium
+        if: ${{ inputs.run_real_model && needs.gate.result == 'success' && steps.gate.outcome == 'success' }}
+        continue-on-error: true
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Verify reserved Clerk identities and revoke capability probes
+        id: identity
+        if: ${{ steps.chromium.outcome == 'success' }}
+        continue-on-error: true
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.STAGING_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+          CLERK_SECRET_KEY: ${{ secrets.STAGING_CLERK_SECRET_KEY }}
+          STAGING_TEST_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_TEACHER_CLERK_ID }}
+          STAGING_TEST_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_STUDENT_CLERK_ID }}
+          AI_GATEWAY_API_KEY: ${{ secrets.STAGING_AI_GATEWAY_API_KEY }}
+          AI_TOOL_APPROVAL_SECRET: ${{ secrets.STAGING_AI_TOOL_APPROVAL_SECRET }}
+          STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
+        run: pnpm staging:agent:verify-identities
+      - name: Rebind remote health immediately before database writes
+        id: immediate-health
+        if: ${{ steps.identity.outcome == 'success' }}
+        continue-on-error: true
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.STAGING_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+          CLERK_SECRET_KEY: ${{ secrets.STAGING_CLERK_SECRET_KEY }}
+          STAGING_TEST_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_TEACHER_CLERK_ID }}
+          STAGING_TEST_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_STUDENT_CLERK_ID }}
+          AI_GATEWAY_API_KEY: ${{ secrets.STAGING_AI_GATEWAY_API_KEY }}
+          AI_TOOL_APPROVAL_SECRET: ${{ secrets.STAGING_AI_TOOL_APPROVAL_SECRET }}
+          STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
+        run: pnpm staging:verify-application && STAGING_IMMEDIATE_HEALTH_OUTCOME=success pnpm staging:agent:record-immediate-health
+      - name: Append the marker-derived synthetic classroom namespace
+        id: bootstrap
+        if: ${{ steps.immediate-health.outcome == 'success' }}
+        continue-on-error: true
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.STAGING_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+          CLERK_SECRET_KEY: ${{ secrets.STAGING_CLERK_SECRET_KEY }}
+          STAGING_TEST_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_TEACHER_CLERK_ID }}
+          STAGING_TEST_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_STUDENT_CLERK_ID }}
+          AI_GATEWAY_API_KEY: ${{ secrets.STAGING_AI_GATEWAY_API_KEY }}
+          AI_TOOL_APPROVAL_SECRET: ${{ secrets.STAGING_AI_TOOL_APPROVAL_SECRET }}
+          STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
+        run: pnpm staging:agent:bootstrap
+      - name: Complete the first-party Agent browser flow
+        id: browser
+        if: ${{ steps.bootstrap.outcome == 'success' }}
+        continue-on-error: true
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.STAGING_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+          CLERK_SECRET_KEY: ${{ secrets.STAGING_CLERK_SECRET_KEY }}
+          STAGING_TEST_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_TEACHER_CLERK_ID }}
+          STAGING_TEST_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_STUDENT_CLERK_ID }}
+          AI_GATEWAY_API_KEY: ${{ secrets.STAGING_AI_GATEWAY_API_KEY }}
+          AI_TOOL_APPROVAL_SECRET: ${{ secrets.STAGING_AI_TOOL_APPROVAL_SECRET }}
+          STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
+        run: pnpm staging:agent:browser
+      - name: Verify append-only provenance in a read-only transaction
+        id: verify
+        if: ${{ steps.browser.outcome == 'success' }}
+        continue-on-error: true
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.STAGING_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
+          CLERK_SECRET_KEY: ${{ secrets.STAGING_CLERK_SECRET_KEY }}
+          STAGING_TEST_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_TEACHER_CLERK_ID }}
+          STAGING_TEST_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_STUDENT_CLERK_ID }}
+          AI_GATEWAY_API_KEY: ${{ secrets.STAGING_AI_GATEWAY_API_KEY }}
+          AI_TOOL_APPROVAL_SECRET: ${{ secrets.STAGING_AI_TOOL_APPROVAL_SECRET }}
+          STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
+        run: pnpm staging:agent:verify
+      - name: Enforce complete sanitized evidence
+        if: always()
+        run: pnpm staging:agent:assert-final
+      - name: Preserve sanitized Agent acceptance evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: staging-agent-acceptance-${{ github.run_id }}-${{ github.run_attempt }}
+          path: output/staging-agent-acceptance/
+          if-no-files-found: error
+          retention-days: 14
