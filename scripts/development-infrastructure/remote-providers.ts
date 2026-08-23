@@ -66,6 +66,7 @@ export class VercelApiProvider implements VercelProvider {
         const url = `https://${string(deployment.url)}`;
         const repoId = typeof gitSource.repoId === "number" ? gitSource.repoId : Number(gitSource.repoId);
         if (gitSource.sha !== repository.sha || gitSource.ref !== repository.branch || repoId !== repository.repositoryId || !isAllowedVercelPreviewBaseUrl(url, this.projectName)) throw new Error("DEVELOPMENT_INFRA_VERCEL_DEPLOYMENT_UNSAFE");
+        await this.assertProject(repository);
         return { url, sha: repository.sha };
       }
       if (deployment.readyState === "ERROR" || deployment.readyState === "CANCELED") throw new Error("DEVELOPMENT_INFRA_VERCEL_DEPLOYMENT_FAILED");

@@ -68,12 +68,16 @@ async function main(): Promise<void> {
         redirect: "manual",
         signal: AbortSignal.timeout(10_000),
       });
+      const protectionBody: unknown = await protection.json().catch(() => null);
       if (!isVercelDeploymentProtectionResponse({
         status: protection.status,
         server: protection.headers.get("server"),
         vercelId: protection.headers.get("x-vercel-id"),
         location: protection.headers.get("location"),
         healthUrl: healthUrl.toString(),
+        contentType: protection.headers.get("content-type"),
+        cacheControl: protection.headers.get("cache-control"),
+        body: protectionBody,
       })) {
         throw new Error("APPLICATION_DEPLOYMENT_PROTECTION_NOT_ENFORCED");
       }

@@ -259,9 +259,13 @@ describe("provider fail-closed contracts", () => {
   it("accepts only exactly-bound Vercel READY Preview and rejects ERROR", async () => {
     const target = { owner: "o", name: "r", branch: "codex/x", sha: "a".repeat(40), repositoryId: 1 };
     const requests: Request[] = [];
-    const success = new VercelApiProvider("t", "cdas-next", undefined, queuedFetch([response({ id: "deployment" }), response({ readyState: "READY", url: "cdas-next-abc.vercel.app", gitSource: { sha: target.sha, ref: target.branch, repoId: 1 } })], requests), async () => undefined);
+    const protectedProject = { name: "cdas-next", link: { type: "github", repoId: 1, org: "o", repo: "r" }, buildCommand: "pnpm db:generate && pnpm build", ssoProtection: { deploymentType: "preview" }, protectionBypass: {} };
+    const success = new VercelApiProvider("t", "cdas-next", undefined, queuedFetch([response({ id: "deployment" }), response({ readyState: "READY", url: "cdas-next-abc.vercel.app", gitSource: { sha: target.sha, ref: target.branch, repoId: 1 } }), response(protectedProject)], requests), async () => undefined);
     await expect(success.deployPreview(target)).resolves.toEqual({ url: "https://cdas-next-abc.vercel.app", sha: target.sha });
     expect(await requests[0]?.json()).toEqual({ name: "cdas-next", gitSource: { type: "github", repoId: 1, ref: target.branch, sha: target.sha } });
+    expect(requests[2]?.url).toContain("/v9/projects/cdas-next");
+    const unprotected = new VercelApiProvider("t", "cdas-next", undefined, queuedFetch([response({ id: "deployment" }), response({ readyState: "READY", url: "cdas-next-abc.vercel.app", gitSource: { sha: target.sha, ref: target.branch, repoId: 1 } }), response({ ...protectedProject, ssoProtection: { deploymentType: "none" } })], []), async () => undefined);
+    await expect(unprotected.deployPreview(target)).rejects.toThrow("DEVELOPMENT_INFRA_VERCEL_PROTECTION_UNSAFE");
     const error = new VercelApiProvider("t", "cdas-next", undefined, queuedFetch([response({ id: "deployment" }), response({ readyState: "ERROR" })], []), async () => undefined);
     await expect(error.deployPreview(target)).rejects.toThrow("DEVELOPMENT_INFRA_VERCEL_DEPLOYMENT_FAILED");
   });

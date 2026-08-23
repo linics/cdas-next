@@ -33,6 +33,10 @@ describe("Vercel Deployment Protection proof", () => {
   const healthUrl = "https://cdas-next-preview-linics1.vercel.app/api/health";
   const nonce = "a".repeat(64);
   const location = `https://vercel.com/sso-api?url=${encodeURIComponent(healthUrl)}&nonce=${nonce}`;
+  const jsonChallenge = {
+    error: { code: "401", message: "Protected deployment" },
+    protection: { auto_vercel_auth_redirect: true, password_enabled: false, vercel_auth_callback: location, vercel_auth_enabled: true },
+  };
 
   it("accepts only the expected Vercel SSO redirect challenge", () => {
     expect(isVercelDeploymentProtectionResponse({
@@ -42,6 +46,44 @@ describe("Vercel Deployment Protection proof", () => {
       location,
       healthUrl,
     })).toBe(true);
+  });
+
+  it("accepts the exact Vercel JSON authentication challenge", () => {
+    expect(isVercelDeploymentProtectionResponse({
+      status: 401,
+      server: "Vercel",
+      vercelId: "sin1::abc",
+      location: null,
+      healthUrl,
+      contentType: "application/json; charset=utf-8",
+      cacheControl: "no-store, max-age=0",
+      body: jsonChallenge,
+    })).toBe(true);
+  });
+
+  it.each([
+    { body: { ...jsonChallenge, extra: true } },
+    { body: { ...jsonChallenge, error: { ...jsonChallenge.error, code: "403" } } },
+    { body: { ...jsonChallenge, error: { ...jsonChallenge.error, message: "Authentication Required" } } },
+    { body: { ...jsonChallenge, protection: { ...jsonChallenge.protection, vercel_auth_enabled: false } } },
+    { body: { ...jsonChallenge, protection: { ...jsonChallenge.protection, password_enabled: true } } },
+    { body: { ...jsonChallenge, protection: { ...jsonChallenge.protection, vercel_auth_callback: "https://evil.test/sso-api" } } },
+    { contentType: "text/html" },
+    { cacheControl: "public, max-age=60" },
+    { cacheControl: "no-store, max-age=0, private" },
+    { location },
+  ])("rejects a malformed Vercel JSON authentication challenge", (override) => {
+    expect(isVercelDeploymentProtectionResponse({
+      status: 401,
+      server: "Vercel",
+      vercelId: "sin1::abc",
+      location: null,
+      healthUrl,
+      contentType: "application/json",
+      cacheControl: "no-store",
+      body: jsonChallenge,
+      ...override,
+    })).toBe(false);
   });
 
   it.each([
