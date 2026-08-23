@@ -96,14 +96,34 @@ describe("provider fail-closed contracts", () => {
     const branch = { id: "branch", name: "cdas-next-development", init_source: "schema-only", parent_id: null, primary: false, default: false };
     const endpoint = { id: "endpoint", branch_id: "branch", type: "read_write", suspend_timeout_seconds: 300 };
     const fetcher = queuedFetch([
-      response({ branches: [] }), response({ branch, endpoints: [endpoint] }), response({ roles: [] }), response({ role: { name: "cdas_staging_owner" } }), response({ databases: [] }), response({ database: { name: "cdas_next_staging", owner_name: "cdas_staging_owner" } }), response({ uri: "postgresql://cdas_staging_owner:password@ep-pooler.example.neon.tech/cdas_next_staging?sslmode=require" }), response({ uri: "postgresql://cdas_staging_owner:password@ep.example.neon.tech/cdas_next_staging?sslmode=require" }),
+      response({ branches: [] }), response({ project: { id: "project_123", default_endpoint_settings: { suspend_timeout_seconds: 0 } } }), response({ branch, endpoints: [endpoint] }), response({ roles: [] }), response({ role: { name: "cdas_staging_owner" } }), response({ databases: [] }), response({ database: { name: "cdas_next_staging", owner_name: "cdas_staging_owner" } }), response({ uri: "postgresql://cdas_staging_owner:password@ep-pooler.example.neon.tech/cdas_next_staging?sslmode=require" }), response({ uri: "postgresql://cdas_staging_owner:password@ep.example.neon.tech/cdas_next_staging?sslmode=require" }),
     ], requests);
     await new NeonApiProvider(config, fetcher).ensureIsolatedDatabase();
-    expect(requests.map((request) => request.method)).toEqual(["GET", "POST", "GET", "POST", "GET", "POST", "GET", "GET"]);
-    expect(await requests[1]?.json()).toEqual({ branch: { name: "cdas-next-development", init_source: "schema-only" }, endpoints: [{ type: "read_write", suspend_timeout_seconds: 300 }] });
+    expect(requests.map((request) => request.method)).toEqual(["GET", "GET", "POST", "GET", "POST", "GET", "POST", "GET", "GET"]);
+    expect(await requests[2]?.json()).toEqual({ branch: { name: "cdas-next-development", init_source: "schema-only" }, endpoints: [{ type: "read_write" }] });
     expect(requests.some((request) => request.url.endsWith("/endpoints"))).toBe(false);
-    expect(await requests[3]?.json()).toEqual({ role: { name: "cdas_staging_owner" } });
-    expect(await requests[5]?.json()).toEqual({ database: { name: "cdas_next_staging", owner_name: "cdas_staging_owner" } });
+    expect(await requests[4]?.json()).toEqual({ role: { name: "cdas_staging_owner" } });
+    expect(await requests[6]?.json()).toEqual({ database: { name: "cdas_next_staging", owner_name: "cdas_staging_owner" } });
+  });
+  it("uses the Neon account default suspend policy when adding a missing endpoint", async () => {
+    const requests: Request[] = [];
+    const branch = { id: "branch", name: "cdas-next-development", init_source: "schema-only", parent_id: null, primary: false, default: false };
+    const endpoint = { id: "endpoint", branch_id: "branch", type: "read_write", suspend_timeout_seconds: 300 };
+    const fetcher = queuedFetch([
+      response({ branches: [branch] }), response({ endpoints: [] }), response({ project: { id: "project_123", default_endpoint_settings: { suspend_timeout_seconds: 0 } } }), response({ endpoint }), response({ roles: [{ name: "cdas_staging_owner" }] }), response({ databases: [{ name: "cdas_next_staging", owner_name: "cdas_staging_owner" }] }), response({ uri: "postgresql://cdas_staging_owner:password@ep-pooler.example.neon.tech/cdas_next_staging?sslmode=require" }), response({ uri: "postgresql://cdas_staging_owner:password@ep.example.neon.tech/cdas_next_staging?sslmode=require" }),
+    ], requests);
+    await new NeonApiProvider(config, fetcher).ensureIsolatedDatabase();
+    expect(requests[3]?.method).toBe("POST");
+    expect(await requests[3]?.json()).toEqual({ endpoint: { branch_id: "branch", type: "read_write" } });
+  });
+  it("refuses an unsafe Neon default suspend policy before creating any endpoint", async () => {
+    const branch = { id: "branch", name: "cdas-next-development", init_source: "schema-only", parent_id: null, primary: false, default: false };
+    const freshRequests: Request[] = [];
+    await expect(new NeonApiProvider(config, queuedFetch([response({ branches: [] }), response({ project: { id: "project_123", default_endpoint_settings: { suspend_timeout_seconds: -1 } } })], freshRequests)).ensureIsolatedDatabase()).rejects.toThrow("DEVELOPMENT_INFRA_NEON_ENDPOINT_DEFAULT_UNSAFE");
+    expect(freshRequests.map((request) => request.method)).toEqual(["GET", "GET"]);
+    const existingRequests: Request[] = [];
+    await expect(new NeonApiProvider(config, queuedFetch([response({ branches: [branch] }), response({ endpoints: [] }), response({ project: { id: "project_123", default_endpoint_settings: { suspend_timeout_seconds: -1 } } })], existingRequests)).ensureIsolatedDatabase()).rejects.toThrow("DEVELOPMENT_INFRA_NEON_ENDPOINT_DEFAULT_UNSAFE");
+    expect(existingRequests.map((request) => request.method)).toEqual(["GET", "GET", "GET"]);
   });
   it.each([
     ["empty", [], "DEVELOPMENT_INFRA_NEON_ENDPOINT_AMBIGUOUS"],
@@ -112,9 +132,9 @@ describe("provider fail-closed contracts", () => {
   ] as const)("rejects an unsafe atomic Neon endpoint response: %s", async (_name, endpoints, code) => {
     const requests: Request[] = [];
     const branch = { id: "branch", name: "cdas-next-development", init_source: "schema-only", default: false };
-    const fetcher = queuedFetch([response({ branches: [] }), response({ branch, endpoints })], requests);
+    const fetcher = queuedFetch([response({ branches: [] }), response({ project: { id: "project_123", default_endpoint_settings: { suspend_timeout_seconds: 0 } } }), response({ branch, endpoints })], requests);
     await expect(new NeonApiProvider(config, fetcher).ensureIsolatedDatabase()).rejects.toThrow(code);
-    expect(requests).toHaveLength(2);
+    expect(requests).toHaveLength(3);
   });
   it("rejects unsafe Neon primary branch, endpoint, or database owner", async () => {
     const base = { id: "branch", name: "cdas-next-development", init_source: "schema-only", parent_id: null, primary: false, default: false };

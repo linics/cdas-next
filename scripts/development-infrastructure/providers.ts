@@ -130,6 +130,13 @@ export class NeonApiProvider implements NeonProvider {
   constructor(private readonly config: DevelopmentInfrastructureConfig, private readonly fetcher: Fetcher = fetch) {}
   private url(suffix: string): string { return `https://console.neon.tech/api/v2/projects/${encodeURIComponent(this.config.neonProjectId)}${suffix}`; }
   private init(method = "GET", body?: unknown): RequestInit { return { method, headers: headers(this.config.neonApiKey), ...(body === undefined ? {} : { body: JSON.stringify(body) }) }; }
+  private async assertSafeDefaultEndpointSuspendPolicy(): Promise<void> {
+    const payload = object(await json(this.fetcher, this.url(""), this.init()));
+    const project = object(payload.project);
+    const settings = object(project.default_endpoint_settings);
+    const suspendTimeout = settings.suspend_timeout_seconds;
+    if (project.id !== this.config.neonProjectId || !Number.isInteger(suspendTimeout) || (suspendTimeout as number) < 0) throw new Error("DEVELOPMENT_INFRA_NEON_ENDPOINT_DEFAULT_UNSAFE");
+  }
   async ensureIsolatedDatabase(): Promise<NeonConnection> {
     const branches: unknown[] = []; const seen = new Set<string>(); let cursor: string | undefined;
     for (let page = 0; page < 20; page += 1) {
@@ -150,7 +157,8 @@ export class NeonApiProvider implements NeonProvider {
     if (matches[0]) {
       branch = object(matches[0]);
     } else {
-      const created = object(await json(this.fetcher, this.url("/branches"), this.init("POST", { branch: { name: this.config.neonBranchName, init_source: "schema-only" }, endpoints: [{ type: "read_write", suspend_timeout_seconds: 300 }] })));
+      await this.assertSafeDefaultEndpointSuspendPolicy();
+      const created = object(await json(this.fetcher, this.url("/branches"), this.init("POST", { branch: { name: this.config.neonBranchName, init_source: "schema-only" }, endpoints: [{ type: "read_write" }] })));
       branch = object(created.branch);
       if (!Array.isArray(created.endpoints) || created.endpoints.length !== 1) throw new Error("DEVELOPMENT_INFRA_NEON_ENDPOINT_AMBIGUOUS");
       createdEndpoint = object(created.endpoints[0]);
@@ -165,7 +173,12 @@ export class NeonApiProvider implements NeonProvider {
       const endpoints = endpointPage.endpoints; if (!Array.isArray(endpoints)) throw new Error("DEVELOPMENT_INFRA_PROVIDER_SCHEMA_INVALID");
       const endpointMatches = endpoints.map(object).filter((item) => item.branch_id === branchId && item.type === "read_write");
       if (endpointMatches.length > 1) throw new Error("DEVELOPMENT_INFRA_NEON_ENDPOINT_AMBIGUOUS");
-      endpoint = endpointMatches[0] ?? object(object(await json(this.fetcher, this.url("/endpoints"), this.init("POST", { endpoint: { branch_id: branchId, type: "read_write", suspend_timeout_seconds: 300 } }))).endpoint);
+      if (endpointMatches[0]) {
+        endpoint = endpointMatches[0];
+      } else {
+        await this.assertSafeDefaultEndpointSuspendPolicy();
+        endpoint = object(object(await json(this.fetcher, this.url("/endpoints"), this.init("POST", { endpoint: { branch_id: branchId, type: "read_write" } }))).endpoint);
+      }
     }
     if (endpoint.branch_id !== branchId || endpoint.type !== "read_write" || typeof endpoint.suspend_timeout_seconds !== "number" || endpoint.suspend_timeout_seconds < 0) throw new Error("DEVELOPMENT_INFRA_NEON_ENDPOINT_UNSAFE");
     const endpointId = text(endpoint.id);
