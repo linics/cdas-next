@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ZodError } from "zod";
 import { LocalizedDateTime } from "../_components/localized-date-time";
+import { readVisualPrototype } from "../_components/visual-prototype";
 import { AuthenticationError } from "../../server/auth/current-actor";
 import { createUiCommandContext } from "../../server/commands/create-ui-command-context";
 import { getDatabaseClient } from "../../server/db/client";
@@ -27,7 +28,12 @@ const releaseStatus = {
   ARCHIVED: { label: "已封存", tone: "sealed" },
 } as const;
 
-export default async function TeacherDashboardPage() {
+export default async function TeacherDashboardPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+} = {}) {
+  const visual = await readVisualPrototype(searchParams);
   let dashboard;
   try {
     const context = await createUiCommandContext();
@@ -35,7 +41,13 @@ export default async function TeacherDashboardPage() {
     dashboard = await getTeacherActivityDashboard(database, context, {});
   } catch (error) {
     if (error instanceof AuthenticationError) {
-      return <TeacherAccessGate code={error.code} returnPath="/teacher" />;
+      return (
+        <TeacherAccessGate
+          code={error.code}
+          returnPath="/teacher"
+          visual={visual}
+        />
+      );
     }
     if (error instanceof TeacherActivityQueryError || error instanceof ZodError) {
       notFound();
@@ -48,7 +60,7 @@ export default async function TeacherDashboardPage() {
   ).length;
 
   return (
-    <TeacherPage actorName={dashboard.actor.displayName}>
+    <TeacherPage actorName={dashboard.actor.displayName} visual={visual}>
       <div className={styles.pageContent}>
         <header className={styles.pageHeader}>
           <div>

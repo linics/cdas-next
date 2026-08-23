@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
+import type { VisualPrototypeId } from "./visual-prototype";
+import { VisualPrototypeSwitcher } from "./visual-prototype-switcher";
 import styles from "./workspace-shell.module.css";
 
 export type WorkspaceNavigationItem = { href: string; label: string };
@@ -12,12 +14,14 @@ export function WorkspaceShell({
   actorName,
   navigation = [],
   toolbarAction,
+  visual,
   children,
 }: {
   audience: "教师" | "学生";
   actorName?: string;
   navigation?: readonly WorkspaceNavigationItem[];
   toolbarAction?: ReactNode;
+  visual?: VisualPrototypeId;
   children: ReactNode;
 }) {
   const pathname = usePathname();
@@ -25,7 +29,8 @@ export function WorkspaceShell({
   const showNavigation = navigation.length >= 2;
 
   return (
-    <div className={styles.shell}>
+    <div className={styles.shell} {...(visual ? { "data-visual": visual } : {})}>
+      {visual ? <VisualPrototypeSwitcher current={visual} /> : null}
       <a className={styles.skipLink} href="#main-content">跳到主要内容</a>
       <header className={styles.toolbar}>
         <Link className={styles.brand} href={workspaceHref} aria-label={`CDAS Next ${audience}工作台`}>

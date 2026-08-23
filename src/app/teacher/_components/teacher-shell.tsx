@@ -3,18 +3,22 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import type { AuthenticationError } from "../../../server/auth/current-actor";
 import { InlineAlert } from "../../_components/ui";
+import type { VisualPrototypeId } from "../../_components/visual-prototype";
+import { VisualPrototypeSwitcher } from "../../_components/visual-prototype-switcher";
 import { WorkspaceShell } from "../../_components/workspace-shell";
 import styles from "../teacher-workspace.module.css";
 
 export function TeacherPage({
   actorName,
+  visual,
   children,
 }: {
   actorName?: string;
+  visual?: VisualPrototypeId;
   children: ReactNode;
 }) {
   return (
-    <WorkspaceShell audience="教师" actorName={actorName}>
+    <WorkspaceShell audience="教师" actorName={actorName} visual={visual}>
       {children}
     </WorkspaceShell>
   );
@@ -23,9 +27,11 @@ export function TeacherPage({
 export function TeacherAccessGate({
   code,
   returnPath,
+  visual,
 }: {
   code: AuthenticationError["code"];
   returnPath: string;
+  visual?: VisualPrototypeId;
 }) {
   const copy =
     code === "AUTH_NOT_CONFIGURED"
@@ -50,7 +56,8 @@ export function TeacherAccessGate({
           };
 
   return (
-    <div className={styles.teacherApp}>
+    <div className={styles.teacherApp} {...(visual ? { "data-visual": visual } : {})}>
+      {visual ? <VisualPrototypeSwitcher current={visual} /> : null}
       <header className={styles.gateMasthead}>
         <Link className={styles.brand} href="/teacher" aria-label="CDAS Next 教师工作台">
           <span aria-hidden="true">C</span>

@@ -183,6 +183,7 @@ describe("student dashboard page", () => {
     expect(markup).toContain("待提交");
     expect(markup).toContain("已有反馈");
     expect(markup).toContain("历史与关闭");
+    expect(markup).not.toContain("视觉原型（仅本分支）");
     expect(markup).toContain("仍可迟交");
     expect(markup).toContain(`/student/releases/${pendingReleaseId}`);
     expect(markup).toContain(`/student/releases/${feedbackReleaseId}`);
@@ -205,5 +206,17 @@ describe("student dashboard page", () => {
     expect(markup).toContain("还没有对你开放的学习活动");
     expect(markup).not.toContain("创建活动");
     expect(markup).not.toContain("提交活动");
+  });
+
+  it("shows the prototype bar on the student dashboard when visual is set", async () => {
+    const markup = renderToStaticMarkup(
+      await StudentDashboardPage({
+        searchParams: Promise.resolve({ visual: "ink-structure" }),
+      }),
+    );
+
+    expect(markup).toContain('data-visual="ink-structure"');
+    expect(markup).toContain("视觉原型（仅本分支）");
+    expect(markup).toContain("待提交");
   });
 });

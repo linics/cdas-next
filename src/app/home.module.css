@@ -10,7 +10,7 @@
 .intro > p:last-child { margin: 0; color: var(--text-secondary); font-size: 16px; line-height: 1.55; }
 .workspaceList { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 40px; }
 .workspaceLink { display: flex; min-height: 188px; flex-direction: column; justify-content: space-between; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); padding: 24px; transition: border-color var(--motion-fast), background var(--motion-fast), box-shadow var(--motion-fast); }
-.workspaceLink:hover { border-color: var(--primary); background: #fbfcff; box-shadow: 0 2px 7px rgb(23 32 51 / 9%); }
+.workspaceLink:hover { border-color: var(--primary); background: var(--surface-hover); box-shadow: var(--shadow-raise); }
 .workspaceLink h2, .note h2 { margin: 0; font-size: 20px; line-height: 1.35; }
 .workspaceLink p { margin: 8px 0 0; color: var(--text-secondary); font-size: 16px; line-height: 1.55; }
 .workspaceLink > span { margin-top: 20px; color: var(--primary); font-size: 15px; font-weight: 700; }

@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { readVisualPrototype } from "./_components/visual-prototype";
+import { VisualPrototypeSwitcher } from "./_components/visual-prototype-switcher";
 import styles from "./home.module.css";
 
 export const metadata: Metadata = {
@@ -7,9 +9,16 @@ export const metadata: Metadata = {
   description: "教师发布活动、学生提交证据、教师反馈的可追溯工作台",
 };
 
-export default function HomePage() {
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+} = {}) {
+  const visual = await readVisualPrototype(searchParams);
+
   return (
-    <div className={styles.home}>
+    <div className={styles.home} {...(visual ? { "data-visual": visual } : {})}>
+      {visual ? <VisualPrototypeSwitcher current={visual} /> : null}
       <header className={styles.toolbar}>
         <Link className={styles.brand} href="/" aria-label="CDAS Next 首页">
           <span aria-hidden="true">CD</span>

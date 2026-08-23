@@ -28,8 +28,17 @@
 
 ### Card: UI-206
 - Source: 用户对当前“规范但老派”的视觉反馈。
-- Current Behavior: UI-201–205 已建立清晰、克制的工作台基线，但尚未经人工选定更具现代感的视觉方向。
-- Correct Semantics: 先制作 2–3 个可比较的现代单页模板/原型，人工选型后再全站吸收；探索圆角层级、柔和表面、统一图标、微交互与页面过渡。
-- Motion Contract: 仅选择 2–3 个有意义动效（确认打开、状态变化、列表或页面切换），150–300ms，支持 `prefers-reduced-motion`。
+- Current Behavior: 闸 1 已在真实首页、教师仪表盘、学生仪表盘上提供三套可切换原型；无 `visual` 参数时仍是 UI-201 基线。
+- Correct Semantics: 先在真实页面比较方向，人工选型后再全站吸收；探索圆角层级、柔和表面、统一图标、微交互与页面过渡。
+- Review URLs:
+  - `/teacher?visual=warm-paper`、`/student?visual=warm-paper`、`/?visual=warm-paper`
+  - `/teacher?visual=ink-structure`、`/student?visual=ink-structure`、`/?visual=ink-structure`
+  - `/teacher?visual=soft-studio`、`/student?visual=soft-studio`、`/?visual=soft-studio`
+- Directions:
+  - `warm-paper`：暖纸工作台，松绿主色，中等圆角，可点行有轻抬起。
+  - `ink-structure`：墨结构，冷灰与墨蓝，更紧间距与更小圆角，几乎无阴影。
+  - `soft-studio`：柔和教室，陶土主色，更开留白与更大圆角，空状态更像面板。
+- Never: Inter、紫粉渐变、玻璃拟态、emoji 当图标、工作页营销 hero、三列指标卡当第一印象、假导航、改业务文案来“显得高级”。
+- Motion Contract: 仅选择 2–3 个有意义动效（确认打开、状态变化、列表或页面切换），150–300ms，支持 `prefers-reduced-motion`。闸 1 不引入新动效库。
 - Forbidden Misfix: 大量滚动动画、弹跳、玻璃拟态、渐变堆叠、为动效引入重型框架，或以视觉改动改变业务命令、权限、ActionIntent 与历史语义。
-- Status: 待人工选型；本轮明确不实施，避免未选定风格扩散全站。
+- Status: 原型评审中；选定前不把任一方向扩散到草稿表单、预览、发布、提交、反馈等其余工作页。

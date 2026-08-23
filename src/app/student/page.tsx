@@ -5,6 +5,10 @@ import { notFound } from "next/navigation";
 import { ZodError } from "zod";
 import { LocalizedDateTime } from "../_components/localized-date-time";
 import { EmptyState, StatusBadge } from "../_components/ui";
+import {
+  readVisualPrototype,
+  type VisualPrototypeId,
+} from "../_components/visual-prototype";
 import { WorkspaceShell } from "../_components/workspace-shell";
 import { AuthenticationError } from "../../server/auth/current-actor";
 import { createUiCommandContext } from "../../server/commands/create-ui-command-context";
@@ -23,8 +27,10 @@ export const metadata: Metadata = {
 
 function AccessUnavailable({
   code,
+  visual,
 }: {
   code: AuthenticationError["code"];
+  visual?: VisualPrototypeId;
 }) {
   const copy =
     code === "AUTH_NOT_CONFIGURED"
@@ -49,7 +55,7 @@ function AccessUnavailable({
           };
 
   return (
-    <WorkspaceShell audience="学生">
+    <WorkspaceShell audience="学生" visual={visual}>
       <section className={styles.accessGate}>
         <p className={styles.eyebrow}>{copy.eyebrow}</p>
         <h1>{copy.title}</h1>
@@ -252,7 +258,12 @@ function ReleaseGroup({
   );
 }
 
-export default async function StudentDashboardPage() {
+export default async function StudentDashboardPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+} = {}) {
+  const visual = await readVisualPrototype(searchParams);
   let context;
   let releaseList: StudentReleaseList;
 
@@ -262,7 +273,7 @@ export default async function StudentDashboardPage() {
     releaseList = await listStudentReleases(database, context, {});
   } catch (error) {
     if (error instanceof AuthenticationError) {
-      return <AccessUnavailable code={error.code} />;
+      return <AccessUnavailable code={error.code} visual={visual} />;
     }
     if (
       error instanceof StudentReleaseListQueryError ||
@@ -288,7 +299,7 @@ export default async function StudentDashboardPage() {
   ).length;
 
   return (
-    <WorkspaceShell audience="学生">
+    <WorkspaceShell audience="学生" visual={visual}>
       <div className={styles.dashboardMain}>
         <header className={styles.dashboardHeader}>
           <div>
