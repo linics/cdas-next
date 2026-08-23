@@ -164,7 +164,11 @@ export class NeonApiProvider implements NeonProvider {
       createdEndpoint = object(created.endpoints[0]);
     }
     const branchId = text(branch.id);
-    if (branch.name !== this.config.neonBranchName || branch.init_source !== "schema-only" || !(branch.parent_id === undefined || branch.parent_id === null) || !(branch.primary === undefined || branch.primary === false) || branch.default !== false) throw new Error("DEVELOPMENT_INFRA_NEON_BRANCH_UNSAFE");
+    // Neon may report a requested schema-only root as parent-schema after copying only
+    // the source schema. A missing parent remains mandatory so no data-bearing child
+    // branch can be mistaken for this isolated development root.
+    const schemaOnlyRoot = ["schema-only", "parent-schema"].includes(String(branch.init_source)) && (branch.parent_id === undefined || branch.parent_id === null);
+    if (branch.name !== this.config.neonBranchName || !schemaOnlyRoot || !(branch.primary === undefined || branch.primary === false) || branch.default !== false) throw new Error("DEVELOPMENT_INFRA_NEON_BRANCH_UNSAFE");
     let endpoint: Record<string, unknown>;
     if (createdEndpoint) {
       endpoint = createdEndpoint;

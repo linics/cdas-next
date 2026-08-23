@@ -143,11 +143,12 @@ describe("provider fail-closed contracts", () => {
     await expect(new NeonApiProvider(config, queuedFetch([response({ branches: [base] }), response({ endpoints: [{ id: "e", branch_id: "branch", type: "read_write", suspend_timeout_seconds: 300 }] }), response({ roles: [{ name: "cdas_staging_owner" }] }), response({ databases: [{ name: "cdas_next_staging", owner_name: "wrong" }] })], [])).ensureIsolatedDatabase()).rejects.toThrow("DEVELOPMENT_INFRA_NEON_DATABASE_UNSAFE");
   });
   it("accepts Neon optional root fields and zero timeout but rejects negative timeout", async () => {
-    const branch = { id: "branch", name: "cdas-next-development", init_source: "schema-only", default: false };
+    const branch = { id: "branch", name: "cdas-next-development", init_source: "parent-schema", default: false };
     const safe = queuedFetch([response({ branches: [branch] }), response({ endpoints: [{ id: "e", branch_id: "branch", type: "read_write", suspend_timeout_seconds: 0 }] }), response({ roles: [{ name: "cdas_staging_owner" }] }), response({ databases: [{ name: "cdas_next_staging", owner_name: "cdas_staging_owner" }] }), response({ uri: "postgresql://cdas_staging_owner:password@ep-pooler.example.neon.tech/cdas_next_staging?sslmode=require" }), response({ uri: "postgresql://cdas_staging_owner:password@ep.example.neon.tech/cdas_next_staging?sslmode=require" })], []);
     await expect(new NeonApiProvider(config, safe).ensureIsolatedDatabase()).resolves.toBeDefined();
     const unsafe = queuedFetch([response({ branches: [branch] }), response({ endpoints: [{ id: "e", branch_id: "branch", type: "read_write", suspend_timeout_seconds: -1 }] })], []);
     await expect(new NeonApiProvider(config, unsafe).ensureIsolatedDatabase()).rejects.toThrow("DEVELOPMENT_INFRA_NEON_ENDPOINT_UNSAFE");
+    await expect(new NeonApiProvider(config, queuedFetch([response({ branches: [{ ...branch, parent_id: "source-branch" }] })], [])).ensureIsolatedDatabase()).rejects.toThrow("DEVELOPMENT_INFRA_NEON_BRANCH_UNSAFE");
   });
   it("refuses unsafe Vercel build command before any preview configuration", async () => {
     const fetcher: typeof fetch = (async () => response({ name: "cdas-next", link: { type: "github", repoId: 1 }, buildCommand: "pnpm db:deploy && pnpm build" })) as typeof fetch;
