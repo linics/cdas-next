@@ -66,11 +66,48 @@ export const bootstrapClerkClassroomResultSchema = z
   })
   .strict();
 
+/** Acceptance-only operator input. This intentionally does not share the
+ * general bootstrap CLI contract: it can only add one student to a classroom
+ * that the original operator mapping has already established. */
+export const bootstrapAdditionalClerkClassroomStudentInputSchema = z
+  .object({
+    teacherAuthSubject: clerkSubjectSchema,
+    classroomId: z.uuid(),
+    classroomName: z.string().trim().min(1).max(120),
+    additionalStudentAuthSubject: clerkSubjectSchema,
+    additionalStudentDisplayName: displayNameSchema,
+  })
+  .strict()
+  .superRefine((input, context) => {
+    if (input.teacherAuthSubject === input.additionalStudentAuthSubject) {
+      context.addIssue({
+        code: "custom",
+        message: "Teacher and additional student Clerk user IDs must differ",
+        path: ["additionalStudentAuthSubject"],
+      });
+    }
+  });
+
+export const bootstrapAdditionalClerkClassroomStudentResultSchema = z
+  .object({
+    additionalStudent: z
+      .object({ id: z.uuid(), status: creationStatusSchema })
+      .strict(),
+    membership: z.object({ id: z.uuid(), status: creationStatusSchema }).strict(),
+  })
+  .strict();
+
 export type BootstrapClerkClassroomInput = z.input<
   typeof bootstrapClerkClassroomInputSchema
 >;
 export type BootstrapClerkClassroomResult = z.infer<
   typeof bootstrapClerkClassroomResultSchema
+>;
+export type BootstrapAdditionalClerkClassroomStudentInput = z.input<
+  typeof bootstrapAdditionalClerkClassroomStudentInputSchema
+>;
+export type BootstrapAdditionalClerkClassroomStudentResult = z.infer<
+  typeof bootstrapAdditionalClerkClassroomStudentResultSchema
 >;
 
 type BootstrapResource =
@@ -86,6 +123,8 @@ export class BootstrapClerkClassroomError extends Error {
       | "USER_PROFILE_CONFLICT"
       | "CLASSROOM_MANAGER_CONFLICT"
       | "CLASSROOM_NAME_CONFLICT"
+      | "TEACHER_NOT_FOUND"
+      | "CLASSROOM_NOT_FOUND"
       | "MEMBERSHIP_INTERVAL_CONFLICT"
       | "CONCURRENT_WRITE",
     public readonly resource: BootstrapResource,
@@ -96,6 +135,9 @@ export class BootstrapClerkClassroomError extends Error {
 }
 
 type BootstrapInput = z.infer<typeof bootstrapClerkClassroomInputSchema>;
+type AdditionalStudentInput = z.infer<
+  typeof bootstrapAdditionalClerkClassroomStudentInputSchema
+>;
 type BootstrapStatus = z.infer<typeof creationStatusSchema>;
 
 function resolveNow(clock: () => Date): Date {
@@ -110,19 +152,59 @@ async function acquireBootstrapLocks(
   transaction: Prisma.TransactionClient,
   input: BootstrapInput,
 ): Promise<void> {
-  const lockKeys = [
+  await acquireLocks(transaction, [
     `app-user:${input.teacherAuthSubject}`,
     `app-user:${input.studentAuthSubject}`,
     `classroom:${input.classroomId}`,
     `membership:${input.classroomId}:${input.studentAuthSubject}`,
-  ].sort();
+  ]);
+}
 
-  for (const lockKey of lockKeys) {
+async function acquireLocks(
+  transaction: Prisma.TransactionClient,
+  lockKeys: readonly string[],
+): Promise<void> {
+  for (const lockKey of [...lockKeys].sort()) {
     await transaction.$queryRaw`
       SELECT 1 AS acquired
       FROM pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))
     `;
   }
+}
+
+async function ensureCurrentMembership(
+  transaction: Prisma.TransactionClient,
+  classroomId: string,
+  studentId: string,
+  now: Date,
+): Promise<{ id: string; status: BootstrapStatus }> {
+  const currentMembership = await transaction.classroomMembership.findFirst({
+    where: {
+      classroomId,
+      studentId,
+      joinedAt: { lte: now },
+      OR: [{ endedAt: null }, { endedAt: { gt: now } }],
+    },
+    orderBy: { joinedAt: "desc" },
+    select: { id: true },
+  });
+  if (currentMembership) return { ...currentMembership, status: "EXISTING" };
+
+  const futureMembership = await transaction.classroomMembership.findFirst({
+    where: { classroomId, studentId, joinedAt: { gt: now } },
+    select: { id: true },
+  });
+  if (futureMembership) {
+    throw new BootstrapClerkClassroomError(
+      "MEMBERSHIP_INTERVAL_CONFLICT",
+      "membership",
+    );
+  }
+  const created = await transaction.classroomMembership.create({
+    data: { classroomId, studentId, joinedAt: now },
+    select: { id: true },
+  });
+  return { ...created, status: "CREATED" };
 }
 
 async function ensureUser(
@@ -232,53 +314,12 @@ async function runBootstrapTransaction(
         classroomStatus = "CREATED";
       }
 
-      const currentMembership =
-        await transaction.classroomMembership.findFirst({
-          where: {
-            classroomId: input.classroomId,
-            studentId: student.id,
-            joinedAt: { lte: now },
-            OR: [{ endedAt: null }, { endedAt: { gt: now } }],
-          },
-          orderBy: { joinedAt: "desc" },
-          select: { id: true, joinedAt: true },
-        });
-
-      let membership: {
-        id: string;
-        joinedAt: Date;
-        status: BootstrapStatus;
-      };
-      if (currentMembership) {
-        membership = { ...currentMembership, status: "EXISTING" };
-      } else {
-        const futureMembership =
-          await transaction.classroomMembership.findFirst({
-            where: {
-              classroomId: input.classroomId,
-              studentId: student.id,
-              joinedAt: { gt: now },
-            },
-            select: { id: true },
-          });
-        if (futureMembership) {
-          throw new BootstrapClerkClassroomError(
-            "MEMBERSHIP_INTERVAL_CONFLICT",
-            "membership",
-          );
-        }
-
-        const createdMembership =
-          await transaction.classroomMembership.create({
-            data: {
-              classroomId: input.classroomId,
-              studentId: student.id,
-              joinedAt: now,
-            },
-            select: { id: true, joinedAt: true },
-          });
-        membership = { ...createdMembership, status: "CREATED" };
-      }
+      const membership = await ensureCurrentMembership(
+        transaction,
+        input.classroomId,
+        student.id,
+        now,
+      );
 
       return bootstrapClerkClassroomResultSchema.parse({
         teacher: {
@@ -305,6 +346,74 @@ async function runBootstrapTransaction(
       timeout: 10_000,
     },
   );
+}
+
+async function runAdditionalStudentTransaction(
+  database: PrismaClient,
+  input: AdditionalStudentInput,
+  now: Date,
+): Promise<BootstrapAdditionalClerkClassroomStudentResult> {
+  return database.$transaction(async (transaction) => {
+    await acquireLocks(transaction, [
+      `app-user:${input.teacherAuthSubject}`,
+      `app-user:${input.additionalStudentAuthSubject}`,
+      `classroom:${input.classroomId}`,
+      `membership:${input.classroomId}:${input.additionalStudentAuthSubject}`,
+    ]);
+    const teacher = await transaction.appUser.findUnique({
+      where: { authSubject: input.teacherAuthSubject },
+      select: { id: true, role: true },
+    });
+    if (!teacher) {
+      throw new BootstrapClerkClassroomError("TEACHER_NOT_FOUND", "teacher");
+    }
+    if (teacher.role !== "TEACHER") {
+      throw new BootstrapClerkClassroomError("USER_ROLE_CONFLICT", "teacher");
+    }
+    const classroom = await transaction.classroom.findUnique({
+      where: { id: input.classroomId },
+      select: { managerId: true, name: true },
+    });
+    if (!classroom) {
+      throw new BootstrapClerkClassroomError("CLASSROOM_NOT_FOUND", "classroom");
+    }
+    if (classroom.managerId !== teacher.id) {
+      throw new BootstrapClerkClassroomError(
+        "CLASSROOM_MANAGER_CONFLICT",
+        "classroom",
+      );
+    }
+    if (classroom.name !== input.classroomName) {
+      throw new BootstrapClerkClassroomError(
+        "CLASSROOM_NAME_CONFLICT",
+        "classroom",
+      );
+    }
+    const additionalStudent = await ensureUser(
+      transaction,
+      {
+        authSubject: input.additionalStudentAuthSubject,
+        displayName: input.additionalStudentDisplayName,
+        role: "STUDENT",
+        resource: "student",
+      },
+      now,
+    );
+    const membership = await ensureCurrentMembership(
+      transaction,
+      input.classroomId,
+      additionalStudent.id,
+      now,
+    );
+    return bootstrapAdditionalClerkClassroomStudentResultSchema.parse({
+      additionalStudent,
+      membership,
+    });
+  }, {
+    isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+    maxWait: 5_000,
+    timeout: 10_000,
+  });
 }
 
 export async function bootstrapClerkClassroom(
@@ -343,4 +452,32 @@ export async function bootstrapClerkClassroom(
     "CONCURRENT_WRITE",
     "membership",
   );
+}
+
+/**
+ * Acceptance-only additive operator. It never calls Clerk, creates no teacher
+ * or classroom, and only appends/re-enters the named student's membership.
+ */
+export async function bootstrapAdditionalClerkClassroomStudent(
+  database: PrismaClient,
+  rawInput: BootstrapAdditionalClerkClassroomStudentInput,
+  clock: () => Date = () => new Date(),
+): Promise<BootstrapAdditionalClerkClassroomStudentResult> {
+  const input = bootstrapAdditionalClerkClassroomStudentInputSchema.parse(rawInput);
+  const now = resolveNow(clock);
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      return await runAdditionalStudentTransaction(database, input, now);
+    } catch (error) {
+      const retryable = error instanceof Prisma.PrismaClientKnownRequestError &&
+        (error.code === "P2034" || error.code === "P2002");
+      if (retryable && attempt < 3) continue;
+      if (error instanceof BootstrapClerkClassroomError) throw error;
+      if (retryable) {
+        throw new BootstrapClerkClassroomError("CONCURRENT_WRITE", "membership");
+      }
+      throw error;
+    }
+  }
+  throw new BootstrapClerkClassroomError("CONCURRENT_WRITE", "membership");
 }

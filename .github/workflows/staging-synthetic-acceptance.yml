@@ -29,6 +29,7 @@ jobs:
       STAGING_ACCEPTANCE_RETENTION_ATTESTED: ${{ vars.STAGING_ACCEPTANCE_RETENTION_ATTESTED }}
       STAGING_ACCEPTANCE_TEST_TEACHER_NAME: CDAS Staging Synthetic Teacher
       STAGING_ACCEPTANCE_TEST_STUDENT_NAME: CDAS Staging Synthetic Student
+      STAGING_ACCEPTANCE_TEST_OTHER_STUDENT_NAME: CDAS Staging Synthetic Other Student
       CDAS_DEPLOYMENT_ID: ${{ github.sha }}
     steps:
       - name: Check out repository
@@ -115,6 +116,7 @@ jobs:
           CLERK_SECRET_KEY: ${{ secrets.STAGING_CLERK_SECRET_KEY }}
           STAGING_TEST_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_TEACHER_CLERK_ID }}
           STAGING_TEST_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_STUDENT_CLERK_ID }}
+          STAGING_TEST_OTHER_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_STUDENT_CLERK_ID }}
           DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
           DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
           STAGING_DATABASE_NAME: ${{ vars.STAGING_DATABASE_NAME }}
@@ -136,6 +138,7 @@ jobs:
       - name: Enforce same-run acceptance gate
         if: always()
         env:
+          AI_PROVIDER_DISABLED: "1"
           STAGING_BASE_URL: ${{ vars.STAGING_BASE_URL }}
           DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
           DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
@@ -144,6 +147,7 @@ jobs:
           CLERK_SECRET_KEY: ${{ secrets.STAGING_CLERK_SECRET_KEY }}
           STAGING_TEST_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_TEACHER_CLERK_ID }}
           STAGING_TEST_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_STUDENT_CLERK_ID }}
+          STAGING_TEST_OTHER_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_STUDENT_CLERK_ID }}
           STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
         run: pnpm staging:acceptance:assert-gate
 
@@ -162,6 +166,7 @@ jobs:
       STAGING_ACCEPTANCE_RETENTION_ATTESTED: ${{ vars.STAGING_ACCEPTANCE_RETENTION_ATTESTED }}
       STAGING_ACCEPTANCE_TEST_TEACHER_NAME: CDAS Staging Synthetic Teacher
       STAGING_ACCEPTANCE_TEST_STUDENT_NAME: CDAS Staging Synthetic Student
+      STAGING_ACCEPTANCE_TEST_OTHER_STUDENT_NAME: CDAS Staging Synthetic Other Student
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -190,6 +195,7 @@ jobs:
           CLERK_SECRET_KEY: ${{ secrets.STAGING_CLERK_SECRET_KEY }}
           STAGING_TEST_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_TEACHER_CLERK_ID }}
           STAGING_TEST_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_STUDENT_CLERK_ID }}
+          STAGING_TEST_OTHER_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_STUDENT_CLERK_ID }}
           STAGING_DATABASE_NAME: ${{ vars.STAGING_DATABASE_NAME }}
           STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
           DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
@@ -203,7 +209,7 @@ jobs:
           .venv-staging-acceptance/bin/python -m pip install -r scripts/e2e/requirements.txt
           .venv-staging-acceptance/bin/python -m playwright install --with-deps chromium
           echo "$PWD/.venv-staging-acceptance/bin" >> "$GITHUB_PATH"
-      - name: Verify both Clerk identities and ticket capability before database writes
+      - name: Verify all three Clerk identities and ticket capability before database writes
         id: identity
         if: ${{ steps.chromium.outcome == 'success' }}
         continue-on-error: true
@@ -216,6 +222,7 @@ jobs:
           CLERK_SECRET_KEY: ${{ secrets.STAGING_CLERK_SECRET_KEY }}
           STAGING_TEST_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_TEACHER_CLERK_ID }}
           STAGING_TEST_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_STUDENT_CLERK_ID }}
+          STAGING_TEST_OTHER_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_STUDENT_CLERK_ID }}
           STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
         run: pnpm staging:acceptance:verify-identities
       - name: Reverify the current remote deployment immediately after identity checks and before writes
@@ -247,11 +254,12 @@ jobs:
           CLERK_SECRET_KEY: ${{ secrets.STAGING_CLERK_SECRET_KEY }}
           STAGING_TEST_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_TEACHER_CLERK_ID }}
           STAGING_TEST_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_STUDENT_CLERK_ID }}
+          STAGING_TEST_OTHER_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_STUDENT_CLERK_ID }}
           DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
           STAGING_DATABASE_NAME: ${{ vars.STAGING_DATABASE_NAME }}
           STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
         run: pnpm staging:acceptance:bootstrap
-      - name: Run real browser synthetic teacher-student manual loop
+      - name: Run real browser synthetic teacher-two-student manual loop
         id: browser
         if: ${{ steps.bootstrap.outcome == 'success' }}
         continue-on-error: true
@@ -264,6 +272,7 @@ jobs:
           CLERK_SECRET_KEY: ${{ secrets.STAGING_CLERK_SECRET_KEY }}
           STAGING_TEST_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_TEACHER_CLERK_ID }}
           STAGING_TEST_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_STUDENT_CLERK_ID }}
+          STAGING_TEST_OTHER_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_STUDENT_CLERK_ID }}
           STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
         run: pnpm staging:acceptance:browser
       - name: Verify only the synthetic namespace in a read-only transaction
@@ -279,6 +288,7 @@ jobs:
           CLERK_SECRET_KEY: ${{ secrets.STAGING_CLERK_SECRET_KEY }}
           STAGING_TEST_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_TEACHER_CLERK_ID }}
           STAGING_TEST_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_STUDENT_CLERK_ID }}
+          STAGING_TEST_OTHER_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_STUDENT_CLERK_ID }}
           STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
         run: pnpm staging:acceptance:verify
       - name: Aggregate and assert complete synthetic acceptance evidence
@@ -294,6 +304,7 @@ jobs:
           CLERK_SECRET_KEY: ${{ secrets.STAGING_CLERK_SECRET_KEY }}
           STAGING_TEST_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_TEACHER_CLERK_ID }}
           STAGING_TEST_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_STUDENT_CLERK_ID }}
+          STAGING_TEST_OTHER_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_STUDENT_CLERK_ID }}
           STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
         run: pnpm staging:acceptance:assert-final
       - name: Preserve redacted synthetic acceptance evidence

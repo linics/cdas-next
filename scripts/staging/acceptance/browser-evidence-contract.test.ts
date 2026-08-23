@@ -25,6 +25,9 @@ const codes = [
   "STUDENT_FEEDBACK_VISIBLE",
   "STALE_STUDENT_WRITE_REJECTED_AFTER_CLOSE",
   "CLOSED_STUDENT_READONLY",
+  "OTHER_STUDENT_RELEASE_VISIBLE",
+  "OTHER_STUDENT_SUBMISSION_CONTENT_HIDDEN",
+  "OTHER_STUDENT_SUBMISSION_404",
 ];
 const environment = {
   GITHUB_RUN_ID: "1",
@@ -79,6 +82,48 @@ describe("browser evidence contract", () => {
     await expect(
       isPassingBrowserEvidence(
         { ...value, unexpected: true },
+        marker,
+        directory,
+        environment,
+      ),
+    ).resolves.toBe(false);
+    await expect(
+      isPassingBrowserEvidence(
+        {
+          ...value,
+          checks: [
+            ...value.checks.filter(
+              (check) => check.code !== "OTHER_STUDENT_RELEASE_VISIBLE",
+            ),
+            value.checks.find(
+              (check) => check.code === "OTHER_STUDENT_SUBMISSION_404",
+            )!,
+          ],
+        },
+        marker,
+        directory,
+        environment,
+      ),
+    ).resolves.toBe(false);
+    const otherCheck = value.checks.find(
+      (check) => check.code === "OTHER_STUDENT_SUBMISSION_404",
+    );
+    await expect(
+      isPassingBrowserEvidence(
+        { ...value, checks: value.checks.filter((check) => check !== otherCheck) },
+        marker,
+        directory,
+        environment,
+      ),
+    ).resolves.toBe(false);
+    await expect(
+      isPassingBrowserEvidence(
+        {
+          ...value,
+          checks: value.checks.map((check) =>
+            check === otherCheck ? { ...check, status: "FAIL" } : check,
+          ),
+        },
         marker,
         directory,
         environment,

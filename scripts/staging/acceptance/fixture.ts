@@ -10,6 +10,7 @@ export async function probeAcceptanceNamespace(
   classroomName: string,
   teacherSubject: string,
   studentSubject: string,
+  otherStudentSubject: string,
 ): Promise<NamespaceProbe> {
   const classroom = await database.classroom.findUnique({
     where: { id: classroomId },
@@ -27,9 +28,11 @@ export async function probeAcceptanceNamespace(
   if (!classroom) return "ABSENT";
   const matching = classroom.name === classroomName &&
     classroom.manager.authSubject === teacherSubject &&
-    classroom.memberships.length === 1 &&
-    classroom.memberships[0]?.student.authSubject === studentSubject &&
-    classroom.memberships[0].endedAt === null;
+    classroom.memberships.length === 2 &&
+    classroom.memberships.every((membership) => membership.endedAt === null) &&
+    new Set(classroom.memberships.map((membership) => membership.student.authSubject)).size === 2 &&
+    new Set(classroom.memberships.map((membership) => membership.student.authSubject)).has(studentSubject) &&
+    new Set(classroom.memberships.map((membership) => membership.student.authSubject)).has(otherStudentSubject);
   return matching ? "MATCHING" : "COLLISION";
 }
 

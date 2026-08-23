@@ -25,6 +25,8 @@ export const acceptanceTeacherDisplayName =
   "CDAS Staging Synthetic Teacher";
 export const acceptanceStudentDisplayName =
   "CDAS Staging Synthetic Student";
+export const acceptanceOtherStudentDisplayName =
+  "CDAS Staging Synthetic Other Student";
 
 export type AcceptanceNamespace = Readonly<{
   marker: string;
@@ -116,9 +118,11 @@ export function evaluateAcceptanceReadiness(environment: AcceptanceEnvironment):
     check("STAGING_ACCEPTANCE_TEST_CLERK_SECRET", /^sk_test_[A-Za-z0-9_-]{10,}$/u.test(value(environment, "CLERK_SECRET_KEY")), Boolean(value(environment, "CLERK_SECRET_KEY"))),
     check("STAGING_ACCEPTANCE_TEACHER_SUBJECT", /^user_[A-Za-z0-9]+$/u.test(value(environment, "STAGING_TEST_TEACHER_CLERK_ID")), Boolean(value(environment, "STAGING_TEST_TEACHER_CLERK_ID"))),
     check("STAGING_ACCEPTANCE_STUDENT_SUBJECT", /^user_[A-Za-z0-9]+$/u.test(value(environment, "STAGING_TEST_STUDENT_CLERK_ID")), Boolean(value(environment, "STAGING_TEST_STUDENT_CLERK_ID"))),
-    check("STAGING_ACCEPTANCE_SUBJECTS_DISTINCT", value(environment, "STAGING_TEST_TEACHER_CLERK_ID") !== "" && value(environment, "STAGING_TEST_TEACHER_CLERK_ID") !== value(environment, "STAGING_TEST_STUDENT_CLERK_ID")),
+    check("STAGING_ACCEPTANCE_OTHER_STUDENT_SUBJECT", /^user_[A-Za-z0-9]+$/u.test(value(environment, "STAGING_TEST_OTHER_STUDENT_CLERK_ID")), Boolean(value(environment, "STAGING_TEST_OTHER_STUDENT_CLERK_ID"))),
+    check("STAGING_ACCEPTANCE_SUBJECTS_DISTINCT", new Set([value(environment, "STAGING_TEST_TEACHER_CLERK_ID"), value(environment, "STAGING_TEST_STUDENT_CLERK_ID"), value(environment, "STAGING_TEST_OTHER_STUDENT_CLERK_ID")]).size === 3 && value(environment, "STAGING_TEST_TEACHER_CLERK_ID") !== "" && value(environment, "STAGING_TEST_STUDENT_CLERK_ID") !== "" && value(environment, "STAGING_TEST_OTHER_STUDENT_CLERK_ID") !== ""),
     check("STAGING_ACCEPTANCE_TEACHER_NAME", value(environment, "STAGING_ACCEPTANCE_TEST_TEACHER_NAME") === acceptanceTeacherDisplayName, Boolean(value(environment, "STAGING_ACCEPTANCE_TEST_TEACHER_NAME"))),
     check("STAGING_ACCEPTANCE_STUDENT_NAME", value(environment, "STAGING_ACCEPTANCE_TEST_STUDENT_NAME") === acceptanceStudentDisplayName, Boolean(value(environment, "STAGING_ACCEPTANCE_TEST_STUDENT_NAME"))),
+    check("STAGING_ACCEPTANCE_OTHER_STUDENT_NAME", value(environment, "STAGING_ACCEPTANCE_TEST_OTHER_STUDENT_NAME") === acceptanceOtherStudentDisplayName, Boolean(value(environment, "STAGING_ACCEPTANCE_TEST_OTHER_STUDENT_NAME"))),
     check("STAGING_ACCEPTANCE_GITHUB_RUN", isPositiveInteger(value(environment, "GITHUB_RUN_ID")), Boolean(value(environment, "GITHUB_RUN_ID"))),
     check("STAGING_ACCEPTANCE_GITHUB_ATTEMPT", isPositiveInteger(value(environment, "GITHUB_RUN_ATTEMPT")), Boolean(value(environment, "GITHUB_RUN_ATTEMPT"))),
     check("STAGING_ACCEPTANCE_DEPLOYMENT_SHA", /^[a-f0-9]{40}$/u.test(value(environment, "CDAS_DEPLOYMENT_ID")), Boolean(value(environment, "CDAS_DEPLOYMENT_ID"))),

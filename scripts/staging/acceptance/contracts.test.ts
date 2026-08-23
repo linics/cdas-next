@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 
 import {
   acceptanceNamespace,
+  acceptanceOtherStudentDisplayName,
   acceptanceStudentDisplayName,
   acceptanceTeacherDisplayName,
   deriveAcceptanceUuid,
@@ -34,8 +35,10 @@ function environment(overrides: Record<string, string | undefined> = {}) {
     CLERK_SECRET_KEY: "sk_test_0123456789abcdef",
     STAGING_TEST_TEACHER_CLERK_ID: "user_TestTeacher123",
     STAGING_TEST_STUDENT_CLERK_ID: "user_TestStudent123",
+    STAGING_TEST_OTHER_STUDENT_CLERK_ID: "user_TestOtherStudent123",
     STAGING_ACCEPTANCE_TEST_TEACHER_NAME: acceptanceTeacherDisplayName,
     STAGING_ACCEPTANCE_TEST_STUDENT_NAME: acceptanceStudentDisplayName,
+    STAGING_ACCEPTANCE_TEST_OTHER_STUDENT_NAME: acceptanceOtherStudentDisplayName,
     GITHUB_RUN_ID: "12345678",
     GITHUB_RUN_ATTEMPT: "1",
     CDAS_DEPLOYMENT_ID: "a".repeat(40),
@@ -62,6 +65,8 @@ describe("staging synthetic acceptance contracts", () => {
       { CLERK_SECRET_KEY: "sk_live_0123456789abcdef" },
       { STAGING_BASE_URL: "http://localhost:3000" },
       { AI_PROVIDER_DISABLED: "0" },
+      { STAGING_TEST_OTHER_STUDENT_CLERK_ID: "user_TestStudent123" },
+      { STAGING_ACCEPTANCE_TEST_OTHER_STUDENT_NAME: "Wrong name" },
     ]) {
       expect(evaluateAcceptanceReadiness(environment(invalid)).status).toBe("FAIL");
     }
@@ -96,19 +101,23 @@ describe("staging synthetic acceptance contracts", () => {
     expect(isAcceptanceGate({ ...passing, extra: true }, input)).toBe(false);
     expect(isAcceptanceGate(passing, { ...input, DIRECT_URL: "postgresql://u:p@other.example.test/staging_cdas?sslmode=require" })).toBe(false);
     expect(isAcceptanceGate(passing, { ...input, STAGING_ACCEPTANCE_WRITES_ATTESTED: "false" })).toBe(false);
+    expect(isAcceptanceGate(passing, { ...input, STAGING_TEST_OTHER_STUDENT_CLERK_ID: "user_ChangedOtherStudent123" })).toBe(false);
+    expect(isAcceptanceGate(passing, { ...input, STAGING_ACCEPTANCE_TEST_OTHER_STUDENT_NAME: "Changed Other Student" })).toBe(false);
   });
 
-  it("does not call Clerk before readiness and fixes every ticket at 60 seconds", async () => {
+  it("does not call Clerk before readiness and maps all three tickets at 60 seconds", async () => {
     let calls = 0;
-    const client = { signInTokens: { createSignInToken: async (input: { userId: string; expiresInSeconds: number }) => { calls += 1; expect(input).toMatchObject({ userId: "user_TestTeacher123", expiresInSeconds: 60 }); return { token: "in-memory-ticket" }; } } };
+    const client = { signInTokens: { createSignInToken: async (input: { userId: string; expiresInSeconds: number }) => { calls += 1; expect(input.expiresInSeconds).toBe(60); expect(["user_TestTeacher123", "user_TestStudent123", "user_TestOtherStudent123"]).toContain(input.userId); return { token: "in-memory-ticket" }; } } };
     await expect(issueAcceptanceTicket(environment({ AI_PROVIDER_DISABLED: "0" }), "TEACHER", client)).rejects.toThrow("STAGING_ACCEPTANCE_READINESS_FAILED");
     await expect(issueAcceptanceTicket(environment(), "INVALID" as never, client)).rejects.toThrow("STAGING_ACCEPTANCE_TICKET_ROLE_INVALID");
     expect(calls).toBe(0);
     await expect(issueAcceptanceTicket(environment(), "TEACHER", client)).resolves.toBe("in-memory-ticket");
-    expect(calls).toBe(1);
+    await expect(issueAcceptanceTicket(environment(), "STUDENT", client)).resolves.toBe("in-memory-ticket");
+    await expect(issueAcceptanceTicket(environment(), "OTHER_STUDENT", client)).resolves.toBe("in-memory-ticket");
+    expect(calls).toBe(3);
   });
 
-  it("verifies both Clerk users and revokes capability tickets before database writes", async () => {
+  it("verifies all three Clerk users and revokes capability tickets before database writes", async () => {
     const created: Array<{ userId: string; expiresInSeconds: number }> = [];
     const revoked: string[] = [];
     const client = {
@@ -127,14 +136,16 @@ describe("staging synthetic acceptance contracts", () => {
       },
     };
     const checks = await verifyAcceptanceIdentities(environment(), client);
-    expect(checks).toHaveLength(4);
+    expect(checks).toHaveLength(6);
     expect(created).toEqual([
       { userId: "user_TestTeacher123", expiresInSeconds: 60 },
       { userId: "user_TestStudent123", expiresInSeconds: 60 },
+      { userId: "user_TestOtherStudent123", expiresInSeconds: 60 },
     ]);
     expect(revoked).toEqual([
       "token-user_TestTeacher123",
       "token-user_TestStudent123",
+      "token-user_TestOtherStudent123",
     ]);
   });
 
@@ -179,8 +190,10 @@ describe("staging synthetic acceptance contracts", () => {
       checks: [
         "TEACHER_IDENTITY_EXISTS",
         "STUDENT_IDENTITY_EXISTS",
+        "OTHER_STUDENT_IDENTITY_EXISTS",
         "TEACHER_TICKET_CAPABILITY",
         "STUDENT_TICKET_CAPABILITY",
+        "OTHER_STUDENT_TICKET_CAPABILITY",
       ].map((code) => ({ code, status: "PASS" })),
       ticketsRevoked: true,
       realStudentDataAllowed: false,
@@ -197,8 +210,10 @@ describe("staging synthetic acceptance contracts", () => {
       resources: {
         teacher: "EXISTING",
         student: "EXISTING",
+        otherStudent: "EXISTING",
         classroom: "CREATED",
         membership: "CREATED",
+        otherMembership: "CREATED",
       },
       realStudentDataAllowed: false,
       productionDecision: "NO_GO",
@@ -223,5 +238,21 @@ describe("staging synthetic acceptance contracts", () => {
     const bootstrapStep = workflow.slice(bootstrap, workflow.indexOf("- name: Run real browser", bootstrap));
     expect(bootstrapStep).toContain("if: ${{ steps.immediate-evidence.outcome == 'success' }}");
     expect(bootstrapStep).not.toContain("steps.identity.outcome");
+    expect(
+      workflow.match(/STAGING_TEST_OTHER_STUDENT_CLERK_ID:/gu),
+    ).toHaveLength(8);
+    const preflight = workflow.slice(
+      workflow.indexOf("id: preflight"),
+      workflow.indexOf("- name: Build production application"),
+    );
+    expect(preflight).not.toContain("STAGING_TEST_OTHER_STUDENT_CLERK_ID");
+    const sameRunGateAssertion = workflow.slice(
+      workflow.indexOf("- name: Enforce same-run acceptance gate"),
+      workflow.indexOf("\n\n  acceptance:"),
+    );
+    expect(sameRunGateAssertion).toContain('AI_PROVIDER_DISABLED: "1"');
+    expect(sameRunGateAssertion).toContain(
+      "STAGING_TEST_OTHER_STUDENT_CLERK_ID:",
+    );
   });
 });

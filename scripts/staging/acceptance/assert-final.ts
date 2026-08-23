@@ -19,7 +19,7 @@ async function passingEvidence(value: unknown, marker: string, directory: string
 }
 
 function passingVerify(value: unknown): boolean {
-  const codes = ["NAMESPACE_CLASSROOM_AND_MEMBERSHIP_EXACT", "MANUAL_DRAFT_RELEASE_SUBMISSION_FEEDBACK_CLOSED", "SNAPSHOT_INTENTS_AUDITS_AND_STALE_CLOSE_REJECTION"];
+  const codes = ["NAMESPACE_CLASSROOM_AND_MEMBERSHIPS_EXACT", "MANUAL_DRAFT_RELEASE_SUBMISSION_FEEDBACK_CLOSED", "SNAPSHOT_INTENTS_AUDITS_AND_STALE_CLOSE_REJECTION", "OTHER_STUDENT_HAS_NO_SUBMISSION_HISTORY"];
   if (!exactObject(value, ["schema", "status", "checks", "readOnlyTransaction", "realStudentDataAllowed", "productionDecision"]) || value.schema !== "staging-synthetic-acceptance-verify.v1" || value.status !== "PASS" || value.readOnlyTransaction !== true || value.realStudentDataAllowed !== false || value.productionDecision !== "NO_GO") return false;
   const verifyChecks: unknown[] = Array.isArray(value.checks) ? value.checks : [];
   return verifyChecks.length === codes.length && verifyChecks.every((check) => exactObject(check, ["code", "status"]) && check.status === "PASS") && new Set(verifyChecks.map((item) => (item as Record<string, unknown>).code)).size === codes.length && codes.every((code) => verifyChecks.some((item) => (item as Record<string, unknown>).code === code));

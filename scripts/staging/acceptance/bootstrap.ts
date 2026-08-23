@@ -1,9 +1,13 @@
 import nextEnvironment from "@next/env";
 
-import { bootstrapClerkClassroom } from "../../../src/server/bootstrap/bootstrap-clerk-classroom";
+import {
+  bootstrapAdditionalClerkClassroomStudent,
+  bootstrapClerkClassroom,
+} from "../../../src/server/bootstrap/bootstrap-clerk-classroom";
 import { createDatabaseClient } from "../../../src/server/db/client";
 import {
   acceptanceNamespace,
+  acceptanceOtherStudentDisplayName,
   acceptanceStudentDisplayName,
   acceptanceTeacherDisplayName,
   evaluateAcceptanceReadiness,
@@ -36,7 +40,7 @@ async function main(): Promise<void> {
       required("STAGING_TEST_TEACHER_CLERK_ID"),
       namespace.activityTitle,
     );
-    const probe = await probeAcceptanceNamespace(database, namespace.classroomId, namespace.classroomName, required("STAGING_TEST_TEACHER_CLERK_ID"), required("STAGING_TEST_STUDENT_CLERK_ID"));
+    const probe = await probeAcceptanceNamespace(database, namespace.classroomId, namespace.classroomName, required("STAGING_TEST_TEACHER_CLERK_ID"), required("STAGING_TEST_STUDENT_CLERK_ID"), required("STAGING_TEST_OTHER_STUDENT_CLERK_ID"));
     if (probe === "COLLISION") throw new Error("STAGING_ACCEPTANCE_NAMESPACE_COLLISION");
     const result = await bootstrapClerkClassroom(database, {
       teacherAuthSubject: required("STAGING_TEST_TEACHER_CLERK_ID"),
@@ -46,6 +50,13 @@ async function main(): Promise<void> {
       classroomId: namespace.classroomId,
       classroomName: namespace.classroomName,
     });
+    const otherStudent = await bootstrapAdditionalClerkClassroomStudent(database, {
+      teacherAuthSubject: required("STAGING_TEST_TEACHER_CLERK_ID"),
+      classroomId: namespace.classroomId,
+      classroomName: namespace.classroomName,
+      additionalStudentAuthSubject: required("STAGING_TEST_OTHER_STUDENT_CLERK_ID"),
+      additionalStudentDisplayName: acceptanceOtherStudentDisplayName,
+    });
     await writeAcceptanceArtifact(marker, "bootstrap.json", {
       schema: "staging-synthetic-acceptance-bootstrap.v1",
       status: "PASS",
@@ -54,8 +65,10 @@ async function main(): Promise<void> {
       resources: {
         teacher: result.teacher.status,
         student: result.student.status,
+        otherStudent: otherStudent.additionalStudent.status,
         classroom: result.classroom.status,
         membership: result.membership.status,
+        otherMembership: otherStudent.membership.status,
       },
       realStudentDataAllowed: false,
       productionDecision: "NO_GO",

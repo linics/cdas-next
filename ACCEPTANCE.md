@@ -216,16 +216,19 @@ Agent 不是新的业务主体。审计中的 actor 始终是登录用户，`age
 
 场景: 受保护 staging 的合成真实账号验收不扩大业务权限
   假如同一次受保护 GitHub run 已生成并校验 staging GO 证据
-  并且该证据以健康证明密钥绑定 run、部署源码、数据库、Clerk test instance、合成教师/学生与 base URL
+  并且该证据以健康证明密钥绑定 run、部署源码、数据库、Clerk test instance、合成教师与两个学生及 base URL
   当额外的“合成写入、短期 Clerk ticket、保留不清理”人工证明均为 true
   并且写入前重新验证当前远端 health proof 仍与该 run 精确一致
-  并且两个 Clerk test 用户均可读取、签发 60 秒 ticket 并立即撤销
-  那么 operator 只能以唯一 `cdas-staging-*` namespace 追加或精确重入预配置班级
+  并且三个 Clerk test 用户均可读取、签发 60 秒 ticket 并立即撤销
+  那么 acceptance-only operator 只能以唯一 `cdas-staging-*` namespace 先预配置教师与主学生，再追加或精确重入同班第三学生；该 operator 不扩大产品成员管理权限
+  并且班级恰有两个活跃学生成员，且两个学生 Clerk subject 均不同
   并且真实浏览器必须经现有第一方 UI 完成手工草稿、发布、文本提交、教师反馈、学生查看与关闭
+  并且第三学生能看到同一 Release，但主学生的 evidence、feedback 与显示名称均不泄漏；直接打开教师页面取得的主学生 submission URL 返回 404
   当学生保留关闭前的重交页面并在关闭后提交保存
   那么既有 Server Action 与领域命令拒绝该写入
   并且刷新后页面不显示写入口、工作副本与正式历史仍可读取
   并且最终 verifier 只以显式 read-only transaction 查询该 namespace
+  并且 verifier 证明第三学生在目标 Release 下没有 Submission、SubmissionRevision 或 TeacherFeedback 历史
   并且任何缺失、配置绑定不匹配、浏览器失败或证据 schema 不完整都为 NO_GO
   当同 marker 已经留下任意业务草稿
   那么重跑在追加新的业务历史前拒绝，并要求新的 run attempt 使用新 marker

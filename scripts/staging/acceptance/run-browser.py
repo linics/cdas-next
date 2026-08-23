@@ -149,7 +149,7 @@ def sign_in(page: Page, remote: str, role: str) -> None:
         assert_origin(page.url, remote)
         page.wait_for_function("() => Boolean(window.Clerk?.loaded && window.Clerk.status === 'ready' && window.Clerk.client)", timeout=60_000)
         assert_origin(page.url, remote)
-        ticket = issue_ticket(role.upper())
+        ticket = issue_ticket("OTHER_STUDENT" if role == "other_student" else role.upper())
         page.evaluate(
             """async ({ticket, expectedOrigin}) => {
               if (window.top !== window || window.location.origin !== expectedOrigin) throw new Error('ORIGIN_MISMATCH');
@@ -243,10 +243,13 @@ def run() -> None:
         browser = playwright.chromium.launch(headless=True)
         teacher_context = browser.new_context(locale="zh-CN", timezone_id="Asia/Taipei", viewport={"width": 1440, "height": 1000})
         student_context = browser.new_context(locale="zh-CN", timezone_id="Asia/Taipei", viewport={"width": 1440, "height": 1000})
+        other_student_context = browser.new_context(locale="zh-CN", timezone_id="Asia/Taipei", viewport={"width": 1440, "height": 1000})
         teacher = teacher_context.new_page()
         student = student_context.new_page()
+        other_student = other_student_context.new_page()
         teacher.set_default_timeout(30_000)
         student.set_default_timeout(30_000)
+        other_student.set_default_timeout(30_000)
         try:
             sign_in(teacher, remote, "teacher")
             checks.append({"code": "AI_DISABLED_MANUAL_PATH", "status": "PASS"})
@@ -325,6 +328,31 @@ def run() -> None:
             teacher.get_by_text(feedback_text, exact=True).wait_for(state="visible")
             index["04-teacher-feedback.png"] = screenshot(teacher, output, "04-teacher-feedback")
 
+            sign_in(other_student, remote, "other_student")
+            visible = other_student.goto(f"{remote}{activity_href}", wait_until="domcontentloaded")
+            assert_origin(other_student.url, remote)
+            if not visible or visible.status != 200:
+                raise AcceptanceFailure("STAGING_ACCEPTANCE_OTHER_STUDENT_RELEASE_NOT_VISIBLE")
+            other_student.get_by_role("heading", name=title, exact=True).wait_for(state="visible")
+            checks.append({"code": "OTHER_STUDENT_RELEASE_VISIBLE", "status": "PASS"})
+            other_evidence = other_student.locator("#text-evidence")
+            other_evidence.wait_for(state="visible")
+            if other_evidence.input_value() != "":
+                raise AcceptanceFailure("STAGING_ACCEPTANCE_OTHER_STUDENT_SUBMISSION_LEAK")
+            primary_display_name = required("STAGING_ACCEPTANCE_TEST_STUDENT_NAME")
+            page_text = other_student.locator("body").inner_text()
+            if evidence in page_text or feedback_text in page_text or primary_display_name in page_text:
+                raise AcceptanceFailure("STAGING_ACCEPTANCE_OTHER_STUDENT_SUBMISSION_LEAK")
+            checks.append({"code": "OTHER_STUDENT_SUBMISSION_CONTENT_HIDDEN", "status": "PASS"})
+            denied_other = other_student.goto(f"{remote}{submission_href}", wait_until="domcontentloaded")
+            assert_origin(other_student.url, remote)
+            if not denied_other or denied_other.status != 404:
+                raise AcceptanceFailure("STAGING_ACCEPTANCE_OTHER_STUDENT_SUBMISSION_NOT_HIDDEN")
+            denied_text = other_student.locator("body").inner_text()
+            if evidence in denied_text or feedback_text in denied_text or primary_display_name in denied_text:
+                raise AcceptanceFailure("STAGING_ACCEPTANCE_OTHER_STUDENT_SUBMISSION_LEAK")
+            checks.append({"code": "OTHER_STUDENT_SUBMISSION_404", "status": "PASS"})
+
             student.goto(f"{remote}{activity_href}", wait_until="domcontentloaded")
             assert_origin(student.url, remote)
             wait_text(student, feedback_text)
@@ -362,6 +390,7 @@ def run() -> None:
         finally:
             teacher_context.close()
             student_context.close()
+            other_student_context.close()
             browser.close()
 
     payload = {

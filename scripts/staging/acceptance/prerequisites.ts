@@ -15,8 +15,10 @@ export function isPassingIdentityEvidence(value: unknown): boolean {
   const codes = [
     "TEACHER_IDENTITY_EXISTS",
     "STUDENT_IDENTITY_EXISTS",
+    "OTHER_STUDENT_IDENTITY_EXISTS",
     "TEACHER_TICKET_CAPABILITY",
     "STUDENT_TICKET_CAPABILITY",
+    "OTHER_STUDENT_TICKET_CAPABILITY",
   ];
   if (!exactObject(value, ["schema", "status", "checks", "ticketsRevoked", "realStudentDataAllowed", "productionDecision"]) ||
     value.schema !== "staging-synthetic-acceptance-identity.v1" || value.status !== "PASS" ||
@@ -40,14 +42,14 @@ export function isPassingBootstrapEvidence(
     !exactObject(value.namespace, ["marker", "classroomDerived"]) ||
     value.namespace.marker !== environment.STAGING_RUN_MARKER?.trim() || value.namespace.classroomDerived !== true ||
     (value.collisionProbe !== "ABSENT" && value.collisionProbe !== "MATCHING") ||
-    !exactObject(value.resources, ["teacher", "student", "classroom", "membership"])) {
+    !exactObject(value.resources, ["teacher", "student", "otherStudent", "classroom", "membership", "otherMembership"])) {
     return false;
   }
   const statuses = Object.values(value.resources);
   if (!statuses.every((status) => status === "CREATED" || status === "EXISTING")) return false;
   return value.collisionProbe === "MATCHING"
     ? statuses.every((status) => status === "EXISTING")
-    : value.resources.classroom === "CREATED" && value.resources.membership === "CREATED";
+    : value.resources.classroom === "CREATED" && value.resources.membership === "CREATED" && value.resources.otherMembership === "CREATED";
 }
 
 async function readArtifact(directory: string, name: string): Promise<unknown> {
