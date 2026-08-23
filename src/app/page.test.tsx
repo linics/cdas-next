@@ -24,7 +24,7 @@ import HomePage from "./page";
 
 describe("public workspace entry", () => {
   it("links only to the real teacher and student workspaces", async () => {
-    const markup = renderToStaticMarkup(await HomePage());
+    const markup = renderToStaticMarkup(await HomePage({}));
 
     expect(markup).toContain('href="/teacher"');
     expect(markup).toContain('href="/student"');

@@ -13,7 +13,7 @@ export default async function HomePage({
   searchParams,
 }: {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
-} = {}) {
+}) {
   const visual = await readVisualPrototype(searchParams);
 
   return (

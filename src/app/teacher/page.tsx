@@ -32,7 +32,7 @@ export default async function TeacherDashboardPage({
   searchParams,
 }: {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
-} = {}) {
+}) {
   const visual = await readVisualPrototype(searchParams);
   let dashboard;
   try {

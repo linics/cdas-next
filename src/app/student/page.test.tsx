@@ -129,7 +129,7 @@ const releaseList = {
 };
 
 async function renderPage(): Promise<string> {
-  return renderToStaticMarkup(await StudentDashboardPage());
+  return renderToStaticMarkup(await StudentDashboardPage({}));
 }
 
 describe("student dashboard page", () => {

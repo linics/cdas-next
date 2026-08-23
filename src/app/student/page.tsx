@@ -262,7 +262,7 @@ export default async function StudentDashboardPage({
   searchParams,
 }: {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
-} = {}) {
+}) {
   const visual = await readVisualPrototype(searchParams);
   let context;
   let releaseList: StudentReleaseList;
