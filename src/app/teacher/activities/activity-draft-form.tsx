@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useState } from "react";
+import { ArrowRightIcon } from "../../_components/flat-icons";
 import { saveActivityDraftAction } from "./actions";
 import type {
   ActivityDraftActionState,
@@ -210,7 +211,7 @@ export function ActivityDraftForm({
               className={styles.primaryLink}
               href={`/teacher/activities/${state.draftId}/preview`}
             >
-              查看发布预览 <span aria-hidden="true">→</span>
+              查看发布预览 <ArrowRightIcon />
             </Link>
           ) : null}
           {state.persistedStatus === "SEALED" && state.draftId ? (

@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ZodError } from "zod";
+import { ArrowLeftIcon } from "../../../../_components/flat-icons";
 import { AuthenticationError } from "../../../../../server/auth/current-actor";
 import { isActivityAssistantEnabled } from "../../../../../server/assistant/assistant-config";
 import {
@@ -77,7 +78,7 @@ export default async function TeacherActivityPreviewPage({
             className={styles.secondaryButton}
             href={`/teacher/activities/${workspace.draft.id}`}
           >
-            ← 返回草稿
+            <ArrowLeftIcon /> 返回草稿
           </Link>
         </header>
 

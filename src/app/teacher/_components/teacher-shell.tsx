@@ -2,6 +2,7 @@ import { SignInButton, SignOutButton } from "@clerk/nextjs";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import type { AuthenticationError } from "../../../server/auth/current-actor";
+import { SignInIcon } from "../../_components/flat-icons";
 import { InlineAlert } from "../../_components/ui";
 import { WorkspaceShell } from "../../_components/workspace-shell";
 import styles from "../teacher-workspace.module.css";
@@ -69,7 +70,7 @@ export function TeacherAccessGate({
           {code === "UNAUTHENTICATED" ? (
             <SignInButton mode="modal" fallbackRedirectUrl={returnPath}>
               <button className={styles.primaryButton} type="button">
-                登录教师账号
+                <SignInIcon /> 登录教师账号
               </button>
             </SignInButton>
           ) : code === "USER_NOT_PROVISIONED" ? (

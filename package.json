@@ -62,6 +62,7 @@
     "@ai-sdk/react": "4.0.69",
     "@clerk/nextjs": "7.7.7",
     "@next/env": "16.3.1",
+    "@phosphor-icons/react": "2.1.10",
     "@prisma/adapter-pg": "7.9.1",
     "@prisma/client": "7.9.1",
     "ai": "7.0.66",

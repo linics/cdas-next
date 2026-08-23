@@ -3,6 +3,7 @@ import { SignInButton, SignOutButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ZodError } from "zod";
+import { ArrowLeftIcon, SignInIcon } from "../../../_components/flat-icons";
 import { LocalizedDateTime } from "../../../_components/localized-date-time";
 import { InlineAlert, StatusBadge } from "../../../_components/ui";
 import { WorkspaceShell } from "../../../_components/workspace-shell";
@@ -64,7 +65,7 @@ function AccessUnavailable({
               fallbackRedirectUrl={`/student/releases/${releaseId}`}
             >
               <button className={styles.signInButton} type="button">
-                登录学生账号
+                <SignInIcon /> 登录学生账号
               </button>
             </SignInButton>
           ) : code === "USER_NOT_PROVISIONED" ? (
@@ -331,7 +332,7 @@ export default async function StudentReleasePage({
   return (
     <WorkspaceShell audience="学生">
       <div className={styles.releasePage}>
-        <Link className={styles.backLink} href="/student">← 返回我的活动</Link>
+        <Link className={styles.backLink} href="/student"><ArrowLeftIcon /> 返回我的活动</Link>
         <header className={styles.releaseHeader}>
           <div>
             <p className={styles.eyebrow}>学习活动 / 文字提交</p>

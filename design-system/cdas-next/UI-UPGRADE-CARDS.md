@@ -27,9 +27,9 @@
 - Correct Semantics: lint、typecheck、tests、build 和真实浏览器关键路径均通过；视觉检查不能只确认页面可打开。
 
 ### Card: UI-206
-- Source: 用户对当前“规范但老派”的视觉反馈。
-- Current Behavior: UI-201–205 已建立清晰、克制的工作台基线，但尚未经人工选定更具现代感的视觉方向。
-- Correct Semantics: 先制作 2–3 个可比较的现代单页模板/原型，人工选型后再全站吸收；探索圆角层级、柔和表面、统一图标、微交互与页面过渡。
-- Motion Contract: 仅选择 2–3 个有意义动效（确认打开、状态变化、列表或页面切换），150–300ms，支持 `prefers-reduced-motion`。
-- Forbidden Misfix: 大量滚动动画、弹跳、玻璃拟态、渐变堆叠、为动效引入重型框架，或以视觉改动改变业务命令、权限、ActionIntent 与历史语义。
-- Status: 待人工选型；本轮明确不实施，避免未选定风格扩散全站。
+- Source: 用户要求清理本分支不可用原型，并完整按本地 UI UX Pro Max 技能最新规范重做前端。
+- Current Behavior: 全站使用 `design-system/uipro-max-lms` 的 LMS Flat Design：青绿主色、橙色 CTA、Plus Jakarta Sans、密度 8、2px 扁平边框、无阴影/无渐变、Phosphor 装饰图标。
+- Correct Semantics: 只改呈现；读写、ActionIntent、授权、历史与文案不变。
+- Motion Contract: 仅颜色/透明度过渡 150–200ms；尊重 `prefers-reduced-motion`；不引入 GSAP 或其他动效框架。
+- Forbidden Misfix: 抄模板站、`?visual=` 多皮肤、玻璃拟态、渐变堆叠、布局位移悬停、或改变发布/提交/反馈语义。
+- Status: 已按技能规范实施。

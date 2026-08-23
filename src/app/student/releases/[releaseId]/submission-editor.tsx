@@ -2,6 +2,7 @@
 
 import { useActionState, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
+import { ArrowRightIcon } from "../../../_components/flat-icons";
 import { ConfirmDialog, InlineAlert } from "../../../_components/ui";
 import {
   hasMeaningfulTextEvidence,
@@ -322,7 +323,7 @@ export function SubmissionEditor({
                 : isPastDue
                   ? "正式迟交"
                   : "正式提交"}
-              <span aria-hidden="true">→</span>
+              <ArrowRightIcon />
             </button>
           </form>
           <ConfirmDialog

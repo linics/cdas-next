@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ZodError } from "zod";
+import { ArrowRightIcon, SignInIcon } from "../_components/flat-icons";
 import { LocalizedDateTime } from "../_components/localized-date-time";
 import { EmptyState, StatusBadge } from "../_components/ui";
 import { WorkspaceShell } from "../_components/workspace-shell";
@@ -58,7 +59,7 @@ function AccessUnavailable({
           {code === "UNAUTHENTICATED" ? (
             <SignInButton mode="modal" fallbackRedirectUrl="/student">
               <button className={styles.signInButton} type="button">
-                登录学生账号
+                <SignInIcon /> 登录学生账号
               </button>
             </SignInButton>
           ) : code === "USER_NOT_PROVISIONED" ? (
@@ -213,7 +214,7 @@ function ReleaseRow({
       <div className={styles.releaseAction}>
         <StatusBadge tone={releaseStatusTone(release)}>{releaseStatusLabel(release)}</StatusBadge>
         <small>
-          打开活动 <i aria-hidden="true">→</i>
+          打开活动 <ArrowRightIcon />
         </small>
       </div>
     </Link>

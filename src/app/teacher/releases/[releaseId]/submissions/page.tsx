@@ -2,6 +2,7 @@ import Link from "next/link";
 import { randomUUID } from "node:crypto";
 import { notFound } from "next/navigation";
 import { ZodError } from "zod";
+import { ArrowLeftIcon, ArrowRightIcon } from "../../../../_components/flat-icons";
 import { LocalizedDateTime } from "../../../../_components/localized-date-time";
 import { AuthenticationError } from "../../../../../server/auth/current-actor";
 import { createUiCommandContext } from "../../../../../server/commands/create-ui-command-context";
@@ -64,7 +65,7 @@ export default async function TeacherReleaseSubmissionsPage({
             </p>
           </div>
           <Link className={styles.secondaryButton} href="/teacher">
-            ← 返回工作台
+            <ArrowLeftIcon /> 返回工作台
           </Link>
         </header>
 
@@ -115,7 +116,7 @@ export default async function TeacherReleaseSubmissionsPage({
                     className={styles.rowLink}
                     href={`/teacher/submissions/${submission.submissionId}`}
                   >
-                    查看与反馈 →
+                    查看与反馈 <ArrowRightIcon />
                   </Link>
                 </article>
               ))}

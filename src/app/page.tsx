@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ArrowRightIcon, FileTextIcon, PencilSimpleIcon } from "./_components/flat-icons";
 import styles from "./home.module.css";
 
 export const metadata: Metadata = {
@@ -26,17 +27,23 @@ export default function HomePage() {
         <section className={styles.workspaceList} aria-label="工作区入口">
           <Link className={styles.workspaceLink} href="/teacher">
             <div>
+              <span className={styles.workspaceIcon} aria-hidden="true">
+                <PencilSimpleIcon />
+              </span>
               <h2>教师工作台</h2>
               <p>查看活动草稿、已发布活动和需要反馈的学生提交。</p>
             </div>
-            <span>进入教师端</span>
+            <span>进入教师端 <ArrowRightIcon /></span>
           </Link>
           <Link className={styles.workspaceLink} href="/student">
             <div>
+              <span className={styles.workspaceIcon} aria-hidden="true">
+                <FileTextIcon />
+              </span>
               <h2>学生工作台</h2>
               <p>优先查看待完成活动、已提交证据和教师反馈。</p>
             </div>
-            <span>进入学生端</span>
+            <span>进入学生端 <ArrowRightIcon /></span>
           </Link>
         </section>
         <section className={styles.note} aria-labelledby="workflow-title">

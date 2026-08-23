@@ -1,1 +1,195 @@
-.assistant { display: grid; gap: 20px; max-width: 1200px; margin: 0 auto; padding: 0 32px 24px; }.header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }.eyebrow, .speaker { margin: 0; color: var(--text-secondary); font-size: 14px; font-weight: 600; }.header h2 { margin: 6px 0 0; font-size: 22px; }.availability { border-radius: 999px; background: var(--primary-soft); padding: 6px 10px; color: var(--primary-hover); font-size: 14px; font-weight: 600; }.availability[data-busy="true"] { background: #fff7e6; color: var(--warning); }.boundaryNote, .emptyPrompt { margin: 0; border-left: 3px solid var(--primary); padding-left: 12px; color: var(--text-secondary); font-size: 14px; line-height: 1.55; }.transcript { display: grid; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); }.turn { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 16px; border-bottom: 1px solid var(--border); padding: 16px; }.turn:last-child { border-bottom: 0; }.turnBody > p, .toolProgress, .errorText { margin: 0; font-size: 16px; line-height: 1.55; white-space: pre-wrap; }.errorText { color: var(--danger); }.toolResult, .approval { margin-top: 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-subtle); padding: 12px; }.toolResult strong, .approval strong { font-size: 16px; }.toolResult p, .approval p { color: var(--text-secondary); font-size: 14px; line-height: 1.5; }.toolResult > a, .inlineActions a { color: var(--primary); font-size: 14px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }.approval dl { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }.approval dt { color: var(--text-secondary); font-size: 14px; }.approval dd { margin: 4px 0 0; font-size: 16px; font-weight: 600; }.inlineActions, .composerFooter { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; }.inlineActions button, .composerFooter button { min-height: 44px; border: 1px solid var(--primary); border-radius: var(--radius-sm); background: var(--primary); padding: 10px 16px; color: #fff; font-size: 16px; font-weight: 600; }.inlineActions button[data-tone="quiet"], .composerFooter button[data-tone="quiet"] { border-color: var(--border-strong); background: var(--surface); color: var(--text); }.composer { display: grid; gap: 8px; }.composer label { font-size: 16px; font-weight: 600; }.composer textarea { width: 100%; min-height: 112px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--surface); padding: 12px; color: var(--text); font-size: 16px; line-height: 1.55; }.composerFooter > span { color: var(--text-secondary); font-size: 14px; } @media (max-width: 767px) { .assistant { padding: 0 16px 24px; }.header, .turn, .approval dl { grid-template-columns: 1fr; } .header { display: grid; } }
+.assistant {
+  display: grid;
+  gap: 16px;
+  max-width: var(--content-width);
+  margin: 0 auto;
+  padding: 24px 20px 64px;
+}
+
+.header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.eyebrow,
+.speaker {
+  margin: 0;
+  color: var(--color-muted-foreground);
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.header h2 {
+  margin: 4px 0 0;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.availability {
+  border-radius: 999px;
+  background: var(--primary-soft);
+  padding: 4px 10px;
+  color: var(--color-primary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.availability[data-busy="true"] {
+  background: var(--warning-soft);
+  color: var(--warning-strong);
+}
+
+.boundaryNote,
+.emptyPrompt {
+  margin: 0;
+  border-left: 2px solid var(--color-primary);
+  padding-left: 12px;
+  color: var(--color-muted-foreground);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.transcript {
+  display: grid;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--color-card);
+  box-shadow: var(--shadow-sm);
+}
+
+.turn {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 12px;
+  border-bottom: 1px solid rgb(60 60 67 / 12%);
+  padding: 12px 16px;
+}
+
+.turn:last-child { border-bottom: 0; }
+
+.turnBody > p,
+.toolProgress,
+.errorText {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.errorText { color: var(--danger); }
+
+.toolResult,
+.approval {
+  margin-top: 10px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--color-muted);
+  padding: 12px;
+}
+
+.toolResult strong,
+.approval strong { font-size: 15px; }
+
+.toolResult p,
+.approval p {
+  color: var(--color-muted-foreground);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.toolResult > a,
+.inlineActions a {
+  color: var(--color-primary);
+  font-size: 15px;
+  font-weight: 400;
+  text-decoration: none;
+}
+
+.approval dl {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.approval dt {
+  color: var(--color-muted-foreground);
+  font-size: 12px;
+}
+
+.approval dd {
+  margin: 2px 0 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.inlineActions,
+.composerFooter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.inlineActions button,
+.composerFooter button {
+  min-height: 44px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--color-primary);
+  padding: 0 16px;
+  color: var(--color-on-primary);
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity var(--motion-fast), background var(--motion-fast);
+}
+
+.inlineActions button:hover,
+.composerFooter button:hover { opacity: 0.88; }
+
+.inlineActions button[data-tone="quiet"],
+.composerFooter button[data-tone="quiet"] {
+  background: var(--color-muted);
+  color: var(--color-primary);
+}
+
+.composer { display: grid; gap: 8px; }
+.composer label { font-size: 15px; font-weight: 600; }
+
+.composer textarea {
+  width: 100%;
+  min-height: 96px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--color-card);
+  padding: 12px;
+  color: var(--color-foreground);
+  font-size: 16px;
+  line-height: 1.45;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--motion-fast);
+}
+
+.composer textarea:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--primary-soft), 0 0 0 1px var(--color-primary);
+}
+
+.composerFooter > span {
+  color: var(--color-muted-foreground);
+  font-size: 13px;
+}
+
+@media (max-width: 767px) {
+  .assistant { padding: 20px 16px 48px; }
+  .header,
+  .turn,
+  .approval dl { grid-template-columns: 1fr; }
+  .header { display: grid; }
+}
