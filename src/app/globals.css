@@ -1,53 +1,152 @@
 @import "tailwindcss";
 
 :root {
-  --surface-page: #f7f8fa;
-  --surface: #ffffff;
-  --surface-subtle: #f1f4f8;
-  --text: #172033;
-  --text-secondary: #526075;
-  --border: #dbe1ea;
-  --border-strong: #aeb9c8;
-  --primary: #174ea6;
-  --primary-hover: #123c82;
-  --primary-soft: #e8f0fe;
-  --success: #16794c;
-  --warning: #9a5a00;
-  --danger: #b42318;
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --shadow-overlay: 0 16px 48px rgb(23 32 51 / 20%);
-  --motion-fast: 160ms ease;
+  /* UI UX Pro Max — Flat Design + LMS (design-system/uipro-max-lms/MASTER.md) */
+  --color-primary: #0d9488;
+  --color-on-primary: #000000;
+  --color-secondary: #14b8a6;
+  --color-on-secondary: #0f172a;
+  --color-accent: #ea580c;
+  --color-on-accent: #000000;
+  --color-background: #f0fdfa;
+  --color-foreground: #134e4a;
+  --color-card: #ffffff;
+  --color-card-foreground: #134e4a;
+  --color-muted: #e8f1f4;
+  --color-muted-foreground: #475569;
+  --color-border: #99f6e4;
+  --color-destructive: #dc2626;
+  --color-on-destructive: #ffffff;
+  --color-ring: #0d9488;
+
+  --space-xs: 2px;
+  --space-sm: 4px;
+  --space-md: 8px;
+  --space-lg: 12px;
+  --space-xl: 16px;
+  --space-2xl: 24px;
+  --space-3xl: 32px;
+
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --shadow-xl: none;
+  --shadow: none;
+  --gradient: none;
+  --border-radius: 2px;
+  --radius: 2px;
+  --radius-sm: 2px;
+  --radius-md: 2px;
+
+  --icon-sm: 16px;
+  --icon-md: 20px;
+  --icon-lg: 24px;
+
+  --surface-page: var(--color-background);
+  --surface: var(--color-card);
+  --surface-subtle: var(--color-muted);
+  --surface-hover: #ccfbf1;
+  --text: var(--color-foreground);
+  --text-secondary: var(--color-muted-foreground);
+  --border: var(--color-border);
+  --border-strong: var(--color-secondary);
+  --primary: var(--color-primary);
+  --primary-hover: #0f766e;
+  --primary-soft: var(--color-muted);
+  --success: #115e59;
+  --warning: #c2410c;
+  --danger: var(--color-destructive);
+  --shadow-overlay: none;
+  --shadow-raise: none;
+  --motion-fast: 200ms ease;
   --z-nav: 20;
   --z-overlay: 100;
-  --toolbar-height: 64px;
-  /* Compatibility aliases used by existing route modules during UI-202/203. */
-  --background: var(--surface-page);
-  --foreground: var(--text);
-  --muted: var(--text-secondary);
-  --line: var(--border);
-  --accent: var(--primary);
-  --accent-strong: var(--primary-hover);
-  --accent-soft: var(--primary-soft);
+  --toolbar-height: 56px;
+  --focus-ring: var(--color-ring);
+  --success-soft: #ccfbf1;
+  --success-strong: #115e59;
+  --warning-soft: #ffedd5;
+  --warning-strong: #9a3412;
+  --danger-soft: #fee2e2;
+  --danger-strong: #991b1b;
+  --neutral-soft: var(--color-muted);
+  --neutral-strong: var(--color-muted-foreground);
+  --alert-warning-soft: #fff7ed;
+  --alert-danger-soft: #fef2f2;
+  --alert-success-soft: #f0fdfa;
+  --background: var(--color-background);
+  --foreground: var(--color-foreground);
+  --muted: var(--color-muted-foreground);
+  --line: var(--color-border);
+  --accent: var(--color-accent);
+  --accent-strong: #c2410c;
+  --accent-soft: #ffedd5;
 }
 
 * { box-sizing: border-box; }
-html { background: var(--surface-page); }
+
+html {
+  background: var(--color-background);
+  scroll-padding-top: var(--toolbar-height);
+}
+
 body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
-  background: var(--surface-page);
-  color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-plus-jakarta), "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
   font-size: 16px;
   line-height: 1.55;
+  font-weight: 400;
   text-rendering: optimizeLegibility;
 }
+
+h1, h2, h3, h4 {
+  font-weight: 700;
+  color: var(--color-foreground);
+}
+
 button, input, textarea, select { font: inherit; }
-button, a { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
-button { cursor: pointer; }
+
+button,
+a,
+[role="button"],
+label[for] {
+  cursor: pointer;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
 a { color: inherit; text-decoration: none; }
-button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, [tabindex="-1"]:focus-visible { outline: 3px solid #6e9eea; outline-offset: 3px; }
-::selection { background: var(--primary-soft); color: var(--text); }
-@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; } }
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[tabindex="-1"]:focus-visible {
+  outline: 3px solid var(--color-ring);
+  outline-offset: 3px;
+}
+
+::selection {
+  background: var(--color-muted);
+  color: var(--color-foreground);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

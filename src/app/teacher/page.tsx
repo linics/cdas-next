@@ -9,6 +9,7 @@ import {
   getTeacherActivityDashboard,
   TeacherActivityQueryError,
 } from "../../server/queries/teacher-activity-workspace";
+import { ArrowRightIcon, PlusIcon } from "../_components/flat-icons";
 import {
   TeacherAccessGate,
   TeacherPage,
@@ -59,7 +60,7 @@ export default async function TeacherDashboardPage() {
             </p>
           </div>
           <Link className={styles.primaryLink} href="/teacher/activities/new">
-            新建学习活动 <span aria-hidden="true">＋</span>
+            新建学习活动 <PlusIcon />
           </Link>
         </header>
 
@@ -115,7 +116,7 @@ export default async function TeacherDashboardPage() {
                           className={styles.rowLink}
                           href={`/teacher/activities/${draft.id}`}
                         >
-                          {draft.status === "SEALED" ? "查看" : "编辑"} →
+                          {draft.status === "SEALED" ? "查看" : "编辑"} <ArrowRightIcon />
                         </Link>
                       </article>
                     );
@@ -167,7 +168,7 @@ export default async function TeacherDashboardPage() {
                             className={styles.rowLink}
                             href={`/teacher/releases/${release.id}/submissions`}
                           >
-                            查看提交 →
+                            查看提交 <ArrowRightIcon />
                           </Link>
                         ) : (
                           <span

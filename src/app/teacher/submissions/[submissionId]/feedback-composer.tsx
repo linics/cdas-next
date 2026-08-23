@@ -2,6 +2,7 @@
 
 import { useActionState, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { ArrowRightIcon } from "../../../_components/flat-icons";
 import { LocalizedDateTime } from "../../../_components/localized-date-time";
 import { ConfirmDialog, InlineAlert } from "../../../_components/ui";
 import { TEACHER_FEEDBACK_BODY_MAX_LENGTH } from "../../../../domain/feedback/teacher-feedback-policy";
@@ -261,7 +262,7 @@ export function FeedbackComposer({
             }
           >
             {preparePending ? "正在准备…" : "准备确认"}
-            <span aria-hidden="true">→</span>
+            <ArrowRightIcon />
           </button>
         </div>
       </form>
