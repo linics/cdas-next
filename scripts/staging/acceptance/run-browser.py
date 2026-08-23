@@ -401,7 +401,10 @@ def run() -> None:
             submission.click()
             assert_origin(teacher.url, remote)
             feedback(teacher, feedback_text)
-            teacher.get_by_text(feedback_text, exact=True).wait_for(state="visible")
+            teacher.locator('[aria-labelledby^="feedback-history-"]').last.get_by_text(
+                feedback_text,
+                exact=True,
+            ).wait_for(state="visible")
             index["04-teacher-feedback.png"] = screenshot(teacher, output, "04-teacher-feedback")
 
             sign_in(other_student, remote, "other_student")
