@@ -444,9 +444,8 @@ def run() -> None:
             assert_origin(teacher.url, remote)
             teacher.get_by_role("button", name="准备关闭活动", exact=True).click()
             confirm(teacher, "确认关闭这个活动", "确认并关闭活动")
-            wait_text(
-                teacher,
-                "活动已关闭；新的学生保存与正式提交已停止，现有记录仍可查看。",
+            teacher.locator('section[aria-label="关闭活动确认"]').wait_for(
+                state="detached",
             )
             index["05-teacher-closed.png"] = screenshot(teacher, output, "05-teacher-closed")
 
