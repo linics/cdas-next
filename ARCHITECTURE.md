@@ -12,7 +12,7 @@ flowchart LR
   Clerk[Clerk 身份会话] --> Entry
   Clerk --> AgentRoute
   Entry --> Commands[服务端领域命令]
-  AgentRoute --> AI[AI SDK Gateway / 模型]
+  AgentRoute --> AI[AI SDK OpenAI-compatible provider / DeepSeek API]
   AgentRoute --> Tools[严格 Agent 工具]
   Tools --> Commands
   AgentRoute --> Run[AgentRun provenance]
@@ -92,7 +92,7 @@ ActionIntent 的 action、payload、hash、目标、预期版本、创建者和�
 
 ## 活动助手试行
 
-- “新建学习活动”是助手会话的唯一起点。`/teacher/activities` 共享客户端 layout 持有唯一官方 `useChat` session，使草稿工具返回后的客户端导航可以在精确预览页继续同一消息与签名 approval；直接进入或刷新预览页时 session 为空，页面不伪造恢复。消息、prompt、ticket 与 approval 签名不进入 URL、localStorage 或业务数据库，导航到 Release 后 layout 卸载。Server Component 仅在 `AI_PROVIDER_DISABLED=0` 且 Gateway、模型和审批签名配置全部有效时渲染助手；这个检查不构造 provider，也不创建 AgentRun。
+- “新建学习活动”是助手会话的唯一起点。`/teacher/activities` 共享客户端 layout 持有唯一官方 `useChat` session，使草稿工具返回后的客户端导航可以在精确预览页继续同一消息与签名 approval；直接进入或刷新预览页时 session 为空，页面不伪造恢复。消息、prompt、ticket 与 approval 签名不进入 URL、localStorage 或业务数据库，导航到 Release 后 layout 卸载。Server Component 仅在 `AI_PROVIDER_DISABLED=0` 且 DeepSeek API key、模型和审批签名配置全部有效时渲染助手；这个检查不构造 provider，也不创建 AgentRun。
 - Route Handler 先从 Clerk 会话解析应用教师，再严格校验消息数量、总字节、角色顺序、文本长度和 AI SDK 工具 part。学生、未配置账号和伪造历史不能进入 provider 或业务工具。
 - AI SDK 官方 `useChat + streamText` 负责消息流与工具 part，不维护第二套聊天协议。模型调用始终在数据库事务之外；请求正文、Prompt、工具正文和 provider 原始 chunk 不写日志或 tracing。
 - `create_activity_draft` 复用 `saveActivityDraft`，以当前教师、`AGENT` 来源和 owned RUNNING AgentRun 保存严格六段内容。成功输出包含精确 draft ID 和站内路径；客户端只在两者一致时进入预览。
@@ -100,7 +100,7 @@ ActionIntent 的 action、payload、hash、目标、预期版本、创建者和�
 - 普通模型工具写入由 AI SDK `stopWhen` 在该工具 step 后结束。`saveActivityDraft` 与 `publishActivityRelease` 的 Agent 路径会在同一领域事务提交业务结果、成功审计、幂等结果与 AgentRun 的 `RUNNING → SUCCEEDED`；若运行已经失败或取消，事务整体回滚。签名审批续传会先执行已批准工具，成功后再由官方 `prepareStep` 给后续 provider adapter 一个已中止 signal；后续流或连接失败不能把已提交业务事实改写成失败。模型在工具前中断不会创建草稿、Release 或反馈。
 - 同一工具调用可由命令幂等重放。若整个 HTTP 请求在确认执行后丢失并以新的 AgentRun 原样重建，当前会安全地返回幂等冲突，而不是弱化 AgentRun provenance；跨运行恢复仍是明确的可用性缺口。
 - 新 Agent 写入只接受同一教师拥有的 RUNNING run；SUCCEEDED run 只允许命中原 IdempotencyRecord 的精确重放。数据库同时禁止 AgentRun 身份改写、终态回拨、删除及审计外键置空。
-- 远端首场景验收使用独立 `staging-agent-acceptance` 门禁：AI-enabled health proof 绑定源码、部署、DB、Clerk、Gateway key 指纹、模型和 approval secret 指纹；runner-side ticket 只驻内存；marker namespace 只追加；浏览器后由 read-only SQL 精确验证三次 SUCCEEDED AgentRun、AGENT revision、ActionIntent、Release/snapshot、audit、idempotency 和零学生历史。该门禁不部署、不迁移、不清理，也从不产生 production GO。
+- 远端首场景验收使用独立 `staging-agent-acceptance` 门禁：AI-enabled health proof 绑定源码、部署、DB、Clerk、DeepSeek API key 指纹、模型和 approval secret 指纹；runner-side ticket 只驻内存；marker namespace 只追加；浏览器后由 read-only SQL 精确验证三次 SUCCEEDED AgentRun、AGENT revision、ActionIntent、Release/snapshot、audit、idempotency 和零学生历史。该门禁不部署、不迁移、不清理，也从不产生 production GO。
 
 ## 不可变历史
 

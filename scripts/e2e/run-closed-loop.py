@@ -675,7 +675,7 @@ def main() -> int:
     if not real_model_smoke:
         runtime_environment.update(
             {
-                "AI_GATEWAY_API_KEY": "",
+                "DEEPSEEK_API_KEY": "",
                 "AI_TOOL_APPROVAL_SECRET": "",
             }
         )

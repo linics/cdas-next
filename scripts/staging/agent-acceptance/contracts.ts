@@ -50,8 +50,8 @@ export function evaluateAgentAcceptanceReadiness(environment: AgentAcceptanceEnv
     check("AGENT_PUBLIC_HTTPS", isAgentAcceptancePublicHttps(text(environment, "STAGING_BASE_URL"))),
     check("AGENT_AI_ENABLED", text(environment, "AI_PROVIDER_DISABLED") === "0"),
     check("AGENT_AI_ACK", text(environment, "STAGING_AI_ACK") === stagingAiAcknowledgement),
-    check("AGENT_GATEWAY_KEY", Buffer.byteLength(text(environment, "AI_GATEWAY_API_KEY"), "utf8") >= 16),
-    check("AGENT_MODEL", /^[a-z0-9][a-z0-9._-]*\/[A-Za-z0-9][A-Za-z0-9._:-]*$/u.test(text(environment, "AI_MODEL"))),
+    check("AGENT_DEEPSEEK_KEY", Buffer.byteLength(text(environment, "DEEPSEEK_API_KEY"), "utf8") >= 16),
+    check("AGENT_MODEL", /^deepseek-[a-z0-9][a-z0-9._:-]*$/u.test(text(environment, "AI_MODEL"))),
     check("AGENT_APPROVAL_SECRET", Buffer.byteLength(text(environment, "AI_TOOL_APPROVAL_SECRET"), "utf8") >= 32),
     check("AGENT_CLERK_TEST", /^pk_test_[A-Za-z0-9_-]{10,}$/u.test(text(environment, "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY")) && /^sk_test_[A-Za-z0-9_-]{10,}$/u.test(text(environment, "CLERK_SECRET_KEY"))),
     check("AGENT_IDENTITIES", /^user_[A-Za-z0-9]+$/u.test(text(environment, "STAGING_TEST_TEACHER_CLERK_ID")) && /^user_[A-Za-z0-9]+$/u.test(text(environment, "STAGING_TEST_STUDENT_CLERK_ID")) && text(environment, "STAGING_TEST_TEACHER_CLERK_ID") !== text(environment, "STAGING_TEST_STUDENT_CLERK_ID")),
@@ -68,5 +68,5 @@ export function stableAgentAcceptanceError(error: unknown): string {
 }
 
 export function redactAgentAcceptanceText(input: string): string {
-  return input.replace(/postgres(?:ql)?:\/\/[^\s"']+/giu, "[REDACTED_DATABASE_URL]").replace(/\b(?:pk|sk)_(?:test|live)_[A-Za-z0-9_-]+\b/gu, "[REDACTED_CLERK_KEY]").replace(/\b(?:Bearer|Cookie)\s+[^\s"']+/giu, "$1 [REDACTED]").replace(/\b(?:ticket|token)=[A-Za-z0-9._-]+/giu, "$1=[REDACTED]").replace(/\b(?:AI_GATEWAY_API_KEY|AI_TOOL_APPROVAL_SECRET)=[^\s"']+/gu, "$1=[REDACTED]");
+  return input.replace(/postgres(?:ql)?:\/\/[^\s"']+/giu, "[REDACTED_DATABASE_URL]").replace(/\b(?:pk|sk)_(?:test|live)_[A-Za-z0-9_-]+\b/gu, "[REDACTED_CLERK_KEY]").replace(/\b(?:Bearer|Cookie)\s+[^\s"']+/giu, "$1 [REDACTED]").replace(/\b(?:ticket|token)=[A-Za-z0-9._-]+/giu, "$1=[REDACTED]").replace(/\b(?:DEEPSEEK_API_KEY|AI_TOOL_APPROVAL_SECRET)=[^\s"']+/gu, "$1=[REDACTED]");
 }

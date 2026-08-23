@@ -2,7 +2,7 @@
 
 面向 K12 教师与学生的跨学科学习活动工作台。第一阶段只完成一条可追溯闭环：教师设计并确认发布，学生提交学习证据，教师确认反馈、学生查看反馈，并由发布教师兼当前班级管理员明确确认关闭发布。
 
-当前源码已覆盖手工完整闭环：活动草稿与冻结发布、学生文本证据的工作稿与正式修订、教师确认后的反馈修订、学生查看反馈，以及发布教师兼当前班级管理员明确确认关闭 Release。关闭会阻止学生后续写入，但保留活动、提交和反馈的可读历史，并允许有权教师继续反馈。另有一个可关闭的活动助手试行场景，使用 AI SDK 整理可编辑草稿，并在教师核对精确参数后复用同一发布命令；第一阶段不向助手开放关闭工具。发布、关闭、提交与反馈命令共用资源级授权、可信服务端上下文、乐观并发、幂等、不可变历史和审计。本地真实浏览器门禁已使用 Clerk development 双账号会话和专用 PostgreSQL 重放两版草稿、发布、两次提交、逐版反馈、历史成员只读、关闭只读、同角色越权、陈旧确认与幂等重放；真实 AI Gateway 的合成数据 smoke 和受保护 GitHub Environment 入口也已固化。生产相似 staging 的实际外部证据仍取决于受管环境与凭据。
+当前源码已覆盖手工完整闭环：活动草稿与冻结发布、学生文本证据的工作稿与正式修订、教师确认后的反馈修订、学生查看反馈，以及发布教师兼当前班级管理员明确确认关闭 Release。关闭会阻止学生后续写入，但保留活动、提交和反馈的可读历史，并允许有权教师继续反馈。另有一个可关闭的活动助手试行场景，使用 AI SDK 直连 DeepSeek 官方 API 整理可编辑草稿，并在教师核对精确参数后复用同一发布命令；第一阶段不向助手开放关闭工具。发布、关闭、提交与反馈命令共用资源级授权、可信服务端上下文、乐观并发、幂等、不可变历史和审计。本地真实浏览器门禁已使用 Clerk development 双账号会话和专用 PostgreSQL 重放两版草稿、发布、两次提交、逐版反馈、历史成员只读、关闭只读、同角色越权、陈旧确认与幂等重放；真实 DeepSeek API 的合成数据 smoke 和受保护 GitHub Environment 入口也已固化。生产相似 staging 的实际外部证据仍取决于受管环境与凭据。
 
 ## 快速开始
 
@@ -70,11 +70,11 @@ pnpm e2e:closed-loop
 
 ### 可选真实模型 smoke
 
-这个门禁复用现有 `/api/assistant/activity-draft`、真实 Clerk development 教师会话与专用 E2E PostgreSQL，不新增第二套后端。它会向 AI SDK Gateway 发送一份明确标记的合成节水活动，只允许模型调用 `create_activity_draft`；不会请求发布，也要求数据库中不存在 Release 或 ActionIntent。它可能消耗真实模型额度，所以默认失败关闭，并且必须同时具备非 production Clerk 双账号、Gateway key、有效模型、至少 32 字节的审批密钥和一次性成本确认：
+这个门禁复用现有 `/api/assistant/activity-draft`、真实 Clerk development 教师会话与专用 E2E PostgreSQL，不新增第二套后端。它会向 DeepSeek 官方 API 发送一份明确标记的合成节水活动，只允许模型调用 `create_activity_draft`；不会请求发布，也要求数据库中不存在 Release 或 ActionIntent。它可能消耗真实模型额度，所以默认失败关闭，并且必须同时具备非 production Clerk 双账号、DeepSeek API key、有效模型、至少 32 字节的审批密钥和一次性成本确认：
 
 ```dotenv
-AI_GATEWAY_API_KEY=配置在本机密钥文件或受保护环境
-AI_MODEL=openai/gpt-5-mini
+DEEPSEEK_API_KEY=配置在本机密钥文件或受保护环境
+AI_MODEL=deepseek-v4-flash-vision-exp
 AI_TOOL_APPROVAL_SECRET=至少32字节的随机值
 ```
 
@@ -86,7 +86,7 @@ pnpm e2e:real-model
 
 前置检查在重建数据库或发出 provider 请求前运行；缺少成本确认、凭据、模型、审批密钥或安全数据库目标时会明确失败。成功证据包含可预览草稿截图和脱敏日志，并核对唯一 `AgentRun` 已进入 `SUCCEEDED`、唯一修订来源为 `AGENT` 且绑定同一运行、成功审计与幂等记录存在，同时发布与确认计数保持为零。该 smoke 只证明真实 provider transport 与草稿 provenance；签名发布审批、拒绝、伪造签名、写后 provider 中断等确定性反例继续由现有集成测试覆盖。
 
-仓库另提供手动 `protected real-service e2e` GitHub Actions 工作流。先创建需要审批者的 `e2e-real` GitHub Environment，配置 Clerk 四项 secrets；若要启用模型 smoke，再配置 `AI_GATEWAY_API_KEY`、`AI_TOOL_APPROVAL_SECRET` secrets 与 `AI_MODEL` environment variable。普通 PR CI 永远保持 `AI_PROVIDER_DISABLED=1`，不会读取这些凭据或产生模型费用。受保护工作流只上传合成数据截图、脱敏日志和 `result.json`，保留 14 天，不上传 cookie、storage state 或 Clerk ticket。
+仓库另提供手动 `protected real-service e2e` GitHub Actions 工作流。先创建需要审批者的 `e2e-real` GitHub Environment，配置 Clerk 四项 secrets；若要启用模型 smoke，再配置 `DEEPSEEK_API_KEY`、`AI_TOOL_APPROVAL_SECRET` secrets 与 `AI_MODEL` environment variable。普通 PR CI 永远保持 `AI_PROVIDER_DISABLED=1`，不会读取这些凭据或产生模型费用。受保护工作流只上传合成数据截图、脱敏日志和 `result.json`，保留 14 天，不上传 cookie、storage state 或 Clerk ticket。
 
 ### 受保护 staging Go/No-Go
 
@@ -120,8 +120,8 @@ pnpm e2e:real-model
 | `DEV_TEST_TEACHER_CLERK_ID` | 浏览器门禁的既有 Clerk development 教师用户 ID | 空 |
 | `DEV_TEST_STUDENT_CLERK_ID` | 浏览器门禁的既有 Clerk development 学生用户 ID | 空 |
 | `AI_PROVIDER_DISABLED` | 关闭模型调用并验证业务降级 | `1` |
-| `AI_GATEWAY_API_KEY` | AI SDK Gateway 的服务端密钥；关闭模型时不需要 | 空 |
-| `AI_MODEL` | Gateway 模型 ID | `openai/gpt-5-mini` |
+| `DEEPSEEK_API_KEY` | DeepSeek 官方 API 的服务端密钥；关闭模型时不需要 | 空 |
+| `AI_MODEL` | DeepSeek 模型 ID | `deepseek-v4-flash-vision-exp` |
 | `AI_TOOL_APPROVAL_SECRET` | AI SDK 工具审批签名密钥，至少 32 字节 | 空 |
 | `E2E_REAL_MODEL_ACK` | 单次真实模型合成数据 smoke 的显式成本确认 | 空 |
 
@@ -150,7 +150,7 @@ pnpm --silent bootstrap:clerk -- \
 
 ## 可选活动助手
 
-助手默认关闭。只有 `AI_PROVIDER_DISABLED=0` 且 Gateway 密钥、模型 ID 和审批签名密钥全部有效时，“新建学习活动”页才会渲染助手；服务端 Route Handler 仍会再次认证教师、验证消息与配置。审批密钥可用 `openssl rand -base64 32` 生成，不得使用示例值进入生产。
+助手默认关闭。只有 `AI_PROVIDER_DISABLED=0` 且 DeepSeek API 密钥、模型 ID 和审批签名密钥全部有效时，“新建学习活动”页才会渲染助手；服务端 Route Handler 仍会再次认证教师、验证消息与配置。审批密钥可用 `openssl rand -base64 32` 生成，不得使用示例值进入生产。
 
 助手使用 AI SDK 官方 `useChat`、`streamText` 与签名 `toolApproval`，没有自建聊天协议或审批状态机。草稿工具调用现有 `saveActivityDraft`；发布工具在 AI SDK 交互暂停之外，仍必须建立并消费绑定精确草稿版本、班级和截止时间的 ActionIntent。任何模型调用都不在数据库事务中，关闭或中断模型不会影响手工闭环。
 
@@ -170,4 +170,4 @@ pnpm --silent bootstrap:clerk -- \
 
 ## 当前边界
 
-当前尚未完成的是在实际受保护 staging、独立 Clerk development/test instance 与外部 PostgreSQL 上产出生产相似证据，以及在配置真实 Gateway 凭据后执行已经固化的模型 smoke；本机 Clerk 双账号与隔离 PostgreSQL 闭环、仅存在但尚未运行的外部门禁都不能替代这些证据。附件、教师自助成员管理、RAG、多 Agent、自动评分、小组、多阶段流转、互评、自评、旧 `/api/v2` 兼容和旧数据库迁移均不在本阶段范围。旧项目只提供场景、样例和测试思想，不复制认证、API、数据库或页面代码。
+当前尚未完成的是在实际受保护 staging、独立 Clerk development/test instance 与外部 PostgreSQL 上产出生产相似证据，以及在配置真实 DeepSeek 凭据后执行已经固化的模型 smoke；本机 Clerk 双账号与隔离 PostgreSQL 闭环、仅存在但尚未运行的外部门禁都不能替代这些证据。附件、教师自助成员管理、RAG、多 Agent、自动评分、小组、多阶段流转、互评、自评、旧 `/api/v2` 兼容和旧数据库迁移均不在本阶段范围。旧项目只提供场景、样例和测试思想，不复制认证、API、数据库或页面代码。

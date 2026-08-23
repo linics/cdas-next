@@ -21,7 +21,7 @@ async function main(): Promise<void> {
     clerkPublishableKey: process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
     clerkSecretKey: process.env.CLERK_SECRET_KEY,
     aiProviderDisabled: process.env.AI_PROVIDER_DISABLED,
-    aiGatewayApiKey: process.env.AI_GATEWAY_API_KEY,
+    deepseekApiKey: process.env.DEEPSEEK_API_KEY,
     aiModel: process.env.AI_MODEL,
     aiToolApprovalSecret: process.env.AI_TOOL_APPROVAL_SECRET,
     secret: process.env.STAGING_HEALTH_PROOF_SECRET,

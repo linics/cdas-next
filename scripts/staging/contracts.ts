@@ -37,7 +37,7 @@ const protectedDatabaseNames = new Set([
   "cdas_next_e2e",
 ]);
 const clerkUserIdPattern = /^user_[A-Za-z0-9]+$/u;
-const modelPattern = /^[a-z0-9][a-z0-9._-]*\/[A-Za-z0-9][A-Za-z0-9._:-]*$/u;
+const modelPattern = /^deepseek-[a-z0-9][a-z0-9._:-]*$/u;
 const stagingRunMarkerPattern = /^cdas-staging-[a-z0-9-]{8,80}$/u;
 
 function value(environment: StagingEnvironment, name: string): string {
@@ -143,7 +143,7 @@ export function evaluateStagingPreflight(
   const studentId = value(environment, "STAGING_TEST_STUDENT_CLERK_ID");
   const aiDisabled = value(environment, "AI_PROVIDER_DISABLED") === "1";
   const aiEnabled = value(environment, "AI_PROVIDER_DISABLED") === "0";
-  const gatewayKey = value(environment, "AI_GATEWAY_API_KEY");
+  const deepseekKey = value(environment, "DEEPSEEK_API_KEY");
   const model = value(environment, "AI_MODEL");
   const approvalSecret = value(environment, "AI_TOOL_APPROVAL_SECRET");
 
@@ -267,16 +267,16 @@ export function evaluateStagingPreflight(
       aiDisabled || value(environment, "STAGING_AI_ACK") === stagingAiAcknowledgement,
     ),
     check(
-      "AI_GATEWAY_CONFIG_WHEN_ENABLED",
+      "DEEPSEEK_CONFIG_WHEN_ENABLED",
       aiDisabled ||
-        (gatewayKey.length >= 16 &&
-          gatewayKey.length <= 2_000 &&
+        (deepseekKey.length >= 16 &&
+          deepseekKey.length <= 2_000 &&
           model.length <= 200 &&
           modelPattern.test(model) &&
           approvalSecret.length >= 32 &&
           approvalSecret.length <= 4_096),
       {
-        present: Boolean(gatewayKey || model || approvalSecret),
+        present: Boolean(deepseekKey || model || approvalSecret),
       },
     ),
   );

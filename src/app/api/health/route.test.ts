@@ -44,7 +44,7 @@ describe("GET /api/health", () => {
 
   it("binds enabled AI configuration without serializing any provider secret or hash", async () => {
     const original = { ...process.env };
-    const apiKey = "gateway-key-for-staging";
+    const apiKey = "deepseek-key-for-staging";
     const approvalSecret = "approval-secret-for-staging-acceptance";
     Object.assign(process.env, {
       CDAS_DEPLOYMENT_ID: "a".repeat(40),
@@ -52,8 +52,8 @@ describe("GET /api/health", () => {
       NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_abcdefghijklmnopqrstuv",
       CLERK_SECRET_KEY: "sk_test_abcdefghijklmnopqrstuv",
       AI_PROVIDER_DISABLED: "0",
-      AI_GATEWAY_API_KEY: apiKey,
-      AI_MODEL: "openai/gpt-5.6",
+      DEEPSEEK_API_KEY: apiKey,
+      AI_MODEL: "deepseek-v4-flash-vision-exp",
       AI_TOOL_APPROVAL_SECRET: approvalSecret,
       STAGING_HEALTH_PROOF_SECRET: "h".repeat(32),
       CDAS_SOURCE_FINGERPRINT: "f".repeat(64),
@@ -66,7 +66,7 @@ describe("GET /api/health", () => {
     const serialized = JSON.stringify(body);
     expect(serialized).not.toContain(apiKey);
     expect(serialized).not.toContain(approvalSecret);
-    expect(serialized).not.toContain("aiGatewayApiKeyHash");
+    expect(serialized).not.toContain("deepseekApiKeyHash");
     expect(serialized).not.toContain("aiToolApprovalSecretHash");
     process.env = original;
   });

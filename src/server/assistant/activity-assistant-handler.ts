@@ -4,7 +4,6 @@ import { randomUUID } from "node:crypto";
 import {
   convertToModelMessages,
   createUIMessageStreamResponse,
-  gateway,
   hasToolCall,
   isStepCount,
   streamText,
@@ -27,6 +26,7 @@ import {
   getActivityAssistantConfig,
   type ActivityAssistantConfig,
 } from "./assistant-config";
+import { createDeepSeekModel } from "./deepseek-provider";
 import {
   createActivityAssistantTools,
   activityAssistantMessageValidationTools,
@@ -46,7 +46,7 @@ export type ActivityAssistantHandlerDependencies = Readonly<{
   getDatabase: () => PrismaClient;
   authenticate: (database: PrismaClient) => Promise<AppUser>;
   getConfig: () => ActivityAssistantConfig;
-  createModel: (modelId: string) => LanguageModel;
+  createModel: (config: ActivityAssistantConfig) => LanguageModel;
   createTools: typeof createActivityAssistantTools;
   getClassrooms: (
     database: PrismaClient,
@@ -62,7 +62,7 @@ const defaultDependencies: ActivityAssistantHandlerDependencies = {
   getDatabase: getDatabaseClient,
   authenticate: getCurrentActor,
   getConfig: getActivityAssistantConfig,
-  createModel: (modelId) => gateway(modelId),
+  createModel: createDeepSeekModel,
   createTools: createActivityAssistantTools,
   getClassrooms: getTeacherAssistantClassrooms,
   startRun: startActivityAssistantRun,
@@ -164,7 +164,7 @@ export async function handleActivityAssistantRequest(
     config = dependencies.getConfig();
     // Configuration is complete before provider construction, and provider
     // construction is complete before any AgentRun or business write.
-    model = dependencies.createModel(config.model);
+    model = dependencies.createModel(config);
   } catch (error) {
     if (error instanceof ActivityAssistantConfigError) {
       return configErrorResponse();

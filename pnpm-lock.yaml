@@ -11,6 +11,9 @@ importers:
 
   .:
     dependencies:
+      '@ai-sdk/openai-compatible':
+        specifier: 3.0.35
+        version: 3.0.35(zod@4.4.3)
       '@ai-sdk/react':
         specifier: 4.0.69
         version: 4.0.69(react@19.2.8)(zod@4.4.3)
@@ -102,8 +105,20 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
+  '@ai-sdk/openai-compatible@3.0.35':
+    resolution: {integrity: sha512-zXN7FtaUALqE677kLjUf+CwvXCrLdGP+1MnZZVmHEHTmcAAcovescUF0Iy8APds7+aZOT29rMS90ClXvBf8PGA==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
   '@ai-sdk/provider-utils@5.0.27':
     resolution: {integrity: sha512-EzAn4pdgG5g0xXtH6lE2zyNmfjDQIDjATkfqzuidEI35g++hh4+07vnjzkT/RmGmIClPZiRj/Q2GMPV2V7mkHw==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
+  '@ai-sdk/provider-utils@5.0.29':
+    resolution: {integrity: sha512-7EIbwXiXKGa7EFk6tDZpuZBs6lxhEJpOuHeqrDb3Vd85uYdjwkdRuHnZDVDIIb2+QTSRmyph2NrXcbvuO/KAjQ==}
     engines: {node: '>=22'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -3286,7 +3301,22 @@ snapshots:
       pkce-challenge: 5.0.1
       zod: 4.4.3
 
+  '@ai-sdk/openai-compatible@3.0.35(zod@4.4.3)':
+    dependencies:
+      '@ai-sdk/provider': 4.0.7
+      '@ai-sdk/provider-utils': 5.0.29(zod@4.4.3)
+      zod: 4.4.3
+
   '@ai-sdk/provider-utils@5.0.27(zod@4.4.3)':
+    dependencies:
+      '@ai-sdk/provider': 4.0.7
+      '@standard-schema/spec': 1.1.0
+      '@workflow/serde': 4.1.0
+      eventsource-parser: 3.1.1
+      undici: 7.29.0
+      zod: 4.4.3
+
+  '@ai-sdk/provider-utils@5.0.29(zod@4.4.3)':
     dependencies:
       '@ai-sdk/provider': 4.0.7
       '@standard-schema/spec': 1.1.0

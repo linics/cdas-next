@@ -37,17 +37,17 @@ describe("deployment proof", () => {
     const enabled = {
       ...input,
       aiProviderDisabled: "0",
-      aiGatewayApiKey: "gateway-key-for-staging-012345",
-      aiModel: "openai/gpt-5.6",
+      deepseekApiKey: "deepseek-key-for-staging-012345",
+      aiModel: "deepseek-v4-flash-vision-exp",
       aiToolApprovalSecret: "a".repeat(32),
     };
     const proof = createDeploymentConfigurationProof(enabled);
     expect(proof).toMatch(/^[a-f0-9]{64}$/u);
-    expect(createDeploymentConfigurationProof({ ...enabled, aiGatewayApiKey: "rotated-gateway-key" })).not.toBe(proof);
-    expect(createDeploymentConfigurationProof({ ...enabled, aiModel: "openai/gpt-5.7" })).not.toBe(proof);
+    expect(createDeploymentConfigurationProof({ ...enabled, deepseekApiKey: "rotated-deepseek-key" })).not.toBe(proof);
+    expect(createDeploymentConfigurationProof({ ...enabled, aiModel: "deepseek-v4-pro" })).not.toBe(proof);
     expect(createDeploymentConfigurationProof({ ...enabled, aiToolApprovalSecret: "b".repeat(32) })).not.toBe(proof);
-    expect(createDeploymentConfigurationProof({ ...enabled, aiGatewayApiKey: "" })).toBeUndefined();
-    expect(createDeploymentConfigurationProof({ ...enabled, aiGatewayApiKey: "short-key" })).toBeUndefined();
+    expect(createDeploymentConfigurationProof({ ...enabled, deepseekApiKey: "" })).toBeUndefined();
+    expect(createDeploymentConfigurationProof({ ...enabled, deepseekApiKey: "short-key" })).toBeUndefined();
     expect(createDeploymentConfigurationProof({ ...enabled, aiModel: "invalid model" })).toBeUndefined();
     expect(createDeploymentConfigurationProof({ ...enabled, aiToolApprovalSecret: "too-short" })).toBeUndefined();
     expect(createDeploymentConfigurationProof({ ...input, aiProviderDisabled: "unexpected" })).toBeUndefined();

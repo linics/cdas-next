@@ -167,7 +167,7 @@ function startedRun(id: string) {
     id,
     actorId,
     status: "RUNNING" as const,
-    model: "openai/gpt-5-mini",
+    model: "deepseek-v4-flash-vision-exp",
     startedAt: now.toISOString(),
   };
 }
@@ -263,8 +263,8 @@ describe("activity assistant route handler", () => {
     vi.clearAllMocks();
     mocks.authenticate.mockResolvedValue(teacher);
     mocks.getConfig.mockReturnValue({
-      apiKey: "gateway-test-key",
-      model: "openai/gpt-5-mini",
+      apiKey: "deepseek-test-key",
+      model: "deepseek-v4-flash-vision-exp",
       approvalSecret: "s".repeat(32),
     });
     mocks.createModel.mockReturnValue(successfulModel());
@@ -273,7 +273,7 @@ describe("activity assistant route handler", () => {
       id: runId,
       actorId,
       status: "RUNNING",
-      model: "openai/gpt-5-mini",
+      model: "deepseek-v4-flash-vision-exp",
       startedAt: now.toISOString(),
     });
     mocks.finishRun.mockResolvedValue({

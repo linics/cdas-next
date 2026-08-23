@@ -186,6 +186,15 @@
 - 理由：首个场景必须先看到服务端重新授权读取的不可变修订预览，再由同一消息历史让模型提出精确发布工具和官方签名 approval。把消息或 approval 放进 URL 会泄漏并允许篡改；为一个短场景增加服务端聊天存储会引入新的保留、读取授权与恢复协议，而当前 ActionIntent、audit 与幂等账本已经承担业务事实。
 - 后果：预览页同时保留既有手工发布面板；助手 session 丢失时教师可以继续手工闭环，但必须重新从新建页开始新的 Agent 会话，不能拼接旧 approval。受保护的首次外部验收用真实浏览器证明 new → preview 的内存连续性，并以只读账本验证三次 AgentRun、教师确认和唯一 Release；它不引入第二后端、持久工作流或通用聊天系统。
 
+## D-024：首个助手试行直连 DeepSeek 官方 API
+
+- 状态：已接受
+- 日期：2026-08-23
+- 决策：首个助手试行使用 AI SDK 的 OpenAI-compatible provider，服务端以 `DEEPSEEK_API_KEY` 直接调用 `https://api.deepseek.com`；试行模型固定通过 `AI_MODEL` 选择 DeepSeek 模型，当前选择 `deepseek-v4-flash-vision-exp`。不再把 Vercel AI Gateway 或其 BYOK 余额作为运行依赖。
+- 理由：当前 Vercel 团队即使配置自有 DeepSeek key，Gateway 仍要求有效信用卡和 Gateway credit 才允许请求；DeepSeek 官方 API 已提供兼容接口与工具调用，直连能保留现有 AI SDK 消息流、签名审批和领域工具合同，同时让费用只由用户已有的 DeepSeek 账户承担。
+- 约束：DeepSeek key 只存在于服务端环境变量，不进入客户端、日志或 artifact；模型调用仍在数据库事务外；配置不全或供应商失败时助手失败关闭，手工教学闭环继续可用。选择视觉模型不代表当前产品支持图片上传，附件仍受 D-012 与 D-015 约束。
+- 后果：D-018 的 AI SDK 消息流、工具 schema、审批和业务失败边界继续有效，其中“AI Gateway”供应商路径由本决策替代。生产数据的地区、日志保留和供应商合规仍需外部审查。
+
 ## 尚未决定
 
 以下生产选择仍需在真实账号和学生数据进入前完成小型验证或合规审查：

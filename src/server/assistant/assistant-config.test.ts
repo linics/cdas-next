@@ -10,16 +10,16 @@ import {
 
 const validEnvironment = {
   AI_PROVIDER_DISABLED: "0",
-  AI_GATEWAY_API_KEY: "gateway-test-key",
-  AI_MODEL: "openai/gpt-5-mini",
+  DEEPSEEK_API_KEY: "deepseek-test-key",
+  AI_MODEL: "deepseek-v4-flash-vision-exp",
   AI_TOOL_APPROVAL_SECRET: "s".repeat(32),
 };
 
 describe("activity assistant configuration", () => {
-  it("returns the complete gateway and approval boundary", () => {
+  it("returns the complete DeepSeek and approval boundary", () => {
     expect(getActivityAssistantConfig(validEnvironment)).toEqual({
-      apiKey: "gateway-test-key",
-      model: "openai/gpt-5-mini",
+      apiKey: "deepseek-test-key",
+      model: "deepseek-v4-flash-vision-exp",
       approvalSecret: "s".repeat(32),
     });
   });
@@ -35,7 +35,7 @@ describe("activity assistant configuration", () => {
     expect(
       isActivityAssistantEnabled({
         ...validEnvironment,
-        AI_GATEWAY_API_KEY: "k".repeat(2_001),
+        DEEPSEEK_API_KEY: "k".repeat(2_001),
       }),
     ).toBe(false);
   });
@@ -46,11 +46,11 @@ describe("activity assistant configuration", () => {
       "AI_DISABLED",
     ],
     [
-      { ...validEnvironment, AI_GATEWAY_API_KEY: "" },
-      "AI_GATEWAY_NOT_CONFIGURED",
+      { ...validEnvironment, DEEPSEEK_API_KEY: "" },
+      "DEEPSEEK_API_NOT_CONFIGURED",
     ],
     [
-      { ...validEnvironment, AI_MODEL: "not-a-gateway-model" },
+      { ...validEnvironment, AI_MODEL: "openai/gpt-5-mini" },
       "AI_MODEL_NOT_CONFIGURED",
     ],
     [

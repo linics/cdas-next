@@ -68,7 +68,7 @@ describe("evaluateStagingPreflight", () => {
     const result = evaluateStagingPreflight(validEnvironment);
 
     expect(result.checks).toContainEqual(
-      expect.objectContaining({ code: "AI_GATEWAY_CONFIG_WHEN_ENABLED", status: "PASS", present: false }),
+      expect.objectContaining({ code: "DEEPSEEK_CONFIG_WHEN_ENABLED", status: "PASS", present: false }),
     );
   });
 
@@ -81,8 +81,8 @@ describe("evaluateStagingPreflight", () => {
       ...validEnvironment,
       AI_PROVIDER_DISABLED: "0",
       STAGING_AI_ACK: stagingAiAcknowledgement,
-      AI_GATEWAY_API_KEY: "gateway-key-that-is-not-recorded",
-      AI_MODEL: "openai/gpt-5-mini",
+      DEEPSEEK_API_KEY: "deepseek-key-that-is-not-recorded",
+      AI_MODEL: "deepseek-v4-flash-vision-exp",
       AI_TOOL_APPROVAL_SECRET: "a".repeat(32),
     });
 

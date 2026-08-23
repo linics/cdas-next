@@ -58,6 +58,7 @@
     "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm test:acceptance-python && pnpm test:agent-acceptance-python && pnpm build"
   },
   "dependencies": {
+    "@ai-sdk/openai-compatible": "3.0.35",
     "@ai-sdk/react": "4.0.69",
     "@clerk/nextjs": "7.7.7",
     "@next/env": "16.3.1",

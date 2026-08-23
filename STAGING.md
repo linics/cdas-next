@@ -20,7 +20,7 @@ Environment variables：
 - `STAGING_DATABASE_NAME`：上面两个连接共同指向的数据库名。名称必须包含独立的 `staging` segment，不得包含 `prod` 或 `production` segment，也不能是 `postgres`、template 库、`cdas_next`、`cdas_next_test` 或 `cdas_next_e2e`。
 - `STAGING_SYNTHETIC_ONLY_ATTESTED`、`STAGING_CLERK_INSTANCE_ATTESTED`、`STAGING_DATABASE_ISOLATION_ATTESTED`、`STAGING_HOSTING_ACCESS_ATTESTED`、`STAGING_ROLLBACK_OWNER_ATTESTED`、`STAGING_RETENTION_ATTESTED`：每项只有精确值 `true` 才通过；任何未知、空缺或其他值都是 `NO_GO`。
 
-`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` 在 Next.js 构建时会内联到客户端 bundle，所以它必须在 build step 之前存在；这个工作流不会把它写进 artifact。AI 固定为 `AI_PROVIDER_DISABLED=1`。真实 Gateway smoke 继续由独立的 `e2e-real` 受保护门禁负责，且只允许合成数据。
+`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` 在 Next.js 构建时会内联到客户端 bundle，所以它必须在 build step 之前存在；这个工作流不会把它写进 artifact。AI 固定为 `AI_PROVIDER_DISABLED=1`。真实 DeepSeek smoke 继续由独立的 `e2e-real` 受保护门禁负责，且只允许合成数据。
 
 远端 hosting 必须在构建期注入 GitHub gate 的 40-hex `CDAS_DEPLOYMENT_ID`；Next 的构建配置会冻结该值，运行期覆盖不能改变 health proof。远端 runtime 还必须把受保护 Environment 中的值分别映射为 pooled + TLS `DATABASE_URL`、`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`、`CLERK_SECRET_KEY` 与 `STAGING_HEALTH_PROOF_SECRET`，并固定 `AI_PROVIDER_DISABLED=1`。若 `pg_control_system()` 无权限、缺失或两条连接的 system identifier 不同，结论为 `NO_GO`。
 
@@ -66,7 +66,7 @@ Environment variables：
 
 首个 Agent 场景使用第三个独立且需要人工审批者的 GitHub Environment：`staging-agent-acceptance`，入口是 `protected staging Agent acceptance`。它不继承前两个 Environment，也不把 AI-enabled staging 变成 production。默认输入 `run_real_model=false` 会保留零模型调用并明确得到 `NO_GO`；只有审批者已经确认合成写入、短期 Clerk ticket 与模型费用后，才可手动选择 `run_real_model=true`。
 
-这个 Environment 必须重新配置前述全部基础 secrets，包括 `STAGING_DATABASE_URL`、`STAGING_DIRECT_URL`、`STAGING_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`、`STAGING_CLERK_SECRET_KEY`、`STAGING_TEST_TEACHER_CLERK_ID`、`STAGING_TEST_STUDENT_CLERK_ID` 与 `STAGING_HEALTH_PROOF_SECRET`。另外增加 `STAGING_AI_GATEWAY_API_KEY` 和至少 32 bytes 的 `STAGING_AI_TOOL_APPROVAL_SECRET`。这些值只注入确实需要它们的 shell step；checkout、依赖安装、Chromium 安装和 artifact actions 不继承业务 secrets。不得把任何 secret 粘贴到聊天、issue、日志或 artifact。
+这个 Environment 必须重新配置前述全部基础 secrets，包括 `STAGING_DATABASE_URL`、`STAGING_DIRECT_URL`、`STAGING_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`、`STAGING_CLERK_SECRET_KEY`、`STAGING_TEST_TEACHER_CLERK_ID`、`STAGING_TEST_STUDENT_CLERK_ID` 与 `STAGING_HEALTH_PROOF_SECRET`。另外增加 `STAGING_DEEPSEEK_API_KEY` 和至少 32 bytes 的 `STAGING_AI_TOOL_APPROVAL_SECRET`。这些值只注入确实需要它们的 shell step；checkout、依赖安装、Chromium 安装和 artifact actions 不继承业务 secrets。不得把任何 secret 粘贴到聊天、issue、日志或 artifact。
 
 Environment variables 必须包含 `STAGING_BASE_URL`、`STAGING_DATABASE_NAME`、`STAGING_AI_MODEL` 和六项基础 attestation。以下五项 Agent attestation 也必须精确为 `true`：
 
@@ -78,7 +78,7 @@ Environment variables 必须包含 `STAGING_BASE_URL`、`STAGING_DATABASE_NAME`�
 
 第六项 `STAGING_AGENT_RUN_MODEL_ATTESTED` 只能由 `run_real_model` dispatch 输入派生，不能用 Environment variable 伪造。显示名仍固定为 `CDAS Staging Synthetic Teacher` 和 `CDAS Staging Synthetic Student`；既有 AppUser 的角色或显示名不匹配时直接 `NO_GO`，工作流不会覆盖或修改 Clerk 用户。
 
-远端 deployment 必须在构建期冻结当前 workflow SHA 的 `CDAS_DEPLOYMENT_ID` 与当前源码指纹，并在同一隔离 staging runtime 注入 pooled `DATABASE_URL`、同一 Clerk test instance、`AI_PROVIDER_DISABLED=0`、与 `STAGING_AI_MODEL` 相同的 `AI_MODEL`、对应 Gateway key、approval secret 和 health proof secret。`/api/health` 的 challenge HMAC 会同时绑定源码、部署、runtime DB URL、Clerk key、AI enabled 状态、Gateway key 指纹、模型与 approval secret 指纹；响应只返回不透明 proof，不返回这些值或指纹。
+远端 deployment 必须在构建期冻结当前 workflow SHA 的 `CDAS_DEPLOYMENT_ID` 与当前源码指纹，并在同一隔离 staging runtime 注入 pooled `DATABASE_URL`、同一 Clerk test instance、`AI_PROVIDER_DISABLED=0`、与 `STAGING_AI_MODEL` 相同的 `AI_MODEL`、对应 DeepSeek API key、approval secret 和 health proof secret。`/api/health` 的 challenge HMAC 会同时绑定源码、部署、runtime DB URL、Clerk key、AI enabled 状态、DeepSeek API key 指纹、模型与 approval secret 指纹；响应只返回不透明 proof，不返回这些值或指纹。
 
 工作流不会部署应用、执行 migration、创建 Clerk 用户、reset、truncate、delete、cleanup 或结束成员关系。它先在同一 run 重做基础 Go/No-Go，再把 run、attempt、源码、部署、DB、Clerk、AI 配置、固定 identity 和全部 attestation 绑定到 Agent gate。第二个 job 下载并重新校验这份 gate 后，顺序执行 Chromium 安装、Clerk identity 与 ticket capability 探测、紧邻写入前的 health proof、marker 派生班级 bootstrap、第一方浏览器流程、只读 verifier 和最终证据聚合。任一步失败都会阻断后续写入或模型步骤，并由 final 保持 `NO_GO`。
 

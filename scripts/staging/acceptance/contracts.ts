@@ -140,7 +140,7 @@ export function redactAcceptanceText(value: string): string {
     .replace(/\b(?:pk|sk)_(?:test|live)_[A-Za-z0-9_-]+\b/gu, "[REDACTED_CLERK_KEY]")
     .replace(/\b(?:Bearer|Cookie)\s+[^\s"']+/giu, "$1 [REDACTED]")
     .replace(/\b(?:ticket|token)=?[A-Za-z0-9._-]+/giu, "$1=[REDACTED]")
-    .replace(/\b(?:AI_GATEWAY_API_KEY|AI_TOOL_APPROVAL_SECRET)=[^\s"']+/gu, "$1=[REDACTED]");
+    .replace(/\b(?:DEEPSEEK_API_KEY|AI_TOOL_APPROVAL_SECRET)=[^\s"']+/gu, "$1=[REDACTED]");
 }
 
 export function asStagingChecks(checks: readonly AcceptanceCheck[]): readonly StagingCheck[] {

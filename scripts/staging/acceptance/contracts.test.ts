@@ -69,7 +69,7 @@ describe("staging synthetic acceptance contracts", () => {
   });
 
   it("redacts forbidden connection, credential, cookie, ticket, and AI key shapes", () => {
-    const output = redactAcceptanceText("postgresql://user:pass@db/x Bearer abc Cookie session=x pk_test_secret sk_test_secret ticket=abc AI_GATEWAY_API_KEY=secret");
+    const output = redactAcceptanceText("postgresql://user:pass@db/x Bearer abc Cookie session=x pk_test_secret sk_test_secret ticket=abc DEEPSEEK_API_KEY=secret");
     expect(output).not.toContain("postgresql://");
     expect(output).not.toContain("pk_test_secret");
     expect(output).not.toContain("ticket=abc");

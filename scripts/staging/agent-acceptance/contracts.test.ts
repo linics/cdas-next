@@ -19,8 +19,8 @@ function environment(extra: Record<string, string | undefined> = {}) {
     STAGING_BASE_URL: "https://staging.example.test",
     AI_PROVIDER_DISABLED: "0",
     STAGING_AI_ACK: "synthetic-data-cost-approved",
-    AI_GATEWAY_API_KEY: "gateway-key-012345",
-    AI_MODEL: "openai/gpt-5.6",
+    DEEPSEEK_API_KEY: "deepseek-key-012345",
+    AI_MODEL: "deepseek-v4-flash-vision-exp",
     AI_TOOL_APPROVAL_SECRET: "a".repeat(32),
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_0123456789abcdef",
     CLERK_SECRET_KEY: "sk_test_0123456789abcdef",
@@ -66,7 +66,7 @@ describe("agent acceptance contracts", () => {
     );
     expect(
       evaluateAgentAcceptanceReadiness(
-        environment({ AI_GATEWAY_API_KEY: "short" }),
+        environment({ DEEPSEEK_API_KEY: "short" }),
       ).status,
     ).toBe("FAIL");
     expect(
@@ -102,9 +102,9 @@ describe("agent acceptance contracts", () => {
     const boundEnvironment = { ...actual, CDAS_SOURCE_FINGERPRINT: source };
     expect(isAgentGate(go, boundEnvironment)).toBe(true);
     expect(
-      isAgentGate(go, { ...boundEnvironment, AI_MODEL: "openai/gpt-5.7" }),
+      isAgentGate(go, { ...boundEnvironment, AI_MODEL: "deepseek-v4-pro" }),
     ).toBe(false);
-    expect(JSON.stringify(go)).not.toContain(actual.AI_GATEWAY_API_KEY);
+    expect(JSON.stringify(go)).not.toContain(actual.DEEPSEEK_API_KEY);
   });
 
   it("does not issue a teacher ticket until the exact gate is ready", async () => {

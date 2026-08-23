@@ -6,7 +6,7 @@ import {
 
 const acknowledgement = "synthetic-data-cost-approved";
 const modelPattern =
-  /^[a-z0-9][a-z0-9._-]*\/[A-Za-z0-9][A-Za-z0-9._:-]*$/u;
+  /^deepseek-[a-z0-9][a-z0-9._:-]*$/u;
 
 function requireValue(name: string): string {
   const value = process.env[name]?.trim();
@@ -28,14 +28,14 @@ function main(): void {
     throw new Error("E2E_REAL_MODEL_MUST_BE_EXPLICITLY_ENABLED");
   }
 
-  const gatewayKey = requireValue("AI_GATEWAY_API_KEY");
+  const deepseekKey = requireValue("DEEPSEEK_API_KEY");
   const model = requireValue("AI_MODEL");
   const approvalSecret = process.env.AI_TOOL_APPROVAL_SECRET ?? "";
   requireValue("DEV_TEST_TEACHER_CLERK_ID");
   requireValue("DEV_TEST_STUDENT_CLERK_ID");
 
-  if (gatewayKey.length > 2_000) {
-    throw new Error("AI_GATEWAY_API_KEY_INVALID");
+  if (deepseekKey.length > 2_000) {
+    throw new Error("DEEPSEEK_API_KEY_INVALID");
   }
   if (model.length > 200 || !modelPattern.test(model)) {
     throw new Error("AI_MODEL_INVALID");
@@ -47,7 +47,7 @@ function main(): void {
   process.stdout.write(
     `${JSON.stringify({
       ok: true,
-      provider: "ai-sdk-gateway",
+      provider: "deepseek-direct",
       model,
       dataClassification: "synthetic-only",
       releaseWritesAllowed: false,

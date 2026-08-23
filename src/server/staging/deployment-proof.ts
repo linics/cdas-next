@@ -7,7 +7,7 @@ export type DeploymentProofInput = Readonly<{
   clerkPublishableKey: string | undefined;
   clerkSecretKey: string | undefined;
   aiProviderDisabled: string | undefined;
-  aiGatewayApiKey?: string | undefined;
+  deepseekApiKey?: string | undefined;
   aiModel?: string | undefined;
   aiToolApprovalSecret?: string | undefined;
   secret: string | undefined;
@@ -22,7 +22,7 @@ export type DeploymentConfiguration = Readonly<{
   clerkPublishableKey: string;
   clerkSecretKeyHash: string;
   aiProviderDisabled: "0" | "1";
-  aiGatewayApiKeyHash?: string;
+  deepseekApiKeyHash?: string;
   aiModel?: string;
   aiToolApprovalSecretHash?: string;
   challenge: string;
@@ -123,15 +123,15 @@ export function deploymentConfiguration(
   const clerkPublishableKey = input.clerkPublishableKey?.trim() ?? "";
   const clerkSecretKey = input.clerkSecretKey?.trim() ?? "";
   const aiProviderDisabled = input.aiProviderDisabled?.trim() ?? "";
-  const aiGatewayApiKey = input.aiGatewayApiKey?.trim() ?? "";
+  const deepseekApiKey = input.deepseekApiKey?.trim() ?? "";
   const aiModel = input.aiModel?.trim() ?? "";
   const aiToolApprovalSecret = input.aiToolApprovalSecret ?? "";
   const challenge = input.challenge?.trim().toLowerCase() ?? "";
   const aiEnabled = aiProviderDisabled === "0";
   const validEnabledAiConfiguration =
-    aiGatewayApiKey.length >= 16 &&
-    aiGatewayApiKey.length <= 2_000 &&
-    /^[a-z0-9][a-z0-9._-]*\/[A-Za-z0-9][A-Za-z0-9._:-]*$/u.test(aiModel) &&
+    deepseekApiKey.length >= 16 &&
+    deepseekApiKey.length <= 2_000 &&
+    /^deepseek-[a-z0-9][a-z0-9._:-]*$/u.test(aiModel) &&
     aiToolApprovalSecret.length >= 32 &&
     aiToolApprovalSecret.length <= 4_096;
   if (
@@ -161,8 +161,8 @@ export function deploymentConfiguration(
   if (aiEnabled) {
     return {
       ...configuration,
-      aiGatewayApiKeyHash: createHash("sha256")
-        .update(aiGatewayApiKey, "utf8")
+      deepseekApiKeyHash: createHash("sha256")
+        .update(deepseekApiKey, "utf8")
         .digest("hex"),
       aiModel,
       aiToolApprovalSecretHash: createHash("sha256")

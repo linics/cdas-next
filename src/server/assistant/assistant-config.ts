@@ -7,7 +7,7 @@ const modelIdSchema = z
   .trim()
   .min(3)
   .max(200)
-  .regex(/^[a-z0-9][a-z0-9._-]*\/[A-Za-z0-9][A-Za-z0-9._:-]*$/);
+  .regex(/^deepseek-[a-z0-9][a-z0-9._:-]*$/);
 
 const enabledConfigSchema = z.object({
   apiKey: z.string().trim().min(1).max(2_000),
@@ -23,7 +23,7 @@ export class ActivityAssistantConfigError extends Error {
   constructor(
     public readonly code:
       | "AI_DISABLED"
-      | "AI_GATEWAY_NOT_CONFIGURED"
+      | "DEEPSEEK_API_NOT_CONFIGURED"
       | "AI_MODEL_NOT_CONFIGURED"
       | "AI_APPROVAL_SECRET_NOT_CONFIGURED",
   ) {
@@ -54,10 +54,10 @@ export function getActivityAssistantConfig(
     throw new ActivityAssistantConfigError("AI_DISABLED");
   }
 
-  const apiKey = environment.AI_GATEWAY_API_KEY?.trim();
+  const apiKey = environment.DEEPSEEK_API_KEY?.trim();
   if (!apiKey) {
     throw new ActivityAssistantConfigError(
-      "AI_GATEWAY_NOT_CONFIGURED",
+      "DEEPSEEK_API_NOT_CONFIGURED",
     );
   }
 
