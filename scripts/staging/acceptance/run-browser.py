@@ -211,7 +211,7 @@ def assert_browser_prerequisites() -> None:
 
 
 def sign_in(page: Page, remote: str, role: str) -> None:
-    destination = "teacher" if role == "teacher" else "student"
+    destination = "teacher" if role in ("teacher", "other_teacher") else "student"
     ticket = ""
     try:
         initial = page.goto(remote, wait_until="domcontentloaded")
@@ -355,14 +355,17 @@ def run() -> None:
         teacher_context = browser.new_context(locale="zh-CN", timezone_id="Asia/Taipei", viewport={"width": 1440, "height": 1000})
         student_context = browser.new_context(locale="zh-CN", timezone_id="Asia/Taipei", viewport={"width": 1440, "height": 1000})
         other_student_context = browser.new_context(locale="zh-CN", timezone_id="Asia/Taipei", viewport={"width": 1440, "height": 1000})
-        for context in (teacher_context, student_context, other_student_context):
+        other_teacher_context = browser.new_context(locale="zh-CN", timezone_id="Asia/Taipei", viewport={"width": 1440, "height": 1000})
+        for context in (teacher_context, student_context, other_student_context, other_teacher_context):
             install_origin_scoped_bypass(context, remote, bypass_secret)
         teacher = teacher_context.new_page()
         student = student_context.new_page()
         other_student = other_student_context.new_page()
+        other_teacher = other_teacher_context.new_page()
         teacher.set_default_timeout(30_000)
         student.set_default_timeout(30_000)
         other_student.set_default_timeout(30_000)
+        other_teacher.set_default_timeout(30_000)
         try:
             sign_in(teacher, remote, "teacher")
             checks.append({"code": "VERCEL_PROTECTION_BYPASS_SCOPED", "status": "PASS"})
@@ -462,6 +465,21 @@ def run() -> None:
             ).wait_for(state="visible")
             index["04-teacher-feedback.png"] = screenshot(teacher, output, "04-teacher-feedback")
 
+            sign_in(other_teacher, remote, "other_teacher")
+            denied_release = other_teacher.goto(f"{remote}{release_href}", wait_until="domcontentloaded")
+            assert_origin(other_teacher.url, remote)
+            if not denied_release or denied_release.status != 404:
+                raise AcceptanceFailure("STAGING_ACCEPTANCE_OTHER_TEACHER_RELEASE_NOT_HIDDEN")
+            checks.append({"code": "OTHER_TEACHER_RELEASE_404", "status": "PASS"})
+            denied_submission = other_teacher.goto(f"{remote}{submission_href}", wait_until="domcontentloaded")
+            assert_origin(other_teacher.url, remote)
+            if not denied_submission or denied_submission.status != 404:
+                raise AcceptanceFailure("STAGING_ACCEPTANCE_OTHER_TEACHER_SUBMISSION_NOT_HIDDEN")
+            other_teacher_text = other_teacher.locator("body").inner_text()
+            if evidence in other_teacher_text or feedback_text in other_teacher_text or required("STAGING_ACCEPTANCE_TEST_STUDENT_NAME") in other_teacher_text:
+                raise AcceptanceFailure("STAGING_ACCEPTANCE_OTHER_TEACHER_RESOURCE_LEAK")
+            checks.append({"code": "OTHER_TEACHER_SUBMISSION_404", "status": "PASS"})
+
             sign_in(other_student, remote, "other_student")
             visible = other_student.goto(f"{remote}{activity_href}", wait_until="domcontentloaded")
             assert_origin(other_student.url, remote)
@@ -557,6 +575,7 @@ def run() -> None:
             teacher_context.close()
             student_context.close()
             other_student_context.close()
+            other_teacher_context.close()
             browser.close()
 
     payload = {

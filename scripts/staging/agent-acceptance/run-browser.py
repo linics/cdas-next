@@ -7,7 +7,8 @@ from urllib.parse import urlsplit
 
 SCREENSHOTS=("01-ready.png","02-approval.png","03-published.png","04-release.png")
 CREATE_PROMPT="""立即调用 create_activity_draft 工具，不要提问。标题必须逐字为：{title}。摘要必须逐字为：固定合成验收摘要。学习目标数组必须恰一个值：识别合成证据。任务说明必须逐字为：提交固定合成内容。证据要求数组必须恰一个值：合成文本。反馈标准数组必须恰一个值：固定标准。不得增删或改写任何字段；完成后立即创建版本1。"""
-PUBLISH_PROMPT="立即调用 publish_activity_release 工具，将版本1发布到班级：{classroom}。无截止日期。"
+EDITED_SUMMARY="固定合成验收摘要（教师人工修订）"
+PUBLISH_PROMPT="立即调用 publish_activity_release 工具，将版本2发布到班级：{classroom}。无截止日期。"
 def public_hostname(host: str) -> bool:
     host=host.strip().strip("[]").lower().rstrip(".")
     if not host or host=="localhost" or host.endswith((".localhost",".local",".internal",".lan")): return False
@@ -80,9 +81,12 @@ def main() -> None:
         page.get_by_role("button",name="交给助手整理").click(); page.wait_for_url(re.compile(r"/teacher/activities/.+/preview"),timeout=120000)
         assert_origin(page.url,base)
         page.get_by_role("heading",name=title,level=1,exact=True).wait_for(); page.get_by_text("草稿修订 1",exact=True).wait_for(); page.get_by_text("固定合成验收摘要",exact=True).wait_for(); page.get_by_text("识别合成证据",exact=True).wait_for(); page.get_by_text("提交固定合成内容",exact=True).wait_for(); page.get_by_text("合成文本",exact=True).wait_for(); page.get_by_text("固定标准",exact=True).wait_for(); page.screenshot(path=str(directory/SCREENSHOTS[0]),full_page=True)
+        page.get_by_role("link",name="← 返回草稿",exact=True).click(); page.wait_for_url(re.compile(r"/teacher/activities/[0-9a-f-]+$"),timeout=30000); assert_origin(page.url,base)
+        page.locator("#activity-summary").fill(EDITED_SUMMARY); page.get_by_role("button",name="保存并标记可预览",exact=True).click(); preview=page.get_by_role("link",name=re.compile("查看发布预览")); preview.wait_for(state="visible"); preview.click(); assert_origin(page.url,base)
+        page.get_by_role("heading",name=title,level=1,exact=True).wait_for(); page.get_by_text("草稿修订 2",exact=True).wait_for(); page.get_by_text(EDITED_SUMMARY,exact=True).wait_for()
         page.get_by_role("heading",name="继续核对活动并准备发布").wait_for()
         page.locator("#activity-assistant-prompt").fill(PUBLISH_PROMPT.format(classroom=f"CDAS staging Agent {value}"))
-        page.get_by_role("button",name="交给助手整理").click(); approval=page.locator('[role="group"][aria-label="发布确认"]'); approval.get_by_role("button",name="确认并发布",exact=True).wait_for(timeout=120000); approval.get_by_text("版本 1",exact=True).wait_for(); approval.get_by_text(f"CDAS staging Agent {value}",exact=True).wait_for(); approval.get_by_text("未设置截止时间",exact=True).wait_for()
+        page.get_by_role("button",name="交给助手整理").click(); approval=page.locator('[role="group"][aria-label="发布确认"]'); approval.get_by_role("button",name="确认并发布",exact=True).wait_for(timeout=120000); approval.get_by_text("版本 2",exact=True).wait_for(); approval.get_by_text(f"CDAS staging Agent {value}",exact=True).wait_for(); approval.get_by_text("未设置截止时间",exact=True).wait_for()
         page.screenshot(path=str(directory/SCREENSHOTS[1]),full_page=True); approval.get_by_role("button",name="确认并发布",exact=True).click()
         page.get_by_text("活动已发布").wait_for(timeout=120000); assert_origin(page.url,base); page.screenshot(path=str(directory/SCREENSHOTS[2]),full_page=True); page.get_by_role("link",name="查看学生提交").click(); page.wait_for_url(re.compile(r"/teacher/releases/[0-9a-f-]+"),timeout=30000)
         assert_origin(page.url,base)

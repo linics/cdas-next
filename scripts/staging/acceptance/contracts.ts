@@ -31,6 +31,8 @@ export const acceptanceStudentDisplayName =
   "CDAS Staging Synthetic Student";
 export const acceptanceOtherStudentDisplayName =
   "CDAS Staging Synthetic Other Student";
+export const acceptanceOtherTeacherDisplayName =
+  "CDAS Staging Synthetic Other Teacher";
 export const acceptanceStudentRosterKey = "CDASSTUDENT0001";
 export const acceptanceOtherStudentRosterKey = "CDASSTUDENT0002";
 
@@ -126,10 +128,12 @@ export function evaluateAcceptanceReadiness(
     check("STAGING_ACCEPTANCE_TEACHER_SUBJECT", /^user_[A-Za-z0-9]+$/u.test(value(environment, "STAGING_TEST_TEACHER_CLERK_ID")), Boolean(value(environment, "STAGING_TEST_TEACHER_CLERK_ID"))),
     check("STAGING_ACCEPTANCE_STUDENT_SUBJECT", /^user_[A-Za-z0-9]+$/u.test(value(environment, "STAGING_TEST_STUDENT_CLERK_ID")), Boolean(value(environment, "STAGING_TEST_STUDENT_CLERK_ID"))),
     check("STAGING_ACCEPTANCE_OTHER_STUDENT_SUBJECT", /^user_[A-Za-z0-9]+$/u.test(value(environment, "STAGING_TEST_OTHER_STUDENT_CLERK_ID")), Boolean(value(environment, "STAGING_TEST_OTHER_STUDENT_CLERK_ID"))),
-    check("STAGING_ACCEPTANCE_SUBJECTS_DISTINCT", new Set([value(environment, "STAGING_TEST_TEACHER_CLERK_ID"), value(environment, "STAGING_TEST_STUDENT_CLERK_ID"), value(environment, "STAGING_TEST_OTHER_STUDENT_CLERK_ID")]).size === 3 && value(environment, "STAGING_TEST_TEACHER_CLERK_ID") !== "" && value(environment, "STAGING_TEST_STUDENT_CLERK_ID") !== "" && value(environment, "STAGING_TEST_OTHER_STUDENT_CLERK_ID") !== ""),
+    check("STAGING_ACCEPTANCE_OTHER_TEACHER_SUBJECT", /^user_[A-Za-z0-9]+$/u.test(value(environment, "STAGING_TEST_OTHER_TEACHER_CLERK_ID")), Boolean(value(environment, "STAGING_TEST_OTHER_TEACHER_CLERK_ID"))),
+    check("STAGING_ACCEPTANCE_SUBJECTS_DISTINCT", new Set([value(environment, "STAGING_TEST_TEACHER_CLERK_ID"), value(environment, "STAGING_TEST_STUDENT_CLERK_ID"), value(environment, "STAGING_TEST_OTHER_STUDENT_CLERK_ID"), value(environment, "STAGING_TEST_OTHER_TEACHER_CLERK_ID")]).size === 4 && value(environment, "STAGING_TEST_TEACHER_CLERK_ID") !== "" && value(environment, "STAGING_TEST_STUDENT_CLERK_ID") !== "" && value(environment, "STAGING_TEST_OTHER_STUDENT_CLERK_ID") !== "" && value(environment, "STAGING_TEST_OTHER_TEACHER_CLERK_ID") !== ""),
     check("STAGING_ACCEPTANCE_TEACHER_NAME", value(environment, "STAGING_ACCEPTANCE_TEST_TEACHER_NAME") === acceptanceTeacherDisplayName, Boolean(value(environment, "STAGING_ACCEPTANCE_TEST_TEACHER_NAME"))),
     check("STAGING_ACCEPTANCE_STUDENT_NAME", value(environment, "STAGING_ACCEPTANCE_TEST_STUDENT_NAME") === acceptanceStudentDisplayName, Boolean(value(environment, "STAGING_ACCEPTANCE_TEST_STUDENT_NAME"))),
     check("STAGING_ACCEPTANCE_OTHER_STUDENT_NAME", value(environment, "STAGING_ACCEPTANCE_TEST_OTHER_STUDENT_NAME") === acceptanceOtherStudentDisplayName, Boolean(value(environment, "STAGING_ACCEPTANCE_TEST_OTHER_STUDENT_NAME"))),
+    check("STAGING_ACCEPTANCE_OTHER_TEACHER_NAME", value(environment, "STAGING_ACCEPTANCE_TEST_OTHER_TEACHER_NAME") === acceptanceOtherTeacherDisplayName, Boolean(value(environment, "STAGING_ACCEPTANCE_TEST_OTHER_TEACHER_NAME"))),
     ...bypassChecks,
     check("STAGING_ACCEPTANCE_GITHUB_RUN", isPositiveInteger(value(environment, "GITHUB_RUN_ID")), Boolean(value(environment, "GITHUB_RUN_ID"))),
     check("STAGING_ACCEPTANCE_GITHUB_ATTEMPT", isPositiveInteger(value(environment, "GITHUB_RUN_ATTEMPT")), Boolean(value(environment, "GITHUB_RUN_ATTEMPT"))),

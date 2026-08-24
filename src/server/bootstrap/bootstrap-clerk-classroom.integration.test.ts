@@ -4,6 +4,7 @@ import { createDatabaseClient } from "../db/client";
 import {
   bootstrapClerkClassroom,
   bootstrapAdditionalClerkClassroomStudent,
+  bootstrapStandaloneClerkTeacher,
   BootstrapClerkClassroomError,
   type BootstrapClerkClassroomInput,
 } from "./bootstrap-clerk-classroom";
@@ -309,6 +310,35 @@ describeWithDatabase("Clerk classroom bootstrap", () => {
     expect(result.additionalStudent.status).toBe("CREATED");
     await expect(database!.classroomMembership.count({ where: { classroomId: input.classroomId } })).resolves.toBe(2);
     await expect(database!.classroomMembership.count({ where: { id: primary.membership.id } })).resolves.toBe(1);
+  });
+
+  it("creates an unrelated teacher without granting classroom access", async () => {
+    const input = bootstrapInput();
+    await bootstrapClerkClassroom(database!, input, () => firstRunAt);
+    const teacherInput = {
+      teacherAuthSubject: `user_otherteacher${randomUUID().replaceAll("-", "")}`,
+      teacherDisplayName: "Other Teacher",
+    };
+    const first = await bootstrapStandaloneClerkTeacher(
+      database!,
+      teacherInput,
+      () => firstRunAt,
+    );
+    const repeated = await bootstrapStandaloneClerkTeacher(
+      database!,
+      teacherInput,
+      () => new Date("2026-08-18T13:00:00.000Z"),
+    );
+    expect(first.teacher.status).toBe("CREATED");
+    expect(repeated).toEqual({
+      teacher: { id: first.teacher.id, status: "EXISTING" },
+    });
+    await expect(database!.classroom.count({
+      where: { managerId: first.teacher.id },
+    })).resolves.toBe(0);
+    await expect(database!.classroomMembership.count({
+      where: { studentId: first.teacher.id },
+    })).resolves.toBe(0);
   });
 
   it("is concurrent-idempotent and fails closed for additional-student conflicts", async () => {

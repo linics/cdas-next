@@ -40,7 +40,12 @@ describe("agent acceptance verifier", () => {
     expect(verificationSql).toContain("audit.source = 'UI'");
     expect(verificationSql).toContain("assistant_publish_");
     expect(verificationSql).toContain("snapshot.content = jsonb_build_object");
-    expect(verificationSql).toContain("target.summary = $9");
+    expect(verificationSql).toContain("target.summary = $14");
+    expect(verificationSql).toContain("manual_revision");
+    expect(verificationSql).toContain("revision.version = 2");
+    expect(verificationSql).toContain("audit.source = 'AGENT'");
+    expect(verificationSql).toContain("count(*) = 5 FROM target_audits");
+    expect(verificationSql).toContain("count(*) = 4 FROM target_idempotency");
     expect(verificationSql).toContain("count(*) = 1 FROM marker_drafts");
     expect(verificationSql).toContain("FROM teacher_feedback_revisions");
     expect(verificationSql).not.toContain("DELETE");

@@ -17,9 +17,11 @@ export function isPassingIdentityEvidence(value: unknown): boolean {
     "TEACHER_IDENTITY_EXISTS",
     "STUDENT_IDENTITY_EXISTS",
     "OTHER_STUDENT_IDENTITY_EXISTS",
+    "OTHER_TEACHER_IDENTITY_EXISTS",
     "TEACHER_TICKET_CAPABILITY",
     "STUDENT_TICKET_CAPABILITY",
     "OTHER_STUDENT_TICKET_CAPABILITY",
+    "OTHER_TEACHER_TICKET_CAPABILITY",
   ];
   if (!exactObject(value, ["schema", "status", "checks", "ticketsRevoked", "realStudentDataAllowed", "productionDecision"]) ||
     value.schema !== "staging-synthetic-acceptance-identity.v1" || value.status !== "PASS" ||
@@ -43,7 +45,7 @@ export function isPassingBootstrapEvidence(
     !exactObject(value.namespace, ["marker", "classroomDerived"]) ||
     value.namespace.marker !== environment.STAGING_RUN_MARKER?.trim() || value.namespace.classroomDerived !== true ||
     (value.collisionProbe !== "ABSENT" && value.collisionProbe !== "MATCHING") ||
-    !exactObject(value.resources, ["teacher", "student", "otherStudent", "classroom", "membership", "otherMembership"])) {
+    !exactObject(value.resources, ["teacher", "student", "otherStudent", "otherTeacher", "classroom", "membership", "otherMembership"])) {
     return false;
   }
   const statuses = Object.values(value.resources);

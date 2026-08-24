@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import {
   acceptanceNamespace,
   acceptanceOtherStudentDisplayName,
+  acceptanceOtherTeacherDisplayName,
   acceptanceStudentDisplayName,
   acceptanceTeacherDisplayName,
   deriveAcceptanceUuid,
@@ -42,9 +43,11 @@ function environment(overrides: Record<string, string | undefined> = {}) {
     STAGING_TEST_TEACHER_CLERK_ID: "user_TestTeacher123",
     STAGING_TEST_STUDENT_CLERK_ID: "user_TestStudent123",
     STAGING_TEST_OTHER_STUDENT_CLERK_ID: "user_TestOtherStudent123",
+    STAGING_TEST_OTHER_TEACHER_CLERK_ID: "user_TestOtherTeacher123",
     STAGING_ACCEPTANCE_TEST_TEACHER_NAME: acceptanceTeacherDisplayName,
     STAGING_ACCEPTANCE_TEST_STUDENT_NAME: acceptanceStudentDisplayName,
     STAGING_ACCEPTANCE_TEST_OTHER_STUDENT_NAME: acceptanceOtherStudentDisplayName,
+    STAGING_ACCEPTANCE_TEST_OTHER_TEACHER_NAME: acceptanceOtherTeacherDisplayName,
     STAGING_VERCEL_AUTOMATION_BYPASS_SECRET: "A".repeat(32),
     GITHUB_RUN_ID: "12345678",
     GITHUB_RUN_ATTEMPT: "1",
@@ -76,7 +79,9 @@ describe("staging synthetic acceptance contracts", () => {
       { STAGING_BASE_URL: "https://other-preview.vercel.app" },
       { AI_PROVIDER_DISABLED: "0" },
       { STAGING_TEST_OTHER_STUDENT_CLERK_ID: "user_TestStudent123" },
+      { STAGING_TEST_OTHER_TEACHER_CLERK_ID: "user_TestTeacher123" },
       { STAGING_ACCEPTANCE_TEST_OTHER_STUDENT_NAME: "Wrong name" },
+      { STAGING_ACCEPTANCE_TEST_OTHER_TEACHER_NAME: "Wrong name" },
       { STAGING_VERCEL_AUTOMATION_BYPASS_SECRET: "not-valid" },
     ]) {
       expect(evaluateAcceptanceReadiness(environment(invalid)).status).toBe("FAIL");
@@ -117,6 +122,8 @@ describe("staging synthetic acceptance contracts", () => {
     expect(isAcceptanceGate(passing, { ...input, STAGING_ACCEPTANCE_WRITES_ATTESTED: "false" })).toBe(false);
     expect(isAcceptanceGate(passing, { ...input, STAGING_TEST_OTHER_STUDENT_CLERK_ID: "user_ChangedOtherStudent123" })).toBe(false);
     expect(isAcceptanceGate(passing, { ...input, STAGING_ACCEPTANCE_TEST_OTHER_STUDENT_NAME: "Changed Other Student" })).toBe(false);
+    expect(isAcceptanceGate(passing, { ...input, STAGING_TEST_OTHER_TEACHER_CLERK_ID: "user_ChangedOtherTeacher123" })).toBe(false);
+    expect(isAcceptanceGate(passing, { ...input, STAGING_ACCEPTANCE_TEST_OTHER_TEACHER_NAME: "Changed Other Teacher" })).toBe(false);
     expect(isAcceptanceGate(passing, { ...input, STAGING_VERCEL_AUTOMATION_BYPASS_SECRET: "B".repeat(32) })).toBe(false);
     expect(isAcceptanceGate(passing, { ...input, STAGING_VERCEL_PROJECT_NAME: "other-project" })).toBe(false);
     expect(isAcceptanceGate(passing, { ...input, STAGING_DEPLOYMENT_PROTECTION_REQUIRED: "" })).toBe(false);
@@ -128,19 +135,20 @@ describe("staging synthetic acceptance contracts", () => {
     expect(isAcceptanceGate({ ...passing, bypassBindingMac: "0".repeat(64) }, input)).toBe(false);
   });
 
-  it("does not call Clerk before readiness and maps all three tickets at 60 seconds", async () => {
+  it("does not call Clerk before readiness and maps all four tickets at 60 seconds", async () => {
     let calls = 0;
-    const client = { signInTokens: { createSignInToken: async (input: { userId: string; expiresInSeconds: number }) => { calls += 1; expect(input.expiresInSeconds).toBe(60); expect(["user_TestTeacher123", "user_TestStudent123", "user_TestOtherStudent123"]).toContain(input.userId); return { token: "in-memory-ticket" }; } } };
+    const client = { signInTokens: { createSignInToken: async (input: { userId: string; expiresInSeconds: number }) => { calls += 1; expect(input.expiresInSeconds).toBe(60); expect(["user_TestTeacher123", "user_TestStudent123", "user_TestOtherStudent123", "user_TestOtherTeacher123"]).toContain(input.userId); return { token: "in-memory-ticket" }; } } };
     await expect(issueAcceptanceTicket(environment({ AI_PROVIDER_DISABLED: "0" }), "TEACHER", client)).rejects.toThrow("STAGING_ACCEPTANCE_READINESS_FAILED");
     await expect(issueAcceptanceTicket(environment(), "INVALID" as never, client)).rejects.toThrow("STAGING_ACCEPTANCE_TICKET_ROLE_INVALID");
     expect(calls).toBe(0);
     await expect(issueAcceptanceTicket(environment(), "TEACHER", client)).resolves.toBe("in-memory-ticket");
     await expect(issueAcceptanceTicket(environment(), "STUDENT", client)).resolves.toBe("in-memory-ticket");
     await expect(issueAcceptanceTicket(environment(), "OTHER_STUDENT", client)).resolves.toBe("in-memory-ticket");
-    expect(calls).toBe(3);
+    await expect(issueAcceptanceTicket(environment(), "OTHER_TEACHER", client)).resolves.toBe("in-memory-ticket");
+    expect(calls).toBe(4);
   });
 
-  it("verifies all three Clerk users and revokes capability tickets before database writes", async () => {
+  it("verifies all four Clerk users and revokes capability tickets before database writes", async () => {
     const created: Array<{ userId: string; expiresInSeconds: number }> = [];
     const revoked: string[] = [];
     const client = {
@@ -159,16 +167,18 @@ describe("staging synthetic acceptance contracts", () => {
       },
     };
     const checks = await verifyAcceptanceIdentities(environment(), client);
-    expect(checks).toHaveLength(6);
+    expect(checks).toHaveLength(8);
     expect(created).toEqual([
       { userId: "user_TestTeacher123", expiresInSeconds: 60 },
       { userId: "user_TestStudent123", expiresInSeconds: 60 },
       { userId: "user_TestOtherStudent123", expiresInSeconds: 60 },
+      { userId: "user_TestOtherTeacher123", expiresInSeconds: 60 },
     ]);
     expect(revoked).toEqual([
       "token-user_TestTeacher123",
       "token-user_TestStudent123",
       "token-user_TestOtherStudent123",
+      "token-user_TestOtherTeacher123",
     ]);
   });
 
@@ -215,9 +225,11 @@ describe("staging synthetic acceptance contracts", () => {
         "TEACHER_IDENTITY_EXISTS",
         "STUDENT_IDENTITY_EXISTS",
         "OTHER_STUDENT_IDENTITY_EXISTS",
+        "OTHER_TEACHER_IDENTITY_EXISTS",
         "TEACHER_TICKET_CAPABILITY",
         "STUDENT_TICKET_CAPABILITY",
         "OTHER_STUDENT_TICKET_CAPABILITY",
+        "OTHER_TEACHER_TICKET_CAPABILITY",
       ].map((code) => ({ code, status: "PASS" })),
       ticketsRevoked: true,
       realStudentDataAllowed: false,
@@ -235,6 +247,7 @@ describe("staging synthetic acceptance contracts", () => {
         teacher: "EXISTING",
         student: "EXISTING",
         otherStudent: "EXISTING",
+        otherTeacher: "EXISTING",
         classroom: "CREATED",
         membership: "CREATED",
         otherMembership: "CREATED",
@@ -267,6 +280,9 @@ describe("staging synthetic acceptance contracts", () => {
       workflow.match(/STAGING_TEST_OTHER_STUDENT_CLERK_ID:/gu),
     ).toHaveLength(8);
     expect(
+      workflow.match(/STAGING_TEST_OTHER_TEACHER_CLERK_ID:/gu),
+    ).toHaveLength(8);
+    expect(
       workflow.match(/STAGING_VERCEL_AUTOMATION_BYPASS_SECRET:/gu),
     ).toHaveLength(7);
     expect(
@@ -284,6 +300,7 @@ describe("staging synthetic acceptance contracts", () => {
       workflow.indexOf("- name: Build production application"),
     );
     expect(preflight).not.toContain("STAGING_TEST_OTHER_STUDENT_CLERK_ID");
+    expect(preflight).not.toContain("STAGING_TEST_OTHER_TEACHER_CLERK_ID");
     expect(preflight).not.toContain("STAGING_VERCEL_AUTOMATION_BYPASS_SECRET");
     const build = workflow.slice(
       workflow.indexOf("- name: Build production application"),
@@ -330,6 +347,9 @@ describe("staging synthetic acceptance contracts", () => {
     expect(sameRunGateAssertion).toContain('AI_PROVIDER_DISABLED: "1"');
     expect(sameRunGateAssertion).toContain(
       "STAGING_TEST_OTHER_STUDENT_CLERK_ID:",
+    );
+    expect(sameRunGateAssertion).toContain(
+      "STAGING_TEST_OTHER_TEACHER_CLERK_ID:",
     );
     expect(sameRunGateAssertion).toContain(
       "STAGING_VERCEL_AUTOMATION_BYPASS_SECRET:",

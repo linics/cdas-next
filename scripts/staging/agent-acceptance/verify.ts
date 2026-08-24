@@ -5,6 +5,7 @@ import { Client } from "pg";
 
 import {
   agentAcceptanceActivityContent,
+  agentAcceptanceEditedSummary,
   agentAcceptanceNamespace,
   stableAgentAcceptanceError,
 } from "./contracts";
@@ -17,7 +18,7 @@ export type VerificationRow = Readonly<Record<string, boolean>>;
 
 export const agentVerificationCodes = [
   "EXACT_CLASSROOM_MEMBERSHIP",
-  "EXACT_SEALED_DRAFT_AND_REVISION",
+  "EXACT_SEALED_DRAFT_AND_REVISIONS",
   "EXACT_ACTIVE_RELEASE_AND_SNAPSHOT",
   "EXACT_PUBLISH_INTENT_AND_APPROVAL",
   "EXACT_THREE_AGENT_RUNS",
@@ -37,7 +38,7 @@ export function evaluateAgentVerification(
 ): readonly Check[] {
   const passing: Record<(typeof agentVerificationCodes)[number], boolean> = {
     EXACT_CLASSROOM_MEMBERSHIP: Boolean(row?.classroom),
-    EXACT_SEALED_DRAFT_AND_REVISION: Boolean(row?.draft && row.revision),
+    EXACT_SEALED_DRAFT_AND_REVISIONS: Boolean(row?.draft && row.revision),
     EXACT_ACTIVE_RELEASE_AND_SNAPSHOT: Boolean(row?.release && row.snapshot),
     EXACT_PUBLISH_INTENT_AND_APPROVAL: Boolean(row?.intent),
     EXACT_THREE_AGENT_RUNS: Boolean(row?.runs),
@@ -124,13 +125,21 @@ target AS (
   FROM marker_drafts AS d
   JOIN activity_releases AS release ON release.source_draft_id = d.id
 ),
-revision AS (
+agent_revision AS (
   SELECT revision.*
   FROM activity_draft_revisions AS revision
-  JOIN target ON target.id = revision.draft_id
+  JOIN marker_drafts AS draft ON draft.id = revision.draft_id
   WHERE revision.version = 1
     AND revision.source = 'AGENT'
     AND revision.agent_run_id IS NOT NULL
+),
+manual_revision AS (
+  SELECT revision.*
+  FROM activity_draft_revisions AS revision
+  JOIN target ON target.id = revision.draft_id
+  WHERE revision.version = 2
+    AND revision.source = 'MANUAL'
+    AND revision.agent_run_id IS NULL
 ),
 intent AS (
   SELECT intent.*
@@ -139,7 +148,7 @@ intent AS (
   WHERE intent.action_name = 'publish_activity_release'
     AND intent.target_type = 'ActivityDraft'
     AND intent.target_id = target.id
-    AND intent.expected_version = 1
+    AND intent.expected_version = 2
     AND intent.status = 'EXECUTED'
     AND intent.actor_id = (SELECT id FROM teacher)
     AND intent.decided_by_id = (SELECT id FROM teacher)
@@ -151,7 +160,7 @@ intent AS (
     AND intent.executed_at <= target.published_at
     AND intent.payload = jsonb_build_object(
       'draftId', target.id::text,
-      'expectedDraftVersion', 1,
+      'expectedDraftVersion', 2,
       'classroomId', target.classroom_id::text,
       'dueAt', NULL
     )
@@ -172,7 +181,7 @@ session_runs AS (
 run1 AS (
   SELECT run.id
   FROM session_runs AS run
-  JOIN revision ON revision.agent_run_id = run.id
+  JOIN agent_revision AS revision ON revision.agent_run_id = run.id
 ),
 run3 AS (
   SELECT run.id
@@ -200,9 +209,9 @@ snapshot AS (
   SELECT snapshot.*
   FROM activity_release_snapshots AS snapshot
   JOIN target ON target.release_id = snapshot.release_id
-  JOIN revision ON revision.draft_id = target.id
+  JOIN manual_revision AS revision ON revision.draft_id = target.id
   WHERE snapshot.source_draft_id = target.id
-    AND snapshot.source_draft_version = 1
+    AND snapshot.source_draft_version = 2
     AND snapshot.schema_version = 1
     AND snapshot.content = jsonb_build_object(
       'schemaVersion', 1,
@@ -240,7 +249,8 @@ target_idempotency AS (
   WHERE record.actor_id = (SELECT id FROM teacher)
     AND record.resource_id IN (
       target.id,
-      (SELECT id FROM revision),
+      (SELECT id FROM agent_revision),
+      (SELECT id FROM manual_revision),
       (SELECT id FROM intent),
       target.release_id
     )
@@ -269,25 +279,37 @@ SELECT
     (SELECT count(*) = 1
       FROM target
       WHERE target.status = 'SEALED'
-        AND target.version = 1
+        AND target.version = 2
         AND target.sealed_at IS NOT NULL
         AND target.sealed_at = target.published_at
-        AND target.summary = $9
+        AND target.summary = $14
         AND target.learning_objectives = ARRAY[$10]::text[]
         AND target.task_instructions = $11
         AND target.evidence_requirements = ARRAY[$12]::text[]
         AND target.feedback_criteria = ARRAY[$13]::text[])
   ) AS draft,
   (
-    SELECT count(*) = 1
-    FROM revision
-    JOIN target ON target.id = revision.draft_id
-    WHERE revision.title = target.title
-      AND revision.summary = target.summary
-      AND revision.learning_objectives = target.learning_objectives
-      AND revision.task_instructions = target.task_instructions
-      AND revision.evidence_requirements = target.evidence_requirements
-      AND revision.feedback_criteria = target.feedback_criteria
+    (SELECT count(*) = 1
+      FROM agent_revision AS revision
+      JOIN target ON target.id = revision.draft_id
+      WHERE revision.title = target.title
+        AND revision.summary = $9
+        AND revision.learning_objectives = target.learning_objectives
+        AND revision.task_instructions = target.task_instructions
+        AND revision.evidence_requirements = target.evidence_requirements
+        AND revision.feedback_criteria = target.feedback_criteria)
+    AND
+    (SELECT count(*) = 1
+      FROM manual_revision AS revision
+      JOIN target ON target.id = revision.draft_id
+      WHERE revision.title = target.title
+        AND revision.summary = $14
+        AND revision.learning_objectives = target.learning_objectives
+        AND revision.task_instructions = target.task_instructions
+        AND revision.evidence_requirements = target.evidence_requirements
+        AND revision.feedback_criteria = target.feedback_criteria)
+    AND
+    (SELECT count(*) = 2 FROM activity_draft_revisions WHERE draft_id = (SELECT id FROM target))
   ) AS revision,
   (
     SELECT count(*) = 1
@@ -319,7 +341,7 @@ SELECT
     AND NOT EXISTS (SELECT 1 FROM run1 JOIN run3 USING (id))
   ) AS runs,
   (
-    (SELECT count(*) = 4 FROM target_audits)
+    (SELECT count(*) = 5 FROM target_audits)
     AND
     (SELECT count(*) = 1
       FROM target_audits AS audit
@@ -335,7 +357,23 @@ SELECT
         AND audit.error_code IS NULL
         AND audit.before_version IS NULL
         AND audit.after_version = 1
-        AND audit.result_resource_id = (SELECT id FROM revision))
+        AND audit.result_resource_id = (SELECT id FROM agent_revision))
+    AND
+    (SELECT count(*) = 1
+      FROM target_audits AS audit
+      JOIN target ON true
+      WHERE audit.action_name = 'save_activity_draft'
+        AND audit.source = 'UI'
+        AND audit.agent_run_id IS NULL
+        AND audit.action_intent_id IS NULL
+        AND audit.target_type = 'ActivityDraft'
+        AND audit.target_id = target.id
+        AND audit.idempotency_key ~ '^save_activity_draft_[0-9a-f-]{36}$'
+        AND audit.outcome = 'SUCCEEDED'
+        AND audit.error_code IS NULL
+        AND audit.before_version = 1
+        AND audit.after_version = 2
+        AND audit.result_resource_id = (SELECT id FROM manual_revision))
     AND
     (SELECT count(*) = 1
       FROM target_audits AS audit
@@ -348,8 +386,8 @@ SELECT
         AND audit.idempotency_key ~ '^assistant_prepare_[a-f0-9]{40}$'
         AND audit.outcome = 'SUCCEEDED'
         AND audit.error_code IS NULL
-        AND audit.before_version = 1
-        AND audit.after_version = 1
+        AND audit.before_version = 2
+        AND audit.after_version = 2
         AND audit.result_resource_id = (SELECT id FROM intent))
     AND
     (SELECT count(*) = 1
@@ -379,12 +417,12 @@ SELECT
         AND audit.idempotency_key ~ '^assistant_publish_[a-f0-9]{40}$'
         AND audit.outcome = 'SUCCEEDED'
         AND audit.error_code IS NULL
-        AND audit.before_version = 1
-        AND audit.after_version = 1
+        AND audit.before_version = 2
+        AND audit.after_version = 2
         AND audit.result_resource_id = target.release_id)
   ) AS audits,
   (
-    (SELECT count(*) = 3 FROM target_idempotency)
+    (SELECT count(*) = 4 FROM target_idempotency)
     AND
     (SELECT count(*) = 1
       FROM target_idempotency AS record
@@ -393,11 +431,26 @@ SELECT
         AND record.idempotency_key ~ '^assistant_draft_[a-f0-9]{40}$'
         AND record.request_hash ~ '^[a-f0-9]{64}$'
         AND record.resource_type = 'ActivityDraftRevision'
-        AND record.resource_id = (SELECT id FROM revision)
+        AND record.resource_id = (SELECT id FROM agent_revision)
         AND (SELECT count(*) FROM jsonb_object_keys(record.response)) = 5
         AND record.response->>'draftId' = target.id::text
-        AND record.response->>'revisionId' = (SELECT id FROM revision)::text
+        AND record.response->>'revisionId' = (SELECT id FROM agent_revision)::text
         AND record.response->>'version' = '1'
+        AND record.response->>'status' = 'READY_FOR_PREVIEW'
+        AND record.response ? 'savedAt')
+    AND
+    (SELECT count(*) = 1
+      FROM target_idempotency AS record
+      JOIN target ON true
+      WHERE record.command_name = 'save_activity_draft'
+        AND record.idempotency_key ~ '^save_activity_draft_[0-9a-f-]{36}$'
+        AND record.request_hash ~ '^[a-f0-9]{64}$'
+        AND record.resource_type = 'ActivityDraftRevision'
+        AND record.resource_id = (SELECT id FROM manual_revision)
+        AND (SELECT count(*) FROM jsonb_object_keys(record.response)) = 5
+        AND record.response->>'draftId' = target.id::text
+        AND record.response->>'revisionId' = (SELECT id FROM manual_revision)::text
+        AND record.response->>'version' = '2'
         AND record.response->>'status' = 'READY_FOR_PREVIEW'
         AND record.response ? 'savedAt')
     AND
@@ -412,7 +465,7 @@ SELECT
         AND (SELECT count(*) FROM jsonb_object_keys(record.response)) = 5
         AND record.response->>'actionIntentId' = (SELECT id FROM intent)::text
         AND record.response->>'draftId' = target.id::text
-        AND record.response->>'expectedDraftVersion' = '1'
+        AND record.response->>'expectedDraftVersion' = '2'
         AND record.response->>'payloadHash' = (SELECT payload_hash FROM intent)
         AND record.response ? 'expiresAt')
     AND
@@ -480,6 +533,7 @@ async function main(): Promise<void> {
       agentAcceptanceActivityContent.taskInstructions,
       agentAcceptanceActivityContent.evidenceRequirements[0],
       agentAcceptanceActivityContent.feedbackCriteria[0],
+      agentAcceptanceEditedSummary,
     ]);
     await database.query("ROLLBACK");
 

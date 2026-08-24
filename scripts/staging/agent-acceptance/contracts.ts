@@ -15,6 +15,7 @@ export const agentAcceptanceActivityContent = {
   evidenceRequirements: ["合成文本"],
   feedbackCriteria: ["固定标准"],
 } as const;
+export const agentAcceptanceEditedSummary = "固定合成验收摘要（教师人工修订）";
 export const agentAcceptanceAttestations = [
   "STAGING_SYNTHETIC_ONLY_ATTESTED", "STAGING_CLERK_INSTANCE_ATTESTED",
   "STAGING_DATABASE_ISOLATION_ATTESTED", "STAGING_HOSTING_ACCESS_ATTESTED",

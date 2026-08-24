@@ -18,6 +18,7 @@ import { saveActivityDraft } from "../../src/server/commands/save-activity-draft
 import { createDatabaseClient } from "../../src/server/db/client";
 import {
   agentAcceptanceActivityContent,
+  agentAcceptanceEditedSummary,
   agentAcceptanceNamespace,
   agentAcceptanceStudentDisplayName,
   agentAcceptanceTeacherDisplayName,
@@ -79,6 +80,7 @@ async function queryVerification(input: {
       agentAcceptanceActivityContent.taskInstructions,
       agentAcceptanceActivityContent.evidenceRequirements[0],
       agentAcceptanceActivityContent.feedbackCriteria[0],
+      agentAcceptanceEditedSummary,
     ]);
     await client.query("ROLLBACK");
     if (!result.rows[0]) throw new Error("AGENT_VERIFICATION_ROW_REQUIRED");
@@ -147,6 +149,36 @@ describeWithDatabase("staging Agent acceptance read-only verifier", () => {
         idempotencyKey: idempotencyKey("draft"),
       },
     );
+    const manuallySaved = await saveActivityDraft(
+      database,
+      context(
+        resources.teacher.id,
+        "UI",
+        new Date("2026-08-23T05:00:15.000Z"),
+      ),
+      {
+        draftId: saved.draftId,
+        expectedVersion: 1,
+        desiredStatus: "READY_FOR_PREVIEW",
+        content: {
+          schemaVersion: 1,
+          title: namespace.activityTitle,
+          summary: agentAcceptanceEditedSummary,
+          learningObjectives: [
+            agentAcceptanceActivityContent.learningObjectives[0],
+          ],
+          taskInstructions: agentAcceptanceActivityContent.taskInstructions,
+          evidenceRequirements: [
+            agentAcceptanceActivityContent.evidenceRequirements[0],
+          ],
+          feedbackCriteria: [
+            agentAcceptanceActivityContent.feedbackCriteria[0],
+          ],
+        },
+        agentRunId: null,
+        idempotencyKey: `save_activity_draft_${randomUUID()}`,
+      },
+    );
 
     const run2 = await startActivityAssistantRun(
       database,
@@ -184,8 +216,8 @@ describeWithDatabase("staging Agent acceptance read-only verifier", () => {
         new Date("2026-08-23T05:00:35.000Z"),
       ),
       {
-        draftId: saved.draftId,
-        expectedDraftVersion: 1,
+        draftId: manuallySaved.draftId,
+        expectedDraftVersion: 2,
         classroomId: namespace.classroomId,
         dueAt: null,
         agentRunId: run3.id,
@@ -261,7 +293,7 @@ describeWithDatabase("staging Agent acceptance read-only verifier", () => {
       await queryVerification(scope),
     );
     expect(duplicateDraft).toContainEqual({
-      code: "EXACT_SEALED_DRAFT_AND_REVISION",
+      code: "EXACT_SEALED_DRAFT_AND_REVISIONS",
       status: "FAIL",
     });
     expect(duplicateDraft).toContainEqual({

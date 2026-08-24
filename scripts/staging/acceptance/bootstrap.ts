@@ -3,12 +3,14 @@ import nextEnvironment from "@next/env";
 import {
   bootstrapAdditionalClerkClassroomStudent,
   bootstrapClerkClassroom,
+  bootstrapStandaloneClerkTeacher,
 } from "../../../src/server/bootstrap/bootstrap-clerk-classroom";
 import { createDatabaseClient } from "../../../src/server/db/client";
 import {
   acceptanceNamespace,
   acceptanceOtherStudentDisplayName,
   acceptanceOtherStudentRosterKey,
+  acceptanceOtherTeacherDisplayName,
   acceptanceStudentDisplayName,
   acceptanceStudentRosterKey,
   acceptanceTeacherDisplayName,
@@ -61,6 +63,10 @@ async function main(): Promise<void> {
       additionalStudentDisplayName: acceptanceOtherStudentDisplayName,
       additionalStudentRosterKey: acceptanceOtherStudentRosterKey,
     });
+    const otherTeacher = await bootstrapStandaloneClerkTeacher(database, {
+      teacherAuthSubject: required("STAGING_TEST_OTHER_TEACHER_CLERK_ID"),
+      teacherDisplayName: acceptanceOtherTeacherDisplayName,
+    });
     await writeAcceptanceArtifact(marker, "bootstrap.json", {
       schema: "staging-synthetic-acceptance-bootstrap.v1",
       status: "PASS",
@@ -70,6 +76,7 @@ async function main(): Promise<void> {
         teacher: result.teacher.status,
         student: result.student.status,
         otherStudent: otherStudent.additionalStudent.status,
+        otherTeacher: otherTeacher.teacher.status,
         classroom: result.classroom.status,
         membership: result.membership.status,
         otherMembership: otherStudent.membership.status,

@@ -8,11 +8,13 @@ export const syntheticExternalIds = {
   teacher: "cdas-staging-synthetic-teacher",
   student: "cdas-staging-synthetic-student",
   otherStudent: "cdas-staging-synthetic-other-student",
+  otherTeacher: "cdas-staging-synthetic-other-teacher",
 } as const;
 export const syntheticUsernames = {
   teacher: "cdas_staging_synthetic_teacher",
   student: "cdas_staging_synthetic_student",
   otherStudent: "cdas_staging_synthetic_other_student",
+  otherTeacher: "cdas_staging_synthetic_other_teacher",
 } as const;
 
 export type DevelopmentInfrastructureConfig = Readonly<{

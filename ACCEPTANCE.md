@@ -276,20 +276,21 @@ Agent 不是新的业务主体。审计中的 actor 始终是登录用户，`age
 
 场景: 受保护 staging 的合成真实账号验收不扩大业务权限
   假如同一次受保护 GitHub run 已生成并校验 staging GO 证据
-  并且该证据以健康证明密钥绑定 run、部署源码、数据库、Clerk test instance、合成教师与两个学生、GitHub Environment secret 中的 base URL、Vercel project name 及有效的 Vercel Automation Bypass secret
+  并且该证据以健康证明密钥绑定 run、部署源码、数据库、Clerk test instance、合成教师、两个学生与一名无关教师、GitHub Environment secret 中的 base URL、Vercel project name 及有效的 Vercel Automation Bypass secret
   并且 Vercel Preview 在未提供显式部署标识时以其 Git commit SHA 作为构建期部署标识
   当额外的“合成写入、短期 Clerk ticket、保留不清理”人工证明均为 true
   并且写入前重新验证当前远端 health proof 仍与该 run 精确一致
-  并且三个 Clerk test 用户均可读取、签发 60 秒 ticket 并立即撤销
+  并且四个 Clerk test 用户均可读取、签发 60 秒 ticket 并立即撤销
   并且 base URL 必须是该 project 的精确 HTTPS `.vercel.app` Preview 根地址，不能由普通 Environment Variable 替换为自定义域或其他主机
   并且只有本合成验收 workflow 将 `STAGING_DEPLOYMENT_PROTECTION_REQUIRED` 固定为 `1`；共享 staging verifier 在该值缺失时只验证通用公开 HTTPS 根地址，既不要求 project 也不读取 bypass secret
   并且 Vercel Deployment Protection 保持启用；每次发送 bypass 前，独立无 cookie、无 bypass 的 health 请求必须得到 Vercel SSO `302`、`server: Vercel`、`x-vercel-id` 与精确绑定 health URL 的 64 位 nonce challenge
-  并且两次 health 请求与三个全新浏览器上下文只对精确的 staging scheme、host 和有效 port 通过 `x-vercel-protection-bypass` 请求头访问
+  并且两次 health 请求与四个全新浏览器上下文只对精确的 staging scheme、host 和有效 port 通过 `x-vercel-protection-bypass` 请求头访问
   并且 Clerk、CDN、重定向与任何其他 origin 均不接收 bypass 或 set-bypass-cookie 请求头，bypass secret 不进入 URL、截图、artifact 或验收记录
-  那么 acceptance-only operator 只能以唯一 `cdas-staging-*` namespace 先预配置教师与主学生，再追加或精确重入同班第三学生；该 operator 不扩大产品成员管理权限
+  那么 acceptance-only operator 只能以唯一 `cdas-staging-*` namespace 先预配置教师与主学生，再追加或精确重入同班第三学生，并为无关教师只建立不含班级或成员关系的 AppUser；该 operator 不扩大产品成员管理权限
   并且班级恰有两个活跃学生成员，且两个学生 Clerk subject 均不同
   并且真实浏览器必须经现有第一方 UI 完成手工草稿、发布、文本提交、教师反馈、学生查看与关闭
   并且第三学生能看到同一 Release，但主学生的 evidence、feedback 与显示名称均不泄漏；直接打开教师页面取得的主学生 submission URL 返回 404
+  并且无关教师直接打开该教师的 Release 与主学生 Submission URL 均返回资源级 404，且不泄漏学生 evidence、feedback 或显示名称
   当学生保留关闭前的重交页面并在关闭后提交保存
   那么既有 Server Action 与领域命令拒绝该写入
   并且刷新后页面不显示写入口、工作副本与正式历史仍可读取
@@ -308,14 +309,16 @@ Agent 不是新的业务主体。审计中的 actor 始终是登录用户，`age
   那么模型通过共享 saveActivityDraft 命令创建唯一 READY_FOR_PREVIEW 版本 1 与 AGENT revision
   并且客户端只在工具返回的 draft ID 与精确站内路径一致时导航到预览
   并且共享 activities layout 在内存保留同一官方 AI SDK message session
-  当教师逐段核对预览并明确要求把版本 1 发布到 marker 班级且不设置截止时间
-  那么模型只能提出带精确版本、班级与 null dueAt 的签名发布 approval
+  当教师返回普通编辑页人工修改摘要并保存为 READY_FOR_PREVIEW 版本 2
+  那么版本 1 AGENT revision 与版本 2 MANUAL revision 都不可改写
+  当教师逐段核对版本 2 预览并明确要求把版本 2 发布到 marker 班级且不设置截止时间
+  那么模型只能提出带精确版本 2、班级与 null dueAt 的签名发布 approval
   并且在教师点击确认前没有 ActionIntent 或 Release
   当教师确认
-  那么系统仍通过 prepare → UI decide → publish 领域命令原子创建唯一 SEALED head、EXECUTED ActionIntent、ACTIVE Release 与不可变 snapshot
+  那么系统仍通过 prepare → UI decide → publish 领域命令原子创建唯一版本 2 SEALED head、EXECUTED ActionIntent、ACTIVE Release 与不可变 snapshot
   并且三个同教师、同模型、同浏览器时间窗的 AgentRun 恰好分别绑定草稿写入、无业务写入的 approval 提议和发布执行
   并且该教师在 marker 精确标题下只能存在这一份草稿，包括未发布草稿
-  并且 save、prepare、decide、publish audit 与 save、prepare、publish 幂等记录的 actor、来源、run、intent、版本和结果资源精确一致
+  并且两次 save、prepare、decide、publish audit 与两次 save、prepare、publish 幂等记录的 actor、来源、run、intent、版本和结果资源精确一致
   并且该 Release 没有学生提交、提交修订或反馈历史
   当直接打开或刷新预览页
   那么系统不从 URL、localStorage 或业务数据库恢复对话或 approval

@@ -147,7 +147,7 @@ export class GitHubCliProvider implements GitHubProvider {
     await this.gh(["variable", "set", name, "--env", infrastructureEnvironment, "--body", value]);
   }
   async setSecret(name: string, value: string): Promise<void> {
-    const allowed = /^STAGING_(?:BASE_URL|DATABASE_URL|DIRECT_URL|NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY|CLERK_SECRET_KEY|TEST_(?:TEACHER|STUDENT|OTHER_STUDENT)_CLERK_ID|HEALTH_PROOF_SECRET|VERCEL_AUTOMATION_BYPASS_SECRET)$/u;
+    const allowed = /^STAGING_(?:BASE_URL|DATABASE_URL|DIRECT_URL|NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY|CLERK_SECRET_KEY|TEST_(?:TEACHER|STUDENT|OTHER_STUDENT|OTHER_TEACHER)_CLERK_ID|HEALTH_PROOF_SECRET|VERCEL_AUTOMATION_BYPASS_SECRET)$/u;
     if (!allowed.test(name)) throw new Error("DEVELOPMENT_INFRA_GITHUB_SECRET_UNSAFE");
     await this.runner.run("gh", ["secret", "set", name, "--env", infrastructureEnvironment], { env: minimalCommandEnvironment({ github: true }), input: value });
   }

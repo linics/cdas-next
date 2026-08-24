@@ -5,12 +5,14 @@ import { afterAll, describe, expect, it } from "vitest";
 import {
   bootstrapClerkClassroom,
   bootstrapAdditionalClerkClassroomStudent,
+  bootstrapStandaloneClerkTeacher,
   BootstrapClerkClassroomError,
 } from "../../src/server/bootstrap/bootstrap-clerk-classroom";
 import { createDatabaseClient } from "../../src/server/db/client";
 import {
   acceptanceNamespace,
   acceptanceOtherStudentDisplayName,
+  acceptanceOtherTeacherDisplayName,
   acceptanceStudentDisplayName,
   acceptanceTeacherDisplayName,
 } from "./acceptance/contracts";
@@ -34,6 +36,8 @@ function fixture() {
       studentDisplayName: acceptanceStudentDisplayName,
       otherStudentAuthSubject: `user_stagingother${suffix}`,
       otherStudentDisplayName: acceptanceOtherStudentDisplayName,
+      otherTeacherAuthSubject: `user_stagingotherteacher${suffix}`,
+      otherTeacherDisplayName: acceptanceOtherTeacherDisplayName,
       classroomId: namespace.classroomId,
       classroomName: namespace.classroomName,
     },
@@ -95,6 +99,17 @@ describeWithDatabase("staging synthetic acceptance bootstrap", () => {
       additionalStudent: { ...other.additionalStudent, status: "EXISTING" },
       membership: { ...other.membership, status: "EXISTING" },
     });
+    const otherTeacher = await bootstrapStandaloneClerkTeacher(database!, {
+      teacherAuthSubject: input.otherTeacherAuthSubject,
+      teacherDisplayName: input.otherTeacherDisplayName,
+    });
+    expect(otherTeacher.teacher.status).toBe("CREATED");
+    await expect(database!.classroom.count({
+      where: { managerId: otherTeacher.teacher.id },
+    })).resolves.toBe(0);
+    await expect(database!.classroomMembership.count({
+      where: { studentId: otherTeacher.teacher.id },
+    })).resolves.toBe(0);
     await expect(database!.classroomMembership.count({ where: { classroomId: input.classroomId } })).resolves.toBe(2);
     await expect(
       probeAcceptanceNamespace(

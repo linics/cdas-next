@@ -100,6 +100,21 @@ export const bootstrapAdditionalClerkClassroomStudentResultSchema = z
   })
   .strict();
 
+/** Acceptance-only operator input for an authenticated teacher who must remain
+ * outside the synthetic classroom. */
+export const bootstrapStandaloneClerkTeacherInputSchema = z
+  .object({
+    teacherAuthSubject: clerkSubjectSchema,
+    teacherDisplayName: displayNameSchema,
+  })
+  .strict();
+
+export const bootstrapStandaloneClerkTeacherResultSchema = z
+  .object({
+    teacher: z.object({ id: z.uuid(), status: creationStatusSchema }).strict(),
+  })
+  .strict();
+
 export type BootstrapClerkClassroomInput = z.input<
   typeof bootstrapClerkClassroomInputSchema
 >;
@@ -111,6 +126,12 @@ export type BootstrapAdditionalClerkClassroomStudentInput = z.input<
 >;
 export type BootstrapAdditionalClerkClassroomStudentResult = z.infer<
   typeof bootstrapAdditionalClerkClassroomStudentResultSchema
+>;
+export type BootstrapStandaloneClerkTeacherInput = z.input<
+  typeof bootstrapStandaloneClerkTeacherInputSchema
+>;
+export type BootstrapStandaloneClerkTeacherResult = z.infer<
+  typeof bootstrapStandaloneClerkTeacherResultSchema
 >;
 
 type BootstrapResource =
@@ -141,6 +162,9 @@ export class BootstrapClerkClassroomError extends Error {
 type BootstrapInput = z.infer<typeof bootstrapClerkClassroomInputSchema>;
 type AdditionalStudentInput = z.infer<
   typeof bootstrapAdditionalClerkClassroomStudentInputSchema
+>;
+type StandaloneTeacherInput = z.infer<
+  typeof bootstrapStandaloneClerkTeacherInputSchema
 >;
 type BootstrapStatus = z.infer<typeof creationStatusSchema>;
 
@@ -440,6 +464,31 @@ async function runAdditionalStudentTransaction(
   });
 }
 
+async function runStandaloneTeacherTransaction(
+  database: PrismaClient,
+  input: StandaloneTeacherInput,
+  now: Date,
+): Promise<BootstrapStandaloneClerkTeacherResult> {
+  return database.$transaction(async (transaction) => {
+    await acquireLocks(transaction, [`app-user:${input.teacherAuthSubject}`]);
+    const teacher = await ensureUser(
+      transaction,
+      {
+        authSubject: input.teacherAuthSubject,
+        displayName: input.teacherDisplayName,
+        role: "TEACHER",
+        resource: "teacher",
+      },
+      now,
+    );
+    return bootstrapStandaloneClerkTeacherResultSchema.parse({ teacher });
+  }, {
+    isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+    maxWait: 5_000,
+    timeout: 10_000,
+  });
+}
+
 export async function bootstrapClerkClassroom(
   database: PrismaClient,
   rawInput: BootstrapClerkClassroomInput,
@@ -504,4 +553,32 @@ export async function bootstrapAdditionalClerkClassroomStudent(
     }
   }
   throw new BootstrapClerkClassroomError("CONCURRENT_WRITE", "membership");
+}
+
+/**
+ * Acceptance-only operator. It creates only the AppUser mapping required to
+ * prove resource ownership; it creates no classroom or membership.
+ */
+export async function bootstrapStandaloneClerkTeacher(
+  database: PrismaClient,
+  rawInput: BootstrapStandaloneClerkTeacherInput,
+  clock: () => Date = () => new Date(),
+): Promise<BootstrapStandaloneClerkTeacherResult> {
+  const input = bootstrapStandaloneClerkTeacherInputSchema.parse(rawInput);
+  const now = resolveNow(clock);
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      return await runStandaloneTeacherTransaction(database, input, now);
+    } catch (error) {
+      const retryable = error instanceof Prisma.PrismaClientKnownRequestError &&
+        (error.code === "P2034" || error.code === "P2002");
+      if (retryable && attempt < 3) continue;
+      if (error instanceof BootstrapClerkClassroomError) throw error;
+      if (retryable) {
+        throw new BootstrapClerkClassroomError("CONCURRENT_WRITE", "teacher");
+      }
+      throw error;
+    }
+  }
+  throw new BootstrapClerkClassroomError("CONCURRENT_WRITE", "teacher");
 }

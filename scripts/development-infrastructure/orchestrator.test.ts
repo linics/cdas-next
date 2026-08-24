@@ -29,7 +29,7 @@ describe("development infrastructure reconciliation", () => {
     await expect(reconcileDevelopmentInfrastructure(config, providers(events))).resolves.toMatchObject({ environment: "staging-synthetic-acceptance" });
     expect(events.indexOf("migrate")).toBeGreaterThan(events.indexOf("neon"));
     expect(events.indexOf("dispatch")).toBeGreaterThan(events.indexOf("secret-STAGING_VERCEL_AUTOMATION_BYPASS_SECRET"));
-    expect(events.filter((item) => item.startsWith("secret-")).sort()).toEqual(["secret-STAGING_BASE_URL", "secret-STAGING_CLERK_SECRET_KEY", "secret-STAGING_DATABASE_URL", "secret-STAGING_DIRECT_URL", "secret-STAGING_HEALTH_PROOF_SECRET", "secret-STAGING_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY", "secret-STAGING_TEST_OTHER_STUDENT_CLERK_ID", "secret-STAGING_TEST_STUDENT_CLERK_ID", "secret-STAGING_TEST_TEACHER_CLERK_ID", "secret-STAGING_VERCEL_AUTOMATION_BYPASS_SECRET"].sort());
+    expect(events.filter((item) => item.startsWith("secret-")).sort()).toEqual(["secret-STAGING_BASE_URL", "secret-STAGING_CLERK_SECRET_KEY", "secret-STAGING_DATABASE_URL", "secret-STAGING_DIRECT_URL", "secret-STAGING_HEALTH_PROOF_SECRET", "secret-STAGING_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY", "secret-STAGING_TEST_OTHER_STUDENT_CLERK_ID", "secret-STAGING_TEST_OTHER_TEACHER_CLERK_ID", "secret-STAGING_TEST_STUDENT_CLERK_ID", "secret-STAGING_TEST_TEACHER_CLERK_ID", "secret-STAGING_VERCEL_AUTOMATION_BYPASS_SECRET"].sort());
   });
   it("fails closed without later remote steps", async () => {
     const events: string[] = [];
