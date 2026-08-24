@@ -157,6 +157,7 @@ export const requiredHistoryProtectionConstraints = [
   "submission_working_copy_attachments_working_copy_id_fkey",
   "teacher_feedback_revisions_action_intent_id_fkey",
   "teacher_feedback_revisions_source_provenance",
+  "teacher_feedback_revisions_structured_fields_together",
 ] as const;
 
 export function evaluateDatabaseInspection(
