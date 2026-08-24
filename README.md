@@ -2,7 +2,7 @@
 
 面向 K12 教师与学生的跨学科学习活动工作台。第一阶段只完成一条可追溯闭环：教师设计并确认发布，学生提交学习证据，教师确认反馈、学生查看反馈，并由发布教师兼当前班级管理员明确确认关闭发布。
 
-当前源码已覆盖手工完整闭环：活动草稿与冻结发布、学生文本证据的工作稿与正式修订、教师确认后的反馈修订、学生查看反馈，以及发布教师兼当前班级管理员明确确认关闭 Release。关闭会阻止学生后续写入，但保留活动、提交和反馈的可读历史，并允许有权教师继续反馈。另有一个可关闭的活动助手试行场景，使用 AI SDK 直连 DeepSeek 官方 API 整理可编辑草稿，并在教师核对精确参数后复用同一发布命令；第一阶段不向助手开放关闭工具。发布、关闭、提交与反馈命令共用资源级授权、可信服务端上下文、乐观并发、幂等、不可变历史和审计。本地真实浏览器门禁已使用 Clerk development 双账号会话和专用 PostgreSQL 重放两版草稿、发布、两次提交、逐版反馈、历史成员只读、关闭只读、同角色越权、陈旧确认与幂等重放；真实 DeepSeek API 的合成数据 smoke 和受保护 GitHub Environment 入口也已固化。AI-disabled 受保护 Preview 的四身份手工闭环已有脱敏远程 PASS 证据；DeepSeek Agent 启动的完整闭环仍须取得一次新的费用批准并产出完整 PASS artifact。
+当前源码已覆盖手工完整闭环：活动草稿与冻结发布、学生文本证据的工作稿与正式修订、教师确认后的反馈修订、学生查看反馈，以及发布教师兼当前班级管理员明确确认关闭 Release。关闭会阻止学生后续写入，但保留活动、提交和反馈的可读历史，并允许有权教师继续反馈。另有一个可关闭的活动助手试行场景，使用 AI SDK 直连 DeepSeek 官方 API 整理可编辑草稿，并在教师核对精确参数后复用同一发布命令；第一阶段不向助手开放关闭工具。发布、关闭、提交与反馈命令共用资源级授权、可信服务端上下文、乐观并发、幂等、不可变历史和审计。本地真实浏览器门禁已使用 Clerk development 双账号会话和专用 PostgreSQL 重放两版草稿、发布、两次提交、逐版反馈、历史成员只读、关闭只读、同角色越权、陈旧确认与幂等重放；真实 DeepSeek API 的合成数据 smoke 和受保护 GitHub Environment 入口也已固化。AI-disabled 受保护 Preview 的四身份手工闭环，以及 DeepSeek Agent 启动、人工修订发布、学生提交、教师反馈、学生读取、教师关闭和跨身份隔离的完整闭环，均已有脱敏远程 PASS 证据。
 
 ## 快速开始
 
@@ -90,7 +90,7 @@ pnpm e2e:real-model
 
 ### 受保护 staging Go/No-Go
 
-新增的手动 `protected staging Go/No-Go` workflow 只验证已经存在的隔离 staging：它 fail-closed 检查 test Clerk、远端 pooled/runtime 与 direct PostgreSQL URL、生产 build、只读 migration metadata、schema drift 和不连数据库的 `/api/health`，再聚合为脱敏的机器可读结论。它不会部署、执行 migration、写 fixture、创建账号或调用模型。即使自动检查全部通过，结论也只允许 synthetic staging；`realStudentDataAllowed` 固定为 `false`、`productionDecision` 固定为 `NO_GO`。配置项、人工 attestations、当前脱敏证据、回滚边界和 Agent 待验状态见 [STAGING.md](./STAGING.md)。
+新增的手动 `protected staging Go/No-Go` workflow 只验证已经存在的隔离 staging：它 fail-closed 检查 test Clerk、远端 pooled/runtime 与 direct PostgreSQL URL、生产 build、只读 migration metadata、schema drift 和不连数据库的 `/api/health`，再聚合为脱敏的机器可读结论。它不会部署、执行 migration、写 fixture、创建账号或调用模型。即使自动检查全部通过，结论也只允许 synthetic staging；`realStudentDataAllowed` 固定为 `false`、`productionDecision` 固定为 `NO_GO`。配置项、人工 attestations、当前脱敏证据、回滚边界和 Agent 验收状态见 [STAGING.md](./STAGING.md)。
 
 开发期测试基础设施由 `pnpm development:infra` 从仓库根目录、Git 忽略且权限为 `0600` 的 `.env.staging.local` 自动收敛。该命令只接受文件中列出的变量名，不回显值；它核验 Vercel 仍为 Hobby、Private Blob 不含长期 token、Clerk 为 development instance、Neon 为独立 schema-only staging，并部署 AI-disabled Preview、配置合成账号与 GitHub Environment、运行完整手工闭环。Vercel 构建不会执行 `db:deploy`，迁移只由此受控命令使用 Neon direct URL 单独执行。
 
@@ -101,7 +101,7 @@ pnpm development:agent-acceptance \
   --model-cost-approved=synthetic-data-cost-approved
 ```
 
-该命令先重新核验 Hobby、Private Blob、Clerk、Neon、源码 SHA 与 AI-enabled health，再把费用闸门作为最后一项配置并精确派发 `staging-agent-acceptance`。工作流使用四个预留合成身份，让同一个 AI 创建并由教师确认发布的 Release 继续经过学生正式提交、教师确认反馈、学生读取反馈、教师关闭、关闭后拒写与其他师生资源隔离；后半段全部走普通第一方 UI，不产生额外 AgentRun。成功后命令会下载并重新验证脱敏 artifact；无论成功或失败，`finally` 都会先关闭 GitHub 费用闸门、删除 GitHub 与 Vercel分支级模型/审批 secrets，然后部署并核验 AI-disabled Preview。命令参数只是技术上的 fail-closed 门槛，仍必须在每次执行前取得本项目约定的单次人工费用授权。
+该命令先重新核验 Hobby、Private Blob、Clerk、Neon、源码 SHA 与 AI-enabled health，再把费用闸门作为最后一项配置并精确派发 `staging-agent-acceptance`。工作流使用四个预留合成身份，让同一个 AI 创建并由教师确认发布的 Release 继续经过学生正式提交、教师确认反馈、学生读取反馈、教师关闭、关闭后拒写与其他师生资源隔离；后半段全部走普通第一方 UI，不产生额外 AgentRun。成功后命令会下载并重新验证脱敏 artifact；无论成功或失败，`finally` 都会先关闭 GitHub 费用闸门、删除 GitHub 与 Vercel 分支级模型/审批 secrets，然后部署并核验 AI-disabled Preview。命令参数仍是每次执行都必须提供的技术 fail-closed 门槛；项目所有者已对这组固定合成数据的开发验收给出持续授权，因此后续可在该边界内自动运行而无需逐次打断。生产资源、真实用户数据、套餐升级或付款资料，以及扩展到非固定合成模型调用，仍不在此授权内。
 
 `db:test`、`test:db` 与 `db:test:diff` 只接受独立的 `TEST_DATABASE_URL`，并拒绝与 `DATABASE_URL`、`DIRECT_URL` 或文档默认开发库指向同一 PostgreSQL 目标；不会把 append-only fixture 写进开发库。缺少或不安全的测试库 URL 会明确失败，不会以跳过测试伪装成绿色结果。数据库测试覆盖成员关系、ActionIntent 状态机、Release 与唯一已执行发布意图的绑定、精确快照及规范化 SHA-256、显式关闭意图与前向生命周期、不可变草稿、提交和反馈修订、AgentRun 单向终态与不可擦除 provenance；命令集成测试覆盖越权、确认换参、串行与并发幂等、空证据、迟交、重交使旧反馈确认失效、关闭后学生只读且教师仍可反馈，以及 `AI_PROVIDER_DISABLED=1` 下不依赖 AgentRun 的完整手工闭环。助手测试另行覆盖严格消息合同、AgentRun 生命周期、工具来源、签名审批续传、拒绝、伪造签名、跨新运行重放、工具前模型中断零写入，以及写入后映射或 provider step 失败仍保留已提交结果的成功 provenance。
 

@@ -86,15 +86,16 @@ Environment variables 必须包含精确 Vercel Preview 根地址 `STAGING_BASE_
 
 这段正常流程应留下恰好三个同教师、同模型、同浏览器 UTC 时间窗的 `SUCCEEDED` AgentRun：第一个绑定版本 1 AGENT 草稿修订，版本 2 是不带 AgentRun 的 MANUAL 修订，第二个 AgentRun 只记录模型提出 approval 且不绑定业务写入，第三个绑定 ActionIntent、prepare/decide/publish audits 与 Release。最终 verifier 在 `BEGIN READ ONLY` 中精确检查该教师与 marker 标题下只有一份草稿、SEALED v2 head、两条不可变修订、CLOSED Release 与完整 snapshot、教师本人确认并执行的 null-due 发布 ActionIntent、主学生正式提交、教师确认反馈、关闭 ActionIntent、陈旧写拒绝、其他学生零提交历史和其他教师零目标操作；同标题的额外草稿或时间窗中的额外 AgentRun 都会失败。final 聚合器还会逐类验证 readiness、gate、identity、即时 health、bootstrap、browser 与 verifier 的精确顶层键、完整且唯一的 PASS check code、共同数据边界，以及七个固定截图键与合法且匹配文件的 SHA-256；任何畸形或部分证据保持 `NO_GO`。
 
-这个 Environment、可临时启用 AI 的受保护 deployment 管理路径与本机忽略凭据已经建立。已有一次真实模型 run 证明草稿、人工版本 2、签名 approval、三个成功 AgentRun 与唯一 Release 可以落账，但该 run 的浏览器证据因验收脚本使用旧教师 Release 链接格式而最终 `NO_GO`；修复后尚未取得新的单次费用批准，因此不能把部分事实升级为完整 PASS。当前 Agent 远端验收的事实状态仍是 `NO_GO`。本地 5433 集成测试与 AI-disabled 远程闭环都不能替代完整的真实模型 artifact。
+这个 Environment、可临时启用 AI 的受保护 deployment 管理路径与本机忽略凭据已经建立。真实模型 run `32732773297` 已在提交 `2192a2790af6a2eddf63716be47309445a3d41e9` 上完成整条固定合成流程；最终 artifact、只读 verifier、浏览器隔离检查、七张截图及其 SHA-256 全部 PASS。该结论只证明 synthetic staging 的 Agent 教学闭环，不改变 artifact 固定的 `realStudentDataAllowed: false` 与 `productionDecision: "NO_GO"`。一键命令收尾时已移除临时模型/审批 secrets，并恢复和核验 AI-disabled Preview。
 
 ## 当前脱敏验证记录
 
 | 日期 | 提交 | 证据 | 结论 |
 | --- | --- | --- | --- |
+| 2026-08-24 | `2192a2790af6a2eddf63716be47309445a3d41e9` | [真实 DeepSeek Agent 完整合成闭环](https://github.com/linics/cdas-next/actions/runs/32732773297) | 模型草稿、教师人工版本 2、签名发布确认、唯一 Release、主学生非空文本正式提交、教师确认反馈、学生读取、教师确认关闭、关闭后陈旧写拒绝与只读、其他学生/教师资源隔离、三个精确 `SUCCEEDED` AgentRun、只读数据库核验及七张截图全部 PASS。 |
 | 2026-08-24 | `fe8068267e2b6d7257ddff26fb10732719af5a74` | [受保护 AI-disabled 四身份手工闭环](https://github.com/linics/cdas-next/actions/runs/32729693159) | readiness、真实 Clerk 会话、手工草稿/发布、主学生非空文本提交、教师确认反馈、学生读取、教师确认关闭、陈旧写拒绝、关闭后只读、其他学生/教师资源隔离、附件合成路径、只读数据库核验与完整 artifact 全部 PASS。 |
 | 2026-08-24 | `a56586c5a899efa0959de2a3f2f3ac4367f02ba8` | [普通 CI](https://github.com/linics/cdas-next/actions/runs/32730629410) | 生产依赖审计、空库迁移、数据库不变量、数据库命令测试、schema diff、lint、类型、单测与生产构建 PASS。该提交只修复 workflow 完成后 artifact 短暂不可下载造成的一键脚本误报。 |
-| 2026-08-24 | `87bf962baa0ccefa727d0ed175184bd8b9ff72c3` | [真实 DeepSeek 合成验收](https://github.com/linics/cdas-next/actions/runs/32727676178) | 最终 `NO_GO`，不得作为完成证据。只读账本确认模型草稿、人工版本 2、签名 approval、三个 `SUCCEEDED` AgentRun 与唯一 Release 已成功；浏览器随后因旧链接契约误报。对应脚本修复为 `fe80682`，须以新 marker 和新的单次费用批准完整重跑。 |
+| 2026-08-24 | `87bf962baa0ccefa727d0ed175184bd8b9ff72c3` | [早期真实 DeepSeek 合成验收](https://github.com/linics/cdas-next/actions/runs/32727676178) | 最终 `NO_GO`，不得作为完成证据。只读账本确认模型草稿、人工版本 2、签名 approval、三个 `SUCCEEDED` AgentRun 与唯一 Release 已成功；浏览器随后因旧链接契约误报。该问题由 `fe80682` 修复，并已被上方完整 PASS run 取代。 |
 
 以上记录只包含公开提交、GitHub run、机器结论和固定合成数据边界，不记录 URL secret、数据库连接、Clerk ID/key/ticket、Cookie、模型 key 或任何真实用户数据。
 
