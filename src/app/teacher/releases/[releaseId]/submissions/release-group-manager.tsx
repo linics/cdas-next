@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { ConfirmDialog, InlineAlert } from "../../../../_components/ui";
 import type { TeacherReleaseSubmissions } from "../../../../../server/queries/submission-workspace";
 import styles from "../../../teacher-workspace.module.css";
@@ -12,6 +12,9 @@ import {
 
 type Progress = TeacherReleaseSubmissions["progress"][number];
 type GroupProgress = Progress & { group: NonNullable<Progress["group"]> };
+const subscribeToHydration = () => () => {};
+const hydratedSnapshot = () => true;
+const serverSnapshot = () => false;
 type PendingDecision =
   | Readonly<{
       kind: "SAVE";
@@ -47,6 +50,11 @@ export function ReleaseGroupManager({
     useState<PendingDecision | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const hydrated = useSyncExternalStore(
+    subscribeToHydration,
+    hydratedSnapshot,
+    serverSnapshot,
+  );
 
   const editingGroup = groups.find(
     (entry) => entry.group.id === editingGroupId,
@@ -164,7 +172,11 @@ export function ReleaseGroupManager({
   }
 
   return (
-    <section className={styles.groupManager} aria-labelledby="release-groups-title">
+    <section
+      className={styles.groupManager}
+      aria-labelledby="release-groups-title"
+      data-hydrated={hydrated ? "true" : "false"}
+    >
       <header className={styles.sectionHeader}>
         <div>
           <p className={styles.eyebrow}>作业小组</p>
@@ -172,7 +184,7 @@ export function ReleaseGroupManager({
         </div>
         <button
           className={styles.secondaryButton}
-          disabled={busy}
+          disabled={busy || !hydrated}
           onClick={beginCreate}
           type="button"
         >

@@ -405,6 +405,7 @@ def run() -> None:
             try:
                 teacher.goto(f"{remote}{release_href}", wait_until="domcontentloaded")
                 assert_origin(teacher.url, remote)
+                teacher.locator('[data-hydrated="true"][aria-labelledby="release-groups-title"]').wait_for(state="visible")
                 teacher.get_by_role("button", name="新建作业小组", exact=True).click()
                 teacher.get_by_label("小组名称", exact=True).fill(group_name)
                 primary_name = required("STAGING_ACCEPTANCE_TEST_STUDENT_NAME")
