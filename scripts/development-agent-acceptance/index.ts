@@ -418,11 +418,12 @@ class AgentGitHubOperator {
         },
         this.sleep,
       );
+      const tsxLoader = import.meta.resolve("tsx");
       await this.runner.run(
         "node",
         [
           "--import",
-          "tsx",
+          tsxLoader,
           path.join(
             process.cwd(),
             "scripts",

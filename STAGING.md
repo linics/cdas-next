@@ -86,12 +86,13 @@ Environment variables 必须包含精确 Vercel Preview 根地址 `STAGING_BASE_
 
 这段正常流程应留下恰好四个同教师、同模型、同浏览器 UTC 时间窗的 `SUCCEEDED` AgentRun：第一个只记录无业务写入的草稿提案，第二个绑定版本 1 AGENT 草稿修订，版本 2 是不带 AgentRun 的 MANUAL 修订，第三个只记录无业务写入的发布提议，第四个绑定 ActionIntent、prepare/decide/publish audits 与 Release。最终 verifier 在 `BEGIN READ ONLY` 中精确检查该教师与 marker 标题下只有一份草稿、SEALED v2 head、两条不可变修订、CLOSED Release 与完整 snapshot、教师本人确认并执行的 null-due 发布 ActionIntent、主学生正式提交、教师确认反馈、关闭 ActionIntent、陈旧写拒绝、其他学生零提交历史和其他教师零目标操作；同标题的额外草稿或时间窗中的额外 AgentRun 都会失败。final 聚合器还会逐类验证 readiness、gate、identity、即时 health、bootstrap、browser 与 verifier 的精确顶层键、完整且唯一的 PASS check code、共同数据边界，以及八个固定截图键与合法且匹配文件的 SHA-256；任何畸形或部分证据保持 `NO_GO`。
 
-这个 Environment、可临时启用 AI 的受保护 deployment 管理路径与本机忽略凭据已经建立。真实模型 run `32755788543` 已在提交 `df1d37a3ea454418b38ef8e9a9b1d336a6b0d1a2` 上完成 schema v2 固定合成流程；最终 artifact、只读 verifier、浏览器隔离检查、七张截图及其 SHA-256 全部 PASS。该结论只证明 synthetic staging 的 Agent 教学闭环，不改变 artifact 固定的 `realStudentDataAllowed: false` 与 `productionDecision: "NO_GO"`。一键命令收尾时已移除临时模型/审批 secrets，并恢复和核验 AI-disabled Preview。
+这个 Environment、可临时启用 AI 的受保护 deployment 管理路径与本机忽略凭据已经建立。D-033 真实模型 run `32785815755` 已在提交 `491da4d6beaa1d0de0afa6678505f9f66e145827` 上完成固定合成流程；最终 artifact、只读 verifier、浏览器隔离检查、四次精确 AgentRun、八张截图及其 SHA-256 全部 PASS。该结论只证明 synthetic staging 的 Agent 教学闭环，不改变 artifact 固定的 `realStudentDataAllowed: false` 与 `productionDecision: "NO_GO"`。一键命令收尾时已移除临时模型/审批 secrets，并恢复和核验 AI-disabled Preview；本地下载后的复验也使用同一严格证据合同，不会重新调用模型。
 
 ## 当前脱敏验证记录
 
 | 日期 | 提交 | 证据 | 结论 |
 | --- | --- | --- | --- |
+| 2026-08-25 | `491da4d6beaa1d0de0afa6678505f9f66e145827` | [D-033 真实 DeepSeek 受约束设计助手完整合成闭环](https://github.com/linics/cdas-next/actions/runs/32785815755) | 结构化任务理解、教师确认后创建 schema v2 草稿、人工版本 2、独立签名发布确认、学生提交、教师反馈、学生读取、关闭后拒写与只读、其他学生/教师隔离、四个精确 `SUCCEEDED` AgentRun、13 项只读数据库核验及八张截图全部 PASS。 |
 | 2026-08-25 | `b1a96a28dc789d96707d6e1b7f47317bd2a4d633` | [AI-disabled 双学生小组完整合成闭环](https://github.com/linics/cdas-next/actions/runs/32780071107) | Hobby Preview、18 个迁移与 schema drift、教师建立两人 Release 小组及角色、两名学生接力完成三个共享阶段、Private Blob 附件、共享反馈、关闭后拒写与只读、学生/其他教师资源隔离、8 项只读小组历史核验及六张截图全部 PASS。 |
 | 2026-08-25 | `b4035bba44287c298b4a3e8a1b2b05162a806c8e` | [AI-disabled 三阶段完整合成闭环](https://github.com/linics/cdas-next/actions/runs/32763998574) | Hobby Preview、17 个迁移与 schema drift、三阶段顺序解锁、三个发布内检查点、Private Blob 附件、教师反馈、关闭后拒写与只读、其他学生/教师隔离、只读阶段索引/修订精确计数及六张截图全部 PASS。 |
 | 2026-08-25 | `df1d37a3ea454418b38ef8e9a9b1d336a6b0d1a2` | [schema v2 真实 DeepSeek Agent 完整合成闭环](https://github.com/linics/cdas-next/actions/runs/32755788543) | 原版 CTS 能力下限的结构化任务书、教师人工版本 2、签名发布确认、主学生提交、教师反馈、学生读取、教师关闭、关闭后拒写与只读、其他学生/教师隔离、三个精确 `SUCCEEDED` AgentRun、13 项只读数据库核验及七张截图全部 PASS。 |

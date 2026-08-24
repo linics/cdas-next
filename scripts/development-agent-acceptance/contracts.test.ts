@@ -139,4 +139,21 @@ describe("development Agent acceptance contracts", () => {
     expect(source).not.toContain("console.log(modelKey)");
     expect(source).not.toContain("console.log(approvalSecret)");
   });
+
+  it("uses an absolute tsx loader when verifying artifacts from a temporary cwd", () => {
+    const source = readFileSync(
+      "scripts/development-agent-acceptance/index.ts",
+      "utf8",
+    );
+    const verifyArtifact = source.slice(
+      source.indexOf("async verifyArtifact"),
+      source.indexOf("async function verifyApplication"),
+    );
+
+    expect(verifyArtifact).toContain(
+      'const tsxLoader = import.meta.resolve("tsx");',
+    );
+    expect(verifyArtifact).toContain('"--import",\n          tsxLoader');
+    expect(verifyArtifact).not.toContain('"--import",\n          "tsx"');
+  });
 });
