@@ -341,6 +341,7 @@ def run() -> None:
     title = f"CDAS staging acceptance {marker_value}"
     evidence = f"Synthetic text evidence for {marker_value}."
     feedback_text = f"Synthetic teacher feedback for {marker_value}."
+    other_student_roster_key = "CDASSTUDENT0002"
     attachment_filename = f"synthetic-{marker_value}.png"
     attachment_bytes = base64.b64decode(
         "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
@@ -376,6 +377,10 @@ def run() -> None:
             teacher.goto(f"{remote}/teacher", wait_until="domcontentloaded"); assert_origin(teacher.url, remote)
             sign_out_and_relogin(teacher, remote, "teacher")
             checks.append({"code": "TEACHER_SIGN_OUT_AND_RELOGIN", "status": "PASS"})
+            classroom_row = teacher.locator("article").filter(has_text=classroom_name)
+            members_href = classroom_row.get_by_role("link", name="管理成员 →", exact=True).get_attribute("href")
+            if not members_href or not re.fullmatch(r"/teacher/classrooms/[0-9a-f-]+/members", members_href):
+                raise AcceptanceFailure("STAGING_ACCEPTANCE_MEMBER_LINK_MISSING")
             teacher.get_by_role("link", name="新建学习活动", exact=True).click()
             teacher.wait_for_url(re.compile(r"/teacher/activities/new$"))
             assert_origin(teacher.url, remote)
@@ -527,6 +532,27 @@ def run() -> None:
             if not denied or denied.status != 404: raise AcceptanceFailure("STAGING_ACCEPTANCE_TEACHER_STUDENT_RESOURCE_NOT_HIDDEN")
             checks.append({"code": "TEACHER_STUDENT_RESOURCE_HIDDEN", "status": "PASS"})
             index["06-student-closed-readonly.png"] = screenshot(student, output, "06-student-closed-readonly")
+
+            teacher.goto(f"{remote}{members_href}", wait_until="domcontentloaded")
+            assert_origin(teacher.url, remote)
+            other_name = required("STAGING_ACCEPTANCE_TEST_OTHER_STUDENT_NAME")
+            current_row = teacher.locator("article").filter(has_text=other_name).filter(has=teacher.get_by_role("button", name="结束成员关系", exact=True))
+            current_row.get_by_role("button", name="结束成员关系", exact=True).click()
+            confirm(teacher, "确认结束成员关系", "确认结束关系")
+            wait_text(teacher, "班级成员关系已更新，历史区间已保留。")
+            teacher.reload(wait_until="domcontentloaded")
+            teacher.get_by_text("历史成员区间", exact=True).wait_for(state="visible")
+            teacher.get_by_label("学生名单码", exact=True).fill(other_student_roster_key)
+            teacher.get_by_role("button", name="预览名单", exact=True).click()
+            teacher.get_by_text(f"{other_name} · 可加入", exact=True).wait_for(state="visible")
+            teacher.get_by_role("button", name="准备加入 1 名学生", exact=True).click()
+            confirm(teacher, "确认加入班级成员", "确认加入")
+            wait_text(teacher, "班级成员关系已更新，历史区间已保留。")
+            teacher.reload(wait_until="domcontentloaded")
+            current_roster = teacher.locator('section[aria-labelledby="current-roster-title"]')
+            if current_roster.locator("header").get_by_text("2 名", exact=True).count() != 1:
+                raise AcceptanceFailure("STAGING_ACCEPTANCE_MEMBER_REJOIN_COUNT_FAILED")
+            checks.append({"code": "TEACHER_MEMBER_END_AND_REJOIN", "status": "PASS"})
         finally:
             teacher_context.close()
             student_context.close()

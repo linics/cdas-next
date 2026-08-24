@@ -81,6 +81,7 @@ model AppUser {
   authSubject           String                    @unique @map("auth_subject")
   role                  UserRole
   displayName           String                    @map("display_name")
+  rosterKey             String?                   @unique @map("roster_key") @db.VarChar(32)
   createdAt             DateTime                  @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt             DateTime                  @updatedAt @map("updated_at") @db.Timestamptz(3)
   classrooms            Classroom[]               @relation("ClassroomManager")

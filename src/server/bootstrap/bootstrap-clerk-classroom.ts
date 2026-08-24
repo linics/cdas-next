@@ -3,6 +3,7 @@ import {
   Prisma,
   type PrismaClient,
 } from "../../generated/prisma/client";
+import { rosterKeySchema } from "../../domain/classroom/roster-key";
 
 const clerkSubjectSchema = z
   .string()
@@ -21,6 +22,7 @@ export const bootstrapClerkClassroomInputSchema = z
     teacherDisplayName: displayNameSchema,
     studentAuthSubject: clerkSubjectSchema,
     studentDisplayName: displayNameSchema,
+    studentRosterKey: rosterKeySchema.optional(),
     classroomId: z.uuid(),
     classroomName: z.string().trim().min(1).max(120),
   })
@@ -76,6 +78,7 @@ export const bootstrapAdditionalClerkClassroomStudentInputSchema = z
     classroomName: z.string().trim().min(1).max(120),
     additionalStudentAuthSubject: clerkSubjectSchema,
     additionalStudentDisplayName: displayNameSchema,
+    additionalStudentRosterKey: rosterKeySchema.optional(),
   })
   .strict()
   .superRefine((input, context) => {
@@ -121,6 +124,7 @@ export class BootstrapClerkClassroomError extends Error {
     public readonly code:
       | "USER_ROLE_CONFLICT"
       | "USER_PROFILE_CONFLICT"
+      | "ROSTER_KEY_CONFLICT"
       | "CLASSROOM_MANAGER_CONFLICT"
       | "CLASSROOM_NAME_CONFLICT"
       | "TEACHER_NOT_FOUND"
@@ -157,6 +161,7 @@ async function acquireBootstrapLocks(
     `app-user:${input.studentAuthSubject}`,
     `classroom:${input.classroomId}`,
     `membership:${input.classroomId}:${input.studentAuthSubject}`,
+    ...(input.studentRosterKey ? [`roster-key:${input.studentRosterKey}`] : []),
   ]);
 }
 
@@ -214,12 +219,13 @@ async function ensureUser(
     displayName: string;
     role: "TEACHER" | "STUDENT";
     resource: "teacher" | "student";
+    rosterKey?: string;
   },
   now: Date,
 ): Promise<{ id: string; status: BootstrapStatus }> {
   const existing = await transaction.appUser.findUnique({
     where: { authSubject: input.authSubject },
-    select: { id: true, role: true, displayName: true },
+    select: { id: true, role: true, displayName: true, rosterKey: true },
   });
 
   if (existing) {
@@ -235,6 +241,18 @@ async function ensureUser(
         input.resource,
       );
     }
+    if (input.rosterKey && existing.rosterKey !== input.rosterKey) {
+      if (existing.rosterKey !== null) {
+        throw new BootstrapClerkClassroomError(
+          "ROSTER_KEY_CONFLICT",
+          input.resource,
+        );
+      }
+      await transaction.appUser.update({
+        where: { id: existing.id },
+        data: { rosterKey: input.rosterKey, updatedAt: now },
+      });
+    }
     return { id: existing.id, status: "EXISTING" };
   }
 
@@ -243,6 +261,7 @@ async function ensureUser(
       authSubject: input.authSubject,
       displayName: input.displayName,
       role: input.role,
+      rosterKey: input.rosterKey,
       createdAt: now,
       updatedAt: now,
     },
@@ -277,6 +296,7 @@ async function runBootstrapTransaction(
           displayName: input.studentDisplayName,
           role: "STUDENT",
           resource: "student",
+          rosterKey: input.studentRosterKey,
         },
         now,
       );
@@ -359,6 +379,9 @@ async function runAdditionalStudentTransaction(
       `app-user:${input.additionalStudentAuthSubject}`,
       `classroom:${input.classroomId}`,
       `membership:${input.classroomId}:${input.additionalStudentAuthSubject}`,
+      ...(input.additionalStudentRosterKey
+        ? [`roster-key:${input.additionalStudentRosterKey}`]
+        : []),
     ]);
     const teacher = await transaction.appUser.findUnique({
       where: { authSubject: input.teacherAuthSubject },
@@ -396,6 +419,7 @@ async function runAdditionalStudentTransaction(
         displayName: input.additionalStudentDisplayName,
         role: "STUDENT",
         resource: "student",
+        rosterKey: input.additionalStudentRosterKey,
       },
       now,
     );

@@ -52,6 +52,19 @@ describe("Clerk bootstrap CLI boundary", () => {
     });
   });
 
+  it("normalizes an optional operator-managed roster key", () => {
+    const parsed = parseBootstrapClerkCliArguments([
+      ...validArguments.slice(0, -2),
+      "--student-roster-key",
+      "student-8a01",
+      ...validArguments.slice(-2),
+    ]);
+    expect(parsed).toMatchObject({
+      kind: "run",
+      input: { studentRosterKey: "STUDENT8A01" },
+    });
+  });
+
   it("rejects unknown CLI options and widened service input", () => {
     expect(() =>
       parseBootstrapClerkCliArguments([

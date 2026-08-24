@@ -220,6 +220,9 @@ export default async function TeacherDashboardPage() {
                       <p>当前有效成员</p>
                     </div>
                     <strong>{classroom.currentMemberCount} 名</strong>
+                    <Link href={`/teacher/classrooms/${classroom.id}/members`}>
+                      管理成员 →
+                    </Link>
                   </article>
                 ))}
               </div>

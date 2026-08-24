@@ -8,7 +8,9 @@ import { createDatabaseClient } from "../../../src/server/db/client";
 import {
   acceptanceNamespace,
   acceptanceOtherStudentDisplayName,
+  acceptanceOtherStudentRosterKey,
   acceptanceStudentDisplayName,
+  acceptanceStudentRosterKey,
   acceptanceTeacherDisplayName,
   evaluateAcceptanceReadiness,
   stableAcceptanceErrorCode,
@@ -47,6 +49,7 @@ async function main(): Promise<void> {
       teacherDisplayName: acceptanceTeacherDisplayName,
       studentAuthSubject: required("STAGING_TEST_STUDENT_CLERK_ID"),
       studentDisplayName: acceptanceStudentDisplayName,
+      studentRosterKey: acceptanceStudentRosterKey,
       classroomId: namespace.classroomId,
       classroomName: namespace.classroomName,
     });
@@ -56,6 +59,7 @@ async function main(): Promise<void> {
       classroomName: namespace.classroomName,
       additionalStudentAuthSubject: required("STAGING_TEST_OTHER_STUDENT_CLERK_ID"),
       additionalStudentDisplayName: acceptanceOtherStudentDisplayName,
+      additionalStudentRosterKey: acceptanceOtherStudentRosterKey,
     });
     await writeAcceptanceArtifact(marker, "bootstrap.json", {
       schema: "staging-synthetic-acceptance-bootstrap.v1",

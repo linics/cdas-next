@@ -31,6 +31,8 @@ export const acceptanceStudentDisplayName =
   "CDAS Staging Synthetic Student";
 export const acceptanceOtherStudentDisplayName =
   "CDAS Staging Synthetic Other Student";
+export const acceptanceStudentRosterKey = "CDASSTUDENT0001";
+export const acceptanceOtherStudentRosterKey = "CDASSTUDENT0002";
 
 export type AcceptanceNamespace = Readonly<{
   marker: string;

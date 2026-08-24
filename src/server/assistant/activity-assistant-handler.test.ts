@@ -53,6 +53,7 @@ const teacher: AppUser = {
   authSubject: "clerk_teacher",
   role: "TEACHER",
   displayName: "林老師",
+  rosterKey: null,
   createdAt: now,
   updatedAt: now,
 };

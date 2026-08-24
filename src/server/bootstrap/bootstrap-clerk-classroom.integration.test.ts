@@ -270,6 +270,31 @@ describeWithDatabase("Clerk classroom bootstrap", () => {
     ).resolves.toBe(2);
   });
 
+  it("fills one operator roster key but never replaces an assigned key", async () => {
+    const input = bootstrapInput();
+    const first = await bootstrapClerkClassroom(database!, input, () => firstRunAt);
+    await bootstrapClerkClassroom(
+      database!,
+      { ...input, studentRosterKey: "STUDENT8A01" },
+      () => new Date("2026-08-18T12:01:00.000Z"),
+    );
+    await expect(
+      database!.appUser.findUniqueOrThrow({
+        where: { id: first.student.id },
+        select: { rosterKey: true },
+      }),
+    ).resolves.toEqual({ rosterKey: "STUDENT8A01" });
+    await expect(
+      bootstrapClerkClassroom(
+        database!,
+        { ...input, studentRosterKey: "STUDENT8A02" },
+        () => new Date("2026-08-18T12:02:00.000Z"),
+      ),
+    ).rejects.toEqual(
+      new BootstrapClerkClassroomError("ROSTER_KEY_CONFLICT", "student"),
+    );
+  });
+
   it("adds an additional student without changing the primary mapping or history", async () => {
     const input = bootstrapInput();
     const primary = await bootstrapClerkClassroom(database!, input, () => firstRunAt);
