@@ -287,7 +287,7 @@ def fill_activity(page: Page, title: str, summary: str) -> None:
     page.locator('#activity-draft-form[data-hydrated="true"]').wait_for(state="visible")
     page.locator("#activity-title").fill(title)
     page.locator("#activity-summary").fill(summary)
-    page.get_by_label("提交模式", exact=True).select_option("phased")
+    page.locator("label").filter(has_text="提交模式").locator("select").select_option("phased")
     page.get_by_label("探究主题", exact=True).fill("Synthetic evidence verification")
     page.get_by_label("背景设定", exact=True).fill("Students verify a synthetic campus observation in a real learning context.")
     page.get_by_label("知识与技能目标", exact=True).fill("Identify evidence that can be verified.")
