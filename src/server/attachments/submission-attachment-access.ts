@@ -6,6 +6,7 @@ import {
   type CommandContext,
   resolveCommandContext,
 } from "../commands/command-context";
+import { isSubmissionAudienceMemberWhere } from "../submissions/submission-audience";
 
 const inputSchema = z.strictObject({ attachmentId: z.uuid() });
 
@@ -91,7 +92,7 @@ export async function getAuthorizedSubmissionAttachmentDownload(
         ? {
             id: input.attachmentId,
             status: "READY",
-            studentId: context.actorId,
+            submission: isSubmissionAudienceMemberWhere(context.actorId),
             OR: [
               { workingCopies: { some: {} } },
               { revisions: { some: {} } },

@@ -13,6 +13,10 @@ import {
   type CommandContext,
   resolveCommandContext,
 } from "./command-context";
+import {
+  resolveSubmissionAudience,
+  submissionAudienceWhere,
+} from "../submissions/submission-audience";
 
 const idempotencyKeySchema = z.string().trim().min(8).max(200);
 
@@ -233,10 +237,14 @@ export async function reserveSubmissionAttachment(
           );
         }
 
+        const audience = await resolveSubmissionAudience(
+          transaction,
+          input.releaseId,
+          context.actorId,
+        );
         const submission = await transaction.submission.findFirst({
           where: {
-            releaseId: input.releaseId,
-            studentId: context.actorId,
+            ...submissionAudienceWhere(input.releaseId, audience),
             workingCopy: { is: { id: input.expectedWorkingCopyId } },
           },
           include: {
@@ -571,7 +579,7 @@ export async function removeSubmissionAttachment(
           return removeResponseSchema.parse(existing.response);
         }
 
-        const [actor, release, submission] = await Promise.all([
+        const [actor, release] = await Promise.all([
           transaction.appUser.findUnique({
             where: { id: context.actorId },
             select: { role: true },
@@ -594,20 +602,6 @@ export async function removeSubmissionAttachment(
               },
             },
           }),
-          transaction.submission.findFirst({
-            where: {
-              releaseId: input.releaseId,
-              studentId: context.actorId,
-              workingCopy: { is: { id: input.expectedWorkingCopyId } },
-            },
-            include: {
-              workingCopy: {
-                include: {
-                  attachments: { orderBy: { position: "asc" } },
-                },
-              },
-            },
-          }),
         ]);
         if (!actor) {
           throw new SubmissionAttachmentCommandError("NOT_FOUND");
@@ -623,6 +617,22 @@ export async function removeSubmissionAttachment(
             "RELEASE_NOT_ACTIVE",
           );
         }
+        const audience = await resolveSubmissionAudience(
+          transaction,
+          input.releaseId,
+          context.actorId,
+        );
+        const submission = await transaction.submission.findFirst({
+          where: {
+            ...submissionAudienceWhere(input.releaseId, audience),
+            workingCopy: { is: { id: input.expectedWorkingCopyId } },
+          },
+          include: {
+            workingCopy: {
+              include: { attachments: { orderBy: { position: "asc" } } },
+            },
+          },
+        });
         if (!submission || !submission.workingCopy) {
           throw new SubmissionAttachmentCommandError("NO_WORKING_COPY");
         }

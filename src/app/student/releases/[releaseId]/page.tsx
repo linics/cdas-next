@@ -542,6 +542,28 @@ export default async function StudentReleasePage({
           </div>
         </dl>
 
+        {workspace.group ? (
+          <section className={styles.groupNotice} aria-labelledby="student-group-title">
+            <div>
+              <p className={styles.eyebrow}>作业小组 / 全组共享</p>
+              <h2 id="student-group-title">{workspace.group.name}</h2>
+            </div>
+            <p>
+              {workspace.group.members
+                .map(
+                  (member) =>
+                    `${member.student.displayName}${
+                      member.roleLabel ? `（${member.roleLabel}）` : ""
+                    }`,
+                )
+                .join("、")}
+            </p>
+            <p>
+              你们使用同一份阶段草稿、附件、正式修订和教师反馈。任一成员保存后，其他成员刷新即可看到最新版本。
+            </p>
+          </section>
+        ) : null}
+
         {isPastDue && isActive && canWrite ? (
           <div className={styles.lateNotice}>
             <InlineAlert tone="warning">

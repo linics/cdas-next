@@ -50,9 +50,17 @@
 - 第一阶段一个发布实例只面向一个班级。
 - 可设置截止时间。超过截止时间但仍处于 active 时允许迟交并明确标记；只有显式关闭才停止提交。
 
+### ReleaseGroup（发布作业小组）
+
+- 只属于一个 ActivityRelease，不是长期班级分组，也不会自动复用于其他 Release。
+- ReleaseGroupMember 只能引用该 Release 目标班级的当前 STUDENT，并保存教师为该学生设置的角色标签；同一学生在同一 Release 最多属于一个小组。
+- 只有发布教师且仍为班级管理员时可以明确确认配置。成员已有个人 Submission 时不能迁入小组；小组一旦出现任一 Submission，组名、成员、角色和删除全部锁定。
+- 小组配置本身不形成实时协同会话；共享写入仍服从同一工作草稿版本和领域命令授权。
+
 ### Submission（学生提交）
 
-- 是一个发布实例、一个提交主体和一个阶段索引之间唯一的稳定容器；个人提交的主体是学生。协议 0 只使用 `phaseIndex = 0`，协议 1 使用 `1..N` 阶段，`mixed` 在全部阶段完成后再使用 `0` 作为整项终稿。
+- 是一个发布实例、一个提交主体和一个阶段索引之间唯一的稳定容器；提交主体必须恰好是个人学生或该 Release 的一个 ReleaseGroup。协议 0 只使用 `phaseIndex = 0`，协议 1 使用 `1..N` 阶段，`mixed` 在全部阶段完成后再使用 `0` 作为整项终稿。
+- 同组成员解析到同一个“Release × Group × phaseIndex”容器并共享工作草稿、正式修订、附件和反馈；其他小组与未分组学生不能读取其存在性。个人历史继续使用“Release × Student × phaseIndex”，不回填为小组历史。
 - 可编辑内容保存在工作修订中；正式提交时产生不可变的 SubmissionRevision。
 - 重新提交必须显式开始新修订；旧修订及其证据、反馈均保留。
 - 阶段 n 只有在 n−1 已有正式修订后才能创建；阶段正式提交在同一事务幂等准备下一阶段或 mixed 终稿，学生不能跳阶段。
@@ -65,6 +73,7 @@
 - D-025/D-026 增加 SubmissionAttachment：业务记录保存所属 Submission 与学生、类型、文件名、媒体类型、大小、私有 storage key、上传/验证时间和状态；文件内容保存在 Vercel Private Blob，storage key 不构成读取权限。
 - 工作草稿通过 SubmissionWorkingCopyAttachment 维护最多 5 个可调整关联；正式提交只复制 `READY` 资产到 append-only SubmissionRevisionAttachment。重交复制上一正式修订的附件关联，不覆盖旧版。
 - 首个附件切片接受 JPEG、PNG、WebP、PDF、DOC 与 DOCX，单文件最大 20 MiB。类型、大小、所有权、对象元数据和文件头格式全部通过后才能进入正式修订；这项验证不声称是恶意文件扫描。
+- 小组工作草稿中的附件仍归属实际上传学生；同组成员和有权教师可经授权下载，组外学生不能读取对象或元数据。
 
 ### TeacherFeedback（教师反馈）
 
@@ -98,8 +107,9 @@ Teacher ──manages──> Classroom ──has──> ClassroomMembership ─�
                    │ publish + confirm
                    ▼
              ActivityRelease ──targets──> Classroom
+                   ├──defines──> ReleaseGroup ──has──> ReleaseGroupMember
                    │
-                   └──receives──> Submission ──contains──> Evidence
+                   └──receives──> Submission (Student XOR ReleaseGroup) ──contains──> Evidence
                                          │
                                          └──receives──> TeacherFeedback
 ```
@@ -146,7 +156,8 @@ upload_pending → scan_pending → ready
 - 每个 ActivityDraft 至多对应一个 ActivityRelease；发布内容、目标班级、发布教师和发布时间不可修改。
 - ActivityDraft head 的内容 schema 版本和完整任务书必须与同版本不可变 revision 精确一致；v2 修订必须满足学段—年级—学科约束、主/融合学科互斥、作业类型—子类型约束、3–4 阶段证据链和评价档位约束。
 - v1 与 v2 Release snapshot 必须分别等于其精确 source revision，并按对应 schema 的固定字段集合计算规范化 SHA-256；不能用 v2 字段改写 v1 历史。
-- 每个 Submission 的学生在提交时必须属于目标班级。
+- 每个 Submission 必须恰好绑定个人学生或同一 Release 的小组；个人学生及执行写入的小组成员在提交时必须属于目标班级。
+- 同一学生在同一 Release 最多属于一个 ReleaseGroup；小组拥有 Submission 后，其身份、名称、成员、角色与删除均被冻结。
 - 学生名单码在非空时必须全局唯一、规范化且只属于 STUDENT；教师成员页不得提供全局学生目录或按姓名模糊搜索。
 - 同一学生在同一班级的成员有效区间不能重叠；同一时刻至多有一个当前区间。成员结束与重新加入保留全部历史，成功变更必须与已执行确认意图、幂等结果和动作审计在同一事务提交，并使班级版本前进一版。
 - 每个发布实例、提交主体与阶段索引至多有一个 Submission；每次正式提交产生递增且不可变的 SubmissionRevision。Submission 的 `phaseIndex` 与既有资源身份字段一样不可改写。

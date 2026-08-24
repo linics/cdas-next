@@ -8,6 +8,7 @@ import {
   type CommandContext,
   resolveCommandContext,
 } from "../commands/command-context";
+import { isSubmissionAudienceMemberWhere } from "../submissions/submission-audience";
 
 const queryInputSchema = z
   .object({
@@ -158,6 +159,18 @@ export const teacherFeedbackWorkspaceSchema = z
         displayName: visibleTextSchema,
       })
       .strict(),
+    group: z
+      .object({
+        id: z.uuid(),
+        name: visibleTextSchema,
+        members: z.array(
+          z.strictObject({
+            student: z.strictObject({ id: z.uuid(), displayName: visibleTextSchema }),
+            roleLabel: visibleTextSchema.nullable(),
+          }),
+        ),
+      })
+      .nullable(),
     submission: submissionHistorySchema,
   })
   .strict();
@@ -410,6 +423,18 @@ export async function getTeacherFeedbackWorkspace(
             displayName: true,
           },
         },
+        group: {
+          select: {
+            id: true,
+            name: true,
+            members: {
+              select: {
+                roleLabel: true,
+                student: { select: { id: true, displayName: true } },
+              },
+            },
+          },
+        },
       },
     }),
   ]);
@@ -420,7 +445,11 @@ export async function getTeacherFeedbackWorkspace(
 
   return teacherFeedbackWorkspaceSchema.parse({
     actor: { displayName: actor.displayName },
-    student: submission.student,
+    student: submission.student ?? {
+      id: submission.group?.id ?? submission.id,
+      displayName: submission.group?.name ?? "小组提交",
+    },
+    group: submission.group,
     submission: mapSubmissionHistory(submission),
   });
 }
@@ -441,7 +470,7 @@ export async function getStudentFeedbackWorkspace(
     database.submission.findFirst({
       where: {
         id: input.submissionId,
-        studentId: context.actorId,
+        ...isSubmissionAudienceMemberWhere(context.actorId),
       },
       select: safeSubmissionSelect,
     }),

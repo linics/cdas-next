@@ -360,6 +360,7 @@ def run() -> None:
     phase_one_evidence = f"{evidence} phase 1"
     phase_two_evidence = f"{evidence} phase 2"
     feedback_text = f"Synthetic teacher feedback for {marker_value}."
+    group_name = f"Synthetic group {marker_value}"
     other_student_roster_key = "CDASSTUDENT0002"
     attachment_filename = f"synthetic-{marker_value}.png"
     attachment_bytes = base64.b64decode(
@@ -426,6 +427,22 @@ def run() -> None:
                 raise AcceptanceFailure("STAGING_ACCEPTANCE_RELEASE_LINK_MISSING")
             index["02-published.png"] = screenshot(teacher, output, "02-published")
 
+            teacher.goto(f"{remote}{release_href}", wait_until="domcontentloaded")
+            assert_origin(teacher.url, remote)
+            teacher.get_by_role("button", name="新建作业小组", exact=True).click()
+            teacher.get_by_label("小组名称", exact=True).fill(group_name)
+            primary_name = required("STAGING_ACCEPTANCE_TEST_STUDENT_NAME")
+            groupmate_name = required("STAGING_ACCEPTANCE_TEST_OTHER_STUDENT_NAME")
+            teacher.get_by_role("checkbox", name=primary_name, exact=True).check()
+            teacher.get_by_role("checkbox", name=groupmate_name, exact=True).check()
+            teacher.get_by_label(f"{primary_name}的组内角色", exact=True).fill("记录")
+            teacher.get_by_label(f"{groupmate_name}的组内角色", exact=True).fill("汇报")
+            teacher.get_by_role("button", name="准备创建小组", exact=True).click()
+            confirm(teacher, "确认共享提交分组", "确认分组")
+            wait_text(teacher, group_name)
+            wait_text(teacher, "可编辑")
+            checks.append({"code": "TEACHER_GROUP_CONFIGURED", "status": "PASS"})
+
             sign_in(student, remote, "student")
             response = student.goto(f"{remote}/teacher", wait_until="domcontentloaded")
             assert_origin(student.url, remote)
@@ -455,15 +472,32 @@ def run() -> None:
             student.get_by_role("button", name="正式提交", exact=True).click()
             confirm(student, "确认正式提交？", "确认正式提交")
             wait_text(student, "下一阶段草稿已经准备好")
+
+            sign_in(other_student, remote, "other_student")
+            groupmate_visible = other_student.goto(f"{remote}{activity_href}", wait_until="domcontentloaded")
+            assert_origin(other_student.url, remote)
+            if not groupmate_visible or groupmate_visible.status != 200:
+                raise AcceptanceFailure("STAGING_ACCEPTANCE_GROUPMATE_RELEASE_NOT_VISIBLE")
+            other_student.get_by_role("heading", name=group_name, exact=True).wait_for(state="visible")
+            wait_text(other_student, f"{primary_name}（记录）")
+            wait_text(other_student, f"{groupmate_name}（汇报）")
+            other_student.locator(f'a[href="{activity_href}?phase=1"]').click()
+            wait_text(other_student, phase_one_evidence)
+            other_student.locator(f'a[href="{activity_href}?phase=2"]').click()
+            other_student.get_by_text("第 2 阶段", exact=True).wait_for(state="visible")
+            other_student.get_by_role("checkbox", name=re.compile("Stage 2 synthetic text evidence")).check()
+            other_student.locator("#text-evidence").fill(phase_two_evidence)
+            other_student.get_by_role("button", name="保存草稿", exact=True).click()
+            wait_text(other_student, "草稿已保存")
+            other_student.get_by_role("button", name="正式提交", exact=True).click()
+            confirm(other_student, "确认正式提交？", "确认正式提交")
+            wait_text(other_student, "下一阶段草稿已经准备好")
+            checks.append({"code": "GROUPMATE_SHARED_PHASE_WRITE", "status": "PASS"})
+
+            student.goto(f"{remote}{activity_href}", wait_until="domcontentloaded")
+            assert_origin(student.url, remote)
             student.locator(f'a[href="{activity_href}?phase=2"]').click()
-            student.get_by_text("第 2 阶段", exact=True).wait_for(state="visible")
-            student.get_by_role("checkbox", name=re.compile("Stage 2 synthetic text evidence")).check()
-            student.locator("#text-evidence").fill(phase_two_evidence)
-            student.get_by_role("button", name="保存草稿", exact=True).click()
-            wait_text(student, "草稿已保存")
-            student.get_by_role("button", name="正式提交", exact=True).click()
-            confirm(student, "确认正式提交？", "确认正式提交")
-            wait_text(student, "下一阶段草稿已经准备好")
+            wait_text(student, phase_two_evidence)
             student.locator(f'a[href="{activity_href}?phase=3"]').click()
             student.get_by_text("第 3 阶段", exact=True).wait_for(state="visible")
             student.get_by_role("checkbox", name=re.compile("Stage 3 synthetic text evidence")).check()
@@ -530,35 +564,28 @@ def run() -> None:
                 raise AcceptanceFailure("STAGING_ACCEPTANCE_OTHER_TEACHER_RESOURCE_LEAK")
             checks.append({"code": "OTHER_TEACHER_SUBMISSION_404", "status": "PASS"})
 
-            sign_in(other_student, remote, "other_student")
             visible = other_student.goto(f"{remote}{activity_href}", wait_until="domcontentloaded")
             assert_origin(other_student.url, remote)
             if not visible or visible.status != 200:
-                raise AcceptanceFailure("STAGING_ACCEPTANCE_OTHER_STUDENT_RELEASE_NOT_VISIBLE")
+                raise AcceptanceFailure("STAGING_ACCEPTANCE_GROUPMATE_RELEASE_NOT_VISIBLE")
             other_student.get_by_role("heading", name=title, exact=True).wait_for(state="visible")
-            checks.append({"code": "OTHER_STUDENT_RELEASE_VISIBLE", "status": "PASS"})
-            other_evidence = other_student.locator("#text-evidence")
-            other_evidence.wait_for(state="visible")
-            if other_evidence.input_value() != "":
-                raise AcceptanceFailure("STAGING_ACCEPTANCE_OTHER_STUDENT_SUBMISSION_LEAK")
-            primary_display_name = required("STAGING_ACCEPTANCE_TEST_STUDENT_NAME")
-            page_text = other_student.locator("body").inner_text()
-            if evidence in page_text or feedback_text in page_text or primary_display_name in page_text or attachment_filename in page_text:
-                raise AcceptanceFailure("STAGING_ACCEPTANCE_OTHER_STUDENT_SUBMISSION_LEAK")
-            checks.append({"code": "OTHER_STUDENT_SUBMISSION_CONTENT_HIDDEN", "status": "PASS"})
-            denied_attachment = other_student.goto(f"{remote}{attachment_href}", wait_until="domcontentloaded")
-            assert_origin(other_student.url, remote)
-            if not denied_attachment or denied_attachment.status != 404:
-                raise AcceptanceFailure("STAGING_ACCEPTANCE_OTHER_STUDENT_ATTACHMENT_NOT_HIDDEN")
-            checks.append({"code": "OTHER_STUDENT_ATTACHMENT_404", "status": "PASS"})
+            other_student.get_by_role("heading", name=group_name, exact=True).wait_for(state="visible")
+            wait_text(other_student, evidence)
+            wait_text(other_student, feedback_text)
+            if attachment_download_href(other_student, attachment_filename) != attachment_href:
+                raise AcceptanceFailure("STAGING_ACCEPTANCE_GROUPMATE_ATTACHMENT_LINK_CHANGED")
+            assert_attachment_download(other_student, attachment_filename, attachment_sha256)
+            checks.append({"code": "GROUPMATE_SHARED_SUBMISSION_VISIBLE", "status": "PASS"})
+            checks.append({"code": "GROUPMATE_SHARED_FEEDBACK_VISIBLE", "status": "PASS"})
+            checks.append({"code": "GROUPMATE_SHARED_ATTACHMENT_DOWNLOAD", "status": "PASS"})
             denied_other = other_student.goto(f"{remote}{submission_href}", wait_until="domcontentloaded")
             assert_origin(other_student.url, remote)
             if not denied_other or denied_other.status != 404:
-                raise AcceptanceFailure("STAGING_ACCEPTANCE_OTHER_STUDENT_SUBMISSION_NOT_HIDDEN")
+                raise AcceptanceFailure("STAGING_ACCEPTANCE_GROUPMATE_TEACHER_RESOURCE_NOT_HIDDEN")
             denied_text = other_student.locator("body").inner_text()
-            if evidence in denied_text or feedback_text in denied_text or primary_display_name in denied_text:
-                raise AcceptanceFailure("STAGING_ACCEPTANCE_OTHER_STUDENT_SUBMISSION_LEAK")
-            checks.append({"code": "OTHER_STUDENT_SUBMISSION_404", "status": "PASS"})
+            if evidence in denied_text or feedback_text in denied_text:
+                raise AcceptanceFailure("STAGING_ACCEPTANCE_GROUPMATE_TEACHER_RESOURCE_LEAK")
+            checks.append({"code": "GROUPMATE_TEACHER_SUBMISSION_404", "status": "PASS"})
 
             student.goto(f"{remote}{activity_href}", wait_until="domcontentloaded")
             assert_origin(student.url, remote)

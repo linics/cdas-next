@@ -96,6 +96,7 @@ const secretSubmissionBody = "学生正式提交的私密证据";
 const currentFeedbackBody = "当前已确认的教师反馈";
 const workspace = {
   actor: { displayName: "林老师" },
+  group: null,
   student: {
     id: "30000000-0000-4000-8000-000000000003",
     displayName: "陈同学",
@@ -216,6 +217,36 @@ describe("teacher feedback page access boundary", () => {
     expect(markup).toContain('data-revision="1"');
     expect(markup).toContain('data-feedback-version="1"');
     expect(markup).toContain(`data-initial-body="${currentFeedbackBody}"`);
+  });
+
+  it("labels shared group feedback with every member and role", async () => {
+    mocks.getTeacherFeedbackWorkspace.mockResolvedValue({
+      ...workspace,
+      group: {
+        id: "91000000-0000-4000-8000-000000000001",
+        name: "校园调查组",
+        members: [
+          {
+            student: workspace.student,
+            roleLabel: "记录",
+          },
+          {
+            student: {
+              id: "92000000-0000-4000-8000-000000000002",
+              displayName: "周同学",
+            },
+            roleLabel: "汇报",
+          },
+        ],
+      },
+    });
+
+    const markup = await renderPage();
+
+    expect(markup).toContain("校园调查组");
+    expect(markup).toContain("陈同学（记录）");
+    expect(markup).toContain("周同学（汇报）");
+    expect(markup).toContain("反馈绑定这份共享正式修订，并对全组成员可见");
   });
 
   it("returns not found for a well-hidden unauthorized submission", async () => {

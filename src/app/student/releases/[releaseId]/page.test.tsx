@@ -96,6 +96,7 @@ const trustedContext = {
 };
 const workspace = {
   actor: { displayName: "陈同学" },
+  group: null,
   access: { canWrite: true },
   execution: {
     version: 0,
@@ -260,6 +261,36 @@ describe("student release page access boundary", () => {
     expect(markup).toContain("退出登录");
     expect(markup).toContain("还没有正式修订");
     expect(mocks.getStudentFeedbackWorkspace).not.toHaveBeenCalled();
+  });
+
+  it("shows the shared group identity and member roles", async () => {
+    mocks.getStudentReleaseWorkspace.mockResolvedValue({
+      ...workspace,
+      group: {
+        id: "91000000-0000-4000-8000-000000000001",
+        name: "校园调查组",
+        members: [
+          {
+            student: { id: trustedContext.actorId, displayName: "陈同学" },
+            roleLabel: "记录",
+          },
+          {
+            student: {
+              id: "92000000-0000-4000-8000-000000000002",
+              displayName: "周同学",
+            },
+            roleLabel: "汇报",
+          },
+        ],
+      },
+    });
+
+    const markup = await renderPage();
+
+    expect(markup).toContain("校园调查组");
+    expect(markup).toContain("陈同学（记录）");
+    expect(markup).toContain("周同学（汇报）");
+    expect(markup).toContain("同一份阶段草稿、附件、正式修订和教师反馈");
   });
 
   it("renders the complete structured task book from the immutable release snapshot", async () => {

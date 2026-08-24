@@ -350,6 +350,7 @@ describeWithDatabase("submission workspace queries", () => {
           id: fixture.studentId,
           displayName: "当前学生",
         },
+        group: null,
         currentRevision: expect.objectContaining({
           revisionNumber: 1,
           isLate: false,

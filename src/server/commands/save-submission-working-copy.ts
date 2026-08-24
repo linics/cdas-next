@@ -17,6 +17,12 @@ import {
   type ResolvedCommandContext,
   resolveCommandContext,
 } from "./command-context";
+import {
+  resolveSubmissionAudience,
+  submissionAudienceData,
+  submissionAudiencePhaseWhere,
+  submissionAudienceWhere,
+} from "../submissions/submission-audience";
 
 const commandInputSchema = z
   .object({
@@ -194,6 +200,11 @@ async function runTransaction(
       if (!release.snapshot) {
         throw new SaveSubmissionWorkingCopyError("NOT_FOUND");
       }
+      const audience = await resolveSubmissionAudience(
+        transaction,
+        input.releaseId,
+        context.actorId,
+      );
       try {
         resolveSubmissionExecutionScope(
           release.executionVersion,
@@ -209,13 +220,13 @@ async function runTransaction(
       }
 
       if (release.executionVersion === 1 && input.phaseIndex > 1) {
-        const prerequisite = await transaction.submission.findUnique({
+        const prerequisite = await transaction.submission.findFirst({
           where: {
-            releaseId_studentId_phaseIndex: {
-              releaseId: input.releaseId,
-              studentId: context.actorId,
-              phaseIndex: input.phaseIndex - 1,
-            },
+            ...submissionAudiencePhaseWhere(
+              input.releaseId,
+              input.phaseIndex - 1,
+              audience,
+            ),
           },
           select: { latestRevisionNumber: true },
         });
@@ -230,8 +241,7 @@ async function runTransaction(
         };
         const completedPhases = await transaction.submission.count({
           where: {
-            releaseId: input.releaseId,
-            studentId: context.actorId,
+            ...submissionAudienceWhere(input.releaseId, audience),
             phaseIndex: { gt: 0 },
             latestRevisionNumber: { gt: 0 },
           },
@@ -241,13 +251,13 @@ async function runTransaction(
         }
       }
 
-      const submission = await transaction.submission.findUnique({
+      const submission = await transaction.submission.findFirst({
         where: {
-          releaseId_studentId_phaseIndex: {
-            releaseId: input.releaseId,
-            studentId: context.actorId,
-            phaseIndex: input.phaseIndex,
-          },
+          ...submissionAudiencePhaseWhere(
+            input.releaseId,
+            input.phaseIndex,
+            audience,
+          ),
         },
         include: { workingCopy: true },
       });
@@ -269,7 +279,7 @@ async function runTransaction(
         const created = await transaction.submission.create({
           data: {
             releaseId: input.releaseId,
-            studentId: context.actorId,
+            ...submissionAudienceData(audience),
             phaseIndex: input.phaseIndex,
             createdAt: now,
             updatedAt: now,
@@ -333,9 +343,11 @@ async function runTransaction(
           transaction.submission.updateMany({
             where: {
               id: submission.id,
-              releaseId: input.releaseId,
-              studentId: context.actorId,
-              phaseIndex: input.phaseIndex,
+              ...submissionAudiencePhaseWhere(
+                input.releaseId,
+                input.phaseIndex,
+                audience,
+              ),
               latestRevisionNumber: workingCopy.baseRevisionNumber,
             },
             data: { updatedAt: now },

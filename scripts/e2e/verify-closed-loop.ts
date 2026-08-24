@@ -80,6 +80,7 @@ async function main(): Promise<void> {
 
     const submission = release.submissions[0];
     invariant(submission, "E2E_SUBMISSION_NOT_FOUND");
+    invariant(submission.studentId !== null, "E2E_EXPECTED_PERSONAL_SUBMISSION");
     invariant(
       submission.latestRevisionNumber === 2,
       "E2E_SUBMISSION_LATEST_REVISION_MISMATCH",

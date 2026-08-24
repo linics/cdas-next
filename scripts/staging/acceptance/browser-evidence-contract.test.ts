@@ -19,6 +19,8 @@ const codes = [
   "AI_DISABLED_MANUAL_PATH",
   "TEACHER_SIGN_OUT_AND_RELOGIN",
   "STUDENT_SIGN_OUT_AND_RELOGIN",
+  "TEACHER_GROUP_CONFIGURED",
+  "GROUPMATE_SHARED_PHASE_WRITE",
   "STUDENT_PRIVATE_ATTACHMENT_UPLOAD_AND_DOWNLOAD",
   "SEQUENTIAL_PHASE_EXECUTION",
   "TEACHER_FORMAL_ATTACHMENT_DOWNLOAD",
@@ -29,10 +31,10 @@ const codes = [
   "STUDENT_FEEDBACK_VISIBLE",
   "STALE_STUDENT_WRITE_REJECTED_AFTER_CLOSE",
   "CLOSED_STUDENT_READONLY",
-  "OTHER_STUDENT_RELEASE_VISIBLE",
-  "OTHER_STUDENT_SUBMISSION_CONTENT_HIDDEN",
-  "OTHER_STUDENT_SUBMISSION_404",
-  "OTHER_STUDENT_ATTACHMENT_404",
+  "GROUPMATE_SHARED_SUBMISSION_VISIBLE",
+  "GROUPMATE_SHARED_FEEDBACK_VISIBLE",
+  "GROUPMATE_SHARED_ATTACHMENT_DOWNLOAD",
+  "GROUPMATE_TEACHER_SUBMISSION_404",
   "OTHER_TEACHER_RELEASE_404",
   "OTHER_TEACHER_SUBMISSION_404",
   "CLOSED_STUDENT_ATTACHMENT_READABLE",
@@ -102,10 +104,10 @@ describe("browser evidence contract", () => {
           ...value,
           checks: [
             ...value.checks.filter(
-              (check) => check.code !== "OTHER_STUDENT_RELEASE_VISIBLE",
+              (check) => check.code !== "GROUPMATE_SHARED_SUBMISSION_VISIBLE",
             ),
             value.checks.find(
-              (check) => check.code === "OTHER_STUDENT_SUBMISSION_404",
+              (check) => check.code === "GROUPMATE_TEACHER_SUBMISSION_404",
             )!,
           ],
         },
@@ -115,7 +117,7 @@ describe("browser evidence contract", () => {
       ),
     ).resolves.toBe(false);
     const otherCheck = value.checks.find(
-      (check) => check.code === "OTHER_STUDENT_SUBMISSION_404",
+      (check) => check.code === "GROUPMATE_TEACHER_SUBMISSION_404",
     );
     await expect(
       isPassingBrowserEvidence(

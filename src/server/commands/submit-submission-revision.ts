@@ -16,6 +16,11 @@ import {
   type ResolvedCommandContext,
   resolveCommandContext,
 } from "./command-context";
+import {
+  resolveSubmissionAudience,
+  submissionAudienceData,
+  submissionAudiencePhaseWhere,
+} from "../submissions/submission-audience";
 
 const commandInputSchema = z
   .object({
@@ -176,14 +181,19 @@ async function runTransaction(
       if (release.status !== "ACTIVE") {
         throw new SubmitSubmissionRevisionError("RELEASE_NOT_ACTIVE");
       }
+      const audience = await resolveSubmissionAudience(
+        transaction,
+        input.releaseId,
+        context.actorId,
+      );
 
-      const submission = await transaction.submission.findUnique({
+      const submission = await transaction.submission.findFirst({
         where: {
-          releaseId_studentId_phaseIndex: {
-            releaseId: input.releaseId,
-            studentId: context.actorId,
-            phaseIndex: input.phaseIndex,
-          },
+          ...submissionAudiencePhaseWhere(
+            input.releaseId,
+            input.phaseIndex,
+            audience,
+          ),
         },
         include: {
           workingCopy: {
@@ -253,9 +263,11 @@ async function runTransaction(
       const updatedSubmission = await transaction.submission.updateMany({
         where: {
           id: submission.id,
-          releaseId: input.releaseId,
-          studentId: context.actorId,
-          phaseIndex: input.phaseIndex,
+          ...submissionAudiencePhaseWhere(
+            input.releaseId,
+            input.phaseIndex,
+            audience,
+          ),
           latestRevisionNumber: workingCopy.baseRevisionNumber,
         },
         data: {
@@ -324,13 +336,13 @@ async function runTransaction(
       let nextSubmissionId: string | null = null;
       if (executionScope.nextPhaseIndex !== null) {
         const nextPhaseIndex = executionScope.nextPhaseIndex;
-        const existingNext = await transaction.submission.findUnique({
+        const existingNext = await transaction.submission.findFirst({
           where: {
-            releaseId_studentId_phaseIndex: {
-              releaseId: input.releaseId,
-              studentId: context.actorId,
-              phaseIndex: nextPhaseIndex,
-            },
+            ...submissionAudiencePhaseWhere(
+              input.releaseId,
+              nextPhaseIndex,
+              audience,
+            ),
           },
           include: { workingCopy: true },
         });
@@ -347,7 +359,7 @@ async function runTransaction(
           const nextSubmission = await transaction.submission.create({
             data: {
               releaseId: input.releaseId,
-              studentId: context.actorId,
+              ...submissionAudienceData(audience),
               phaseIndex: nextPhaseIndex,
               createdAt: now,
               updatedAt: now,

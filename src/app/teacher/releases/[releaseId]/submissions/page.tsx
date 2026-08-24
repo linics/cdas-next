@@ -17,6 +17,7 @@ import {
 } from "../../../_components/teacher-shell";
 import styles from "../../../teacher-workspace.module.css";
 import { CloseActivityPanel } from "./close-activity-panel";
+import { ReleaseGroupManager } from "./release-group-manager";
 
 export default async function TeacherReleaseSubmissionsPage({
   params,
@@ -70,44 +71,81 @@ export default async function TeacherReleaseSubmissionsPage({
 
         <section className={styles.submissionPage}>
           {workspace.release.status === "ACTIVE" ? (
-            <CloseActivityPanel
-              releaseId={workspace.release.id}
-              classroomName={workspace.release.classroomName}
-              prepareIdempotencySeed={`prepare_close_activity_${randomUUID()}`}
-            />
+            <>
+              <CloseActivityPanel
+                releaseId={workspace.release.id}
+                classroomName={workspace.release.classroomName}
+                prepareIdempotencySeed={`prepare_close_activity_${randomUUID()}`}
+              />
+              <ReleaseGroupManager
+                releaseId={workspace.release.id}
+                progress={workspace.progress}
+              />
+            </>
           ) : null}
-          {workspace.release.executionVersion === 1 ? (
+          {workspace.release.executionVersion === 1 ||
+          workspace.progress.some((entry) => entry.group !== null) ? (
             <section className={styles.progressSection}>
               <header className={styles.sectionHeader}>
                 <div>
-                  <p className={styles.eyebrow}>顺序阶段</p>
+                  <p className={styles.eyebrow}>
+                    {workspace.release.executionVersion === 1
+                      ? "顺序阶段"
+                      : "共享提交"}
+                  </p>
                   <h2>班级进度</h2>
                 </div>
-                <span>{workspace.release.phaseCount} 阶段</span>
+                <span>
+                  {workspace.release.executionVersion === 1
+                    ? `${workspace.release.phaseCount} 阶段`
+                    : "整项提交"}
+                </span>
               </header>
               <div className={styles.submissionList}>
                 {workspace.progress.map((progress) => (
                   <article
                     className={styles.submissionRow}
-                    key={progress.student.id}
+                    key={progress.group?.id ?? progress.student.id}
                   >
                     <div>
-                      <h2>{progress.student.displayName}</h2>
-                      <p>学生识别 {shortResourceId(progress.student.id)}</p>
+                      <h2>
+                        {progress.group?.name ?? progress.student.displayName}
+                      </h2>
+                      <p>
+                        {progress.group
+                          ? `小组 · ${progress.group.members
+                              .map(
+                                (member) =>
+                                  `${member.student.displayName}${
+                                    member.roleLabel
+                                      ? `（${member.roleLabel}）`
+                                      : ""
+                                  }`,
+                              )
+                              .join("、")}`
+                          : `个人提交 · 学生识别 ${shortResourceId(progress.student.id)}`}
+                      </p>
                     </div>
                     <div className={styles.submissionMeta}>
                       <strong>
                         {progress.complete
-                          ? "全部完成"
+                          ? workspace.release.executionVersion === 1
+                            ? "全部完成"
+                            : "已正式提交"
                           : progress.started
-                            ? progress.currentPhaseIndex === 0
+                            ? workspace.release.executionVersion === 0
+                              ? "已开始"
+                              : progress.currentPhaseIndex === 0
                               ? "正在整理整项终稿"
                               : `当前第 ${progress.currentPhaseIndex} 阶段`
                             : "尚未开始"}
                       </strong>
                       <small>
-                        已完成 {progress.completedPhaseCount}/
-                        {progress.totalPhaseCount} 阶段
+                        {workspace.release.executionVersion === 1
+                          ? `已完成 ${progress.completedPhaseCount}/${progress.totalPhaseCount} 阶段`
+                          : progress.group
+                            ? `${progress.group.members.length} 名成员共享一份提交`
+                            : "个人提交"}
                       </small>
                     </div>
                   </article>
@@ -135,12 +173,18 @@ export default async function TeacherReleaseSubmissionsPage({
                   key={submission.submissionId}
                 >
                   <div>
-                    <h2>{submission.student.displayName}</h2>
+                    <h2>
+                      {submission.group?.name ?? submission.student.displayName}
+                    </h2>
                     <p>
                       {submission.phaseName
                         ? `第 ${submission.phaseIndex} 阶段 · ${submission.phaseName}`
                         : "整项提交"}
-                      {" · "}学生识别 {shortResourceId(submission.student.id)}
+                      {submission.group
+                        ? ` · 小组共享 · ${submission.group.members
+                            .map((member) => member.student.displayName)
+                            .join("、")}`
+                        : ` · 学生识别 ${shortResourceId(submission.student.id)}`}
                     </p>
                   </div>
                   <div className={styles.submissionMeta}>

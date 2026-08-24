@@ -11,6 +11,7 @@ import {
   membershipIsCurrent,
   membershipOverlapsRelease,
 } from "./release-membership-visibility";
+import { isSubmissionAudienceMemberWhere } from "../submissions/submission-audience";
 
 const queryInputSchema = z
   .object({
@@ -66,6 +67,21 @@ const studentWorkspaceSchema = z.strictObject({
   actor: z.strictObject({
     displayName: preservedNonBlankTextSchema,
   }),
+  group: z
+    .strictObject({
+      id: z.uuid(),
+      name: preservedNonBlankTextSchema,
+      members: z.array(
+        z.strictObject({
+          student: z.strictObject({
+            id: z.uuid(),
+            displayName: preservedNonBlankTextSchema,
+          }),
+          roleLabel: preservedNonBlankTextSchema.nullable(),
+        }),
+      ),
+    })
+    .nullable(),
   access: z.strictObject({
     canWrite: z.boolean(),
   }),
@@ -116,6 +132,14 @@ const teacherReleaseSubmissionsSchema = z.strictObject({
         id: z.uuid(),
         displayName: preservedNonBlankTextSchema,
       }),
+      group: z.strictObject({
+        id: z.uuid(),
+        name: preservedNonBlankTextSchema,
+        members: z.array(z.strictObject({
+          student: z.strictObject({ id: z.uuid(), displayName: preservedNonBlankTextSchema }),
+          roleLabel: preservedNonBlankTextSchema.nullable(),
+        })),
+      }).nullable(),
       currentRevision: z.strictObject({
         id: z.uuid(),
         revisionNumber: z.int().positive(),
@@ -138,6 +162,14 @@ const teacherReleaseSubmissionsSchema = z.strictObject({
       totalPhaseCount: z.int().nonnegative(),
       currentPhaseIndex: z.int().nonnegative(),
       complete: z.boolean(),
+      group: z.strictObject({
+        id: z.uuid(),
+        name: preservedNonBlankTextSchema,
+        members: z.array(z.strictObject({
+          student: z.strictObject({ id: z.uuid(), displayName: preservedNonBlankTextSchema }),
+          roleLabel: preservedNonBlankTextSchema.nullable(),
+        })),
+      }).nullable(),
     }),
   ),
 });
@@ -201,7 +233,7 @@ export async function getStudentReleaseWorkspace(
           },
         },
         submissions: {
-          where: { studentId: context.actorId },
+          where: isSubmissionAudienceMemberWhere(context.actorId),
           orderBy: { phaseIndex: "asc" },
           select: {
             id: true,
@@ -256,6 +288,21 @@ export async function getStudentReleaseWorkspace(
                     },
                   },
                 },
+              },
+            },
+          },
+        },
+        groups: {
+          where: { members: { some: { studentId: context.actorId } } },
+          take: 1,
+          select: {
+            id: true,
+            name: true,
+            members: {
+              orderBy: { createdAt: "asc" },
+              select: {
+                roleLabel: true,
+                student: { select: { id: true, displayName: true } },
               },
             },
           },
@@ -355,6 +402,7 @@ export async function getStudentReleaseWorkspace(
 
   const workspace = {
     actor: { displayName: actor.displayName },
+    group: release.groups[0] ?? null,
     access: {
       canWrite: release.status === "ACTIVE" && hasCurrentMembership,
     },
@@ -409,6 +457,13 @@ export async function getTeacherReleaseSubmissions(
           phaseIndex: true,
           latestRevisionNumber: true,
           student: { select: { id: true, displayName: true } },
+          group: {
+            select: {
+              id: true,
+              name: true,
+              members: { select: { roleLabel: true, student: { select: { id: true, displayName: true } } } },
+            },
+          },
           revisions: {
             orderBy: { revisionNumber: "desc" },
             take: 1,
@@ -435,6 +490,13 @@ export async function getTeacherReleaseSubmissions(
               student: { select: { id: true, displayName: true } },
             },
           },
+        },
+      },
+      groups: {
+        select: {
+          id: true,
+          name: true,
+          members: { select: { roleLabel: true, student: { select: { id: true, displayName: true } } } },
         },
       },
     },
@@ -485,7 +547,11 @@ export async function getTeacherReleaseSubmissions(
           : content.schemaVersion === 2
             ? (content.phases[submission.phaseIndex - 1]?.name ?? null)
             : null,
-      student: submission.student,
+      student: submission.student ?? {
+        id: submission.group?.id ?? submission.id,
+        displayName: submission.group?.name ?? "小组提交",
+      },
+      group: submission.group,
       currentRevision: {
         id: currentRevision.id,
         revisionNumber: currentRevision.revisionNumber,
@@ -508,10 +574,33 @@ export async function getTeacherReleaseSubmissions(
     );
   });
 
-  const progress: TeacherReleaseSubmissions["progress"] =
-    release.classroom.memberships.map(({ student }) => {
+  const groupedStudentIds = new Set(
+    release.groups.flatMap((group) => group.members.map((member) => member.student.id)),
+  );
+  const progress: TeacherReleaseSubmissions["progress"] = [
+    ...release.groups.map((group) => {
+      const groupSubmissions = release.submissions.filter(
+        (submission) => submission.group?.id === group.id,
+      );
+      const completedPhaseIndexes = new Set(groupSubmissions.filter((submission) => submission.phaseIndex > 0 && submission.latestRevisionNumber > 0).map((submission) => submission.phaseIndex));
+      const finalSubmitted = groupSubmissions.some((submission) => submission.phaseIndex === 0 && submission.latestRevisionNumber > 0);
+      const firstIncompletePhase = Array.from({ length: phaseCount }, (_, index) => index + 1).find((phaseIndex) => !completedPhaseIndexes.has(phaseIndex));
+      const complete = release.executionVersion === 0 ? finalSubmitted : completedPhaseIndexes.size === phaseCount && (submissionMode === "phased" || finalSubmitted);
+      return {
+        student: { id: group.id, displayName: group.name },
+        group,
+        started: groupSubmissions.length > 0,
+        completedPhaseCount: completedPhaseIndexes.size,
+        totalPhaseCount: phaseCount,
+        currentPhaseIndex: release.executionVersion === 0 ? 0 : firstIncompletePhase ?? (submissionMode === "mixed" ? 0 : Math.max(1, phaseCount)),
+        complete,
+      };
+    }),
+    ...release.classroom.memberships
+      .filter(({ student }) => !groupedStudentIds.has(student.id))
+      .map(({ student }) => {
       const studentSubmissions = release.submissions.filter(
-        (submission) => submission.student.id === student.id,
+        (submission) => submission.student?.id === student.id,
       );
       const completedPhaseIndexes = new Set(
         studentSubmissions
@@ -539,6 +628,7 @@ export async function getTeacherReleaseSubmissions(
 
       return {
         student,
+        group: null,
         started: studentSubmissions.length > 0,
         completedPhaseCount: completedPhaseIndexes.size,
         totalPhaseCount: phaseCount,
@@ -549,7 +639,8 @@ export async function getTeacherReleaseSubmissions(
               (submissionMode === "mixed" ? 0 : Math.max(1, phaseCount)),
         complete,
       };
-    });
+    }),
+  ];
   progress.sort((left, right) =>
     left.student.displayName.localeCompare(right.student.displayName),
   );

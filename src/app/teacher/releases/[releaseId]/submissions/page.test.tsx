@@ -37,6 +37,7 @@ vi.mock("next/link", () => ({
 }));
 vi.mock("next/navigation", () => ({
   notFound: mocks.notFound,
+  useRouter: () => ({ refresh: vi.fn() }),
   usePathname: () => `/teacher/releases/${releaseId}/submissions`,
 }));
 vi.mock("../../../../../server/db/client", () => ({
@@ -86,12 +87,18 @@ const workspace = {
     status: "ACTIVE",
     publishedAt: "2026-08-18T10:00:00.000Z",
     dueAt: "2026-08-20T12:00:00.000Z",
+    executionVersion: 0,
+    submissionMode: "once",
+    phaseCount: 0,
     publisherAuthSubject: "clerk_auth_subject",
   },
   submissions: [
     {
       submissionId,
+      phaseIndex: 0,
+      phaseName: null,
       student: { id: studentId, displayName: "陈同学" },
+      group: null,
       workingCopy: { textEvidence: "学生工作副本正文" },
       currentRevision: {
         id: "50000000-0000-4000-8000-000000000005",
@@ -104,6 +111,17 @@ const workspace = {
           body: "教师正式反馈正文",
         },
       },
+    },
+  ],
+  progress: [
+    {
+      student: { id: studentId, displayName: "陈同学" },
+      group: null,
+      started: true,
+      completedPhaseCount: 0,
+      totalPhaseCount: 0,
+      currentPhaseIndex: 0,
+      complete: true,
     },
   ],
 };
@@ -173,6 +191,56 @@ describe("teacher release submissions page boundary", () => {
     expect(markup).not.toContain("clerk_auth_subject");
     expect(markup).toContain("准备关闭活动");
     expect(markup).not.toContain("确认并关闭活动");
+  });
+
+  it("renders one shared group progress row with member roles", async () => {
+    const group = {
+      id: "91000000-0000-4000-8000-000000000001",
+      name: "校园调查组",
+      members: [
+        {
+          student: { id: studentId, displayName: "陈同学" },
+          roleLabel: "记录",
+        },
+        {
+          student: {
+            id: "92000000-0000-4000-8000-000000000002",
+            displayName: "周同学",
+          },
+          roleLabel: "汇报",
+        },
+      ],
+    };
+    mocks.getTeacherReleaseSubmissions.mockResolvedValue({
+      ...workspace,
+      release: {
+        ...workspace.release,
+        executionVersion: 1,
+        submissionMode: "phased",
+        phaseCount: 3,
+      },
+      submissions: [{ ...workspace.submissions[0], group }],
+      progress: [
+        {
+          student: { id: group.id, displayName: group.name },
+          group,
+          started: true,
+          completedPhaseCount: 1,
+          totalPhaseCount: 3,
+          currentPhaseIndex: 2,
+          complete: false,
+        },
+      ],
+    });
+
+    const markup = await renderPage();
+
+    expect(markup).toContain("共享提交分组");
+    expect(markup).toContain("校园调查组");
+    expect(markup).toContain("陈同学（记录）");
+    expect(markup).toContain("周同学（汇报）");
+    expect(markup).toContain("已有提交 · 已锁定");
+    expect(markup).toContain("当前第 2 阶段");
   });
 
   it("does not render a close write entrypoint for a closed release", async () => {

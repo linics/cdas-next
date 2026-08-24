@@ -11,6 +11,7 @@ import {
   membershipIsCurrent,
   membershipOverlapsRelease,
 } from "./release-membership-visibility";
+import { isSubmissionAudienceMemberWhere } from "../submissions/submission-audience";
 
 const queryInputSchema = z.object({}).strict();
 const isoDateSchema = z.iso.datetime({ offset: true });
@@ -109,7 +110,7 @@ export async function listStudentReleases(
             memberships: { some: { studentId: context.actorId } },
           },
         },
-        { submissions: { some: { studentId: context.actorId } } },
+        { submissions: { some: isSubmissionAudienceMemberWhere(context.actorId) } },
       ],
     },
     orderBy: [{ publishedAt: "desc" }, { id: "desc" }],
@@ -131,7 +132,7 @@ export async function listStudentReleases(
         },
       },
       submissions: {
-        where: { studentId: context.actorId },
+        where: isSubmissionAudienceMemberWhere(context.actorId),
         take: 1,
         select: {
           latestRevisionNumber: true,

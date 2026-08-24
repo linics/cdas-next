@@ -15,6 +15,10 @@ import {
   type ResolvedCommandContext,
   resolveCommandContext,
 } from "./command-context";
+import {
+  resolveSubmissionAudience,
+  submissionAudiencePhaseWhere,
+} from "../submissions/submission-audience";
 
 const commandInputSchema = z
   .object({
@@ -174,6 +178,11 @@ async function runTransaction(
       if (!release.snapshot) {
         throw new StartSubmissionResubmissionError("NOT_FOUND");
       }
+      const audience = await resolveSubmissionAudience(
+        transaction,
+        input.releaseId,
+        context.actorId,
+      );
       try {
         resolveSubmissionExecutionScope(
           release.executionVersion,
@@ -187,13 +196,13 @@ async function runTransaction(
         throw error;
       }
 
-      const submission = await transaction.submission.findUnique({
+      const submission = await transaction.submission.findFirst({
         where: {
-          releaseId_studentId_phaseIndex: {
-            releaseId: input.releaseId,
-            studentId: context.actorId,
-            phaseIndex: input.phaseIndex,
-          },
+          ...submissionAudiencePhaseWhere(
+            input.releaseId,
+            input.phaseIndex,
+            audience,
+          ),
         },
         include: { workingCopy: true },
       });
@@ -249,9 +258,11 @@ async function runTransaction(
         const touchedSubmission = await transaction.submission.updateMany({
           where: {
             id: submission.id,
-            releaseId: input.releaseId,
-            studentId: context.actorId,
-            phaseIndex: input.phaseIndex,
+            ...submissionAudiencePhaseWhere(
+              input.releaseId,
+              input.phaseIndex,
+              audience,
+            ),
             latestRevisionNumber: input.expectedLatestRevisionNumber,
           },
           data: { updatedAt: now },

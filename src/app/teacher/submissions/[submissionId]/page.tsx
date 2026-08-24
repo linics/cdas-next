@@ -190,7 +190,7 @@ export default async function TeacherSubmissionPage({
     throw error;
   }
 
-  const { submission, student } = workspace;
+  const { submission, student, group } = workspace;
   const currentRevision = submission.revisions.at(-1);
   if (!currentRevision) {
     notFound();
@@ -209,7 +209,7 @@ export default async function TeacherSubmissionPage({
         <header className={styles.pageHeader}>
           <div>
             <p className={styles.eyebrow}>提交 / 教师反馈</p>
-            <h1>{student.displayName}</h1>
+            <h1>{group?.name ?? student.displayName}</h1>
             <p>
               {content.title} · {submission.release.classroom.name}
               {submission.phaseName ? ` · ${submission.phaseName}` : ""}
@@ -229,6 +229,10 @@ export default async function TeacherSubmissionPage({
           <div>
             <dt>班级</dt>
             <dd>{submission.release.classroom.name}</dd>
+          </div>
+          <div>
+            <dt>提交主体</dt>
+            <dd>{group ? `${group.name} · 小组共享` : student.displayName}</dd>
           </div>
           <div>
             <dt>提交范围</dt>
@@ -253,6 +257,24 @@ export default async function TeacherSubmissionPage({
             <dd>{submission.latestRevisionNumber} 版</dd>
           </div>
         </dl>
+
+        {group ? (
+          <section className={styles.railNote} role="note">
+            <p className={styles.eyebrow}>小组共享提交</p>
+            <p>
+              成员：
+              {group.members
+                .map(
+                  (member) =>
+                    `${member.student.displayName}${
+                      member.roleLabel ? `（${member.roleLabel}）` : ""
+                    }`,
+                )
+                .join("、")}
+              。本页反馈绑定这份共享正式修订，并对全组成员可见。
+            </p>
+          </section>
+        ) : null}
 
         {phase ? (
           <section className={styles.railNote}>
