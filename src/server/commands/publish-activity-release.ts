@@ -227,15 +227,19 @@ async function runTransaction(
         throw new PublishActivityReleaseError("INTENT_TAMPERED");
       }
 
-      const snapshot = createActivitySnapshot({
-        schemaVersion: 1,
-        title: revision.title,
-        summary: revision.summary,
-        learningObjectives: revision.learningObjectives,
-        taskInstructions: revision.taskInstructions,
-        evidenceRequirements: revision.evidenceRequirements,
-        feedbackCriteria: revision.feedbackCriteria,
-      });
+      const snapshot = createActivitySnapshot(
+        revision.schemaVersion === 2
+          ? revision.taskBook
+          : {
+              schemaVersion: 1,
+              title: revision.title,
+              summary: revision.summary,
+              learningObjectives: revision.learningObjectives,
+              taskInstructions: revision.taskInstructions,
+              evidenceRequirements: revision.evidenceRequirements,
+              feedbackCriteria: revision.feedbackCriteria,
+            },
+      );
 
       const consumedIntent = await transaction.actionIntent.updateMany({
         where: {

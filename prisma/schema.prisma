@@ -135,6 +135,8 @@ model ActivityDraft {
   ownerId              String                  @map("owner_id") @db.Uuid
   status               DraftStatus             @default(EDITING)
   version              Int                     @default(1)
+  schemaVersion        Int                     @default(1) @map("schema_version")
+  taskBook             Json?                   @map("task_book")
   title                String
   summary              String
   learningObjectives   String[]                @default([]) @map("learning_objectives")
@@ -157,6 +159,8 @@ model ActivityDraftRevision {
   draftId              String                    @map("draft_id") @db.Uuid
   version              Int
   source               DraftRevisionSource
+  schemaVersion        Int                     @default(1) @map("schema_version")
+  taskBook             Json?                   @map("task_book")
   title                String
   summary              String
   learningObjectives   String[]                  @default([]) @map("learning_objectives")

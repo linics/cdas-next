@@ -230,16 +230,10 @@ snapshot AS (
   JOIN manual_revision AS revision ON revision.draft_id = target.id
   WHERE snapshot.source_draft_id = target.id
     AND snapshot.source_draft_version = 2
-    AND snapshot.schema_version = 1
-    AND snapshot.content = jsonb_build_object(
-      'schemaVersion', 1,
-      'title', revision.title,
-      'summary', revision.summary,
-      'learningObjectives', to_jsonb(revision.learning_objectives),
-      'taskInstructions', revision.task_instructions,
-      'evidenceRequirements', to_jsonb(revision.evidence_requirements),
-      'feedbackCriteria', to_jsonb(revision.feedback_criteria)
-    )
+    AND snapshot.schema_version = 2
+    AND revision.schema_version = 2
+    AND "cdas_activity_task_book_v2_is_valid"(revision.task_book)
+    AND snapshot.content = revision.task_book
     AND snapshot.content_hash ~ '^[a-f0-9]{64}$'
 ),
 target_audits AS (
@@ -305,6 +299,8 @@ SELECT
       FROM target
       WHERE target.status = 'SEALED'
         AND target.version = 2
+        AND target.schema_version = 2
+        AND "cdas_activity_task_book_v2_is_valid"(target.task_book)
         AND target.sealed_at IS NOT NULL
         AND target.sealed_at = target.published_at
         AND target.summary = $9
@@ -330,6 +326,8 @@ SELECT
       FROM agent_revision AS revision
       JOIN target ON target.id = revision.draft_id
       WHERE revision.title = target.title
+        AND revision.schema_version = 2
+        AND "cdas_activity_task_book_v2_is_valid"(revision.task_book)
         AND btrim(revision.summary) <> ''
         AND revision.summary <> target.summary
         AND revision.learning_objectives = target.learning_objectives
@@ -341,6 +339,9 @@ SELECT
       FROM manual_revision AS revision
       JOIN target ON target.id = revision.draft_id
       WHERE revision.title = target.title
+        AND revision.schema_version = 2
+        AND revision.task_book = target.task_book
+        AND "cdas_activity_task_book_v2_is_valid"(revision.task_book)
         AND revision.summary = $9
         AND revision.learning_objectives = target.learning_objectives
         AND revision.task_instructions = target.task_instructions

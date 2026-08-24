@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { emptyActivityDraftValues } from "./activity-draft-action-state";
+import { waterConservationTaskBook } from "../../../fixtures/water-conservation";
+import { emptyActivityDraftValues, normalizeTaskBookValues } from "./activity-draft-action-state";
 
 const mocks = vi.hoisted(() => ({
   database: { kind: "activity-action-database" },
@@ -58,18 +59,18 @@ const initialState = {
 };
 
 function formData(overrides?: Record<string, string>): FormData {
+  const { title: requestedTitle, ...formOverrides } = overrides ?? {};
+  const taskBook = {
+    ...waterConservationTaskBook,
+    title: requestedTitle ?? waterConservationTaskBook.title,
+  };
   const values = {
     draftId: "",
     expectedVersion: "",
     desiredStatus: "EDITING",
-    title: "  校园节水行动  ",
-    summary: "  从校园水表观察形成建议  ",
-    learningObjectives: " 使用数据支持结论 \r\n\r\n 比较两次读数 ",
-    taskInstructions: " 记录水表并解释变化。 ",
-    evidenceRequirements: "包含时间\n包含读数",
-    feedbackCriteria: "证据与结论一致",
+    content: JSON.stringify(taskBook),
     idempotencyKey: "save_activity_request_001",
-    ...overrides,
+    ...formOverrides,
   };
   const data = new FormData();
   for (const [key, value] of Object.entries(values)) {
@@ -92,7 +93,7 @@ describe("teacher activity draft server action", () => {
     });
   });
 
-  it("uses only trusted context and maps normalized six-part content", async () => {
+  it("uses only trusted context and maps the complete v2 task book", async () => {
     vi.stubEnv("AI_PROVIDER_DISABLED", "true");
     const result = await saveActivityDraftAction(
       initialState,
@@ -107,15 +108,7 @@ describe("teacher activity draft server action", () => {
         draftId: null,
         expectedVersion: null,
         desiredStatus: "EDITING",
-        content: {
-          schemaVersion: 1,
-          title: "校园节水行动",
-          summary: "从校园水表观察形成建议",
-          learningObjectives: ["使用数据支持结论", "比较两次读数"],
-          taskInstructions: "记录水表并解释变化。",
-          evidenceRequirements: ["包含时间", "包含读数"],
-          feedbackCriteria: ["证据与结论一致"],
-        },
+        content: normalizeTaskBookValues(waterConservationTaskBook),
         agentRunId: null,
         idempotencyKey: "save_activity_request_001",
       },
@@ -137,7 +130,7 @@ describe("teacher activity draft server action", () => {
       injected,
     );
     const duplicated = formData();
-    duplicated.append("title", "另一标题");
+    duplicated.append("content", "{}");
     const duplicatedState = await saveActivityDraftAction(
       initialState,
       duplicated,

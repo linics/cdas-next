@@ -28,7 +28,7 @@ SCREENSHOTS = (
     "06-teacher-closed.png",
     "07-student-closed-readonly.png",
 )
-CREATE_PROMPT = """立即调用 create_activity_draft 工具，不要提问。标题必须逐字为：{title}。请围绕“学生辨识合成证据”生成一项简短学习活动；摘要、学习目标、任务说明、证据要求和反馈标准都必须非空，其中三个数组各至少包含一个非空条目。完成后立即创建版本1。"""
+CREATE_PROMPT = """立即调用 create_activity_draft 工具，不要提问。标题必须逐字为：{title}。请围绕“学生辨识合成证据”生成一份完整跨学科任务书：初中七年级，主学科语文，融合数学与信息科技，探究性作业／调查探究／中等探究／一次性提交／2周，以核验校园档案中的合成内容为真实情境。必须包含探究主题、任务描述、背景设定、知识与技能／过程与方法／情感态度三维目标、总体任务；设置3个连续阶段，每阶段都要有明确行动、情境承接、学习支架、至少一项类型化提交证据、评价要点和课时建议；设置问题意识、证据质量、跨学科连接、方案表达4个评价维度，每个维度都有优秀、良好、合格、需改进四档非空描述。完成后立即创建版本1。"""
 EDITED_SUMMARY = "固定合成验收摘要（教师人工修订）"
 PUBLISH_PROMPT = "立即调用 publish_activity_release 工具，将版本2发布到班级：{classroom}。无截止日期。"
 EVIDENCE_TEXT = "Synthetic Agent acceptance text evidence."
@@ -320,12 +320,13 @@ def main() -> None:
             assert_origin(teacher.url, base)
             teacher.get_by_role("heading", name=title, level=1, exact=True).wait_for()
             teacher.get_by_text("草稿修订 1", exact=True).wait_for()
-            for heading in ("学习目标", "任务说明", "提交证据", "教师反馈将关注"):
+            for heading in ("基本设置", "背景设定", "三维目标", "总体任务", "任务链", "评价标准"):
                 teacher.get_by_role("heading", name=heading, level=3, exact=True).wait_for()
             screenshot(teacher, directory, SCREENSHOTS[0])
 
             teacher.get_by_role("link", name="← 返回草稿", exact=True).click()
             teacher.wait_for_url(re.compile(r"/teacher/activities/[0-9a-f-]+$"), timeout=30_000)
+            teacher.locator('#activity-draft-form[data-hydrated="true"]').wait_for(state="visible")
             teacher.locator("#activity-summary").fill(EDITED_SUMMARY)
             teacher.get_by_role("button", name="保存并标记可预览", exact=True).click()
             preview = teacher.get_by_role("link", name=re.compile("查看发布预览"))
@@ -367,6 +368,8 @@ def main() -> None:
                 raise AcceptanceFailure("STAGING_AGENT_ACCEPTANCE_STUDENT_LINK_MISSING")
             activity_link.click()
             assert_origin(student.url, base)
+            for heading in ("任务设置", "背景设定", "学习目标", "总体任务", "任务链", "评价标准"):
+                student.get_by_role("heading", name=heading, level=3, exact=True).wait_for()
             student.locator("#text-evidence").fill(EVIDENCE_TEXT)
             student.get_by_role("button", name="保存草稿", exact=True).click()
             wait_text(student, "草稿已保存")

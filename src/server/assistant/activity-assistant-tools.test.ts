@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { ActivityContent } from "../../domain/activity/activity-content";
+import type { ActivityContentV2 } from "../../domain/activity/activity-content";
 import type { PrismaClient } from "../../generated/prisma/client";
 import { DecideActionIntentError } from "../commands/decide-action-intent";
 import { PreparePublishActivityIntentError } from "../commands/prepare-publish-activity-intent";
@@ -29,14 +29,14 @@ const approvalContext: CommandContext = {
   traceId: "approval-tool-trace",
   clock: () => now,
 };
-const content: ActivityContent = {
-  schemaVersion: 1,
-  title: "校園節水行動",
-  summary: "記錄水表並提出改善建議",
-  learningObjectives: ["使用資料支持結論"],
-  taskInstructions: "記錄兩次水表讀數並解釋差異。",
-  evidenceRequirements: ["時間與讀數"],
-  feedbackCriteria: ["證據與建議一致"],
+const content: ActivityContentV2 = {
+  schemaVersion: 2, title: "校園節水行動", topic: "校園節水", summary: "記錄水表並提出改善建議", schoolStage: "MIDDLE", grade: 7, mainDisciplineCode: "physics", integratedDisciplineCodes: ["math"], crossDisciplinaryConceptCodes: [], assignmentType: "inquiry", assignmentSubtype: "survey", inquiryDepth: "intermediate", submissionMode: "once", durationWeeks: 2, backgroundSetting: "學校要改善用水，同學們以真實場景完成調查。", objectiveKnowledge: "理解用水資料。", objectiveProcess: "使用資料支持結論。", objectiveEmotion: "願意參與校園節水。", learningObjectives: ["理解用水資料。", "使用資料支持結論。", "願意參與校園節水。"], taskInstructions: "記錄兩次水表讀數並解釋差異。", evidenceRequirements: ["時間與讀數", "分析結論", "改善建議"], feedbackCriteria: ["問題意識", "證據品質", "跨學科連結", "方案表達"], phases: [
+    { name: "觀察", action: "記錄用水。", context: "在校園觀察。", support: "使用記錄表。", evidence: [{ type: "text", description: "時間與讀數" }], evaluationFocus: "資料完整。", suggestedLessons: 1 },
+    { name: "分析", action: "整理資料。", context: "比較讀數。", support: "使用表格。", evidence: [{ type: "document", description: "分析表" }], evaluationFocus: "結論有據。", suggestedLessons: 1 },
+    { name: "建議", action: "提出建議。", context: "面向校園。", support: "使用建議模板。", evidence: [{ type: "text", description: "建議稿" }], evaluationFocus: "方案可行。", suggestedLessons: 1 },
+  ], rubricDimensions: [
+    { name: "問題意識", excellent: "清楚", good: "較清楚", pass: "基本", improve: "需補充" }, { name: "證據品質", excellent: "完整", good: "較完整", pass: "基本", improve: "需補充" }, { name: "跨學科連結", excellent: "清楚", good: "較清楚", pass: "基本", improve: "需補充" }, { name: "方案表達", excellent: "可行", good: "較可行", pass: "基本", improve: "需補充" },
+  ],
 };
 
 const mocks = {

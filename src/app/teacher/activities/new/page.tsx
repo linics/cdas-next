@@ -66,7 +66,7 @@ export default async function NewTeacherActivityPage() {
             <p className={styles.eyebrow}>活动设计 / 新草稿</p>
             <h1>创建第一个完整版本</h1>
             <p>
-              六类内容会在一次保存中形成草稿当前内容与完全一致的不可变修订；可先保持编辑中，也可直接标记为可预览。
+              基本设置、三维目标、任务链、证据与评价会在一次保存中形成草稿当前内容与完全一致的不可变修订；可先保持编辑中，也可直接标记为可预览。
             </p>
           </div>
         </header>

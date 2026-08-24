@@ -45,7 +45,8 @@ describe("agent acceptance verifier", () => {
     expect(verificationSql).toContain("count(*) = 3 FROM session_runs");
     expect(verificationSql).toContain("audit.source = 'UI'");
     expect(verificationSql).toContain("assistant_publish_");
-    expect(verificationSql).toContain("snapshot.content = jsonb_build_object");
+    expect(verificationSql).toContain("snapshot.content = revision.task_book");
+    expect(verificationSql).toContain('"cdas_activity_task_book_v2_is_valid"(revision.task_book)');
     expect(verificationSql).toContain("target.summary = $9");
     expect(verificationSql).toContain("cardinality(target.learning_objectives) > 0");
     expect(verificationSql).toContain("revision.summary <> target.summary");

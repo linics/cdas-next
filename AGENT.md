@@ -51,6 +51,8 @@ CDAS 助手是嵌入产品的上下文助手，不是独立聊天机器人，也
 
 草稿工具只能修改当前教师拥有的草稿，并必须返回修改摘要和可撤销依据。
 
+D-030 起，`create_activity_draft` 的新写入只接受完整 schema v2 任务书。原版 CTS/CDAS 是生成质量下限：必须包含合法学段/年级、主学科与融合学科、原版三类作业及条件子类型、探究深度、提交模式、周期、三维目标、具体背景、3–4 个连续阶段、类型化证据和四档评价描述。生成内容应形成真实问题、真实对象、跨学科证据链和可验收成果，不能用“开展活动”“进行探究”等泛词替代学生行动。它们仍是教师可编辑的草稿建议，不是课程标准判断或跨学科质量结论。
+
 ### 高影响业务工具
 
 - `publish_activity_release`
@@ -111,7 +113,7 @@ CDAS 助手是嵌入产品的上下文助手，不是独立聊天机器人，也
 
 这个场景的官方 AI SDK message session 只在覆盖 `/teacher/activities/new` 与精确预览页的共享客户端 layout 内存中续接。草稿工具返回的 draft ID 与站内路径精确一致时才导航；预览页继续使用同一 session 提出签名发布 approval。对话、prompt、ticket 或 approval 签名不写入 URL、localStorage 或业务数据库。直接进入或刷新预览页不会恢复助手对话，教师仍可使用既有手工发布面板完成闭环。
 
-第一次外部验收必须由独立、受保护且明确批准模型费用的 `staging-agent-acceptance` workflow 完成。它只能使用预留的四个 Clerk test identity、marker 派生 namespace 和固定合成主题；marker 标题必须精确，模型生成的六段正文须全部非空，但不得把生成文本逐字照抄 prompt 当成产品成功条件。每个 ticket 只可在最终 staging origin 精确锁定后签发，关键导航不得跨 origin。任何 deployment、DB、Clerk、模型、approval secret、同 run 证据或人工 attestation 不匹配都必须在模型或业务写入前得到 `NO_GO`。正常发布账本必须证明 marker 标题下只有一份草稿，且三次 `SUCCEEDED` AgentRun 分别对应草稿写入、无业务写入的 approval 提议和教师确认后的发布执行。随后同一个 Agent 创建的 Release 必须继续由普通第一方 UI 完成主学生正式提交、教师确认反馈、学生读取反馈、教师确认关闭、关闭后陈旧写拒绝和只读访问，并以其他学生与其他教师证明资源隔离；这些后续动作不增加 Agent 工具或 AgentRun。最终证据 schema 与截图索引缺少或畸形同样必须 `NO_GO`。
+第一次外部验收必须由独立、受保护且明确批准模型费用的 `staging-agent-acceptance` workflow 完成。它只能使用预留的四个 Clerk test identity、marker 派生 namespace 和固定合成主题；marker 标题必须精确，模型生成的 schema v2 任务书须满足 D-030 的真实情境、三维目标、连续阶段、类型化证据与评价合同，但不得把生成文本逐字照抄 prompt 当成产品成功条件。每个 ticket 只可在最终 staging origin 精确锁定后签发，关键导航不得跨 origin。任何 deployment、DB、Clerk、模型、approval secret、同 run 证据或人工 attestation 不匹配都必须在模型或业务写入前得到 `NO_GO`。正常发布账本必须证明 marker 标题下只有一份草稿，且三次 `SUCCEEDED` AgentRun 分别对应草稿写入、无业务写入的 approval 提议和教师确认后的发布执行。随后同一个 Agent 创建的 Release 必须继续由普通第一方 UI 完成主学生正式提交、教师确认反馈、学生读取反馈、教师确认关闭、关闭后陈旧写拒绝和只读访问，并以其他学生与其他教师证明资源隔离；这些后续动作不增加 Agent 工具或 AgentRun。最终证据 schema 与截图索引缺少或畸形同样必须 `NO_GO`。
 
 项目所有者已持续授权 Agent 在开发阶段自动管理测试 GitHub、Vercel Hobby、Neon、Clerk 与固定合成数据的 DeepSeek 验收；已经存在本机忽略凭据和命令所需精确成本确认时，不因同一授权逐次暂停。该持续授权不包含生产资源、真实用户数据、套餐升级或付款资料、不可恢复的删除或重置，以及明显扩大的模型费用或非固定合成调用；遇到这些边界必须停止并报告。凭据只能从本机 Git 忽略文件按需读取，禁止输出到聊天、日志、截图、artifact、文档或 Git。
 

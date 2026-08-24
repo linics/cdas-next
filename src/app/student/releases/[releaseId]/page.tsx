@@ -3,6 +3,15 @@ import { SignInButton, SignOutButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ZodError } from "zod";
+import {
+  assignmentTypeDetails,
+  assignmentSubtypeLabel,
+  crossDisciplinaryConcepts,
+  disciplineLabel,
+  evidenceTypeLabel,
+  inquiryDepths,
+  submissionModes,
+} from "../../../../domain/activity/activity-content";
 import { LocalizedDateTime } from "../../../_components/localized-date-time";
 import { InlineAlert, StatusBadge } from "../../../_components/ui";
 import { WorkspaceShell } from "../../../_components/workspace-shell";
@@ -96,37 +105,20 @@ function ReleaseBrief({
         <span>版本 {snapshot.sourceDraftVersion}</span>
       </div>
 
-      <section>
-        <h3>任务说明</h3>
-        <p>{content.taskInstructions}</p>
-      </section>
-
-      <section>
-        <h3>学习目标</h3>
-        <ol>
-          {content.learningObjectives.map((objective) => (
-            <li key={objective}>{objective}</li>
-          ))}
-        </ol>
-      </section>
-
-      <section>
-        <h3>提交证据</h3>
-        <ul>
-          {content.evidenceRequirements.map((requirement) => (
-            <li key={requirement}>{requirement}</li>
-          ))}
-        </ul>
-      </section>
-
-      <section>
-        <h3>教师反馈将关注</h3>
-        <ul>
-          {content.feedbackCriteria.map((criterion) => (
-            <li key={criterion}>{criterion}</li>
-          ))}
-        </ul>
-      </section>
+      {content.schemaVersion === 2 ? <>
+        <section><h3>任务设置</h3><p>{content.topic} · {content.schoolStage === "PRIMARY" ? "小学" : "初中"}{content.grade}年级<br />主学科：{disciplineLabel(content.mainDisciplineCode)}；融合学科：{content.integratedDisciplineCodes.map(disciplineLabel).join("、")}<br />{assignmentTypeDetails(content.assignmentType).label}（{assignmentTypeDetails(content.assignmentType).description}）{assignmentSubtypeLabel(content.assignmentType, content.assignmentSubtype) ? ` · ${assignmentSubtypeLabel(content.assignmentType, content.assignmentSubtype)}` : ""} · {inquiryDepths.find((item) => item.code === content.inquiryDepth)?.label} · {submissionModes.find((item) => item.code === content.submissionMode)?.label} · {content.durationWeeks} 周</p></section>
+        {content.crossDisciplinaryConceptCodes.length > 0 ? <section><h3>跨学科概念</h3><p>{content.crossDisciplinaryConceptCodes.map((code) => { const concept = crossDisciplinaryConcepts.find((item) => item.code === code)!; return `${concept.label}（${concept.description}）`; }).join("；")}</p></section> : null}
+        <section><h3>背景设定</h3><p>{content.backgroundSetting}</p></section>
+        <section><h3>学习目标</h3><ol><li>知识与技能：{content.objectiveKnowledge}</li><li>过程与方法：{content.objectiveProcess}</li><li>情感态度：{content.objectiveEmotion}</li></ol></section>
+        <section><h3>总体任务</h3><p>{content.taskInstructions}</p></section>
+        <section><h3>任务链</h3><ol>{content.phases.map((phase) => <li key={phase.name}><strong>{phase.name}</strong>（建议 {phase.suggestedLessons} 课时）<br />要完成：{phase.action}<br />情境：{phase.context}<br />学习支架：{phase.support}<br />提交：{phase.evidence.map((evidence) => `${evidenceTypeLabel(evidence.type)}：${evidence.description}`).join("；")}<br />评价要点：{phase.evaluationFocus}</li>)}</ol></section>
+        <section><h3>评价标准</h3><ul>{content.rubricDimensions.map((dimension) => <li key={dimension.name}><strong>{dimension.name}</strong><br />优秀：{dimension.excellent}<br />良好：{dimension.good}<br />合格：{dimension.pass}<br />需改进：{dimension.improve}</li>)}</ul></section>
+      </> : <>
+        <section><h3>任务说明</h3><p>{content.taskInstructions}</p></section>
+        <section><h3>学习目标</h3><ol>{content.learningObjectives.map((objective) => <li key={objective}>{objective}</li>)}</ol></section>
+        <section><h3>提交证据</h3><ul>{content.evidenceRequirements.map((requirement) => <li key={requirement}>{requirement}</li>)}</ul></section>
+        <section><h3>教师反馈将关注</h3><ul>{content.feedbackCriteria.map((criterion) => <li key={criterion}>{criterion}</li>)}</ul></section>
+      </>}
 
       <p className={styles.snapshotHash} title={snapshot.contentHash}>
         快照摘要 {snapshot.contentHash.slice(0, 12)}…

@@ -33,6 +33,90 @@ VALUES
   ('00000000-0000-4000-8000-000000000002', 'student_fixture', 'STUDENT', '测试学生', now());
 
 DO $test$
+DECLARE
+  valid_task_book JSONB := $json$
+  {
+    "schemaVersion": 2,
+    "title": "结构化任务书",
+    "topic": "校园节水",
+    "summary": "从真实现象形成证据与建议。",
+    "schoolStage": "MIDDLE",
+    "grade": 7,
+    "mainDisciplineCode": "physics",
+    "integratedDisciplineCodes": ["math", "chinese"],
+    "crossDisciplinaryConceptCodes": ["system_model"],
+    "assignmentType": "inquiry",
+    "assignmentSubtype": "survey",
+    "inquiryDepth": "deep",
+    "submissionMode": "phased",
+    "durationWeeks": 2,
+    "backgroundSetting": "学校需要同学们提出有证据的节水建议。",
+    "objectiveKnowledge": "理解校园用水与资源节约的关系。",
+    "objectiveProcess": "使用观察和统计形成判断。",
+    "objectiveEmotion": "愿意为公共资源负责。",
+    "learningObjectives": ["理解校园用水与资源节约的关系。", "使用观察和统计形成判断。", "愿意为公共资源负责。"],
+    "taskInstructions": "完成观察、分析和公开建议。",
+    "evidenceRequirements": ["观察记录", "统计表", "建议稿"],
+    "feedbackCriteria": ["问题意识", "证据质量", "跨学科连接", "方案表达"],
+    "phases": [
+      {"name":"观察","action":"观察场景。","context":"选择真实地点。","support":"使用记录表。","evidence":[{"type":"text","description":"观察记录"}],"evaluationFocus":"问题清楚。","suggestedLessons":1},
+      {"name":"分析","action":"分析数据。","context":"比较记录。","support":"使用统计表。","evidence":[{"type":"document","description":"统计表"}],"evaluationFocus":"证据可靠。","suggestedLessons":1},
+      {"name":"表达","action":"提出建议。","context":"面向真实对象。","support":"按证据组织表达。","evidence":[{"type":"text","description":"建议稿"}],"evaluationFocus":"建议可行。","suggestedLessons":1}
+    ],
+    "rubricDimensions": [
+      {"name":"问题意识","excellent":"清楚可查。","good":"较清楚。","pass":"基本相关。","improve":"问题不清。"},
+      {"name":"证据质量","excellent":"完整可靠。","good":"较充分。","pass":"有证据。","improve":"证据不足。"},
+      {"name":"跨学科连接","excellent":"连接清楚。","good":"使用两科。","pass":"使用一科。","improve":"没有连接。"},
+      {"name":"方案表达","excellent":"具体可行。","good":"较具体。","pass":"有建议。","improve":"建议空泛。"}
+    ]
+  }
+  $json$::JSONB;
+BEGIN
+  IF NOT "cdas_activity_task_book_v2_is_valid"(valid_task_book) THEN
+    RAISE EXCEPTION 'the valid v2 task-book fixture was rejected';
+  END IF;
+
+  BEGIN
+    INSERT INTO activity_drafts (
+      id, owner_id, status, version, schema_version, task_book,
+      title, summary, learning_objectives, task_instructions,
+      evidence_requirements, feedback_criteria, updated_at
+    ) VALUES (
+      '00000000-0000-4000-8000-000000000030',
+      '00000000-0000-4000-8000-000000000001',
+      'EDITING', 1, 2, '{}'::JSONB,
+      '伪造任务书', '不应写入', ARRAY['目标'], '不应写入',
+      ARRAY['证据'], ARRAY['标准'], now()
+    );
+    RAISE EXCEPTION 'an empty v2 task book was accepted';
+  EXCEPTION WHEN check_violation THEN
+    NULL;
+  END;
+
+  BEGIN
+    INSERT INTO activity_drafts (
+      id, owner_id, status, version, schema_version, task_book,
+      title, summary, learning_objectives, task_instructions,
+      evidence_requirements, feedback_criteria, updated_at
+    ) VALUES (
+      '00000000-0000-4000-8000-000000000031',
+      '00000000-0000-4000-8000-000000000001',
+      'EDITING', 1, 2, valid_task_book,
+      '被篡改的标题', valid_task_book ->> 'summary',
+      ARRAY(SELECT jsonb_array_elements_text(valid_task_book -> 'learningObjectives')),
+      valid_task_book ->> 'taskInstructions',
+      ARRAY(SELECT jsonb_array_elements_text(valid_task_book -> 'evidenceRequirements')),
+      ARRAY(SELECT jsonb_array_elements_text(valid_task_book -> 'feedbackCriteria')),
+      now()
+    );
+    RAISE EXCEPTION 'a v2 task book with a forged scalar projection was accepted';
+  EXCEPTION WHEN check_violation THEN
+    NULL;
+  END;
+END
+$test$;
+
+DO $test$
 BEGIN
   BEGIN
     INSERT INTO agent_runs (

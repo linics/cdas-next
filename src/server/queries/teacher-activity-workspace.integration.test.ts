@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { ActivityContent } from "../../domain/activity/activity-content";
+import { waterConservationTaskBook } from "../../fixtures/water-conservation";
 import type { CommandContext, CommandSource } from "../commands/command-context";
 import { decideActionIntent } from "../commands/decide-action-intent";
 import { preparePublishActivityIntent } from "../commands/prepare-publish-activity-intent";
@@ -35,13 +36,11 @@ function context(
 
 function content(title: string): ActivityContent {
   return {
-    schemaVersion: 1,
+    ...waterConservationTaskBook,
     title,
+    topic: `${title}主题`,
     summary: `${title}摘要`,
-    learningObjectives: ["使用资料支持结论"],
     taskInstructions: `${title}仅所有者可见的任务正文`,
-    evidenceRequirements: ["包含时间与观察记录"],
-    feedbackCriteria: ["证据与结论一致"],
   };
 }
 
@@ -243,17 +242,11 @@ describeWithDatabase("teacher activity workspace queries", () => {
       version: fixture.editing.version,
       content: { title: "观察校园用水" },
     });
-    expect(Object.keys(draft.draft.revision.content).sort()).toEqual(
-      [
-        "schemaVersion",
-        "title",
-        "summary",
-        "learningObjectives",
-        "taskInstructions",
-        "evidenceRequirements",
-        "feedbackCriteria",
-      ].sort(),
-    );
+    expect(draft.draft.revision.content.schemaVersion).toBe(2);
+    expect(draft.draft.revision.content).toMatchObject({
+      topic: "观察校园用水主题",
+      mainDisciplineCode: "physics",
+    });
 
     const preview = await getTeacherActivityPreview(
       database!,

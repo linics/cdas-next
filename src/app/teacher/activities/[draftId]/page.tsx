@@ -14,6 +14,7 @@ import {
   TeacherPage,
 } from "../../_components/teacher-shell";
 import { ActivityDraftForm } from "../activity-draft-form";
+import { structuredTaskBookValues } from "../activity-draft-action-state";
 import styles from "../../teacher-workspace.module.css";
 
 export default async function TeacherActivityPage({
@@ -61,18 +62,27 @@ export default async function TeacherActivityPage({
             </p>
           </div>
         </header>
+        {content.schemaVersion === 1 ? (
+          <article className={styles.legacyReadPanel}>
+            <header>
+              <p className={styles.eyebrow}>历史 schema v1 · 原样只读</p>
+              <h2>升级前先核对原活动内容</h2>
+              <p>
+                下面六段历史内容不会被伪造成新字段。请以它们为参考补齐任务书；成功保存后会追加一条 v2 修订，原修订保持不变。
+              </p>
+            </header>
+            <section><h3>活动摘要</h3><p>{content.summary}</p></section>
+            <section><h3>学习目标</h3><ol>{content.learningObjectives.map((item) => <li key={item}>{item}</li>)}</ol></section>
+            <section><h3>任务说明</h3><p>{content.taskInstructions}</p></section>
+            <section><h3>提交证据</h3><ul>{content.evidenceRequirements.map((item) => <li key={item}>{item}</li>)}</ul></section>
+            <section><h3>反馈标准</h3><ul>{content.feedbackCriteria.map((item) => <li key={item}>{item}</li>)}</ul></section>
+          </article>
+        ) : null}
         <ActivityDraftForm
           initialState={{
             status: "idle",
             message: "",
-            values: {
-              title: content.title,
-              summary: content.summary,
-              learningObjectives: content.learningObjectives.join("\n"),
-              taskInstructions: content.taskInstructions,
-              evidenceRequirements: content.evidenceRequirements.join("\n"),
-              feedbackCriteria: content.feedbackCriteria.join("\n"),
-            },
+            values: structuredTaskBookValues(content),
             draftId: draft.id,
             expectedVersion: draft.version,
             persistedStatus: draft.status,

@@ -149,6 +149,8 @@ export class TeacherActivityQueryError extends Error {
 }
 
 function contentFromColumns(value: {
+  schemaVersion: number;
+  taskBook: unknown;
   title: string;
   summary: string;
   learningObjectives: string[];
@@ -156,6 +158,9 @@ function contentFromColumns(value: {
   evidenceRequirements: string[];
   feedbackCriteria: string[];
 }): ActivityContent {
+  if (value.schemaVersion === 2) {
+    return activityContentSchema.parse(value.taskBook);
+  }
   return activityContentSchema.parse({
     schemaVersion: 1,
     title: value.title,
@@ -225,6 +230,8 @@ export async function getTeacherActivityDashboard(
       where: { ownerId: context.actorId },
       orderBy: [{ updatedAt: "desc" }, { id: "asc" }],
       select: {
+        schemaVersion: true,
+        taskBook: true,
         id: true,
         title: true,
         status: true,
@@ -315,6 +322,8 @@ export async function getTeacherActivityDraft(
           orderBy: { version: "desc" },
           take: 1,
           select: {
+            schemaVersion: true,
+            taskBook: true,
             id: true,
             version: true,
             source: true,
@@ -449,6 +458,8 @@ export async function getTeacherPublishConfirmation(
         },
       },
       select: {
+        schemaVersion: true,
+        taskBook: true,
         title: true,
         summary: true,
         learningObjectives: true,

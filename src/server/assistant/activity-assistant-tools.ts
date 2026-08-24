@@ -3,7 +3,7 @@ import "server-only";
 import { createHash } from "node:crypto";
 import { tool } from "ai";
 import { z } from "zod";
-import { activityContentSchema } from "../../domain/activity/activity-content";
+import { activityContentV2Schema } from "../../domain/activity/activity-content";
 import { publishDueAtSchema } from "../../domain/activity/prepare-publish-intent";
 import type { PrismaClient } from "../../generated/prisma/client";
 import {
@@ -62,7 +62,7 @@ export const publishActivityToolOutputSchema = z
  */
 export const activityAssistantMessageValidationTools = {
   create_activity_draft: tool({
-    inputSchema: activityContentSchema,
+    inputSchema: activityContentV2Schema,
     outputSchema: createdDraftToolOutputSchema,
     strict: true,
   }),
@@ -130,8 +130,8 @@ export function createActivityAssistantTools({
   return {
     create_activity_draft: tool({
       description:
-        "把教師已經說明清楚的活動內容儲存成可預覽、可繼續編輯的活動草稿。必須完整提供六段內容，不能臆造缺失事實。",
-      inputSchema: activityContentSchema,
+        "把教師已經說明清楚的完整跨學科任務書儲存成可預覽、可繼續編輯的活動草稿。必須包含基本設定、三維目標、三至四個連續階段、類型化證據及四檔量規，不能臆造缺失事實。",
+      inputSchema: activityContentV2Schema,
       outputSchema: createdDraftToolOutputSchema,
       strict: true,
       execute: async (content, { toolCallId }) => {

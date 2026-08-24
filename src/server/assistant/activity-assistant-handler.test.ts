@@ -1,7 +1,7 @@
 import { simulateReadableStream } from "ai";
 import { MockLanguageModelV4 } from "ai/test";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { ActivityContent } from "../../domain/activity/activity-content";
+import { waterConservationTaskBook } from "../../fixtures/water-conservation";
 import type { AppUser, PrismaClient } from "../../generated/prisma/client";
 
 vi.mock("server-only", () => ({}));
@@ -30,15 +30,7 @@ const approvalRunId = "80000000-0000-4000-8000-000000000008";
 const executionRunId = "90000000-0000-4000-8000-000000000009";
 const replayRunId = "a0000000-0000-4000-8000-00000000000a";
 const now = new Date("2026-08-20T04:00:00.000Z");
-const content: ActivityContent = {
-  schemaVersion: 1,
-  title: "校園節水行動",
-  summary: "記錄水表並提出改善建議",
-  learningObjectives: ["使用資料支持結論"],
-  taskInstructions: "記錄兩次水表讀數並解釋差異。",
-  evidenceRequirements: ["時間與讀數"],
-  feedbackCriteria: ["證據與建議一致"],
-};
+const content = waterConservationTaskBook;
 const usage = {
   inputTokens: {
     total: 10,

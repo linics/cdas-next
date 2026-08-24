@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { Client } from "pg";
 import { afterAll, describe, expect, it } from "vitest";
+import { waterConservationTaskBook } from "../../src/fixtures/water-conservation";
 
 import {
   finishActivityAssistantRun,
@@ -61,6 +62,19 @@ const generatedContent = {
   evidenceRequirements: ["一段非空合成文本"],
   feedbackCriteria: ["证据是否支持判断"],
 } as const;
+
+function generatedTaskBook(
+  title: string,
+  summary: string = generatedContent.summary,
+) {
+  return {
+    ...waterConservationTaskBook,
+    title,
+    topic: "学生辨识合成证据",
+    summary,
+    taskInstructions: generatedContent.taskInstructions,
+  };
+}
 
 function context(
   actorId: string,
@@ -192,15 +206,7 @@ describeWithDatabase("staging Agent acceptance read-only verifier", () => {
         draftId: null,
         expectedVersion: null,
         desiredStatus: "READY_FOR_PREVIEW",
-        content: {
-          schemaVersion: 1,
-          title: namespace.activityTitle,
-          summary: generatedContent.summary,
-          learningObjectives: [...generatedContent.learningObjectives],
-          taskInstructions: generatedContent.taskInstructions,
-          evidenceRequirements: [...generatedContent.evidenceRequirements],
-          feedbackCriteria: [...generatedContent.feedbackCriteria],
-        },
+        content: generatedTaskBook(namespace.activityTitle),
         agentRunId: run1.id,
         idempotencyKey: idempotencyKey("draft"),
       },
@@ -216,15 +222,10 @@ describeWithDatabase("staging Agent acceptance read-only verifier", () => {
         draftId: saved.draftId,
         expectedVersion: 1,
         desiredStatus: "READY_FOR_PREVIEW",
-        content: {
-          schemaVersion: 1,
-          title: namespace.activityTitle,
-          summary: agentAcceptanceEditedSummary,
-          learningObjectives: [...generatedContent.learningObjectives],
-          taskInstructions: generatedContent.taskInstructions,
-          evidenceRequirements: [...generatedContent.evidenceRequirements],
-          feedbackCriteria: [...generatedContent.feedbackCriteria],
-        },
+        content: generatedTaskBook(
+          namespace.activityTitle,
+          agentAcceptanceEditedSummary,
+        ),
         agentRunId: null,
         idempotencyKey: `save_activity_draft_${randomUUID()}`,
       },
@@ -453,15 +454,7 @@ describeWithDatabase("staging Agent acceptance read-only verifier", () => {
         draftId: null,
         expectedVersion: null,
         desiredStatus: "EDITING",
-        content: {
-          schemaVersion: 1,
-          title: namespace.activityTitle,
-          summary: generatedContent.summary,
-          learningObjectives: [...generatedContent.learningObjectives],
-          taskInstructions: generatedContent.taskInstructions,
-          evidenceRequirements: [...generatedContent.evidenceRequirements],
-          feedbackCriteria: [...generatedContent.feedbackCriteria],
-        },
+        content: generatedTaskBook(namespace.activityTitle),
         agentRunId: null,
         idempotencyKey: `manual_duplicate_${randomUUID()}`,
       },

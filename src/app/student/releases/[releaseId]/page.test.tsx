@@ -79,6 +79,7 @@ vi.mock("./submission-editor", () => ({
 }));
 
 import { AuthenticationError } from "../../../../server/auth/current-actor";
+import { waterConservationTaskBook } from "../../../../fixtures/water-conservation";
 import { FeedbackWorkspaceQueryError } from "../../../../server/queries/feedback-workspace";
 import StudentReleasePage from "./page";
 
@@ -245,6 +246,31 @@ describe("student release page access boundary", () => {
     expect(markup).toContain("退出登录");
     expect(markup).toContain("还没有正式修订");
     expect(mocks.getStudentFeedbackWorkspace).not.toHaveBeenCalled();
+  });
+
+  it("renders the complete structured task book from the immutable release snapshot", async () => {
+    mocks.getStudentReleaseWorkspace.mockResolvedValue({
+      ...workspace,
+      release: {
+        ...workspace.release,
+        snapshot: {
+          ...workspace.release.snapshot,
+          content: waterConservationTaskBook,
+        },
+      },
+    });
+
+    const markup = await renderPage();
+
+    expect(markup).toContain("任务设置");
+    expect(markup).toContain("调查探究");
+    expect(markup).toContain("背景设定");
+    expect(markup).toContain("知识与技能");
+    expect(markup).toContain("总体任务");
+    expect(markup).toContain("观察与问题界定");
+    expect(markup).toContain("文字记录");
+    expect(markup).toContain("评价标准");
+    expect(markup).toContain("需改进：证据不足或与结论脱节");
   });
 
   it("shows confirmed feedback history to a historical member without leaking internals", async () => {

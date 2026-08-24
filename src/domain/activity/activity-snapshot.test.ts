@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { waterConservationActivity } from "../../fixtures/water-conservation";
-import { createActivitySnapshot } from "./activity-snapshot";
+import { waterConservationActivity, waterConservationTaskBook } from "../../fixtures/water-conservation";
+import { canonicalizeActivityContentV2, createActivitySnapshot } from "./activity-snapshot";
 
 describe("createActivitySnapshot", () => {
   it("is deterministic across property order", () => {
@@ -43,6 +43,15 @@ describe("createActivitySnapshot", () => {
 
     expect(snapshot.contentHash).toBe(
       "dba8c4eb5f68077966a1e257b6535422bb6f181b38152b352715a589be96e63a",
+    );
+  });
+
+  it("hashes the complete v2 task book deterministically", () => {
+    const snapshot = createActivitySnapshot(waterConservationTaskBook);
+    expect(snapshot.content).toEqual(waterConservationTaskBook);
+    expect(snapshot.contentHash).toHaveLength(64);
+    expect(canonicalizeActivityContentV2({ ...waterConservationTaskBook })).toBe(
+      canonicalizeActivityContentV2(waterConservationTaskBook),
     );
   });
 });

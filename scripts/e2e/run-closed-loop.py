@@ -247,20 +247,47 @@ def screenshot(page: Page, artifacts: Path, name: str) -> None:
 
 
 def fill_activity_form(page: Page, title: str, summary: str) -> None:
+    page.locator('#activity-draft-form[data-hydrated="true"]').wait_for(state="visible")
     page.locator("#activity-title").fill(title)
     page.locator("#activity-summary").fill(summary)
-    page.locator("#activity-learningObjectives").fill(
-        "识别可核验证据\n根据证据形成解释"
+    page.get_by_label("探究主题", exact=True).fill("校园证据核验")
+    page.get_by_label("背景设定", exact=True).fill(
+        "学生受邀核验校园观察记录，并以可复验的数据说明结论。"
     )
-    page.locator("#activity-taskInstructions").fill(
-        "完成一次观察，记录数据，并用文字说明证据如何支持结论。"
+    page.get_by_label("知识与技能目标", exact=True).fill("识别可核验的观察证据。")
+    page.get_by_label("过程与方法目标", exact=True).fill("根据记录比较证据并形成解释。")
+    page.get_by_label("情感态度目标", exact=True).fill("愿意诚实记录并听取同伴意见。")
+    page.get_by_label("总体任务说明", exact=True).fill(
+        "完成一次校园观察，记录数据，并用文字说明证据如何支持结论。"
     )
-    page.locator("#activity-evidenceRequirements").fill(
-        "至少一项观察记录\n一段基于证据的解释"
+
+    phase_actions = (
+        "提出一个可以通过观察验证的问题。",
+        "收集并比较至少两项观察记录。",
+        "用证据表达结论并回应同伴质疑。",
     )
-    page.locator("#activity-feedbackCriteria").fill(
-        "证据可核验\n解释与证据一致"
-    )
+    for index, action in enumerate(phase_actions):
+        phase = page.get_by_role("group", name=f"阶段 {index + 1}", exact=True)
+        phase.get_by_label("核心动作", exact=True).fill(action)
+        phase.get_by_label("情境承接", exact=True).fill(
+            f"承接校园证据核验任务的第 {index + 1} 步。"
+        )
+        phase.get_by_label("学习支架", exact=True).fill(
+            "使用问题、记录、证据、结论四栏表。"
+        )
+        phase.get_by_label("提交证据说明", exact=True).fill(
+            f"第 {index + 1} 阶段的文字记录与依据。"
+        )
+        phase.get_by_label("评价要点", exact=True).fill(
+            "记录可核验，结论与证据一致。"
+        )
+
+    for index in range(4):
+        rubric = page.get_by_role("group", name=f"维度 {index + 1}", exact=True)
+        rubric.get_by_label("优秀", exact=True).fill("证据完整且解释清晰。")
+        rubric.get_by_label("良好", exact=True).fill("主要证据完整，解释基本清晰。")
+        rubric.get_by_label("合格", exact=True).fill("有基本证据和可理解的解释。")
+        rubric.get_by_label("需改进", exact=True).fill("证据或解释仍需补充。")
 
 
 def fill_feedback_when_ready(page: Page, body: str) -> None:
@@ -341,6 +368,7 @@ def run_browser_flow(
             )
             page.get_by_role("button", name="保存为编辑中", exact=True).click()
             page.wait_for_url(re.compile(rf"{re.escape(base_url)}/teacher/activities/[0-9a-f-]+$"))
+            page.locator('#activity-draft-form[data-hydrated="true"]').wait_for(state="visible")
             if page.locator('input[name="expectedVersion"]').input_value() != "1":
                 raise E2eFailure("DRAFT_VERSION_ONE_NOT_RENDERED")
 
@@ -593,11 +621,12 @@ def run_real_model_browser_flow(
     title = f"E2E AI 草稿 {marker}"
     prompt = f"""請直接建立一份可預覽活動草稿，不要發佈，也不要提問。
 標題必須逐字為：{title}
-摘要：以校園節水觀察建立可核驗的學習證據。
-學習目標：第一，辨識可核驗的用水證據；第二，根據證據提出改善建議。
-任務說明：七年級學生記錄兩次合成水表讀數，比較差異，並用文字解釋證據如何支持建議。
-證據要求：兩次不含個資的合成讀數；一段基於差異的解釋。
-回饋標準：讀數可核驗；計算一致；建議與證據相符。
+請建立完整跨學科任務書：初中七年級，主學科物理，融合數學與語文；探究性作業、調查探究、中等探究、一次性提交、2周。
+探究主題與摘要聚焦校園節水觀察；背景是學生受邀核驗兩次不含個資的合成水表讀數。
+三維目標分別涵蓋辨識可核驗的用水證據、根據數據形成改善建議、願意為公共資源負責。
+總體任務要求學生比較讀數差異，并用文字解釋證據如何支持建議。
+設置3個連續階段，每階段都有明確行動、情境承接、學習支架、至少一項類型化提交證據、評價要點和課時建議。
+設置問題意識、證據質量、跨學科連接、方案表達4個量規維度，每個維度都有優秀、良好、合格、需改進四檔非空描述。
 內容只使用以上合成資料，完成後立即調用 create_activity_draft。"""
 
     with sync_playwright() as playwright:
@@ -631,6 +660,8 @@ def run_real_model_browser_flow(
             )
             wait_for_text(page, title)
             wait_for_text(page, "版本 1")
+            for heading in ("基本设置", "背景设定", "三维目标", "总体任务", "任务链", "评价标准"):
+                page.get_by_role("heading", name=heading, level=3, exact=True).wait_for()
             if page.get_by_role(
                 "link", name="查看发布与学生提交", exact=True
             ).count() != 0:

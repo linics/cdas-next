@@ -284,12 +284,28 @@ def confirm(page: Page, title: str, button: str) -> None:
 
 
 def fill_activity(page: Page, title: str, summary: str) -> None:
+    page.locator('#activity-draft-form[data-hydrated="true"]').wait_for(state="visible")
     page.locator("#activity-title").fill(title)
     page.locator("#activity-summary").fill(summary)
-    page.locator("#activity-learningObjectives").fill("Verify synthetic evidence")
-    page.locator("#activity-taskInstructions").fill("Record one synthetic observation and explain it.")
-    page.locator("#activity-evidenceRequirements").fill("One non-empty synthetic text evidence")
-    page.locator("#activity-feedbackCriteria").fill("Evidence is specific and verifiable")
+    page.get_by_label("探究主题", exact=True).fill("Synthetic evidence verification")
+    page.get_by_label("背景设定", exact=True).fill("Students verify a synthetic campus observation in a real learning context.")
+    page.get_by_label("知识与技能目标", exact=True).fill("Identify evidence that can be verified.")
+    page.get_by_label("过程与方法目标", exact=True).fill("Compare observations and explain a conclusion.")
+    page.get_by_label("情感态度目标", exact=True).fill("Record evidence honestly and respond to peers.")
+    page.get_by_label("总体任务说明", exact=True).fill("Record one synthetic observation and explain how it supports a conclusion.")
+    for index in range(3):
+        phase = page.get_by_role("group", name=f"阶段 {index + 1}", exact=True)
+        phase.get_by_label("核心动作", exact=True).fill(f"Complete verification action {index + 1}.")
+        phase.get_by_label("情境承接", exact=True).fill(f"Continue the campus verification in stage {index + 1}.")
+        phase.get_by_label("学习支架", exact=True).fill("Use the question-evidence-conclusion organizer.")
+        phase.get_by_label("提交证据说明", exact=True).fill(f"Stage {index + 1} synthetic text evidence.")
+        phase.get_by_label("评价要点", exact=True).fill("Evidence is specific and verifiable.")
+    for index in range(4):
+        rubric = page.get_by_role("group", name=f"维度 {index + 1}", exact=True)
+        rubric.get_by_label("优秀", exact=True).fill("Complete evidence with a clear explanation.")
+        rubric.get_by_label("良好", exact=True).fill("Mostly complete evidence and explanation.")
+        rubric.get_by_label("合格", exact=True).fill("Basic evidence and an understandable explanation.")
+        rubric.get_by_label("需改进", exact=True).fill("Evidence or explanation needs more detail.")
 
 
 def feedback(page: Page, body: str) -> None:
@@ -394,6 +410,8 @@ def run() -> None:
             index["01-draft-ready.png"] = screenshot(teacher, output, "01-draft-ready")
             preview.click()
             assert_origin(teacher.url, remote)
+            for heading in ("基本设置", "背景设定", "三维目标", "总体任务", "任务链", "评价标准"):
+                teacher.get_by_role("heading", name=heading, level=3, exact=True).wait_for()
             teacher.locator("select[name=classroomId]").select_option(label=f"{classroom_name} · 2 名当前成员")
             teacher.get_by_role("button", name="准备精确发布确认", exact=True).click()
             confirm(teacher, "确认发布活动", "确认并发布")
@@ -422,6 +440,8 @@ def run() -> None:
                 raise AcceptanceFailure("STAGING_ACCEPTANCE_STUDENT_LINK_MISSING")
             activity.click()
             assert_origin(student.url, remote)
+            for heading in ("任务设置", "背景设定", "学习目标", "总体任务", "任务链", "评价标准"):
+                student.get_by_role("heading", name=heading, level=3, exact=True).wait_for()
             student.locator("#text-evidence").fill(evidence)
             student.get_by_role("button", name="保存草稿", exact=True).click()
             wait_text(student, "草稿已保存")

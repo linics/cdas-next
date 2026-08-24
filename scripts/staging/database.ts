@@ -35,9 +35,11 @@ function check(code: string, condition: boolean): StagingCheck {
 
 export const requiredHistoryProtectionFunctions = [
   "assert_activity_release_integrity",
+  "assert_activity_release_integrity_v1",
   "assert_close_release_integrity",
   "assert_teacher_feedback_target_current",
   "cdas_activity_content_v1_canonical",
+  "cdas_activity_task_book_v2_is_valid",
   "cdas_close_release_payload_canonical",
   "cdas_publish_due_at_is_valid",
   "cdas_publish_payload_canonical",
@@ -113,6 +115,8 @@ export const requiredHistoryProtectionConstraints = [
   "action_intents_status_timestamps",
   "activity_draft_revisions_agent_run_id_fkey",
   "activity_draft_revisions_source_provenance",
+  "activity_draft_revisions_task_book_version",
+  "activity_drafts_task_book_version",
   "activity_release_snapshots_release_id_source_draft_id_fkey",
   "activity_releases_action_intent_id_fkey",
   "activity_releases_close_action_intent_id_fkey",
