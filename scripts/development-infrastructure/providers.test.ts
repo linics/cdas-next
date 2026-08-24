@@ -326,4 +326,23 @@ describe("provider fail-closed contracts", () => {
     expect(calls[0]).toContain("staging-synthetic-acceptance-123-2");
     expect(calls[0]?.[calls[0].indexOf("--dir") + 1]).toMatch(/output\/staging-acceptance$/u);
   });
+  it("briefly retries the exact artifact when GitHub has completed before download propagation", async () => {
+    const run = { id: "123", attempt: 2, url: "https://github.com/o/r/actions/runs/123", headSha: "a".repeat(40) };
+    let downloads = 0;
+    const waits: number[] = [];
+    const runner = { run: async (_command: string, args: readonly string[]) => {
+      if (args[0] === "run") {
+        downloads += 1;
+        if (downloads === 1) throw new Error("DEVELOPMENT_INFRA_COMMAND_FAILED");
+        const directory = args[args.indexOf("--dir") + 1] as string;
+        const marker = path.join(directory, "cdas-staging-123-2");
+        await mkdir(marker, { recursive: true });
+        await writeFile(path.join(marker, "final.json"), JSON.stringify({ schema: "staging-synthetic-acceptance-final.v1", status: "PASS", realStudentDataAllowed: false, productionDecision: "NO_GO" }));
+      }
+      return { stdout: "", stderr: "" };
+    } };
+    await expect(verifyDownloadedAcceptanceArtifact(run, runner, { environment: {} }, async (milliseconds) => { waits.push(milliseconds); })).resolves.toBeUndefined();
+    expect(downloads).toBe(2);
+    expect(waits).toEqual([3_000]);
+  });
 });

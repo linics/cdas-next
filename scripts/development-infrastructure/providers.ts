@@ -225,7 +225,13 @@ export async function deployMigrationsWithMinimalEnvironment(connection: NeonCon
   await runner.run("pnpm", ["db:deploy"], { env: { PATH: process.env.PATH ?? "", DATABASE_URL: connection.pooledUrl, DIRECT_URL: migrationUrl.toString(), AI_PROVIDER_DISABLED: "1", NEXT_TELEMETRY_DISABLED: "1" } });
 }
 
-export async function verifyDownloadedAcceptanceArtifact(run: WorkflowRun, runner: CommandRunner, context: ArtifactValidationContext = { environment: {} }): Promise<void> {
+export async function verifyDownloadedAcceptanceArtifact(
+  run: WorkflowRun,
+  runner: CommandRunner,
+  context: ArtifactValidationContext = { environment: {} },
+  sleep: (milliseconds: number) => Promise<void> = async (milliseconds) =>
+    new Promise((resolve) => setTimeout(resolve, milliseconds)),
+): Promise<void> {
   const directory = await mkdtemp(path.join(tmpdir(), "cdas-development-infra-"));
   try {
     const urlRunId = /^https:\/\/github\.com\/[^/]+\/[^/]+\/actions\/runs\/(\d+)$/u.exec(run.url)?.[1];
@@ -233,7 +239,23 @@ export async function verifyDownloadedAcceptanceArtifact(run: WorkflowRun, runne
     const artifact = `staging-synthetic-acceptance-${run.id}-${run.attempt}`;
     const candidate = path.join(directory, "output", "staging-acceptance");
     await mkdir(candidate, { recursive: true });
-    await runner.run("gh", ["run", "download", run.id, "--name", artifact, "--dir", candidate], { env: minimalCommandEnvironment({ github: true }) });
+    let downloaded = false;
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      try {
+        await runner.run("gh", ["run", "download", run.id, "--name", artifact, "--dir", candidate], { env: minimalCommandEnvironment({ github: true }) });
+        downloaded = true;
+        break;
+      } catch (error) {
+        if (attempt === 4) throw error;
+        // A successful workflow can become visible before its uploaded
+        // artifact is downloadable. Reset only this fresh temp directory and
+        // retry the exact run/artifact binding for a short bounded window.
+        await rm(candidate, { recursive: true, force: true });
+        await mkdir(candidate, { recursive: true });
+        await sleep(3_000);
+      }
+    }
+    if (!downloaded) throw new Error("DEVELOPMENT_INFRA_ARTIFACT_DOWNLOAD_FAILED");
     const entries = await (await import("node:fs/promises")).readdir(candidate, { withFileTypes: true });
     const marker = `cdas-staging-${run.id}-${run.attempt}`;
     if (entries.length !== 1 || !entries[0]?.isDirectory() || entries[0].name !== marker) throw new Error("DEVELOPMENT_INFRA_ARTIFACT_FINAL_MISSING");
