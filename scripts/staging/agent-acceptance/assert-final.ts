@@ -9,13 +9,14 @@ import { agentOutputDirectory, writeAgentArtifact } from "./output";
 import { agentVerificationCodes } from "./verify";
 
 const screenshots = [
-  "01-ready.png",
-  "02-approval.png",
-  "03-published.png",
-  "04-student-submitted.png",
-  "05-teacher-feedback.png",
-  "06-teacher-closed.png",
-  "07-student-closed-readonly.png",
+  "01-draft-proposal.png",
+  "02-draft-preview.png",
+  "03-publish-approval.png",
+  "04-published.png",
+  "05-student-submitted.png",
+  "06-teacher-feedback.png",
+  "07-teacher-closed.png",
+  "08-student-closed-readonly.png",
 ] as const;
 const browserCodes = [
   "VERCEL_PROTECTION_BYPASS_SCOPED",

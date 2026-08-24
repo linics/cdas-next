@@ -4,7 +4,11 @@ import type { PrismaClient } from "../../generated/prisma/client";
 import { DecideActionIntentError } from "../commands/decide-action-intent";
 import { PreparePublishActivityIntentError } from "../commands/prepare-publish-activity-intent";
 import type { CommandContext } from "../commands/command-context";
-import { createActivityAssistantTools } from "./activity-assistant-tools";
+import {
+  activityDraftProposalSchema,
+  createActivityAssistantTools,
+  type ActivityDraftProposal,
+} from "./activity-assistant-tools";
 
 vi.mock("server-only", () => ({}));
 
@@ -37,6 +41,26 @@ const content: ActivityContentV2 = {
   ], rubricDimensions: [
     { name: "問題意識", excellent: "清楚", good: "較清楚", pass: "基本", improve: "需補充" }, { name: "證據品質", excellent: "完整", good: "較完整", pass: "基本", improve: "需補充" }, { name: "跨學科連結", excellent: "清楚", good: "較清楚", pass: "基本", improve: "需補充" }, { name: "方案表達", excellent: "可行", good: "較可行", pass: "基本", improve: "需補充" },
   ],
+};
+
+const proposal: ActivityDraftProposal = {
+  taskUnderstandingSummary: {
+    realWorldContext: "校園需要改善用水。",
+    studentAction: "記錄水表並整理資料。",
+    intendedOutcome: "提出有證據的節水建議。",
+    evidenceAndAssessment: "以讀數、分析表與建議稿判斷。",
+  },
+  teacherRequirements: ["七年級", "校園節水", "記錄兩次水表讀數"],
+  assumptions: [],
+  integratedDisciplineContributions: [
+    { disciplineCode: "math", necessaryContribution: "整理與比較水表讀數。" },
+  ],
+  alignmentChains: [
+    { objectiveKind: "knowledge", objective: "理解用水資料。", task: "辨識讀數差異。", evidence: "讀數紀錄。", assessment: "資料完整。" },
+    { objectiveKind: "process", objective: "使用資料支持結論。", task: "整理資料。", evidence: "分析表。", assessment: "結論有據。" },
+    { objectiveKind: "emotion", objective: "願意參與校園節水。", task: "提出建議。", evidence: "建議稿。", assessment: "方案可行。" },
+  ],
+  content,
 };
 
 const mocks = {
@@ -106,10 +130,39 @@ describe("activity assistant tools", () => {
     });
   });
 
+  it("requires exact integrated-discipline coverage and three unique alignment chains", () => {
+    expect(activityDraftProposalSchema.safeParse(proposal).success).toBe(true);
+    expect(
+      activityDraftProposalSchema.safeParse({
+        ...proposal,
+        integratedDisciplineContributions: [],
+      }).success,
+    ).toBe(false);
+    expect(
+      activityDraftProposalSchema.safeParse({
+        ...proposal,
+        integratedDisciplineContributions: [
+          { disciplineCode: "math", necessaryContribution: "整理数据。" },
+          { disciplineCode: "math", necessaryContribution: "重复。" },
+        ],
+      }).success,
+    ).toBe(false);
+    expect(
+      activityDraftProposalSchema.safeParse({
+        ...proposal,
+        alignmentChains: [
+          proposal.alignmentChains[0],
+          proposal.alignmentChains[0],
+          proposal.alignmentChains[2],
+        ],
+      }).success,
+    ).toBe(false);
+  });
+
   it("creates a READY draft through the shared command with AGENT provenance", async () => {
     const registry = tools();
     const result = await registry.create_activity_draft.execute!(
-      content,
+      proposal,
       options("draft_call_1"),
     );
 
@@ -146,7 +199,7 @@ describe("activity assistant tools", () => {
 
     await expect(
       registry.create_activity_draft.execute!(
-        content,
+        proposal,
         options("draft_call_bad_response"),
       ),
     ).rejects.toThrow("ACTIVITY_DRAFT_COMMAND_FAILED");
@@ -160,16 +213,16 @@ describe("activity assistant tools", () => {
     const registry = tools();
 
     await registry.create_activity_draft.execute!(
-      content,
+      proposal,
       options("draft_call_same"),
     );
     await registry.create_activity_draft.execute!(
-      content,
+      proposal,
       options("draft_call_same"),
     );
     await expect(
       registry.create_activity_draft.execute!(
-        content,
+        proposal,
         options("draft_call_different"),
       ),
     ).rejects.toThrow("ACTIVITY_DRAFT_MULTIPLE_CREATE_ATTEMPTS");

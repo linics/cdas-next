@@ -42,7 +42,25 @@ describe("agent acceptance verifier", () => {
   });
 
   it("keeps the SQL contract scoped to exact immutable provenance", () => {
-    expect(verificationSql).toContain("count(*) = 3 FROM session_runs");
+    expect(verificationSql).toContain("count(*) = 4 FROM session_runs");
+    expect(verificationSql).toContain("run4 AS");
+    expect(verificationSql).toContain(
+      "row_number() OVER (ORDER BY run.started_at, run.id) AS position",
+    );
+    // Exact positions bind the no-write proposal runs (1 and 3) and their
+    // subsequent business executions (2 and 4). An extra run, a swapped
+    // execution, or a business side effect on either proposal makes the SQL
+    // `runs` relationship false.
+    expect(verificationSql).toContain("WHERE run.position = 1");
+    expect(verificationSql).toContain("WHERE run.position = 2");
+    expect(verificationSql).toContain("WHERE run.position = 3");
+    expect(verificationSql).toContain("WHERE run.position = 4");
+    expect(verificationSql).toContain(
+      "JOIN agent_revision AS revision ON revision.agent_run_id = run.id\n  WHERE run.position = 2",
+    );
+    expect(verificationSql).toContain(
+      "JOIN intent ON intent.agent_run_id = run.id\n  WHERE run.position = 4",
+    );
     expect(verificationSql).toContain("audit.source = 'UI'");
     expect(verificationSql).toContain("assistant_publish_");
     expect(verificationSql).toContain("snapshot.content = revision.task_book");

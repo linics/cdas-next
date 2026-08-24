@@ -74,7 +74,7 @@ Environment variables 必须包含精确 Vercel Preview 根地址 `STAGING_BASE_
 - `STAGING_AGENT_CLERK_TOKENS_ATTESTED`：允许 runner 为预留 test identity 签发 60 秒 ticket；能力探测 ticket 会立即撤销，浏览器 ticket 只驻内存。
 - `STAGING_AGENT_MODEL_COST_ATTESTED`：允许本次固定合成 prompt 的计费模型请求。
 - `STAGING_AGENT_RETENTION_ATTESTED`：接受本次合成业务历史与 14 天脱敏 artifact 保留；工作流不会清理业务历史。
-- `STAGING_AGENT_IDENTITIES_RESERVED_ATTESTED`：确认这两个 Clerk test user 在运行期间只用于本次验收，不会发生并行交互污染三次 AgentRun 的时间窗。
+- `STAGING_AGENT_IDENTITIES_RESERVED_ATTESTED`：确认这四个 Clerk test user 在运行期间只用于本次验收，不会发生并行交互污染四次 AgentRun 的时间窗。
 
 第六项 `STAGING_AGENT_RUN_MODEL_ATTESTED` 只能由 `run_real_model` dispatch 输入派生，不能用 Environment variable 伪造。显示名仍固定为 `CDAS Staging Synthetic Teacher` 和 `CDAS Staging Synthetic Student`；既有 AppUser 的角色或显示名不匹配时直接 `NO_GO`，工作流不会覆盖或修改 Clerk 用户。
 
@@ -84,7 +84,7 @@ Environment variables 必须包含精确 Vercel Preview 根地址 `STAGING_BASE_
 
 浏览器只用预置的合成主题、人工摘要、学生证据与教师反馈。runner 先打开绑定的 staging base URL，并在任何教师 ticket 存在前检查最终页面的 scheme、host 与有效 port 精确等于该 staging origin；首次登录、进入新建页、助手导航到预览和进入 Release 后都会再次检查，跨 origin redirect 直接失败。通过该检查后才签发 60 秒 ticket，并只经 Playwright 参数通道驻留内存。教师经真实 Clerk session 打开“新建学习活动”，模型调用 `create_activity_draft` 创建满足 D-030 原版能力下限的 schema v2 `READY_FOR_PREVIEW` 版本 1；共享的 `/teacher/activities` 客户端 layout 只在内存保留这次官方 AI SDK message session，导航到精确预览后核对基本设置、背景、三维目标、任务链和评价标准。教师随后返回普通编辑页，以固定人工摘要保存 `READY_FOR_PREVIEW` 版本 2，再明确指定 marker 班级、版本 2 和无截止时间；模型提出 `publish_activity_release`，页面展示签名 approval，教师点击确认后仍由 prepare → UI decide → publish 领域命令发布唯一不可变 Release。刷新或直接打开预览不会恢复对话，也不会绕过手工发布路径。
 
-这段正常流程应留下恰好三个同教师、同模型、同浏览器 UTC 时间窗的 `SUCCEEDED` AgentRun：第一个绑定版本 1 AGENT 草稿修订，版本 2 是不带 AgentRun 的 MANUAL 修订，第二个 AgentRun 只记录模型提出 approval 且不绑定业务写入，第三个绑定 ActionIntent、prepare/decide/publish audits 与 Release。最终 verifier 在 `BEGIN READ ONLY` 中精确检查该教师与 marker 标题下只有一份草稿、SEALED v2 head、两条不可变修订、CLOSED Release 与完整 snapshot、教师本人确认并执行的 null-due 发布 ActionIntent、主学生正式提交、教师确认反馈、关闭 ActionIntent、陈旧写拒绝、其他学生零提交历史和其他教师零目标操作；同标题的额外草稿或时间窗中的额外 AgentRun 都会失败。final 聚合器还会逐类验证 readiness、gate、identity、即时 health、bootstrap、browser 与 verifier 的精确顶层键、完整且唯一的 PASS check code、共同数据边界，以及七个固定截图键与合法且匹配文件的 SHA-256；任何畸形或部分证据保持 `NO_GO`。
+这段正常流程应留下恰好四个同教师、同模型、同浏览器 UTC 时间窗的 `SUCCEEDED` AgentRun：第一个只记录无业务写入的草稿提案，第二个绑定版本 1 AGENT 草稿修订，版本 2 是不带 AgentRun 的 MANUAL 修订，第三个只记录无业务写入的发布提议，第四个绑定 ActionIntent、prepare/decide/publish audits 与 Release。最终 verifier 在 `BEGIN READ ONLY` 中精确检查该教师与 marker 标题下只有一份草稿、SEALED v2 head、两条不可变修订、CLOSED Release 与完整 snapshot、教师本人确认并执行的 null-due 发布 ActionIntent、主学生正式提交、教师确认反馈、关闭 ActionIntent、陈旧写拒绝、其他学生零提交历史和其他教师零目标操作；同标题的额外草稿或时间窗中的额外 AgentRun 都会失败。final 聚合器还会逐类验证 readiness、gate、identity、即时 health、bootstrap、browser 与 verifier 的精确顶层键、完整且唯一的 PASS check code、共同数据边界，以及八个固定截图键与合法且匹配文件的 SHA-256；任何畸形或部分证据保持 `NO_GO`。
 
 这个 Environment、可临时启用 AI 的受保护 deployment 管理路径与本机忽略凭据已经建立。真实模型 run `32755788543` 已在提交 `df1d37a3ea454418b38ef8e9a9b1d336a6b0d1a2` 上完成 schema v2 固定合成流程；最终 artifact、只读 verifier、浏览器隔离检查、七张截图及其 SHA-256 全部 PASS。该结论只证明 synthetic staging 的 Agent 教学闭环，不改变 artifact 固定的 `realStudentDataAllowed: false` 与 `productionDecision: "NO_GO"`。一键命令收尾时已移除临时模型/审批 secrets，并恢复和核验 AI-disabled Preview。
 

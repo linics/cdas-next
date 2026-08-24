@@ -22,7 +22,7 @@ export const agentVerificationCodes = [
   "EXACT_SEALED_DRAFT_AND_REVISIONS",
   "EXACT_CLOSED_RELEASE_AND_SNAPSHOT",
   "EXACT_PUBLISH_INTENT_AND_APPROVAL",
-  "EXACT_THREE_AGENT_RUNS",
+  "EXACT_FOUR_AGENT_RUNS",
   "EXACT_AGENT_AUDIT_PROVENANCE",
   "EXACT_AGENT_IDEMPOTENCY_PROVENANCE",
   "EXACT_PRIMARY_STUDENT_SUBMISSION",
@@ -47,7 +47,7 @@ export function evaluateAgentVerification(
     EXACT_SEALED_DRAFT_AND_REVISIONS: Boolean(row?.draft && row.revision),
     EXACT_CLOSED_RELEASE_AND_SNAPSHOT: Boolean(row?.release && row.snapshot),
     EXACT_PUBLISH_INTENT_AND_APPROVAL: Boolean(row?.intent),
-    EXACT_THREE_AGENT_RUNS: Boolean(row?.runs),
+    EXACT_FOUR_AGENT_RUNS: Boolean(row?.runs),
     EXACT_AGENT_AUDIT_PROVENANCE: Boolean(row?.audits),
     EXACT_AGENT_IDEMPOTENCY_PROVENANCE: Boolean(row?.idempotency),
     EXACT_PRIMARY_STUDENT_SUBMISSION: Boolean(row?.primarySubmission),
@@ -185,7 +185,9 @@ intent AS (
     AND intent.payload_hash ~ '^[a-f0-9]{64}$'
 ),
 session_runs AS (
-  SELECT run.id
+  SELECT
+    run.id,
+    row_number() OVER (ORDER BY run.started_at, run.id) AS position
   FROM agent_runs AS run
   WHERE run.actor_id = (SELECT id FROM teacher)
     AND run.model = $6
@@ -196,20 +198,39 @@ session_runs AS (
     AND run.completed_at <= $8::timestamptz
     AND run.started_at <= run.completed_at
 ),
-run1 AS (
+run2 AS (
   SELECT run.id
   FROM session_runs AS run
   JOIN agent_revision AS revision ON revision.agent_run_id = run.id
+  WHERE run.position = 2
+),
+run4 AS (
+  SELECT run.id
+  FROM session_runs AS run
+  JOIN intent ON intent.agent_run_id = run.id
+  WHERE run.position = 4
+),
+run1 AS (
+  SELECT run.id
+  FROM session_runs AS run
+  WHERE run.position = 1
+    AND NOT EXISTS (
+      SELECT 1 FROM activity_draft_revisions WHERE agent_run_id = run.id
+    )
+    AND NOT EXISTS (
+      SELECT 1 FROM action_intents WHERE agent_run_id = run.id
+    )
+    AND NOT EXISTS (
+      SELECT 1 FROM action_audits WHERE agent_run_id = run.id
+    )
+    AND NOT EXISTS (
+      SELECT 1 FROM teacher_feedback_revisions WHERE agent_run_id = run.id
+    )
 ),
 run3 AS (
   SELECT run.id
   FROM session_runs AS run
-  JOIN intent ON intent.agent_run_id = run.id
-),
-run2 AS (
-  SELECT run.id
-  FROM session_runs AS run
-  WHERE run.id NOT IN (SELECT id FROM run1 UNION SELECT id FROM run3)
+  WHERE run.position = 3
     AND NOT EXISTS (
       SELECT 1 FROM activity_draft_revisions WHERE agent_run_id = run.id
     )
@@ -377,8 +398,14 @@ SELECT
     (SELECT count(*) = 1 FROM run1)
     AND (SELECT count(*) = 1 FROM run2)
     AND (SELECT count(*) = 1 FROM run3)
-    AND (SELECT count(*) = 3 FROM session_runs)
+    AND (SELECT count(*) = 1 FROM run4)
+    AND (SELECT count(*) = 4 FROM session_runs)
+    AND NOT EXISTS (SELECT 1 FROM run1 JOIN run2 USING (id))
     AND NOT EXISTS (SELECT 1 FROM run1 JOIN run3 USING (id))
+    AND NOT EXISTS (SELECT 1 FROM run1 JOIN run4 USING (id))
+    AND NOT EXISTS (SELECT 1 FROM run2 JOIN run3 USING (id))
+    AND NOT EXISTS (SELECT 1 FROM run2 JOIN run4 USING (id))
+    AND NOT EXISTS (SELECT 1 FROM run3 JOIN run4 USING (id))
   ) AS runs,
   (
     (SELECT count(*) = 5 FROM target_audits)
@@ -388,7 +415,7 @@ SELECT
       JOIN target ON true
       WHERE audit.action_name = 'save_activity_draft'
         AND audit.source = 'AGENT'
-        AND audit.agent_run_id = (SELECT id FROM run1)
+        AND audit.agent_run_id = (SELECT id FROM run2)
         AND audit.action_intent_id IS NULL
         AND audit.target_type = 'ActivityDraft'
         AND audit.target_id = target.id
@@ -419,7 +446,7 @@ SELECT
       FROM target_audits AS audit
       WHERE audit.action_name = 'prepare_publish_activity_intent'
         AND audit.source = 'AGENT'
-        AND audit.agent_run_id = (SELECT id FROM run3)
+        AND audit.agent_run_id = (SELECT id FROM run4)
         AND audit.action_intent_id = (SELECT id FROM intent)
         AND audit.target_type = 'ActionIntent'
         AND audit.target_id = (SELECT id FROM intent)
@@ -434,7 +461,7 @@ SELECT
       FROM target_audits AS audit
       WHERE audit.action_name = 'decide_action_intent'
         AND audit.source = 'UI'
-        AND audit.agent_run_id = (SELECT id FROM run3)
+        AND audit.agent_run_id = (SELECT id FROM run4)
         AND audit.action_intent_id = (SELECT id FROM intent)
         AND audit.target_type = 'ActionIntent'
         AND audit.target_id = (SELECT id FROM intent)
@@ -450,7 +477,7 @@ SELECT
       JOIN target ON true
       WHERE audit.action_name = 'publish_activity_release'
         AND audit.source = 'AGENT'
-        AND audit.agent_run_id = (SELECT id FROM run3)
+        AND audit.agent_run_id = (SELECT id FROM run4)
         AND audit.action_intent_id = (SELECT id FROM intent)
         AND audit.target_type = 'ActivityRelease'
         AND audit.target_id = target.release_id

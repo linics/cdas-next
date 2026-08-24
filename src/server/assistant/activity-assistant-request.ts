@@ -107,12 +107,10 @@ function assertSafeMessageHistory(
       toolCallIds.add(part.toolCallId);
 
       if (
-        part.type === "tool-publish_activity_release" &&
+        (part.type === "tool-create_activity_draft" ||
+          part.type === "tool-publish_activity_release") &&
         (part.state === "approval-requested" ||
-          part.state === "approval-responded" ||
-          part.state === "output-available" ||
-          part.state === "output-error" ||
-          part.state === "output-denied")
+          part.state === "approval-responded")
       ) {
         const signature = part.approval?.signature;
         if (!signature || signature.length > 1_024) {
@@ -144,7 +142,8 @@ function assertSafeMessageHistory(
 
   const hasApprovalResponse = lastMessage.parts.some(
     (part) =>
-      part.type === "tool-publish_activity_release" &&
+      (part.type === "tool-create_activity_draft" ||
+        part.type === "tool-publish_activity_release") &&
       part.state === "approval-responded" &&
       part.approval.isAutomatic !== true,
   );

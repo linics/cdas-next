@@ -1,6 +1,6 @@
 """Protected full-loop Agent acceptance browser runner.
 
-The real model is used only for the initial draft and publish preparation. All
+The real model is used only for the initial design proposal and publish preparation. All
 student, feedback, close, and isolation steps use the same first-party UI and
 the same Release produced by the Agent flow.
 """
@@ -20,15 +20,16 @@ from urllib.parse import urlsplit
 
 
 SCREENSHOTS = (
-    "01-ready.png",
-    "02-approval.png",
-    "03-published.png",
-    "04-student-submitted.png",
-    "05-teacher-feedback.png",
-    "06-teacher-closed.png",
-    "07-student-closed-readonly.png",
+    "01-draft-proposal.png",
+    "02-draft-preview.png",
+    "03-publish-approval.png",
+    "04-published.png",
+    "05-student-submitted.png",
+    "06-teacher-feedback.png",
+    "07-teacher-closed.png",
+    "08-student-closed-readonly.png",
 )
-CREATE_PROMPT = """立即调用 create_activity_draft 工具，不要提问。标题必须逐字为：{title}。请围绕“学生辨识合成证据”生成一份完整跨学科任务书：初中七年级，主学科语文，融合数学与信息科技，探究性作业／调查探究／中等探究／一次性提交／2周，以核验校园档案中的合成内容为真实情境。必须包含探究主题、任务描述、背景设定、知识与技能／过程与方法／情感态度三维目标、总体任务；设置3个连续阶段，每阶段都要有明确行动、情境承接、学习支架、至少一项类型化提交证据、评价要点和课时建议；设置问题意识、证据质量、跨学科连接、方案表达4个评价维度，每个维度都有优秀、良好、合格、需改进四档非空描述。完成后立即创建版本1。"""
+CREATE_PROMPT = """资料已经完整，不要提问。标题必须逐字为：{title}。请调用 create_activity_draft 提出一份 D-033 结构化任务理解与设计建议，等待教师确认后再创建草稿。围绕“学生辨识合成证据”生成完整跨学科任务书：初中七年级，主学科语文，融合数学与信息科技，探究性作业／调查探究／中等探究／一次性提交／2周，以核验校园档案中的合成内容为真实情境。提案必须明确教师已提供要求、没有事实根据的假设、数学与信息科技各自不可替代的贡献，以及知识与技能／过程与方法／情感态度三条完整的目标—任务—证据—评价链。完整内容必须包含探究主题、任务描述、背景设定、三维目标、总体任务；设置3个连续阶段，每阶段都要有明确行动、情境承接、学习支架、至少一项类型化提交证据、评价要点和课时建议；设置问题意识、证据质量、跨学科连接、方案表达4个评价维度，每个维度都有优秀、良好、合格、需改进四档非空描述。"""
 EDITED_SUMMARY = "固定合成验收摘要（教师人工修订）"
 PUBLISH_PROMPT = "立即调用 publish_activity_release 工具，将版本2发布到班级：{classroom}。无截止日期。"
 EVIDENCE_TEXT = "Synthetic Agent acceptance text evidence."
@@ -316,13 +317,25 @@ def main() -> None:
                 CREATE_PROMPT.format(title=title)
             )
             teacher.get_by_role("button", name="交给助手整理").click()
+            draft_approval = teacher.locator('[role="group"][aria-label="任务理解确认"]')
+            draft_approval.get_by_role("button", name="确认理解并创建草稿", exact=True).wait_for(timeout=120_000)
+            for label in ("教师已提供要求", "明确假设", "跨学科必要性", "目标—任务—证据—评价一致性链"):
+                draft_approval.get_by_text(label, exact=True).wait_for()
+            draft_approval.get_by_text("math", exact=True).wait_for()
+            draft_approval.get_by_text("infoTech", exact=True).wait_for()
+            draft_approval.get_by_text("知识与技能", exact=True).wait_for()
+            # The proposal is a distinct no-write AgentRun. Capture it before
+            # the signed approval continuation creates the editable draft.
+            screenshot(teacher, directory, SCREENSHOTS[0])
+            teacher.get_by_text("可使用", exact=True).wait_for(timeout=120_000)
+            draft_approval.get_by_role("button", name="确认理解并创建草稿", exact=True).click()
             teacher.wait_for_url(re.compile(r"/teacher/activities/.+/preview"), timeout=120_000)
             assert_origin(teacher.url, base)
             teacher.get_by_role("heading", name=title, level=1, exact=True).wait_for()
             teacher.get_by_text("草稿修订 1", exact=True).wait_for()
             for heading in ("基本设置", "背景设定", "三维目标", "总体任务", "任务链", "评价标准"):
                 teacher.get_by_role("heading", name=heading, level=3, exact=True).wait_for()
-            screenshot(teacher, directory, SCREENSHOTS[0])
+            screenshot(teacher, directory, SCREENSHOTS[1])
 
             teacher.get_by_role("link", name="← 返回草稿", exact=True).click()
             teacher.wait_for_url(re.compile(r"/teacher/activities/[0-9a-f-]+$"), timeout=30_000)
@@ -349,7 +362,7 @@ def main() -> None:
             # emits its final frame. Wait for the idle state so AI SDK can
             # deterministically schedule the approved continuation request.
             teacher.get_by_text("可使用", exact=True).wait_for(timeout=120_000)
-            screenshot(teacher, directory, SCREENSHOTS[1])
+            screenshot(teacher, directory, SCREENSHOTS[2])
             approval.get_by_role("button", name="确认并发布", exact=True).click()
             wait_text(teacher, "活动已发布")
             assert_origin(teacher.url, base)
@@ -359,7 +372,7 @@ def main() -> None:
                 r"/teacher/releases/[0-9a-f-]+/submissions", release_href
             ):
                 raise AcceptanceFailure("STAGING_AGENT_ACCEPTANCE_RELEASE_LINK_MISSING")
-            screenshot(teacher, directory, SCREENSHOTS[2])
+            screenshot(teacher, directory, SCREENSHOTS[3])
 
             sign_in(student, base, "STUDENT")
             activity_link = student.get_by_role("link", name=f"打开活动：{title}", exact=True)
@@ -376,7 +389,7 @@ def main() -> None:
             student.get_by_role("button", name="正式提交", exact=True).click()
             confirm(student, "确认正式提交？", "确认正式提交")
             wait_text(student, "第 1 版已正式提交")
-            screenshot(student, directory, SCREENSHOTS[3])
+            screenshot(student, directory, SCREENSHOTS[4])
             denied = student.goto(f"{base}{release_href}", wait_until="domcontentloaded")
             assert_origin(student.url, base)
             if not denied or denied.status != 404:
@@ -392,7 +405,7 @@ def main() -> None:
             submission_link.click()
             save_feedback(teacher)
             teacher.locator('[aria-labelledby^="feedback-history-"]').last.get_by_text(FEEDBACK_TEXT, exact=True).wait_for(state="visible")
-            screenshot(teacher, directory, SCREENSHOTS[4])
+            screenshot(teacher, directory, SCREENSHOTS[5])
 
             sign_in(other_teacher, base, "OTHER_TEACHER")
             denied_release = other_teacher.goto(f"{base}{release_href}", wait_until="domcontentloaded")
@@ -444,7 +457,7 @@ def main() -> None:
             teacher.get_by_role("button", name="准备关闭活动", exact=True).click()
             confirm(teacher, "确认关闭这个活动", "确认并关闭活动")
             teacher.locator('section[aria-label="关闭活动确认"]').wait_for(state="detached")
-            screenshot(teacher, directory, SCREENSHOTS[5])
+            screenshot(teacher, directory, SCREENSHOTS[6])
 
             student.get_by_role("button", name="保存草稿", exact=True).click()
             wait_text(student, "活动已关闭，当前只能查看现有草稿与正式修订")
@@ -464,7 +477,7 @@ def main() -> None:
             if not denied_student_page or denied_student_page.status != 404:
                 raise AcceptanceFailure("STAGING_AGENT_ACCEPTANCE_TEACHER_STUDENT_RESOURCE_NOT_HIDDEN")
             checks.append({"code": "TEACHER_STUDENT_RESOURCE_HIDDEN", "status": "PASS"})
-            screenshot(student, directory, SCREENSHOTS[6])
+            screenshot(student, directory, SCREENSHOTS[7])
     except Exception:
         if pages:
             try:

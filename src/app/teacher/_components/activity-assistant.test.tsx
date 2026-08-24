@@ -45,6 +45,25 @@ import {
 
 const draftId = "10000000-0000-4000-8000-000000000001";
 const classroomId = "20000000-0000-4000-8000-000000000002";
+const draftProposal = {
+  taskUnderstandingSummary: {
+    realWorldContext: "校园需要改善用水。",
+    studentAction: "记录并比较水表读数。",
+    intendedOutcome: "提出节水建议。",
+    evidenceAndAssessment: "以记录、分析和建议评价。",
+  },
+  teacherRequirements: ["七年级", "校园节水"],
+  assumptions: [],
+  integratedDisciplineContributions: [
+    { disciplineCode: "math", necessaryContribution: "整理水表读数。" },
+  ],
+  alignmentChains: [
+    { objectiveKind: "knowledge", objective: "理解数据。", task: "观察。", evidence: "记录。", assessment: "完整。" },
+    { objectiveKind: "process", objective: "分析数据。", task: "比较。", evidence: "表格。", assessment: "有据。" },
+    { objectiveKind: "emotion", objective: "承担责任。", task: "建议。", evidence: "建议稿。", assessment: "可行。" },
+  ],
+  content: {},
+};
 
 function helpers(messages: unknown[] = []) {
   return {
@@ -123,6 +142,42 @@ describe("ActivityAssistant", () => {
       `href="/teacher/activities/${draftId}/preview"`,
     );
     expect(markup).toContain(`href="/teacher/activities/${draftId}"`);
+  });
+
+  it("shows the structured draft proposal before creation and never renders approval secrets", () => {
+    mocks.useChat.mockReturnValue(
+      helpers([
+        {
+          id: "assistant_draft_approval",
+          role: "assistant",
+          parts: [
+            {
+              type: "tool-create_activity_draft",
+              toolCallId: "draft_proposal_1",
+              state: "approval-requested",
+              input: draftProposal,
+              approval: {
+                id: "draft_approval_1",
+                signature: "draft-signed-but-never-rendered",
+                isAutomatic: false,
+              },
+            },
+          ],
+        },
+      ]),
+    );
+
+    const markup = renderAssistant();
+
+    expect(markup).toContain("先确认这份可编辑的任务理解");
+    expect(markup).toContain("教师已提供要求");
+    expect(markup).toContain("明确假设");
+    expect(markup).toContain("跨学科必要性");
+    expect(markup).toContain("目标—任务—证据—评价一致性链");
+    expect(markup).toContain("确认理解并创建草稿");
+    expect(markup).toContain("继续补充");
+    expect(markup).not.toContain("draft-signed-but-never-rendered");
+    expect(markup).not.toContain("draft_approval_1");
   });
 
   it("shows native approval controls with exact human-readable parameters", () => {

@@ -89,6 +89,7 @@
 - ActionAudit 记录由助手提出或触发的业务工具、调用者、目标资源、确认人和执行结果。
 - Agent 成功保存草稿或发布 Release 时，业务结果、成功审计与对应 AgentRun 的 `RUNNING → SUCCEEDED` 必须在同一数据库事务提交；已经成功的运行只能精确重放同一幂等结果，已经失败、取消或属于其他教师的运行不能提交新结果。
 - 对话记录不能代替业务审计记录。
+- D-033 的任务理解、明确假设、跨学科必要性与一致性说明是当前 AI SDK 消息中的短生命周期建议，不是新的业务实体，也不写入草稿正文之外的长期存储。只有教师批准后执行的 `create_activity_draft` 才形成既有 ActivityDraft、不可变 ActivityDraftRevision、ActionAudit 与 AgentRun provenance；拒绝确认不产生业务草稿。
 
 ### ActionIntent / IdempotencyRecord（确认意图与幂等记录）
 
@@ -177,6 +178,7 @@ upload_pending → scan_pending → ready
 - 同一幂等 key 不能跨 UI/AGENT 来源重放会改变 provenance 的草稿结果。
 - Agent 写入的幂等摘要必须绑定调用来源；跨 UI/AGENT 重放不能把既有结果伪装成另一种 provenance。
 - AgentRun 身份、模型与开始时间不可修改，只能从 RUNNING 单向进入一个形状完整的终态；运行及其审计关联不可删除或置空。
+- 设计助手的建议必须明确区分教师已提供要求、模型假设和诊断理由；缺少会改变任务结构的必要信息时不得调用草稿写工具。理解确认只批准当前签名工具参数，不是发布确认、课程质量认证或资源授权；执行时仍由共享草稿命令验证 actor、AgentRun 与幂等边界。
 
 ## 第一阶段时间与历史规则
 

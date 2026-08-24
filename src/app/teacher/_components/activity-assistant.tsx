@@ -21,7 +21,7 @@ import {
   formatDateTimeInstant,
   LocalizedDateTime,
 } from "../../_components/localized-date-time";
-import type { ActivityContent } from "../../../domain/activity/activity-content";
+import type { ActivityContentV2 } from "../../../domain/activity/activity-content";
 import styles from "./activity-assistant.module.css";
 
 type CreatedDraftOutput = {
@@ -39,12 +39,35 @@ type PublishInput = {
   dueAt: string | null;
 };
 
+type ActivityDraftProposal = {
+  taskUnderstandingSummary: {
+    realWorldContext: string;
+    studentAction: string;
+    intendedOutcome: string;
+    evidenceAndAssessment: string;
+  };
+  teacherRequirements: string[];
+  assumptions: string[];
+  integratedDisciplineContributions: Array<{
+    disciplineCode: string;
+    necessaryContribution: string;
+  }>;
+  alignmentChains: Array<{
+    objectiveKind: "knowledge" | "process" | "emotion";
+    objective: string;
+    task: string;
+    evidence: string;
+    assessment: string;
+  }>;
+  content: ActivityContentV2;
+};
+
 type ActivityAssistantMessage = UIMessage<
   undefined,
   never,
   {
     create_activity_draft: {
-      input: ActivityContent;
+      input: ActivityDraftProposal;
       output: CreatedDraftOutput;
     };
     publish_activity_release: {
@@ -155,6 +178,118 @@ function DueAtLabel({ dueAt }: { dueAt: string | null }) {
   return <LocalizedDateTime dateTime={dueAt} />;
 }
 
+const objectiveKindLabel = {
+  knowledge: "知识与技能",
+  process: "过程与方法",
+  emotion: "情感态度",
+} as const;
+
+function ActivityDraftProposalCard({
+  proposal,
+  toolCallId,
+  approval,
+  onRespond,
+}: Readonly<{
+  proposal: ActivityDraftProposal;
+  toolCallId: string;
+  approval: { id: string; isAutomatic?: boolean };
+  onRespond: (response: {
+    id: string;
+    approved: boolean;
+    reason?: string;
+  }) => void;
+}>) {
+  return (
+    <div
+      className={styles.approval}
+      key={toolCallId}
+      role="group"
+      aria-label="任务理解确认"
+    >
+      <strong>先确认这份可编辑的任务理解</strong>
+      <p>
+        这是创建草稿前的建议，不是课程质量结论。确认后仍可在草稿页逐项修改。
+      </p>
+      <dl className={styles.proposalSummary}>
+        <div>
+          <dt>真实情境</dt>
+          <dd>{proposal.taskUnderstandingSummary.realWorldContext}</dd>
+        </div>
+        <div>
+          <dt>学生行动</dt>
+          <dd>{proposal.taskUnderstandingSummary.studentAction}</dd>
+        </div>
+        <div>
+          <dt>预期成果</dt>
+          <dd>{proposal.taskUnderstandingSummary.intendedOutcome}</dd>
+        </div>
+        <div>
+          <dt>证据与评价</dt>
+          <dd>{proposal.taskUnderstandingSummary.evidenceAndAssessment}</dd>
+        </div>
+      </dl>
+      <section className={styles.proposalSection} aria-label="教师已提供要求">
+        <h3>教师已提供要求</h3>
+        <ul>{proposal.teacherRequirements.map((item) => <li key={item}>{item}</li>)}</ul>
+      </section>
+      <section className={styles.proposalSection} aria-label="明确假设">
+        <h3>明确假设</h3>
+        {proposal.assumptions.length > 0 ? (
+          <ul>{proposal.assumptions.map((item) => <li key={item}>{item}</li>)}</ul>
+        ) : <p>没有新增假设。</p>}
+      </section>
+      <section className={styles.proposalSection} aria-label="跨学科必要性">
+        <h3>跨学科必要性</h3>
+        <dl>
+          {proposal.integratedDisciplineContributions.map((item) => (
+            <div key={item.disciplineCode}>
+              <dt>{item.disciplineCode}</dt>
+              <dd>{item.necessaryContribution}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+      <section className={styles.proposalSection} aria-label="目标任务证据评价一致性链">
+        <h3>目标—任务—证据—评价一致性链</h3>
+        <dl>
+          {proposal.alignmentChains.map((chain) => (
+            <div key={chain.objectiveKind}>
+              <dt>{objectiveKindLabel[chain.objectiveKind]}</dt>
+              <dd>
+                目标：{chain.objective}<br />
+                任务：{chain.task}<br />
+                证据：{chain.evidence}<br />
+                评价：{chain.assessment}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+      <div className={styles.inlineActions}>
+        <button
+          type="button"
+          onClick={() => onRespond({ id: approval.id, approved: true })}
+        >
+          确认理解并创建草稿
+        </button>
+        <button
+          type="button"
+          data-tone="quiet"
+          onClick={() =>
+            onRespond({
+              id: approval.id,
+              approved: false,
+              reason: "教师选择继续补充活动要求",
+            })
+          }
+        >
+          继续补充
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function ActivityAssistant({
   classrooms,
   continuationOnly = false,
@@ -220,6 +355,27 @@ export function ActivityAssistant({
                   }
 
                   if (part.type === "tool-create_activity_draft") {
+                    if (!part.input) {
+                      return (
+                        <p className={styles.toolProgress} key={part.toolCallId}>
+                          正在整理任务理解与设计建议…
+                        </p>
+                      );
+                    }
+                    if (
+                      part.state === "approval-requested" &&
+                      !part.approval.isAutomatic
+                    ) {
+                      return (
+                        <ActivityDraftProposalCard
+                          key={part.toolCallId}
+                          proposal={part.input}
+                          toolCallId={part.toolCallId}
+                          approval={part.approval}
+                          onRespond={addToolApprovalResponse}
+                        />
+                      );
+                    }
                     if (part.state === "output-available") {
                       return (
                         <div className={styles.toolResult} key={part.toolCallId}>
@@ -239,9 +395,16 @@ export function ActivityAssistant({
                         </p>
                       );
                     }
+                    if (part.state === "output-denied") {
+                      return (
+                        <p className={styles.toolProgress} key={part.toolCallId}>
+                          已保留这份建议，尚未创建草稿。你可以继续补充要求或改用手动表单。
+                        </p>
+                      );
+                    }
                     return (
                       <p className={styles.toolProgress} key={part.toolCallId}>
-                        正在核对六段活动内容并创建草稿…
+                        正在等待任务理解确认…
                       </p>
                     );
                   }

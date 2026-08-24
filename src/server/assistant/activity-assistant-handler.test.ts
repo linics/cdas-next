@@ -17,7 +17,10 @@ import {
   selectActivityAssistantToolChoice,
   type ActivityAssistantHandlerDependencies,
 } from "./activity-assistant-handler";
-import { createActivityAssistantTools } from "./activity-assistant-tools";
+import {
+  createActivityAssistantTools,
+  type ActivityDraftProposal,
+} from "./activity-assistant-tools";
 
 const actorId = "10000000-0000-4000-8000-000000000001";
 const runId = "20000000-0000-4000-8000-000000000002";
@@ -31,6 +34,26 @@ const executionRunId = "90000000-0000-4000-8000-000000000009";
 const replayRunId = "a0000000-0000-4000-8000-00000000000a";
 const now = new Date("2026-08-20T04:00:00.000Z");
 const content = waterConservationTaskBook;
+const proposal: ActivityDraftProposal = {
+  taskUnderstandingSummary: {
+    realWorldContext: "学校准备开展节水行动。",
+    studentAction: "观察、调查并分析校园用水场景。",
+    intendedOutcome: "形成有证据的节水行动建议。",
+    evidenceAndAssessment: "以观察记录、统计表和建议稿进行评价。",
+  },
+  teacherRequirements: ["七年级", "校园节水", "有证据的改善建议"],
+  assumptions: [],
+  integratedDisciplineContributions: [
+    { disciplineCode: "math", necessaryContribution: "整理和解释调查数据。" },
+    { disciplineCode: "chinese", necessaryContribution: "公开表达有依据的建议。" },
+  ],
+  alignmentChains: [
+    { objectiveKind: "knowledge", objective: content.objectiveKnowledge, task: content.phases[0].action, evidence: content.phases[0].evidence[0].description, assessment: content.phases[0].evaluationFocus },
+    { objectiveKind: "process", objective: content.objectiveProcess, task: content.phases[1].action, evidence: content.phases[1].evidence[0].description, assessment: content.phases[1].evaluationFocus },
+    { objectiveKind: "emotion", objective: content.objectiveEmotion, task: content.phases[2].action, evidence: content.phases[2].evidence[0].description, assessment: content.phases[2].evaluationFocus },
+  ],
+  content,
+};
 const usage = {
   inputTokens: {
     total: 10,
@@ -109,7 +132,7 @@ function postDraftPublishConversation() {
           type: "tool-create_activity_draft",
           toolCallId: "draft_call",
           state: "output-available",
-          input: content,
+          input: proposal,
           output: {
             draftId,
             version: 1,
@@ -190,6 +213,39 @@ function approvalMessage(body: string, approved: boolean) {
   };
 }
 
+function draftApprovalMessage(body: string, approved: boolean) {
+  const event = sseEvents(body).find(
+    (candidate) => candidate.type === "tool-approval-request",
+  );
+  if (
+    !event ||
+    typeof event.toolCallId !== "string" ||
+    typeof event.approvalId !== "string" ||
+    typeof event.signature !== "string"
+  ) {
+    throw new Error("Expected a signed draft approval event");
+  }
+  return {
+    id: "assistant_draft_approval_1",
+    role: "assistant",
+    parts: [
+      {
+        type: "tool-create_activity_draft",
+        toolCallId: event.toolCallId,
+        state: "approval-responded",
+        input: proposal,
+        approval: {
+          id: event.approvalId,
+          signature: event.signature,
+          isAutomatic: false,
+          approved,
+          ...(approved ? {} : { reason: "教師選擇繼續補充" }),
+        },
+      },
+    ],
+  };
+}
+
 function startedRun(id: string) {
   return {
     id,
@@ -210,7 +266,7 @@ function successfulModel() {
               type: "tool-call",
               toolCallId: "draft_call_handler",
               toolName: "create_activity_draft",
-              input: JSON.stringify(content),
+              input: JSON.stringify(proposal),
             },
             {
               type: "finish",
@@ -415,7 +471,7 @@ describe("activity assistant route handler", () => {
     );
   });
 
-  it("streams a strict tool draft, exact preview target, and truthful run", async () => {
+  it("streams a strict draft proposal without a business write", async () => {
     const languageModel = successfulModel();
     mocks.createModel.mockReturnValue(languageModel);
     const response = await handleActivityAssistantRequest(
@@ -425,17 +481,9 @@ describe("activity assistant route handler", () => {
 
     expect(response.status).toBe(200);
     const streamText = await response.text();
-    expect(streamText).toContain(draftId);
-    expect(streamText).toContain(`/teacher/activities/${draftId}/preview`);
-    expect(mocks.saveDraft).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.objectContaining({ source: "AGENT", actorId }),
-      expect.objectContaining({
-        desiredStatus: "READY_FOR_PREVIEW",
-        content,
-        agentRunId: runId,
-      }),
-    );
+    expect(streamText).toContain("tool-approval-request");
+    expect(streamText).toContain("taskUnderstandingSummary");
+    expect(mocks.saveDraft).not.toHaveBeenCalled();
     expect(mocks.finishRun).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ source: "AGENT", actorId }),
@@ -463,7 +511,7 @@ describe("activity assistant route handler", () => {
           type: "tool-create_activity_draft" as const,
           toolCallId: "draft_call",
           state: "output-available" as const,
-          input: content,
+          input: proposal,
           output: {
             draftId,
             version: 1,
@@ -498,6 +546,204 @@ describe("activity assistant route handler", () => {
     expect(
       selectActivityAssistantToolChoice(request("請解釋目前的活動內容")),
     ).toBe("auto");
+  });
+
+  it("executes an approved draft proposal once and saves only its content", async () => {
+    const proposalModel = successfulModel();
+    const providerAfterWrite = new MockLanguageModelV4({
+      doStream: async () => {
+        throw new Error("provider must not run after the approved draft write");
+      },
+    });
+    mocks.createModel
+      .mockReturnValueOnce(proposalModel)
+      .mockReturnValueOnce(providerAfterWrite);
+    mocks.startRun
+      .mockResolvedValueOnce(startedRun(approvalRunId))
+      .mockResolvedValueOnce(startedRun(executionRunId));
+
+    const proposalResponse = await handleActivityAssistantRequest(
+      userRequest(),
+      dependencies(),
+    );
+    const approvedMessage = draftApprovalMessage(
+      await proposalResponse.text(),
+      true,
+    );
+    const executionResponse = await handleActivityAssistantRequest(
+      messageRequest([
+        { id: "message_1", role: "user", parts: [{ type: "text", text: "設計校園節水活動" }] },
+        approvedMessage,
+      ]),
+      dependencies(),
+    );
+
+    expect(executionResponse.status).toBe(200);
+    expect(await executionResponse.text()).toContain(draftId);
+    expect(mocks.saveDraft).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ source: "AGENT", actorId }),
+      expect.objectContaining({
+        desiredStatus: "READY_FOR_PREVIEW",
+        content,
+        agentRunId: executionRunId,
+      }),
+    );
+    expect(mocks.saveDraft.mock.calls[0]?.[2]?.content).toEqual(content);
+    expect(mocks.saveDraft.mock.calls[0]?.[2]?.content).not.toHaveProperty(
+      "taskUnderstandingSummary",
+    );
+    expect(providerAfterWrite.doStreamCalls).toHaveLength(1);
+    expect(providerAfterWrite.doStreamCalls[0]?.abortSignal?.aborted).toBe(true);
+  });
+
+  it("does not write a draft when the teacher rejects its signed proposal", async () => {
+    const proposalModel = successfulModel();
+    const rejectionModel = new MockLanguageModelV4({
+      doStream: async () => ({
+        stream: simulateReadableStream({
+          chunks: [
+            { type: "text-start", id: "rejection_text" },
+            { type: "text-delta", id: "rejection_text", delta: "請補充活動要求。" },
+            { type: "text-end", id: "rejection_text" },
+            { type: "finish", finishReason: { unified: "stop", raw: undefined }, usage },
+          ],
+        }),
+      }),
+    });
+    mocks.createModel
+      .mockReturnValueOnce(proposalModel)
+      .mockReturnValueOnce(rejectionModel);
+    mocks.startRun
+      .mockResolvedValueOnce(startedRun(approvalRunId))
+      .mockResolvedValueOnce(startedRun(executionRunId));
+
+    const proposalResponse = await handleActivityAssistantRequest(userRequest(), dependencies());
+    const rejectedMessage = draftApprovalMessage(await proposalResponse.text(), false);
+    const rejectionResponse = await handleActivityAssistantRequest(
+      messageRequest([
+        { id: "message_1", role: "user", parts: [{ type: "text", text: "設計校園節水活動" }] },
+        rejectedMessage,
+      ]),
+      dependencies(),
+    );
+
+    expect(await rejectionResponse.text()).toContain("請補充活動要求");
+    expect(mocks.saveDraft).not.toHaveBeenCalled();
+  });
+
+  it("suppresses a duplicate proposal only in the rejected continuation, then permits a later user supplement", async () => {
+    const proposalModel = successfulModel();
+    const rejectedContinuationModel = new MockLanguageModelV4({
+      doStream: async () => ({
+        stream: simulateReadableStream({
+          chunks: [
+            {
+              type: "tool-call",
+              toolCallId: "duplicate_after_rejection",
+              toolName: "create_activity_draft",
+              input: JSON.stringify(proposal),
+            },
+            {
+              type: "finish",
+              finishReason: { unified: "tool-calls", raw: undefined },
+              usage,
+            },
+          ],
+        }),
+      }),
+    });
+    const revisedProposalModel = successfulModel();
+    mocks.createModel
+      .mockReturnValueOnce(proposalModel)
+      .mockReturnValueOnce(rejectedContinuationModel)
+      .mockReturnValueOnce(revisedProposalModel);
+    mocks.startRun
+      .mockResolvedValueOnce(startedRun(approvalRunId))
+      .mockResolvedValueOnce(startedRun(executionRunId))
+      .mockResolvedValueOnce(startedRun(replayRunId));
+
+    const initialUserMessage = {
+      id: "message_1",
+      role: "user",
+      parts: [{ type: "text", text: "设计校园节水活动" }],
+    };
+    const initialResponse = await handleActivityAssistantRequest(
+      messageRequest([initialUserMessage]),
+      dependencies(),
+    );
+    const rejectedMessage = draftApprovalMessage(
+      await initialResponse.text(),
+      false,
+    );
+
+    const continuationResponse = await handleActivityAssistantRequest(
+      messageRequest([initialUserMessage, rejectedMessage]),
+      dependencies(),
+    );
+    const continuationEvents = sseEvents(await continuationResponse.text());
+
+    expect(mocks.saveDraft).not.toHaveBeenCalled();
+    expect(
+      continuationEvents.some(
+        (event) =>
+          event.type === "tool-approval-request" &&
+          event.isAutomatic !== true,
+      ),
+    ).toBe(false);
+
+    const supplementedResponse = await handleActivityAssistantRequest(
+      messageRequest([
+        initialUserMessage,
+        rejectedMessage,
+        {
+          id: "message_2",
+          role: "user",
+          parts: [{ type: "text", text: "补充：学生需要用两次水表读数比较变化。" }],
+        },
+      ]),
+      dependencies(),
+    );
+    const supplementedEvents = sseEvents(await supplementedResponse.text());
+
+    expect(mocks.saveDraft).not.toHaveBeenCalled();
+    expect(
+      supplementedEvents.some(
+        (event) =>
+          event.type === "tool-approval-request" &&
+          event.isAutomatic !== true,
+      ),
+    ).toBe(true);
+  });
+
+  it("rejects a forged draft approval before commands or provider transport", async () => {
+    const proposalModel = successfulModel();
+    const providerAfterForgery = new MockLanguageModelV4({
+      doStream: async () => {
+        throw new Error("forged draft approval must not reach the provider");
+      },
+    });
+    mocks.createModel
+      .mockReturnValueOnce(proposalModel)
+      .mockReturnValueOnce(providerAfterForgery);
+    mocks.startRun
+      .mockResolvedValueOnce(startedRun(approvalRunId))
+      .mockResolvedValueOnce(startedRun(executionRunId));
+
+    const proposalResponse = await handleActivityAssistantRequest(userRequest(), dependencies());
+    const forgedMessage = draftApprovalMessage(await proposalResponse.text(), true);
+    forgedMessage.parts[0]!.approval.signature = "forged-signature";
+    const forgedResponse = await handleActivityAssistantRequest(
+      messageRequest([
+        { id: "message_1", role: "user", parts: [{ type: "text", text: "設計校園節水活動" }] },
+        forgedMessage,
+      ]),
+      dependencies(),
+    );
+
+    expect(await forgedResponse.text()).not.toContain("forged-signature");
+    expect(mocks.saveDraft).not.toHaveBeenCalled();
+    expect(providerAfterForgery.doStreamCalls).toHaveLength(0);
   });
 
   it("executes a signed approval continuation once and aborts the post-write provider step", async () => {

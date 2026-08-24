@@ -84,7 +84,7 @@ E2E_REAL_MODEL_ACK=synthetic-data-cost-approved \
 pnpm e2e:real-model
 ```
 
-前置检查在重建数据库或发出 provider 请求前运行；缺少成本确认、凭据、模型、审批密钥或安全数据库目标时会明确失败。成功证据包含完整 schema v2 任务书的可预览草稿截图和脱敏日志，并核对唯一 `AgentRun` 已进入 `SUCCEEDED`、唯一修订来源为 `AGENT` 且绑定同一运行、成功审计与幂等记录存在，同时发布与确认计数保持为零。该 smoke 只证明真实 provider transport 与草稿 provenance；签名发布审批、拒绝、伪造签名、写后 provider 中断等确定性反例继续由现有集成测试覆盖。
+前置检查在重建数据库或发出 provider 请求前运行；缺少成本确认、凭据、模型、审批密钥或安全数据库目标时会明确失败。成功证据先包含结构化任务理解提案截图，再包含完整 schema v2 任务书的可预览草稿截图和脱敏日志，并核对恰好两个 `SUCCEEDED` AgentRun：第一个提案运行没有业务写入，第二个草稿执行运行绑定唯一 `AGENT` 修订；成功审计与幂等记录存在，同时发布与确认计数保持为零。该 smoke 只证明真实 provider transport 与草稿 provenance；签名发布审批、拒绝、伪造签名、写后 provider 中断等确定性反例继续由现有集成测试覆盖。
 
 仓库另提供手动 `protected real-service e2e` GitHub Actions 工作流。先创建需要审批者的 `e2e-real` GitHub Environment，配置 Clerk 四项 secrets；若要启用模型 smoke，再配置 `DEEPSEEK_API_KEY`、`AI_TOOL_APPROVAL_SECRET` secrets 与 `AI_MODEL` environment variable。普通 PR CI 永远保持 `AI_PROVIDER_DISABLED=1`，不会读取这些凭据或产生模型费用。受保护工作流只上传合成数据截图、脱敏日志和 `result.json`，保留 14 天，不上传 cookie、storage state 或 Clerk ticket。
 

@@ -10,13 +10,14 @@ import { agentVerificationCodes } from "./verify";
 
 const marker = "cdas-staging-agent-12345678-1";
 const screenshotNames = [
-  "01-ready.png",
-  "02-approval.png",
-  "03-published.png",
-  "04-student-submitted.png",
-  "05-teacher-feedback.png",
-  "06-teacher-closed.png",
-  "07-student-closed-readonly.png",
+  "01-draft-proposal.png",
+  "02-draft-preview.png",
+  "03-publish-approval.png",
+  "04-published.png",
+  "05-student-submitted.png",
+  "06-teacher-feedback.png",
+  "07-teacher-closed.png",
+  "08-student-closed-readonly.png",
 ] as const;
 const browserCodes = [
   "VERCEL_PROTECTION_BYPASS_SCOPED",
@@ -206,7 +207,7 @@ describe("Agent acceptance final evidence", () => {
       Record<string, unknown>
     >;
     delete (missing.browser.screenshots as Record<string, unknown>)[
-      "07-student-closed-readonly.png"
+      "08-student-closed-readonly.png"
     ];
     expect(evaluateAgentAcceptanceEvidence(missing, marker).browser).toBe(false);
 
@@ -215,7 +216,7 @@ describe("Agent acceptance final evidence", () => {
       Record<string, unknown>
     >;
     (malformed.browser.screenshots as Record<string, unknown>)[
-      "01-ready.png"
+      "01-draft-proposal.png"
     ] = "not-a-sha256";
     expect(evaluateAgentAcceptanceEvidence(malformed, marker).browser).toBe(
       false,

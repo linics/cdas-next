@@ -619,7 +619,7 @@ def run_real_model_browser_flow(
     broker_secret: str,
 ) -> None:
     title = f"E2E AI 草稿 {marker}"
-    prompt = f"""請直接建立一份可預覽活動草稿，不要發佈，也不要提問。
+    prompt = f"""資料已完整。請先提出 D-033 結構化任務理解與設計建議，等待教師確認後才建立草稿；不要發佈，也不要提問。
 標題必須逐字為：{title}
 請建立完整跨學科任務書：初中七年級，主學科物理，融合數學與語文；探究性作業、調查探究、中等探究、一次性提交、2周。
 探究主題與摘要聚焦校園節水觀察；背景是學生受邀核驗兩次不含個資的合成水表讀數。
@@ -627,7 +627,7 @@ def run_real_model_browser_flow(
 總體任務要求學生比較讀數差異，并用文字解釋證據如何支持建議。
 設置3個連續階段，每階段都有明確行動、情境承接、學習支架、至少一項類型化提交證據、評價要點和課時建議。
 設置問題意識、證據質量、跨學科連接、方案表達4個量規維度，每個維度都有優秀、良好、合格、需改進四檔非空描述。
-內容只使用以上合成資料，完成後立即調用 create_activity_draft。"""
+內容只使用以上合成資料。提案必須明確列出教師已提供要求、假設、數學與語文各自不可替代的貢獻，以及知識與技能／過程與方法／情感態度三條目標—任務—證據—評價鏈；然後調用 create_activity_draft 等待確認。"""
 
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=True)
@@ -652,6 +652,25 @@ def run_real_model_browser_flow(
             if not submit.is_enabled():
                 raise E2eFailure("REAL_MODEL_ASSISTANT_NOT_HYDRATED")
             submit.click()
+            proposal = page.locator('[role="group"][aria-label="任务理解确认"]')
+            proposal.get_by_role(
+                "button", name="确认理解并创建草稿", exact=True
+            ).wait_for(timeout=120_000)
+            for label in (
+                "教师已提供要求",
+                "明确假设",
+                "跨学科必要性",
+                "目标—任务—证据—评价一致性链",
+            ):
+                proposal.get_by_text(label, exact=True).wait_for()
+            proposal.get_by_text("math", exact=True).wait_for()
+            proposal.get_by_text("chinese", exact=True).wait_for()
+            proposal.get_by_text("知识与技能", exact=True).wait_for()
+            screenshot(page, artifacts, "01-real-model-draft-proposal")
+            wait_for_text(page, "可使用")
+            proposal.get_by_role(
+                "button", name="确认理解并创建草稿", exact=True
+            ).click()
             page.wait_for_url(
                 re.compile(
                     rf"{re.escape(base_url)}/teacher/activities/[0-9a-f-]+/preview$"
@@ -666,7 +685,7 @@ def run_real_model_browser_flow(
                 "link", name="查看发布与学生提交", exact=True
             ).count() != 0:
                 raise E2eFailure("REAL_MODEL_SMOKE_CREATED_RELEASE")
-            screenshot(page, artifacts, "01-real-model-draft-preview")
+            screenshot(page, artifacts, "02-real-model-draft-preview")
         except Exception:
             screenshot(page, artifacts, "failure")
             raise

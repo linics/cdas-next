@@ -37,11 +37,33 @@ async function main(): Promise<void> {
       revision?.source === "AGENT" && revision.agentRunId !== null,
       "E2E_REAL_MODEL_PROVENANCE_MISSING",
     );
-    const run = await database.agentRun.findUnique({
-      where: { id: revision.agentRunId },
+    const runs = await database.agentRun.findMany({
+      where: { actorId: draft.ownerId },
+      orderBy: [{ startedAt: "asc" }, { id: "asc" }],
+      include: {
+        draftRevision: true,
+        intents: true,
+        auditEntries: true,
+        feedbackRevisions: true,
+      },
     });
+    invariant(runs.length === 2, "E2E_REAL_MODEL_RUN_COUNT_MISMATCH");
+    const [proposalRun, run] = runs;
+    invariant(proposalRun && run, "E2E_REAL_MODEL_RUN_COUNT_MISMATCH");
     invariant(
-      run?.actorId === draft.ownerId &&
+      runs.every(
+        (candidate) =>
+          candidate.actorId === draft.ownerId &&
+          candidate.status === "SUCCEEDED" &&
+          candidate.model === configuredModel &&
+          candidate.completedAt !== null &&
+          candidate.failureCode === null,
+      ) &&
+        proposalRun.draftRevision === null &&
+        proposalRun.intents.length === 0 &&
+        proposalRun.auditEntries.length === 0 &&
+        proposalRun.feedbackRevisions.length === 0 &&
+        run.id === revision.agentRunId &&
         run.status === "SUCCEEDED" &&
         run.model === configuredModel &&
         run.completedAt !== null &&
@@ -73,12 +95,12 @@ async function main(): Promise<void> {
             resourceId: revision.id,
           },
         }),
-        database.agentRun.count(),
+        database.agentRun.count({ where: { actorId: draft.ownerId } }),
         database.actionIntent.count(),
         database.activityRelease.count(),
       ]);
     invariant(idempotencyCount === 1, "E2E_REAL_MODEL_IDEMPOTENCY_MISSING");
-    invariant(runCount === 1, "E2E_REAL_MODEL_RUN_COUNT_MISMATCH");
+    invariant(runCount === 2, "E2E_REAL_MODEL_RUN_COUNT_MISMATCH");
     invariant(intentCount === 0, "E2E_REAL_MODEL_CREATED_ACTION_INTENT");
     invariant(releaseCount === 0, "E2E_REAL_MODEL_CREATED_RELEASE");
 
@@ -89,7 +111,9 @@ async function main(): Promise<void> {
           marker,
           evidence: {
             model: run.model,
-            agentRunStatus: run.status,
+            proposalAgentRunStatus: proposalRun.status,
+            executionAgentRunStatus: run.status,
+            successfulAgentRuns: runCount,
             draftStatus: draft.status,
             draftRevisionSource: revision.source,
             successfulAgentAudits: 1,
