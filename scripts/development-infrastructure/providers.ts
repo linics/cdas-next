@@ -225,6 +225,24 @@ export async function deployMigrationsWithMinimalEnvironment(connection: NeonCon
   await runner.run("pnpm", ["db:deploy"], { env: { PATH: process.env.PATH ?? "", DATABASE_URL: connection.pooledUrl, DIRECT_URL: migrationUrl.toString(), AI_PROVIDER_DISABLED: "1", NEXT_TELEMETRY_DISABLED: "1" } });
 }
 
+export async function downloadArtifactWithPropagationRetry(
+  download: () => Promise<unknown>,
+  resetOutput: () => Promise<void>,
+  sleep: (milliseconds: number) => Promise<void> = async (milliseconds) =>
+    new Promise((resolve) => setTimeout(resolve, milliseconds)),
+): Promise<void> {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    try {
+      await download();
+      return;
+    } catch (error) {
+      if (attempt === 4) throw error;
+      await resetOutput();
+      await sleep(3_000);
+    }
+  }
+}
+
 export async function verifyDownloadedAcceptanceArtifact(
   run: WorkflowRun,
   runner: CommandRunner,
@@ -239,23 +257,17 @@ export async function verifyDownloadedAcceptanceArtifact(
     const artifact = `staging-synthetic-acceptance-${run.id}-${run.attempt}`;
     const candidate = path.join(directory, "output", "staging-acceptance");
     await mkdir(candidate, { recursive: true });
-    let downloaded = false;
-    for (let attempt = 0; attempt < 5; attempt += 1) {
-      try {
-        await runner.run("gh", ["run", "download", run.id, "--name", artifact, "--dir", candidate], { env: minimalCommandEnvironment({ github: true }) });
-        downloaded = true;
-        break;
-      } catch (error) {
-        if (attempt === 4) throw error;
+    await downloadArtifactWithPropagationRetry(
+      () => runner.run("gh", ["run", "download", run.id, "--name", artifact, "--dir", candidate], { env: minimalCommandEnvironment({ github: true }) }),
+      async () => {
         // A successful workflow can become visible before its uploaded
         // artifact is downloadable. Reset only this fresh temp directory and
         // retry the exact run/artifact binding for a short bounded window.
         await rm(candidate, { recursive: true, force: true });
         await mkdir(candidate, { recursive: true });
-        await sleep(3_000);
-      }
-    }
-    if (!downloaded) throw new Error("DEVELOPMENT_INFRA_ARTIFACT_DOWNLOAD_FAILED");
+      },
+      sleep,
+    );
     const entries = await (await import("node:fs/promises")).readdir(candidate, { withFileTypes: true });
     const marker = `cdas-staging-${run.id}-${run.attempt}`;
     if (entries.length !== 1 || !entries[0]?.isDirectory() || entries[0].name !== marker) throw new Error("DEVELOPMENT_INFRA_ARTIFACT_FINAL_MISSING");

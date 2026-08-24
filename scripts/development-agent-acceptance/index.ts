@@ -5,6 +5,7 @@ import path from "node:path";
 
 import {
   ClerkApiProvider,
+  downloadArtifactWithPropagationRetry,
   deployMigrationsWithMinimalEnvironment,
   minimalCommandEnvironment,
   NeonApiProvider,
@@ -400,15 +401,23 @@ class AgentGitHubOperator {
         "staging-agent-acceptance",
       );
       await mkdir(output, { recursive: true });
-      await this.gh([
-        "run",
-        "download",
-        run.id,
-        "--name",
-        `staging-agent-acceptance-${run.id}-${run.attempt}`,
-        "--dir",
-        output,
-      ]);
+      await downloadArtifactWithPropagationRetry(
+        () =>
+          this.gh([
+            "run",
+            "download",
+            run.id,
+            "--name",
+            `staging-agent-acceptance-${run.id}-${run.attempt}`,
+            "--dir",
+            output,
+          ]),
+        async () => {
+          await rm(output, { recursive: true, force: true });
+          await mkdir(output, { recursive: true });
+        },
+        this.sleep,
+      );
       await this.runner.run(
         "node",
         [
