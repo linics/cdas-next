@@ -147,6 +147,8 @@ const workspace = {
               id: "80000000-0000-4000-8000-000000000008",
               version: 1,
               body: currentFeedbackBody,
+              nextStep: "CONTINUE",
+              supportLevel: "STANDARD",
               source: "MANUAL",
               confirmedAt: "2026-08-18T11:30:00.000Z",
             },
@@ -213,6 +215,8 @@ describe("teacher feedback page access boundary", () => {
     expect(markup).toContain("退出登录");
     expect(markup).toContain(secretSubmissionBody);
     expect(markup).toContain(currentFeedbackBody);
+    expect(markup).toContain("继续后续阶段");
+    expect(markup).toContain("标准任务");
     expect(markup).toContain('data-feedback-composer="true"');
     expect(markup).toContain('data-revision="1"');
     expect(markup).toContain('data-feedback-version="1"');
@@ -247,6 +251,8 @@ describe("teacher feedback page access boundary", () => {
     expect(markup).toContain("陈同学（记录）");
     expect(markup).toContain("周同学（汇报）");
     expect(markup).toContain("反馈绑定这份共享正式修订，并对全组成员可见");
+    expect(markup).toContain("继续后续阶段");
+    expect(markup).toContain("标准任务");
   });
 
   it("returns not found for a well-hidden unauthorized submission", async () => {

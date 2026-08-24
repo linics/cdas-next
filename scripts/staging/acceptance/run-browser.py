@@ -313,6 +313,8 @@ def feedback(page: Page, body: str) -> None:
     textarea = page.locator("#teacher-feedback-body")
     textarea.wait_for(state="visible", timeout=30_000)
     textarea.fill(body)
+    page.get_by_label("形成性下一步", exact=True).select_option("REVISE")
+    page.get_by_label("支架层级", exact=True).select_option("FOUNDATION")
     button = page.get_by_role("button", name="准备确认", exact=True)
     button.wait_for(state="visible", timeout=30_000)
     if not button.is_enabled():
@@ -525,6 +527,14 @@ def run() -> None:
                 feedback_text,
                 exact=True,
             ).wait_for(state="visible")
+            teacher.locator('[aria-labelledby^="feedback-history-"]').last.get_by_text(
+                "按反馈修改并重交",
+                exact=True,
+            ).wait_for(state="visible")
+            teacher.locator('[aria-labelledby^="feedback-history-"]').last.get_by_text(
+                "基础支持",
+                exact=True,
+            ).wait_for(state="visible")
             index["04-teacher-feedback.png"] = screenshot(teacher, output, "04-teacher-feedback")
 
             sign_in(other_teacher, remote, "other_teacher")
@@ -550,6 +560,8 @@ def run() -> None:
             other_student.get_by_role("heading", name=group_name, exact=True).wait_for(state="visible")
             wait_text(other_student, evidence)
             wait_text(other_student, feedback_text)
+            wait_text(other_student, "按反馈修改并重交")
+            wait_text(other_student, "基础支持")
             if attachment_download_href(other_student, attachment_filename) != attachment_href:
                 raise AcceptanceFailure("STAGING_ACCEPTANCE_GROUPMATE_ATTACHMENT_LINK_CHANGED")
             assert_attachment_download(other_student, attachment_filename, attachment_sha256)
@@ -568,10 +580,13 @@ def run() -> None:
             student.goto(f"{remote}{activity_href}", wait_until="domcontentloaded")
             assert_origin(student.url, remote)
             wait_text(student, feedback_text)
+            wait_text(student, "按反馈修改并重交")
+            wait_text(student, "基础支持")
             student.get_by_role("button", name="开始重交", exact=True).click()
             student.locator("#text-evidence").wait_for(state="visible")
             student.locator("#text-evidence").fill(f"{evidence} stale write after close")
             checks.append({"code": "STUDENT_FEEDBACK_VISIBLE", "status": "PASS"})
+            checks.append({"code": "STRUCTURED_FORMATIVE_FEEDBACK_VISIBLE", "status": "PASS"})
 
             teacher.goto(f"{remote}{release_href}", wait_until="domcontentloaded")
             assert_origin(teacher.url, remote)

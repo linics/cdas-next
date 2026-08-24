@@ -182,6 +182,8 @@ const confirmedFeedbackWorkspace = {
               id: "81000000-0000-4000-8000-000000000008",
               version: 1,
               body: "先补上两次读数的单位。",
+              nextStep: null,
+              supportLevel: null,
               source: "AI_ASSISTED",
               confirmedAt: "2026-08-18T10:45:00.000Z",
             },
@@ -189,6 +191,8 @@ const confirmedFeedbackWorkspace = {
               id: "82000000-0000-4000-8000-000000000008",
               version: 2,
               body: "单位已补齐，再说明两次数据的差值。",
+              nextStep: "REVISE",
+              supportLevel: "FOUNDATION",
               source: "MANUAL",
               confirmedAt: "2026-08-18T11:00:00.000Z",
             },
@@ -335,6 +339,9 @@ describe("student release page access boundary", () => {
     expect(markup).toContain("反馈第 1 版");
     expect(markup).toContain("教师手写");
     expect(markup).toContain("AI 建议，教师已确认");
+    expect(markup).toContain("按反馈修改并重交");
+    expect(markup).toContain("基础支持");
+    expect(markup).toContain("旧反馈未指定结构化下一步与支架");
     expect(markup).toContain(
       'dateTime="2026-08-18T11:00:00.000Z"',
     );

@@ -233,6 +233,8 @@ async function createReleaseListFixture() {
       expectedSubmissionRevisionNumber: 1,
       expectedFeedbackVersion: 0,
       body: "教师反馈秘密正文",
+      nextStep: "CONTINUE",
+      supportLevel: "STANDARD",
       suggestionAgentRunId: null,
       idempotencyKey: `prepare_feedback_${randomUUID()}`,
     },

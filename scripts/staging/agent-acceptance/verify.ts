@@ -688,6 +688,8 @@ SELECT
         AND body = $8
         AND btrim(body) <> ''
         AND body_hash ~ '^[a-f0-9]{64}$'
+        AND next_step = 'REVISE'
+        AND support_level = 'FOUNDATION'
         AND source = 'MANUAL'
         AND confirmed_by_id = (SELECT id FROM teacher)
         AND agent_run_id IS NULL)
@@ -701,6 +703,14 @@ SELECT
         AND actor_id = (SELECT id FROM teacher)
         AND decided_by_id = (SELECT id FROM teacher)
         AND agent_run_id IS NULL
+        AND payload->>'schemaVersion' = '2'
+        AND payload->>'submissionId' = (SELECT id::text FROM primary_submission)
+        AND payload->>'submissionRevisionId' = (SELECT id::text FROM primary_revision)
+        AND (payload->>'expectedSubmissionRevisionNumber')::integer = 1
+        AND (payload->>'expectedFeedbackVersion')::integer = 0
+        AND payload->>'body' = $8
+        AND payload->>'nextStep' = 'REVISE'
+        AND payload->>'supportLevel' = 'FOUNDATION'
         AND decided_at IS NOT NULL
         AND executed_at IS NOT NULL)
   ) AS "teacherFeedback",

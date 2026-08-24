@@ -5,7 +5,11 @@ import {
   hasMeaningfulTextEvidence,
   normalizeTextEvidence,
 } from "../submission/text-evidence";
-import { TEACHER_FEEDBACK_BODY_MAX_LENGTH } from "./teacher-feedback-policy";
+import {
+  TEACHER_FEEDBACK_BODY_MAX_LENGTH,
+  teacherFeedbackNextSteps,
+  teacherFeedbackSupportLevels,
+} from "./teacher-feedback-policy";
 
 export { TEACHER_FEEDBACK_BODY_MAX_LENGTH } from "./teacher-feedback-policy";
 export const TEACHER_FEEDBACK_INTENT_TTL_MS = 10 * 60 * 1_000;
@@ -47,18 +51,22 @@ const teacherFeedbackPayloadInputSchema = z
     expectedSubmissionRevisionNumber: z.int().positive(),
     expectedFeedbackVersion: z.int().nonnegative(),
     body: z.string(),
+    nextStep: z.enum(teacherFeedbackNextSteps),
+    supportLevel: z.enum(teacherFeedbackSupportLevels),
     suggestionAgentRunId: z.uuid().nullable().default(null),
   })
   .strict();
 
 export const teacherFeedbackPayloadSchema = z
   .object({
-    schemaVersion: z.literal(1),
+    schemaVersion: z.literal(2),
     submissionId: z.uuid(),
     submissionRevisionId: z.uuid(),
     expectedSubmissionRevisionNumber: z.int().positive(),
     expectedFeedbackVersion: z.int().nonnegative(),
     body: canonicalFeedbackBodySchema,
+    nextStep: z.enum(teacherFeedbackNextSteps),
+    supportLevel: z.enum(teacherFeedbackSupportLevels),
     suggestionAgentRunId: z.uuid().nullable(),
   })
   .strict();
@@ -72,13 +80,15 @@ export function createTeacherFeedbackPayload(
 ): TeacherFeedbackPayload {
   const input = teacherFeedbackPayloadInputSchema.parse(rawInput);
   return teacherFeedbackPayloadSchema.parse({
-    schemaVersion: 1,
+    schemaVersion: 2,
     submissionId: input.submissionId,
     submissionRevisionId: input.submissionRevisionId,
     expectedSubmissionRevisionNumber:
       input.expectedSubmissionRevisionNumber,
     expectedFeedbackVersion: input.expectedFeedbackVersion,
     body: normalizeTeacherFeedbackBody(input.body),
+    nextStep: input.nextStep,
+    supportLevel: input.supportLevel,
     suggestionAgentRunId: input.suggestionAgentRunId,
   });
 }

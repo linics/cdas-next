@@ -12,6 +12,10 @@ import {
   inquiryDepths,
   submissionModes,
 } from "../../../../domain/activity/activity-content";
+import {
+  teacherFeedbackNextStepLabels,
+  teacherFeedbackSupportLevelLabels,
+} from "../../../../domain/feedback/teacher-feedback-policy";
 import { LocalizedDateTime } from "../../../_components/localized-date-time";
 import { InlineAlert, StatusBadge } from "../../../_components/ui";
 import { WorkspaceShell } from "../../../_components/workspace-shell";
@@ -268,6 +272,24 @@ function RevisionHistory({
                             <LocalizedDateTime dateTime={entry.confirmedAt} />
                           </div>
                           <div className={styles.feedbackBody}>{entry.body}</div>
+                          {entry.nextStep && entry.supportLevel ? (
+                            <div className={styles.feedbackStructure}>
+                              <span>
+                                形成性下一步：
+                                {teacherFeedbackNextStepLabels[entry.nextStep]}
+                              </span>
+                              <span>
+                                支架层级：
+                                {teacherFeedbackSupportLevelLabels[
+                                  entry.supportLevel
+                                ]}
+                              </span>
+                            </div>
+                          ) : (
+                            <p className={styles.legacyFeedbackStructure}>
+                              旧反馈未指定结构化下一步与支架
+                            </p>
+                          )}
                         </li>
                       ))}
                     </ol>

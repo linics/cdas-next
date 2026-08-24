@@ -16,6 +16,8 @@ function payloadInput() {
     expectedSubmissionRevisionNumber: 2,
     expectedFeedbackVersion: 0,
     body: "证据与结论已经对应。",
+    nextStep: "CONTINUE" as const,
+    supportLevel: "STANDARD" as const,
     suggestionAgentRunId: null,
   };
 }
@@ -40,6 +42,8 @@ describe("teacher feedback intent payload", () => {
       suggestionAgentRunId: payload.suggestionAgentRunId,
       body: payload.body,
       expectedFeedbackVersion: payload.expectedFeedbackVersion,
+      supportLevel: payload.supportLevel,
+      nextStep: payload.nextStep,
       expectedSubmissionRevisionNumber:
         payload.expectedSubmissionRevisionNumber,
       submissionRevisionId: payload.submissionRevisionId,
@@ -58,6 +62,12 @@ describe("teacher feedback intent payload", () => {
         ...payload,
         expectedFeedbackVersion: 1,
       }),
+    ).not.toBe(hashTeacherFeedbackPayload(payload));
+    expect(
+      hashTeacherFeedbackPayload({ ...payload, nextStep: "REVISE" }),
+    ).not.toBe(hashTeacherFeedbackPayload(payload));
+    expect(
+      hashTeacherFeedbackPayload({ ...payload, supportLevel: "CHALLENGE" }),
     ).not.toBe(hashTeacherFeedbackPayload(payload));
   });
 
@@ -101,7 +111,21 @@ describe("teacher feedback intent payload", () => {
       }),
     ).toThrow();
     expect(() =>
+      teacherFeedbackPayloadSchema.parse({ ...payload, schemaVersion: 1 }),
+    ).toThrow();
+    expect(() =>
       createTeacherFeedbackPayload({ ...payloadInput(), actorId: randomUUID() }),
+    ).toThrow();
+    expect(() => {
+      const withoutNextStep = payloadInput();
+      delete (withoutNextStep as { nextStep?: string }).nextStep;
+      createTeacherFeedbackPayload(withoutNextStep);
+    }).toThrow();
+    expect(() =>
+      createTeacherFeedbackPayload({
+        ...payloadInput(),
+        supportLevel: "UNSUPPORTED",
+      }),
     ).toThrow();
   });
 });

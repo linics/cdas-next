@@ -2,6 +2,10 @@ import "server-only";
 
 import { z } from "zod";
 import { activityContentSchema } from "../../domain/activity/activity-content";
+import {
+  teacherFeedbackNextSteps,
+  teacherFeedbackSupportLevels,
+} from "../../domain/feedback/teacher-feedback-policy";
 import { hasMeaningfulTextEvidence } from "../../domain/submission/text-evidence";
 import type { PrismaClient } from "../../generated/prisma/client";
 import {
@@ -19,6 +23,10 @@ const queryInputSchema = z
 const isoDateSchema = z.iso.datetime({ offset: true });
 const releaseStatusSchema = z.enum(["ACTIVE", "CLOSED", "ARCHIVED"]);
 const feedbackSourceSchema = z.enum(["MANUAL", "AI_ASSISTED"]);
+const feedbackNextStepSchema = z.enum(teacherFeedbackNextSteps).nullable();
+const feedbackSupportLevelSchema = z
+  .enum(teacherFeedbackSupportLevels)
+  .nullable();
 const visibleTextSchema = z
   .string()
   .refine(hasMeaningfulTextEvidence, "Text must contain visible content");
@@ -57,10 +65,20 @@ const confirmedFeedbackRevisionSchema = z
     id: z.uuid(),
     version: z.int().positive(),
     body: visibleTextSchema,
+    nextStep: feedbackNextStepSchema,
+    supportLevel: feedbackSupportLevelSchema,
     source: feedbackSourceSchema,
     confirmedAt: isoDateSchema,
   })
-  .strict();
+  .strict()
+  .superRefine((revision, context) => {
+    if ((revision.nextStep === null) !== (revision.supportLevel === null)) {
+      context.addIssue({
+        code: "custom",
+        message: "Legacy feedback fields must both be null or both be present",
+      });
+    }
+  });
 
 const confirmedFeedbackSchema = z
   .object({
@@ -261,6 +279,8 @@ const safeSubmissionSelect = {
               id: true,
               version: true,
               body: true,
+              nextStep: true,
+              supportLevel: true,
               source: true,
               confirmedAt: true,
             },
@@ -313,6 +333,8 @@ function mapSubmissionHistory(
           id: string;
           version: number;
           body: string;
+          nextStep: "CONTINUE" | "REVISE" | null;
+          supportLevel: "FOUNDATION" | "STANDARD" | "CHALLENGE" | null;
           source: "MANUAL" | "AI_ASSISTED";
           confirmedAt: Date;
         }>;
@@ -382,6 +404,8 @@ function mapSubmissionHistory(
                 id: feedbackRevision.id,
                 version: feedbackRevision.version,
                 body: feedbackRevision.body,
+                nextStep: feedbackRevision.nextStep,
+                supportLevel: feedbackRevision.supportLevel,
                 source: feedbackRevision.source,
                 confirmedAt:
                   feedbackRevision.confirmedAt.toISOString(),

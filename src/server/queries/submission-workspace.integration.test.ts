@@ -185,6 +185,8 @@ async function createWorkspaceFixture() {
       expectedSubmissionRevisionNumber: submission.revisionNumber,
       expectedFeedbackVersion: 0,
       body: feedbackBody,
+      nextStep: "CONTINUE",
+      supportLevel: "STANDARD",
       suggestionAgentRunId: null,
       idempotencyKey: `prepare_feedback_${randomUUID()}`,
     },

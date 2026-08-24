@@ -63,6 +63,17 @@ enum FeedbackRevisionSource {
   AI_ASSISTED
 }
 
+enum FeedbackNextStep {
+  CONTINUE
+  REVISE
+}
+
+enum FeedbackSupportLevel {
+  FOUNDATION
+  STANDARD
+  CHALLENGE
+}
+
 enum AttachmentKind {
   IMAGE
   PDF
@@ -379,6 +390,8 @@ model TeacherFeedbackRevision {
   version           Int
   body              String                 @db.Text
   bodyHash          String                 @map("body_hash") @db.Char(64)
+  nextStep          FeedbackNextStep?      @map("next_step")
+  supportLevel      FeedbackSupportLevel?  @map("support_level")
   source            FeedbackRevisionSource
   confirmedById     String                 @map("confirmed_by_id") @db.Uuid
   actionIntentId    String                 @unique @map("action_intent_id") @db.Uuid

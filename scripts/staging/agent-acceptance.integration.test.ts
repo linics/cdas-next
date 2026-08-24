@@ -359,6 +359,8 @@ describeWithDatabase("staging Agent acceptance read-only verifier", () => {
         expectedSubmissionRevisionNumber: 1,
         expectedFeedbackVersion: 0,
         body: agentAcceptanceFeedbackText,
+        nextStep: "REVISE",
+        supportLevel: "FOUNDATION",
         suggestionAgentRunId: null,
         idempotencyKey: `agent_loop_feedback_prepare_${randomUUID()}`,
       },

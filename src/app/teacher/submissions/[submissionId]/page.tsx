@@ -2,6 +2,10 @@ import { randomUUID } from "node:crypto";
 import { notFound } from "next/navigation";
 import { ZodError } from "zod";
 import { evidenceTypeLabel } from "../../../../domain/activity/activity-content";
+import {
+  teacherFeedbackNextStepLabels,
+  teacherFeedbackSupportLevelLabels,
+} from "../../../../domain/feedback/teacher-feedback-policy";
 import { LocalizedDateTime } from "../../../_components/localized-date-time";
 import { AuthenticationError } from "../../../../server/auth/current-actor";
 import { createUiCommandContext } from "../../../../server/commands/create-ui-command-context";
@@ -71,6 +75,24 @@ function FeedbackHistory({ revision }: { revision: FormalRevision }) {
               <div className={styles.feedbackBody}>
                 {feedbackRevision.body}
               </div>
+              {feedbackRevision.nextStep && feedbackRevision.supportLevel ? (
+                <div className={styles.feedbackStructure}>
+                  <span>
+                    形成性下一步：
+                    {teacherFeedbackNextStepLabels[feedbackRevision.nextStep]}
+                  </span>
+                  <span>
+                    支架层级：
+                    {teacherFeedbackSupportLevelLabels[
+                      feedbackRevision.supportLevel
+                    ]}
+                  </span>
+                </div>
+              ) : (
+                <p className={styles.legacyFeedbackStructure}>
+                  旧反馈未指定结构化下一步与支架
+                </p>
+              )}
             </article>
           ))}
           <p className={styles.feedbackOwner}>

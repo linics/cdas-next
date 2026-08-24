@@ -262,6 +262,8 @@ def save_feedback(page) -> None:
     textarea = page.locator("#teacher-feedback-body")
     textarea.wait_for(state="visible", timeout=30_000)
     textarea.fill(FEEDBACK_TEXT)
+    page.get_by_label("形成性下一步", exact=True).select_option("REVISE")
+    page.get_by_label("支架层级", exact=True).select_option("FOUNDATION")
     prepare = page.get_by_role("button", name="准备确认", exact=True)
     prepare.wait_for(state="visible", timeout=30_000)
     if not prepare.is_enabled():
@@ -404,7 +406,10 @@ def main() -> None:
                 raise AcceptanceFailure("STAGING_AGENT_ACCEPTANCE_SUBMISSION_LINK_MISSING")
             submission_link.click()
             save_feedback(teacher)
-            teacher.locator('[aria-labelledby^="feedback-history-"]').last.get_by_text(FEEDBACK_TEXT, exact=True).wait_for(state="visible")
+            feedback_history = teacher.locator('[aria-labelledby^="feedback-history-"]').last
+            feedback_history.get_by_text(FEEDBACK_TEXT, exact=True).wait_for(state="visible")
+            feedback_history.get_by_text("按反馈修改并重交", exact=True).wait_for(state="visible")
+            feedback_history.get_by_text("基础支持", exact=True).wait_for(state="visible")
             screenshot(teacher, directory, SCREENSHOTS[5])
 
             sign_in(other_teacher, base, "OTHER_TEACHER")
@@ -447,10 +452,13 @@ def main() -> None:
             student.goto(f"{base}{activity_href}", wait_until="domcontentloaded")
             assert_origin(student.url, base)
             wait_text(student, FEEDBACK_TEXT)
+            wait_text(student, "按反馈修改并重交")
+            wait_text(student, "基础支持")
             student.get_by_role("button", name="开始重交", exact=True).click()
             student.locator("#text-evidence").wait_for(state="visible")
             student.locator("#text-evidence").fill(f"{EVIDENCE_TEXT} stale write after close")
             checks.append({"code": "STUDENT_FEEDBACK_VISIBLE", "status": "PASS"})
+            checks.append({"code": "STRUCTURED_FORMATIVE_FEEDBACK_VISIBLE", "status": "PASS"})
 
             teacher.goto(f"{base}{release_href}", wait_until="domcontentloaded")
             assert_origin(teacher.url, base)
@@ -508,6 +516,7 @@ def main() -> None:
         "OTHER_STUDENT_SUBMISSION_CONTENT_HIDDEN",
         "OTHER_STUDENT_SUBMISSION_404",
         "STUDENT_FEEDBACK_VISIBLE",
+        "STRUCTURED_FORMATIVE_FEEDBACK_VISIBLE",
         "STALE_STUDENT_WRITE_REJECTED_AFTER_CLOSE",
         "CLOSED_STUDENT_READONLY",
         "TEACHER_STUDENT_RESOURCE_HIDDEN",

@@ -213,6 +213,8 @@ describeWithDatabase("AI-disabled manual first-phase closed loop", () => {
           expectedSubmissionRevisionNumber: 1,
           expectedFeedbackVersion: 0,
           body: "观察记录清楚。请再说明滴水次数如何支持你的改进建议。",
+          nextStep: "REVISE",
+          supportLevel: "FOUNDATION",
           suggestionAgentRunId: null,
           idempotencyKey: idempotencyKey("manual_feedback_prepare"),
         },
