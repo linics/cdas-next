@@ -456,6 +456,9 @@ describe("activity assistant route handler", () => {
     expect(mocks.publishRelease).not.toHaveBeenCalled();
     expect(languageModel.doStreamCalls).toHaveLength(1);
     expect(languageModel.doStreamCalls[0]?.toolChoice).toEqual({ type: "auto" });
+    expect(languageModel.doStreamCalls[0]?.providerOptions).toEqual({
+      deepseek: { thinking: { type: "disabled" } },
+    });
   });
 
   it("forces the publish tool only for an explicit post-draft publish request", () => {

@@ -26,7 +26,10 @@ import {
   getActivityAssistantConfig,
   type ActivityAssistantConfig,
 } from "./assistant-config";
-import { createDeepSeekModel } from "./deepseek-provider";
+import {
+  createDeepSeekModel,
+  deepSeekActivityAssistantProviderOptions,
+} from "./deepseek-provider";
 import {
   createActivityAssistantTools,
   activityAssistantMessageValidationTools,
@@ -322,6 +325,7 @@ export async function handleActivityAssistantRequest(
       messages: modelMessages,
       tools,
       toolChoice: selectActivityAssistantToolChoice(uiMessages),
+      providerOptions: deepSeekActivityAssistantProviderOptions,
       toolApproval: {
         create_activity_draft: () => {
           if (createApprovalSelected) {

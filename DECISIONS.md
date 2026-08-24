@@ -193,6 +193,7 @@
 - 决策：首个助手试行使用 AI SDK 的 OpenAI-compatible provider，服务端以 `DEEPSEEK_API_KEY` 直接调用 `https://api.deepseek.com`；试行模型固定通过 `AI_MODEL` 选择 DeepSeek 模型，仓库默认使用官方列出的 `deepseek-v4-flash`。不再把 Vercel AI Gateway 或其 BYOK 余额作为运行依赖。
 - 理由：当前 Vercel 团队即使配置自有 DeepSeek key，Gateway 仍要求有效信用卡和 Gateway credit 才允许请求；DeepSeek 官方 API 已提供兼容接口与工具调用，直连能保留现有 AI SDK 消息流、签名审批和领域工具合同，同时让费用只由用户已有的 DeepSeek 账户承担。
 - 约束：DeepSeek key 只存在于服务端环境变量，不进入客户端、日志或 artifact；模型调用仍在数据库事务外；配置不全或供应商失败时助手失败关闭，手工教学闭环继续可用。选择视觉模型不代表当前产品支持图片上传，附件仍受 D-012 与 D-015 约束。
+- V4 工具模式：DeepSeek V4 默认 thinking，但官方 V4 兼容说明指出 thinking 请求不接受 `tool_choice`。首个教师助手固定发送 `thinking.type=disabled`；已有草稿会话中的明确发布请求用 AI SDK named tool choice 选择 `publish_activity_release`，输入仍由模型生成，签名确认与领域命令继续作为高影响动作边界。
 - 后果：D-018 的 AI SDK 消息流、工具 schema、审批和业务失败边界继续有效，其中“AI Gateway”供应商路径由本决策替代。生产数据的地区、日志保留和供应商合规仍需外部审查。
 
 ## D-025：附件证据采用私有 S3、托管扫描与不可变修订关联

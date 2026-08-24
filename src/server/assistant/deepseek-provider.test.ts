@@ -10,7 +10,10 @@ vi.mock("@ai-sdk/openai-compatible", () => ({
   createOpenAICompatible: mocks.createOpenAICompatible,
 }));
 
-import { createDeepSeekModel } from "./deepseek-provider";
+import {
+  createDeepSeekModel,
+  deepSeekActivityAssistantProviderOptions,
+} from "./deepseek-provider";
 
 describe("DeepSeek provider boundary", () => {
   beforeEach(() => {
@@ -36,5 +39,11 @@ describe("DeepSeek provider boundary", () => {
       "deepseek-v4-flash",
     );
     expect(model).toEqual({ provider: "deepseek.chat" });
+  });
+
+  it("uses V4 non-thinking mode for the named publish tool choice", () => {
+    expect(deepSeekActivityAssistantProviderOptions).toEqual({
+      deepseek: { thinking: { type: "disabled" } },
+    });
   });
 });
