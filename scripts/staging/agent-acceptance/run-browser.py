@@ -354,7 +354,9 @@ def main() -> None:
             assert_origin(teacher.url, base)
             release_link = teacher.get_by_role("link", name=re.compile("查看.*学生提交")).first
             release_href = release_link.get_attribute("href")
-            if not release_href or not re.fullmatch(r"/teacher/releases/[0-9a-f-]+", release_href):
+            if not release_href or not re.fullmatch(
+                r"/teacher/releases/[0-9a-f-]+/submissions", release_href
+            ):
                 raise AcceptanceFailure("STAGING_AGENT_ACCEPTANCE_RELEASE_LINK_MISSING")
             screenshot(teacher, directory, SCREENSHOTS[2])
 
