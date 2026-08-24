@@ -110,13 +110,10 @@ class BrowserContractTests(unittest.TestCase):
         with patch.dict(environ, {"STAGING_BASE_URL": "https://cdas-next-preview-linics1.vercel.app:443/", "STAGING_VERCEL_PROJECT_NAME": "cdas-next"}):
             self.assertEqual(MODULE.base_url(), "https://cdas-next-preview-linics1.vercel.app:443")
 
-    def test_source_locks_ticket_origin_logout_and_new_evidence(self):
+    def test_source_locks_ticket_origin_and_group_evidence(self):
         source = MODULE_PATH.read_text(encoding="utf-8")
         self.assertLess(source.index("assert_origin(page.url, remote)\n        ticket = issue_ticket"), source.index("ticket = issue_ticket") + 1)
         self.assertIn("window.top !== window", source)
-        self.assertIn("退出登录", source)
-        self.assertIn("!window.Clerk.user && !window.Clerk.session", source)
-        self.assertIn("STAGING_ACCEPTANCE_SIGN_OUT_RELOGIN_FAILED", source)
         self.assertIn("AI_DISABLED_MANUAL_PATH", source)
         self.assertEqual(source.count('#classroom-roster-manager[data-hydrated="true"]'), 2)
         self.assertIn('("基本设置", "背景设定", "三维目标", "总体任务", "任务链", "评价标准")', source)

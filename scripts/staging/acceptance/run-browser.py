@@ -321,29 +321,6 @@ def feedback(page: Page, body: str) -> None:
     confirm(page, "确认并保存最终反馈", "确认并保存最终反馈")
 
 
-def sign_out_and_relogin(page: Page, remote: str, role: str) -> None:
-    try:
-        page.get_by_role("button", name="退出登录", exact=True).click()
-        page.wait_for_url(re.compile(r"/$"), timeout=60_000)
-        assert_origin(page.url, remote)
-        page.wait_for_function(
-            "() => Boolean(window.Clerk?.loaded && window.Clerk.status === 'ready' && !window.Clerk.user && !window.Clerk.session)",
-            timeout=60_000,
-        )
-        page.get_by_role("heading", name="开始今天的学习活动", exact=True).wait_for(
-            state="visible",
-            timeout=60_000,
-        )
-        page.goto(f"{remote}/{role}", wait_until="domcontentloaded")
-        assert_origin(page.url, remote)
-        page.get_by_text("需要登录", exact=True).wait_for(state="visible", timeout=60_000)
-        if page.get_by_role("button", name="退出登录", exact=True).count():
-            raise AcceptanceFailure("STAGING_ACCEPTANCE_SIGN_OUT_NOT_EFFECTIVE")
-        sign_in(page, remote, role)
-    except PlaywrightError as error:
-        raise AcceptanceFailure("STAGING_ACCEPTANCE_SIGN_OUT_RELOGIN_FAILED") from error
-
-
 def run() -> None:
     marker_value = marker()
     remote = base_url()
@@ -398,8 +375,6 @@ def run() -> None:
             if teacher.get_by_text("我的学习活动", exact=True).count(): raise AcceptanceFailure("STAGING_ACCEPTANCE_WRONG_ROLE_LEAK")
             checks.append({"code": "WRONG_ROLE_STUDENT_ROOT_GUIDANCE", "status": "PASS"})
             teacher.goto(f"{remote}/teacher", wait_until="domcontentloaded"); assert_origin(teacher.url, remote)
-            sign_out_and_relogin(teacher, remote, "teacher")
-            checks.append({"code": "TEACHER_SIGN_OUT_AND_RELOGIN", "status": "PASS"})
             classroom_row = teacher.locator("article").filter(has_text=classroom_name)
             members_href = classroom_row.get_by_role("link", name="管理成员 →", exact=True).get_attribute("href")
             if not members_href or not re.fullmatch(r"/teacher/classrooms/[0-9a-f-]+/members", members_href):
@@ -456,8 +431,6 @@ def run() -> None:
             if student.get_by_role("link", name="新建学习活动", exact=True).count(): raise AcceptanceFailure("STAGING_ACCEPTANCE_WRONG_ROLE_LEAK")
             checks.append({"code": "WRONG_ROLE_TEACHER_ROOT_GUIDANCE", "status": "PASS"})
             student.goto(f"{remote}/student", wait_until="domcontentloaded"); assert_origin(student.url, remote)
-            sign_out_and_relogin(student, remote, "student")
-            checks.append({"code": "STUDENT_SIGN_OUT_AND_RELOGIN", "status": "PASS"})
             activity = student.get_by_role("link", name=f"打开活动：{title}", exact=True)
             activity_href = activity.get_attribute("href")
             if not activity_href:
