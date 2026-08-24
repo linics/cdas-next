@@ -12,6 +12,7 @@ import { saveActivityDraft } from "../../server/commands/save-activity-draft";
 
 const defaultContent: ActivityContent = {
   ...waterConservationTaskBook,
+  submissionMode: "once",
   title: "测试活动",
   topic: "测试任务",
   summary: "供集成测试发布的活动。",
@@ -35,6 +36,7 @@ function writableFixtureContent(content: ActivityContent): ActivityContent {
   if (content.schemaVersion === 2) return content;
   return {
     ...waterConservationTaskBook,
+    submissionMode: "once",
     title: content.title,
     topic: content.title,
     summary: content.summary,

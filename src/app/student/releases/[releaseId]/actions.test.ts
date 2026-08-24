@@ -114,6 +114,8 @@ describe("student submission server actions", () => {
       revisionNumber: 2,
       isLate: false,
       submittedAt: "2026-08-18T12:00:00.000Z",
+      nextSubmissionId: null,
+      nextPhaseIndex: null,
     });
     mocks.startResubmission.mockResolvedValue({
       submissionId,
@@ -129,10 +131,12 @@ describe("student submission server actions", () => {
       initialSubmissionActionState,
       formData({
         releaseId,
+        phaseIndex: "0",
         workingCopyId,
         version: "2",
         idempotencyKey: "save_request_001",
         text: "第一行\r\n第二行",
+        completedEvidenceIndexes: "",
       }),
     );
 
@@ -142,10 +146,12 @@ describe("student submission server actions", () => {
       trustedContext,
       {
         releaseId,
+        phaseIndex: 0,
         expectedWorkingCopyId: workingCopyId,
         expectedWorkingVersion: 2,
         idempotencyKey: "save_request_001",
         textEvidence: "第一行\n第二行",
+        completedEvidenceIndexes: [],
       },
     );
     expect(result).toMatchObject({
@@ -161,6 +167,7 @@ describe("student submission server actions", () => {
   it("rejects injected trust facts before authentication or a command call", async () => {
     const data = formData({
       releaseId,
+      phaseIndex: "0",
       workingCopyId: "",
       version: "",
       idempotencyKey: "save_request_002",
@@ -182,6 +189,7 @@ describe("student submission server actions", () => {
   it("rejects duplicate save fields before auth and preserves submitted text", async () => {
     const data = formData({
       releaseId,
+      phaseIndex: "0",
       workingCopyId: "",
       version: "",
       idempotencyKey: "save_request_duplicate",
@@ -268,10 +276,12 @@ describe("student submission server actions", () => {
   it("ignores framework action metadata while keeping business fields exact", async () => {
     const data = formData({
       releaseId,
+      phaseIndex: "0",
       workingCopyId: "",
       version: "",
       idempotencyKey: "save_request_action_meta",
       text: "框架字段不应改变正文",
+      completedEvidenceIndexes: "",
     });
     data.append("$ACTION_TEST", "opaque-framework-value");
 
@@ -300,6 +310,7 @@ describe("student submission server actions", () => {
       initialSubmissionActionState,
       formData({
         releaseId,
+        phaseIndex: "0",
         workingCopyId,
         version: "3",
         idempotencyKey: "submit_request_001",
@@ -320,6 +331,7 @@ describe("student submission server actions", () => {
       initialSubmissionActionState,
       formData({
         releaseId,
+        phaseIndex: "0",
         version: "1",
         idempotencyKey: "resubmit_request_001",
       }),
@@ -330,6 +342,7 @@ describe("student submission server actions", () => {
       trustedContext,
       {
         releaseId,
+        phaseIndex: 0,
         expectedLatestRevisionNumber: 1,
         idempotencyKey: "resubmit_request_001",
       },
@@ -349,10 +362,12 @@ describe("student submission server actions", () => {
       initialSubmissionActionState,
       formData({
         releaseId,
+        phaseIndex: "0",
         workingCopyId: "",
         version: "",
         idempotencyKey: "save_request_003",
         text: "尚未提交的内容",
+        completedEvidenceIndexes: "",
       }),
     );
 

@@ -344,6 +344,8 @@ describeWithDatabase("submission workspace queries", () => {
     expect(result.submissions).toEqual([
       {
         submissionId: fixture.submissionId,
+        phaseIndex: 0,
+        phaseName: null,
         student: {
           id: fixture.studentId,
           displayName: "当前学生",

@@ -96,17 +96,32 @@ const formalSubmissionRevisionSchema = z
   .object({
     id: z.uuid(),
     revisionNumber: z.int().positive(),
-    textEvidence: visibleTextSchema,
+    textEvidence: z.string(),
+    completedEvidenceIndexes: z.array(z.int().positive()).max(4),
     isLate: z.boolean(),
     submittedAt: isoDateSchema,
     attachments: z.array(formalAttachmentSchema).max(5),
     feedback: confirmedFeedbackSchema.nullable(),
   })
-  .strict();
+  .strict()
+  .superRefine((revision, context) => {
+    if (
+      !hasMeaningfulTextEvidence(revision.textEvidence) &&
+      revision.completedEvidenceIndexes.length === 0 &&
+      revision.attachments.length === 0
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "Formal revision must contain evidence",
+      });
+    }
+  });
 
 const submissionHistorySchema = z
   .object({
     id: z.uuid(),
+    phaseIndex: z.int().nonnegative(),
+    phaseName: visibleTextSchema.nullable(),
     latestRevisionNumber: z.int().nonnegative(),
     release: releaseSchema,
     revisions: z.array(formalSubmissionRevisionSchema),
@@ -170,6 +185,7 @@ export class FeedbackWorkspaceQueryError extends Error {
 
 const safeSubmissionSelect = {
   id: true,
+  phaseIndex: true,
   latestRevisionNumber: true,
   release: {
     select: {
@@ -198,6 +214,7 @@ const safeSubmissionSelect = {
       id: true,
       revisionNumber: true,
       textEvidence: true,
+      completedEvidenceIndexes: true,
       isLate: true,
       submittedAt: true,
       attachments: {
@@ -244,6 +261,7 @@ const safeSubmissionSelect = {
 function mapSubmissionHistory(
   submission: {
     id: string;
+    phaseIndex: number;
     latestRevisionNumber: number;
     release: {
       id: string;
@@ -261,6 +279,7 @@ function mapSubmissionHistory(
       id: string;
       revisionNumber: number;
       textEvidence: string;
+      completedEvidenceIndexes: number[];
       isLate: boolean;
       submittedAt: Date;
       attachments: Array<{
@@ -292,8 +311,19 @@ function mapSubmissionHistory(
     throw new FeedbackWorkspaceQueryError("NOT_FOUND");
   }
 
+  const content = activityContentSchema.parse(
+    submission.release.snapshot.content,
+  );
+
   return {
     id: submission.id,
+    phaseIndex: submission.phaseIndex,
+    phaseName:
+      submission.phaseIndex === 0
+        ? null
+        : content.schemaVersion === 2
+          ? (content.phases[submission.phaseIndex - 1]?.name ?? null)
+          : null,
     latestRevisionNumber: submission.latestRevisionNumber,
     release: {
       id: submission.release.id,
@@ -305,15 +335,14 @@ function mapSubmissionHistory(
         sourceDraftVersion:
           submission.release.snapshot.sourceDraftVersion,
         contentHash: submission.release.snapshot.contentHash,
-        content: activityContentSchema.parse(
-          submission.release.snapshot.content,
-        ),
+        content,
       },
     },
     revisions: submission.revisions.map((revision) => ({
       id: revision.id,
       revisionNumber: revision.revisionNumber,
       textEvidence: revision.textEvidence,
+      completedEvidenceIndexes: revision.completedEvidenceIndexes,
       isLate: revision.isLate,
       submittedAt: revision.submittedAt.toISOString(),
       attachments: revision.attachments.map(({ attachment }) => {

@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { notFound } from "next/navigation";
 import { ZodError } from "zod";
+import { evidenceTypeLabel } from "../../../../domain/activity/activity-content";
 import { LocalizedDateTime } from "../../../_components/localized-date-time";
 import { AuthenticationError } from "../../../../server/auth/current-actor";
 import { createUiCommandContext } from "../../../../server/commands/create-ui-command-context";
@@ -88,9 +89,14 @@ function FeedbackHistory({ revision }: { revision: FormalRevision }) {
 function SubmissionRevision({
   revision,
   current,
+  phase,
 }: {
   revision: FormalRevision;
   current: boolean;
+  phase: Extract<
+    TeacherFeedbackWorkspace["submission"]["release"]["snapshot"]["content"],
+    { schemaVersion: 2 }
+  >["phases"][number] | null;
 }) {
   return (
     <article
@@ -119,7 +125,22 @@ function SubmissionRevision({
       </header>
 
       <p className={styles.formalLabel}>正式修订 · 内容不可覆盖</p>
-      <div className={styles.submissionBody}>{revision.textEvidence}</div>
+      {revision.textEvidence ? (
+        <div className={styles.submissionBody}>{revision.textEvidence}</div>
+      ) : null}
+      {phase && revision.completedEvidenceIndexes.length > 0 ? (
+        <ul className={styles.formalAttachmentList}>
+          {revision.completedEvidenceIndexes.map((evidenceIndex) => {
+            const evidence = phase.evidence[evidenceIndex - 1];
+            return evidence ? (
+              <li key={evidenceIndex}>
+                <strong>已确认：{evidence.description}</strong>
+                <span>{evidenceTypeLabel(evidence.type)}</span>
+              </li>
+            ) : null;
+          })}
+        </ul>
+      ) : null}
       {revision.attachments.length > 0 ? (
         <ul className={styles.formalAttachmentList}>
           {revision.attachments.map((attachment) => (
@@ -176,6 +197,10 @@ export default async function TeacherSubmissionPage({
   }
   const latestFeedbackRevision = currentRevision.feedback?.revisions.at(-1);
   const content = submission.release.snapshot.content;
+  const phase =
+    content.schemaVersion === 2 && submission.phaseIndex > 0
+      ? (content.phases[submission.phaseIndex - 1] ?? null)
+      : null;
   const revisions = [...submission.revisions].reverse();
 
   return (
@@ -187,6 +212,7 @@ export default async function TeacherSubmissionPage({
             <h1>{student.displayName}</h1>
             <p>
               {content.title} · {submission.release.classroom.name}
+              {submission.phaseName ? ` · ${submission.phaseName}` : ""}
             </p>
           </div>
           <span className={styles.workspaceStatus}>
@@ -205,6 +231,14 @@ export default async function TeacherSubmissionPage({
             <dd>{submission.release.classroom.name}</dd>
           </div>
           <div>
+            <dt>提交范围</dt>
+            <dd>
+              {submission.phaseName
+                ? `第 ${submission.phaseIndex} 阶段 · ${submission.phaseName}`
+                : "整项提交"}
+            </dd>
+          </div>
+          <div>
             <dt>截止时间</dt>
             <dd>
               {submission.release.dueAt ? (
@@ -219,6 +253,15 @@ export default async function TeacherSubmissionPage({
             <dd>{submission.latestRevisionNumber} 版</dd>
           </div>
         </dl>
+
+        {phase ? (
+          <section className={styles.railNote}>
+            <p className={styles.eyebrow}>冻结阶段要求</p>
+            <p>
+              {phase.action} · 评价要点：{phase.evaluationFocus}
+            </p>
+          </section>
+        ) : null}
 
         <div className={styles.workspaceGrid}>
           <section
@@ -238,6 +281,7 @@ export default async function TeacherSubmissionPage({
                   key={revision.id}
                   revision={revision}
                   current={revision.id === currentRevision.id}
+                  phase={phase}
                 />
               ))}
             </div>

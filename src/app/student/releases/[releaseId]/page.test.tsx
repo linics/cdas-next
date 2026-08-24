@@ -97,6 +97,12 @@ const trustedContext = {
 const workspace = {
   actor: { displayName: "陈同学" },
   access: { canWrite: true },
+  execution: {
+    version: 0,
+    mode: "once",
+    phaseCount: 0,
+    currentPhaseIndex: 0,
+  },
   release: {
     id: releaseId,
     status: "ACTIVE",
@@ -117,36 +123,44 @@ const workspace = {
     },
   },
   submission: null,
+  submissions: [],
+};
+const submittedSubmission = {
+  id: submissionId,
+  phaseIndex: 0,
+  latestRevisionNumber: 2,
+  workingCopy: null,
+  revisions: [
+    {
+      id: firstRevisionId,
+      revisionNumber: 1,
+      textEvidence: "第一版正式观察记录",
+      completedEvidenceIndexes: [],
+      isLate: false,
+      submittedAt: "2026-08-18T10:30:00.000Z",
+      attachments: [],
+    },
+    {
+      id: secondRevisionId,
+      revisionNumber: 2,
+      textEvidence: "第二版正式观察记录",
+      completedEvidenceIndexes: [],
+      isLate: true,
+      submittedAt: "2026-08-18T11:30:00.000Z",
+      attachments: [],
+    },
+  ],
 };
 const submittedWorkspace = {
   ...workspace,
-  submission: {
-    id: submissionId,
-    latestRevisionNumber: 2,
-    workingCopy: null,
-    revisions: [
-      {
-        id: firstRevisionId,
-        revisionNumber: 1,
-        textEvidence: "第一版正式观察记录",
-        isLate: false,
-        submittedAt: "2026-08-18T10:30:00.000Z",
-        attachments: [],
-      },
-      {
-        id: secondRevisionId,
-        revisionNumber: 2,
-        textEvidence: "第二版正式观察记录",
-        isLate: true,
-        submittedAt: "2026-08-18T11:30:00.000Z",
-        attachments: [],
-      },
-    ],
-  },
+  submission: submittedSubmission,
+  submissions: [submittedSubmission],
 };
 const confirmedFeedbackWorkspace = {
   submission: {
     id: submissionId,
+    phaseIndex: 0,
+    phaseName: null,
     latestRevisionNumber: 2,
     release: {
       ...workspace.release,

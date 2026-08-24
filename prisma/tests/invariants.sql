@@ -1567,6 +1567,43 @@ VALUES (
   now()
 );
 
+DO $test$
+BEGIN
+  BEGIN
+    UPDATE submissions
+    SET phase_index = 1, updated_at = now()
+    WHERE id = '00000000-0000-4000-8000-000000000080';
+    RAISE EXCEPTION 'submission phase identity was changed';
+  EXCEPTION WHEN SQLSTATE '55000' THEN
+    NULL;
+  END;
+END
+$test$;
+
+DO $test$
+BEGIN
+  BEGIN
+    INSERT INTO submissions (
+      id,
+      release_id,
+      student_id,
+      phase_index,
+      updated_at
+    )
+    VALUES (
+      '00000000-0000-4000-8000-000000000088',
+      '00000000-0000-4000-8000-000000000050',
+      '00000000-0000-4000-8000-000000000002',
+      1,
+      now()
+    );
+    RAISE EXCEPTION 'whole-task release accepted a phase submission';
+  EXCEPTION WHEN check_violation THEN
+    NULL;
+  END;
+END
+$test$;
+
 INSERT INTO submission_working_copies (
   id,
   submission_id,

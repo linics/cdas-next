@@ -83,7 +83,10 @@ describeWithDatabase("AI-disabled manual first-phase closed loop", () => {
           draftId: null,
           expectedVersion: null,
           desiredStatus: "READY_FOR_PREVIEW",
-          content: waterConservationTaskBook,
+          content: {
+            ...waterConservationTaskBook,
+            submissionMode: "once",
+          },
           agentRunId: null,
           idempotencyKey: idempotencyKey("manual_draft"),
         },

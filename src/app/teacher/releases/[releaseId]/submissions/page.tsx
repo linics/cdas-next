@@ -60,7 +60,7 @@ export default async function TeacherReleaseSubmissionsPage({
               {workspace.release.classroomName} · 发布{" "}
               {shortResourceId(workspace.release.id)} ·{" "}
               <LocalizedDateTime dateTime={workspace.release.publishedAt} />{" "}
-              发布。列表只包含当前正式修订的中继数据，不读取学生工作草稿或正文。
+              发布。阶段进度只读取容器与正式修订状态，不读取学生工作草稿正文或附件元数据。
             </p>
           </div>
           <Link className={styles.secondaryButton} href="/teacher">
@@ -76,12 +76,51 @@ export default async function TeacherReleaseSubmissionsPage({
               prepareIdempotencySeed={`prepare_close_activity_${randomUUID()}`}
             />
           ) : null}
+          {workspace.release.executionVersion === 1 ? (
+            <section className={styles.progressSection}>
+              <header className={styles.sectionHeader}>
+                <div>
+                  <p className={styles.eyebrow}>顺序阶段</p>
+                  <h2>班级进度</h2>
+                </div>
+                <span>{workspace.release.phaseCount} 阶段</span>
+              </header>
+              <div className={styles.submissionList}>
+                {workspace.progress.map((progress) => (
+                  <article
+                    className={styles.submissionRow}
+                    key={progress.student.id}
+                  >
+                    <div>
+                      <h2>{progress.student.displayName}</h2>
+                      <p>学生识别 {shortResourceId(progress.student.id)}</p>
+                    </div>
+                    <div className={styles.submissionMeta}>
+                      <strong>
+                        {progress.complete
+                          ? "全部完成"
+                          : progress.started
+                            ? progress.currentPhaseIndex === 0
+                              ? "正在整理整项终稿"
+                              : `当前第 ${progress.currentPhaseIndex} 阶段`
+                            : "尚未开始"}
+                      </strong>
+                      <small>
+                        已完成 {progress.completedPhaseCount}/
+                        {progress.totalPhaseCount} 阶段
+                      </small>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </section>
+          ) : null}
           <header className={styles.sectionHeader}>
             <div>
               <p className={styles.eyebrow}>当前正式版本</p>
-              <h2>已提交学生</h2>
+              <h2>正式提交记录</h2>
             </div>
-            <span>{workspace.submissions.length} 人</span>
+            <span>{workspace.submissions.length} 份</span>
           </header>
 
           {workspace.submissions.length === 0 ? (
@@ -97,7 +136,12 @@ export default async function TeacherReleaseSubmissionsPage({
                 >
                   <div>
                     <h2>{submission.student.displayName}</h2>
-                    <p>学生识别 {shortResourceId(submission.student.id)}</p>
+                    <p>
+                      {submission.phaseName
+                        ? `第 ${submission.phaseIndex} 阶段 · ${submission.phaseName}`
+                        : "整项提交"}
+                      {" · "}学生识别 {shortResourceId(submission.student.id)}
+                    </p>
                   </div>
                   <div className={styles.submissionMeta}>
                     <strong>正式修订 {submission.currentRevision.revisionNumber}</strong>

@@ -130,9 +130,17 @@ function ReleaseBrief({
 function RevisionHistory({
   submission,
   feedbackWorkspace,
+  phase,
 }: {
   submission: StudentReleaseWorkspace["submission"];
   feedbackWorkspace: StudentFeedbackWorkspace | null;
+  phase: StudentReleaseWorkspace["release"]["snapshot"]["content"] extends infer Content
+    ? Content extends { schemaVersion: 2; phases: infer Phases }
+      ? Phases extends ReadonlyArray<infer Phase>
+        ? Phase | null
+        : null
+      : null
+    : null;
 }) {
   const revisions = submission ? [...submission.revisions].reverse() : [];
   const feedbackByRevisionId = new Map(
@@ -188,9 +196,23 @@ function RevisionHistory({
                   </div>
                 </header>
                 <p className={styles.formalNote}>正式修订 · 内容不可覆盖</p>
-                <div className={styles.revisionText}>
-                  {revision.textEvidence}
-                </div>
+                {revision.textEvidence ? (
+                  <div className={styles.revisionText}>
+                    {revision.textEvidence}
+                  </div>
+                ) : null}
+                {phase && revision.completedEvidenceIndexes.length > 0 ? (
+                  <ul className={styles.completedCheckpoints}>
+                    {revision.completedEvidenceIndexes.map((evidenceIndex) => {
+                      const evidence = phase.evidence[evidenceIndex - 1];
+                      return evidence ? (
+                        <li key={evidenceIndex}>
+                          已确认：{evidence.description}（{evidenceTypeLabel(evidence.type)}）
+                        </li>
+                      ) : null;
+                    })}
+                  </ul>
+                ) : null}
                 {revision.attachments.length > 0 ? (
                   <ul className={styles.formalAttachmentList}>
                     {revision.attachments.map((attachment) => (
@@ -264,14 +286,127 @@ function RevisionHistory({
   );
 }
 
+function PhaseNavigator({
+  workspace,
+  selectedPhaseIndex,
+}: {
+  workspace: StudentReleaseWorkspace;
+  selectedPhaseIndex: number;
+}) {
+  const content = workspace.release.snapshot.content;
+  if (workspace.execution.version !== 1 || content.schemaVersion !== 2) {
+    return null;
+  }
+
+  const byPhase = new Map(
+    workspace.submissions.map((submission) => [
+      submission.phaseIndex,
+      submission,
+    ]),
+  );
+  const entries = content.phases.map((phase, index) => ({
+    phaseIndex: index + 1,
+    label: phase.name,
+  }));
+  if (workspace.execution.mode === "mixed") {
+    entries.push({ phaseIndex: 0, label: "整项终稿" });
+  }
+
+  return (
+    <nav className={styles.phaseNavigator} aria-label="任务阶段">
+      {entries.map((entry) => {
+        const submission = byPhase.get(entry.phaseIndex);
+        const submitted = (submission?.latestRevisionNumber ?? 0) > 0;
+        const unlocked =
+          entry.phaseIndex === workspace.execution.currentPhaseIndex ||
+          submission !== undefined ||
+          (entry.phaseIndex > 0 &&
+            entry.phaseIndex < workspace.execution.currentPhaseIndex);
+        const state = submitted
+          ? "已提交"
+          : unlocked
+            ? "进行中"
+            : "待解锁";
+        const content = (
+          <>
+            <span>{entry.phaseIndex === 0 ? "终" : entry.phaseIndex}</span>
+            <strong>{entry.label}</strong>
+            <small>{state}</small>
+          </>
+        );
+        return unlocked ? (
+          <Link
+            aria-current={
+              entry.phaseIndex === selectedPhaseIndex ? "step" : undefined
+            }
+            data-current={
+              entry.phaseIndex === selectedPhaseIndex ? "true" : "false"
+            }
+            href={`/student/releases/${workspace.release.id}?phase=${entry.phaseIndex}`}
+            key={entry.phaseIndex}
+          >
+            {content}
+          </Link>
+        ) : (
+          <span data-locked="true" key={entry.phaseIndex}>
+            {content}
+          </span>
+        );
+      })}
+    </nav>
+  );
+}
+
+function PhaseFocus({
+  phase,
+  phaseIndex,
+}: {
+  phase: Extract<
+    StudentReleaseWorkspace["release"]["snapshot"]["content"],
+    { schemaVersion: 2 }
+  >["phases"][number] | null;
+  phaseIndex: number;
+}) {
+  if (!phase) {
+    return phaseIndex === 0 ? (
+      <section className={styles.phaseFocus}>
+        <p className={styles.eyebrow}>混合提交 / 整项终稿</p>
+        <h2>汇总全部阶段成果</h2>
+        <p>所有阶段已经正式提交。现在整理跨阶段说明、最终成果和必要附件。</p>
+      </section>
+    ) : null;
+  }
+
+  return (
+    <section className={styles.phaseFocus}>
+      <p className={styles.eyebrow}>第 {phaseIndex} 阶段</p>
+      <h2>{phase.name}</h2>
+      <p>{phase.context}</p>
+      <dl>
+        <div><dt>核心行动</dt><dd>{phase.action}</dd></div>
+        <div><dt>学习支架</dt><dd>{phase.support}</dd></div>
+        <div><dt>评价要点</dt><dd>{phase.evaluationFocus}</dd></div>
+        <div><dt>建议课时</dt><dd>{phase.suggestedLessons} 课时</dd></div>
+      </dl>
+    </section>
+  );
+}
+
 export default async function StudentReleasePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ releaseId: string }>;
+  searchParams?: Promise<{ phase?: string | string[] }>;
 }) {
   const { releaseId } = await params;
+  const requestedPhaseValue = searchParams
+    ? (await searchParams).phase
+    : undefined;
   let context;
   let workspace: StudentReleaseWorkspace;
+  let selectedSubmission: StudentReleaseWorkspace["submission"] = null;
+  let selectedPhaseIndex = 0;
   let feedbackWorkspace: StudentFeedbackWorkspace | null = null;
 
   try {
@@ -280,14 +415,37 @@ export default async function StudentReleasePage({
     workspace = await getStudentReleaseWorkspace(database, context, {
       releaseId,
     });
-    if (workspace.submission) {
+    const requestedPhase =
+      typeof requestedPhaseValue === "string" &&
+      /^\d+$/.test(requestedPhaseValue)
+        ? Number(requestedPhaseValue)
+        : workspace.execution.currentPhaseIndex;
+    const requestedSubmission = workspace.submissions.find(
+      (submission) => submission.phaseIndex === requestedPhase,
+    );
+    const requestedUnlocked =
+      workspace.execution.version === 0
+        ? requestedPhase === 0
+        : requestedPhase === workspace.execution.currentPhaseIndex ||
+          requestedSubmission !== undefined ||
+          (requestedPhase > 0 &&
+            requestedPhase < workspace.execution.currentPhaseIndex);
+    selectedPhaseIndex = requestedUnlocked
+      ? requestedPhase
+      : workspace.execution.currentPhaseIndex;
+    selectedSubmission =
+      workspace.submissions.find(
+        (submission) => submission.phaseIndex === selectedPhaseIndex,
+      ) ?? null;
+
+    if (selectedSubmission) {
       feedbackWorkspace = await getStudentFeedbackWorkspace(
         database,
         context,
-        { submissionId: workspace.submission.id },
+        { submissionId: selectedSubmission.id },
       );
       if (
-        feedbackWorkspace.submission.id !== workspace.submission.id ||
+        feedbackWorkspace.submission.id !== selectedSubmission.id ||
         feedbackWorkspace.submission.release.id !== releaseId
       ) {
         throw new FeedbackWorkspaceQueryError("NOT_FOUND");
@@ -313,6 +471,10 @@ export default async function StudentReleasePage({
   const isActive = workspace.release.status === "ACTIVE";
   const canWrite = workspace.access.canWrite;
   const content = workspace.release.snapshot.content;
+  const selectedPhase =
+    content.schemaVersion === 2 && selectedPhaseIndex > 0
+      ? (content.phases[selectedPhaseIndex - 1] ?? null)
+      : null;
   const readOnlyMessage = isActive
     ? "你当前保留这份活动与自己提交的唯读权限，但已不是可写的班级成员。"
     : "活动已关闭，现有工作草稿与正式修订仍可查看，但不能再保存或提交。";
@@ -325,12 +487,20 @@ export default async function StudentReleasePage({
       : isPastDue
         ? "截止已过 · 可迟交"
         : "开放提交";
-  const currentSubmissionLabel = workspace.submission?.workingCopy
-    ? workspace.submission.workingCopy.baseRevisionNumber > 0
-      ? `第 ${workspace.submission.workingCopy.baseRevisionNumber + 1} 版重交草稿`
+  const currentSubmission = workspace.submissions.find(
+    (submission) =>
+      submission.phaseIndex === workspace.execution.currentPhaseIndex,
+  );
+  const currentSubmissionLabel = workspace.execution.version === 1
+    ? workspace.execution.currentPhaseIndex === 0
+      ? "阶段已完成 · 正在整理整项终稿"
+      : `第 ${workspace.execution.currentPhaseIndex}/${workspace.execution.phaseCount} 阶段`
+    : currentSubmission?.workingCopy
+    ? currentSubmission.workingCopy.baseRevisionNumber > 0
+      ? `第 ${currentSubmission.workingCopy.baseRevisionNumber + 1} 版重交草稿`
       : "未提交草稿"
-    : workspace.submission && workspace.submission.latestRevisionNumber > 0
-      ? `第 ${workspace.submission.latestRevisionNumber} 版已正式提交`
+    : currentSubmission && currentSubmission.latestRevisionNumber > 0
+      ? `第 ${currentSubmission.latestRevisionNumber} 版已正式提交`
       : "尚未创建草稿";
   const attachmentStorageEnabled =
     createAttachmentStorageFromEnvironment() !== null;
@@ -344,7 +514,7 @@ export default async function StudentReleasePage({
         <Link className={styles.backLink} href="/student">← 返回我的活动</Link>
         <header className={styles.releaseHeader}>
           <div>
-            <p className={styles.eyebrow}>学习活动 / 文字提交</p>
+            <p className={styles.eyebrow}>学习活动 / 阶段证据</p>
             <h1>{content.title}</h1>
             <p>{content.summary}</p>
           </div>
@@ -380,19 +550,30 @@ export default async function StudentReleasePage({
           </div>
         ) : null}
 
+        <PhaseNavigator
+          workspace={workspace}
+          selectedPhaseIndex={selectedPhaseIndex}
+        />
+
         <div className={styles.workspaceGrid}>
           <div className={styles.submissionColumn}>
+            <PhaseFocus
+              phase={selectedPhase}
+              phaseIndex={selectedPhaseIndex}
+            />
             <SubmissionEditor
               releaseId={releaseId}
-              submission={workspace.submission}
+              phaseIndex={selectedPhaseIndex}
+              phase={selectedPhase}
+              submission={selectedSubmission}
               canWrite={canWrite}
               isPastDue={isPastDue}
               attachmentStorageEnabled={attachmentStorageEnabled}
               readOnlyMessage={readOnlyMessage}
               workingCopyUpdatedLabel={
-                workspace.submission?.workingCopy
+                selectedSubmission?.workingCopy
                   ? <LocalizedDateTime
-                      dateTime={workspace.submission.workingCopy.updatedAt}
+                      dateTime={selectedSubmission.workingCopy.updatedAt}
                     />
                   : null
               }
@@ -403,8 +584,9 @@ export default async function StudentReleasePage({
               }}
             />
             <RevisionHistory
-              submission={workspace.submission}
+              submission={selectedSubmission}
               feedbackWorkspace={feedbackWorkspace}
+              phase={selectedPhase}
             />
           </div>
           <ReleaseBrief snapshot={workspace.release.snapshot} />

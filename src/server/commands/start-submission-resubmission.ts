@@ -2,6 +2,11 @@ import { createHash } from "node:crypto";
 import canonicalize from "canonicalize";
 import { z } from "zod";
 import {
+  phaseIndexSchema,
+  resolveSubmissionExecutionScope,
+  SubmissionExecutionError,
+} from "../../domain/submission/sequential-execution";
+import {
   Prisma,
   type PrismaClient,
 } from "../../generated/prisma/client";
@@ -14,6 +19,7 @@ import {
 const commandInputSchema = z
   .object({
     releaseId: z.uuid(),
+    phaseIndex: phaseIndexSchema.default(0),
     expectedLatestRevisionNumber: z.int().positive(),
     idempotencyKey: z.string().trim().min(8).max(200),
   })
@@ -40,6 +46,7 @@ export class StartSubmissionResubmissionError extends Error {
       | "FORBIDDEN"
       | "NOT_FOUND"
       | "RELEASE_NOT_ACTIVE"
+      | "INVALID_PHASE"
       | "NO_SUBMITTED_REVISION"
       | "STALE_REVISION"
       | "IDEMPOTENCY_MISMATCH"
@@ -132,6 +139,8 @@ async function runTransaction(
           select: {
             id: true,
             status: true,
+            executionVersion: true,
+            snapshot: { select: { content: true } },
             classroom: {
               select: {
                 memberships: {
@@ -162,11 +171,28 @@ async function runTransaction(
         throw new StartSubmissionResubmissionError("RELEASE_NOT_ACTIVE");
       }
 
+      if (!release.snapshot) {
+        throw new StartSubmissionResubmissionError("NOT_FOUND");
+      }
+      try {
+        resolveSubmissionExecutionScope(
+          release.executionVersion,
+          release.snapshot.content,
+          input.phaseIndex,
+        );
+      } catch (error) {
+        if (error instanceof SubmissionExecutionError) {
+          throw new StartSubmissionResubmissionError("INVALID_PHASE");
+        }
+        throw error;
+      }
+
       const submission = await transaction.submission.findUnique({
         where: {
-          releaseId_studentId: {
+          releaseId_studentId_phaseIndex: {
             releaseId: input.releaseId,
             studentId: context.actorId,
+            phaseIndex: input.phaseIndex,
           },
         },
         include: { workingCopy: true },
@@ -225,6 +251,7 @@ async function runTransaction(
             id: submission.id,
             releaseId: input.releaseId,
             studentId: context.actorId,
+            phaseIndex: input.phaseIndex,
             latestRevisionNumber: input.expectedLatestRevisionNumber,
           },
           data: { updatedAt: now },
@@ -239,6 +266,8 @@ async function runTransaction(
             submissionId: submission.id,
             baseRevisionNumber: submission.latestRevisionNumber,
             textEvidence: currentRevision.textEvidence,
+            completedEvidenceIndexes:
+              currentRevision.completedEvidenceIndexes,
             createdAt: now,
             updatedAt: now,
           },
@@ -320,6 +349,7 @@ export async function startSubmissionResubmission(
   const context = resolveCommandContext(commandContext, ["UI"]);
   const requestHash = hashValue({
     releaseId: input.releaseId,
+    phaseIndex: input.phaseIndex,
     expectedLatestRevisionNumber: input.expectedLatestRevisionNumber,
   });
 

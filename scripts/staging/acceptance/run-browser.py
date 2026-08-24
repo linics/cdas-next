@@ -287,6 +287,7 @@ def fill_activity(page: Page, title: str, summary: str) -> None:
     page.locator('#activity-draft-form[data-hydrated="true"]').wait_for(state="visible")
     page.locator("#activity-title").fill(title)
     page.locator("#activity-summary").fill(summary)
+    page.get_by_label("提交模式", exact=True).select_option("phased")
     page.get_by_label("探究主题", exact=True).fill("Synthetic evidence verification")
     page.get_by_label("背景设定", exact=True).fill("Students verify a synthetic campus observation in a real learning context.")
     page.get_by_label("知识与技能目标", exact=True).fill("Identify evidence that can be verified.")
@@ -356,6 +357,8 @@ def run() -> None:
     classroom_name = f"CDAS staging synthetic {marker_value}"
     title = f"CDAS staging acceptance {marker_value}"
     evidence = f"Synthetic text evidence for {marker_value}."
+    phase_one_evidence = f"{evidence} phase 1"
+    phase_two_evidence = f"{evidence} phase 2"
     feedback_text = f"Synthetic teacher feedback for {marker_value}."
     other_student_roster_key = "CDASSTUDENT0002"
     attachment_filename = f"synthetic-{marker_value}.png"
@@ -442,6 +445,28 @@ def run() -> None:
             assert_origin(student.url, remote)
             for heading in ("任务设置", "背景设定", "学习目标", "总体任务", "任务链", "评价标准"):
                 student.get_by_role("heading", name=heading, level=3, exact=True).wait_for()
+            student.get_by_text("第 1 阶段", exact=True).wait_for(state="visible")
+            if student.locator('[data-locked="true"]').filter(has_text="调查与分析").count() != 1:
+                raise AcceptanceFailure("STAGING_ACCEPTANCE_PHASE_ORDER_NOT_LOCKED")
+            student.get_by_role("checkbox", name=re.compile("Stage 1 synthetic text evidence")).check()
+            student.locator("#text-evidence").fill(phase_one_evidence)
+            student.get_by_role("button", name="保存草稿", exact=True).click()
+            wait_text(student, "草稿已保存")
+            student.get_by_role("button", name="正式提交", exact=True).click()
+            confirm(student, "确认正式提交？", "确认正式提交")
+            wait_text(student, "下一阶段草稿已经准备好")
+            student.locator(f'a[href="{activity_href}?phase=2"]').click()
+            student.get_by_text("第 2 阶段", exact=True).wait_for(state="visible")
+            student.get_by_role("checkbox", name=re.compile("Stage 2 synthetic text evidence")).check()
+            student.locator("#text-evidence").fill(phase_two_evidence)
+            student.get_by_role("button", name="保存草稿", exact=True).click()
+            wait_text(student, "草稿已保存")
+            student.get_by_role("button", name="正式提交", exact=True).click()
+            confirm(student, "确认正式提交？", "确认正式提交")
+            wait_text(student, "下一阶段草稿已经准备好")
+            student.locator(f'a[href="{activity_href}?phase=3"]').click()
+            student.get_by_text("第 3 阶段", exact=True).wait_for(state="visible")
+            student.get_by_role("checkbox", name=re.compile("Stage 3 synthetic text evidence")).check()
             student.locator("#text-evidence").fill(evidence)
             student.get_by_role("button", name="保存草稿", exact=True).click()
             wait_text(student, "草稿已保存")
@@ -457,6 +482,8 @@ def run() -> None:
             student.get_by_role("button", name="正式提交", exact=True).click()
             confirm(student, "确认正式提交？", "确认正式提交")
             wait_text(student, "第 1 版已正式提交")
+            student.get_by_text("第 3/3 阶段", exact=True).wait_for(state="visible")
+            checks.append({"code": "SEQUENTIAL_PHASE_EXECUTION", "status": "PASS"})
             denied = student.goto(f"{remote}{release_href}", wait_until="domcontentloaded")
             assert_origin(student.url, remote)
             if not denied or denied.status != 404:

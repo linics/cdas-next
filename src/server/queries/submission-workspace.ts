@@ -32,12 +32,48 @@ const attachmentSchema = z.strictObject({
   status: z.enum(["UPLOAD_PENDING", "SCAN_PENDING", "READY", "REJECTED"]),
 });
 
+const studentSubmissionSchema = z.strictObject({
+  id: z.uuid(),
+  phaseIndex: z.int().nonnegative(),
+  latestRevisionNumber: z.int().nonnegative(),
+  workingCopy: z
+    .strictObject({
+      id: z.uuid(),
+      baseRevisionNumber: z.int().nonnegative(),
+      version: z.int().positive(),
+      textEvidence: z.string(),
+      completedEvidenceIndexes: z.array(z.int().positive()).max(4),
+      updatedAt: isoDateSchema,
+      attachments: z.array(attachmentSchema).max(5),
+    })
+    .nullable(),
+  revisions: z.array(
+    z.strictObject({
+      id: z.uuid(),
+      revisionNumber: z.int().positive(),
+      textEvidence: z.string(),
+      completedEvidenceIndexes: z.array(z.int().positive()).max(4),
+      isLate: z.boolean(),
+      submittedAt: isoDateSchema,
+      attachments: z.array(
+        attachmentSchema.extend({ status: z.literal("READY") }),
+      ).max(5),
+    }),
+  ),
+});
+
 const studentWorkspaceSchema = z.strictObject({
   actor: z.strictObject({
     displayName: preservedNonBlankTextSchema,
   }),
   access: z.strictObject({
     canWrite: z.boolean(),
+  }),
+  execution: z.strictObject({
+    version: z.int().min(0).max(1),
+    mode: z.enum(["once", "phased", "mixed"]),
+    phaseCount: z.int().nonnegative(),
+    currentPhaseIndex: z.int().nonnegative(),
   }),
   release: z.strictObject({
     id: z.uuid(),
@@ -52,34 +88,8 @@ const studentWorkspaceSchema = z.strictObject({
       content: activityContentSchema,
     }),
   }),
-  submission: z
-    .strictObject({
-      id: z.uuid(),
-      latestRevisionNumber: z.int().nonnegative(),
-      workingCopy: z
-        .strictObject({
-          id: z.uuid(),
-          baseRevisionNumber: z.int().nonnegative(),
-          version: z.int().positive(),
-          textEvidence: z.string(),
-          updatedAt: isoDateSchema,
-          attachments: z.array(attachmentSchema).max(5),
-        })
-        .nullable(),
-      revisions: z.array(
-        z.strictObject({
-          id: z.uuid(),
-          revisionNumber: z.int().positive(),
-          textEvidence: preservedNonBlankTextSchema,
-          isLate: z.boolean(),
-          submittedAt: isoDateSchema,
-          attachments: z.array(
-            attachmentSchema.extend({ status: z.literal("READY") }),
-          ).max(5),
-        }),
-      ),
-    })
-    .nullable(),
+  submission: studentSubmissionSchema.nullable(),
+  submissions: z.array(studentSubmissionSchema),
 });
 
 const teacherReleaseSubmissionsSchema = z.strictObject({
@@ -93,10 +103,15 @@ const teacherReleaseSubmissionsSchema = z.strictObject({
     status: releaseStatusSchema,
     publishedAt: isoDateSchema,
     dueAt: isoDateSchema.nullable(),
+    executionVersion: z.int().min(0).max(1),
+    submissionMode: z.enum(["once", "phased", "mixed"]),
+    phaseCount: z.int().nonnegative(),
   }),
   submissions: z.array(
     z.strictObject({
       submissionId: z.uuid(),
+      phaseIndex: z.int().nonnegative(),
+      phaseName: preservedNonBlankTextSchema.nullable(),
       student: z.strictObject({
         id: z.uuid(),
         displayName: preservedNonBlankTextSchema,
@@ -110,6 +125,19 @@ const teacherReleaseSubmissionsSchema = z.strictObject({
           .strictObject({ currentVersion: z.int().positive() })
           .nullable(),
       }),
+    }),
+  ),
+  progress: z.array(
+    z.strictObject({
+      student: z.strictObject({
+        id: z.uuid(),
+        displayName: preservedNonBlankTextSchema,
+      }),
+      started: z.boolean(),
+      completedPhaseCount: z.int().nonnegative(),
+      totalPhaseCount: z.int().nonnegative(),
+      currentPhaseIndex: z.int().nonnegative(),
+      complete: z.boolean(),
     }),
   ),
 });
@@ -155,6 +183,7 @@ export async function getStudentReleaseWorkspace(
         publishedAt: true,
         dueAt: true,
         closedAt: true,
+        executionVersion: true,
         snapshot: {
           select: {
             sourceDraftVersion: true,
@@ -173,9 +202,10 @@ export async function getStudentReleaseWorkspace(
         },
         submissions: {
           where: { studentId: context.actorId },
-          take: 1,
+          orderBy: { phaseIndex: "asc" },
           select: {
             id: true,
+            phaseIndex: true,
             latestRevisionNumber: true,
             workingCopy: {
               select: {
@@ -183,6 +213,7 @@ export async function getStudentReleaseWorkspace(
                 baseRevisionNumber: true,
                 version: true,
                 textEvidence: true,
+                completedEvidenceIndexes: true,
                 updatedAt: true,
                 attachments: {
                   orderBy: { position: "asc" },
@@ -207,6 +238,7 @@ export async function getStudentReleaseWorkspace(
                 id: true,
                 revisionNumber: true,
                 textEvidence: true,
+                completedEvidenceIndexes: true,
                 isLate: true,
                 submittedAt: true,
                 attachments: {
@@ -236,7 +268,6 @@ export async function getStudentReleaseWorkspace(
     throw new SubmissionWorkspaceQueryError("NOT_FOUND");
   }
 
-  const submission = release.submissions[0] ?? null;
   const hasVisibleMembership =
     release.classroom.memberships.some((membership) =>
       membershipOverlapsRelease(membership, release, context.now),
@@ -245,18 +276,93 @@ export async function getStudentReleaseWorkspace(
     (membership) => membershipIsCurrent(membership, context.now),
   );
 
-  if (!submission && !hasVisibleMembership) {
+  if (release.submissions.length === 0 && !hasVisibleMembership) {
     throw new SubmissionWorkspaceQueryError("NOT_FOUND");
   }
   if (!release.snapshot) {
     throw new SubmissionWorkspaceQueryError("NOT_FOUND");
   }
   const content = activityContentSchema.parse(release.snapshot.content);
+  const phaseCount =
+    release.executionVersion === 1 && content.schemaVersion === 2
+      ? content.phases.length
+      : 0;
+  const submissionMode =
+    release.executionVersion === 1 && content.schemaVersion === 2
+      ? content.submissionMode
+      : "once";
+  const submissionByPhase = new Map(
+    release.submissions.map((submission) => [submission.phaseIndex, submission]),
+  );
+  const firstIncompletePhase = Array.from(
+    { length: phaseCount },
+    (_, index) => index + 1,
+  ).find(
+    (phaseIndex) =>
+      (submissionByPhase.get(phaseIndex)?.latestRevisionNumber ?? 0) === 0,
+  );
+  const currentPhaseIndex =
+    release.executionVersion === 0
+      ? 0
+      : firstIncompletePhase ??
+        (submissionMode === "mixed" ? 0 : Math.max(1, phaseCount));
+
+  const mapSubmission = (
+    submission: (typeof release.submissions)[number],
+  ): z.infer<typeof studentSubmissionSchema> => ({
+    id: submission.id,
+    phaseIndex: submission.phaseIndex,
+    latestRevisionNumber: submission.latestRevisionNumber,
+    workingCopy: submission.workingCopy
+      ? {
+          id: submission.workingCopy.id,
+          baseRevisionNumber: submission.workingCopy.baseRevisionNumber,
+          version: submission.workingCopy.version,
+          textEvidence: submission.workingCopy.textEvidence,
+          completedEvidenceIndexes:
+            submission.workingCopy.completedEvidenceIndexes,
+          updatedAt: submission.workingCopy.updatedAt.toISOString(),
+          attachments: submission.workingCopy.attachments.map(
+            ({ attachment }) => ({
+              id: attachment.id,
+              kind: attachment.kind,
+              filename: attachment.originalFilename,
+              mediaType: attachment.mediaType,
+              byteSize: attachment.byteSize,
+              status: attachment.status,
+            }),
+          ),
+        }
+      : null,
+    revisions: submission.revisions.map((revision) => ({
+      id: revision.id,
+      revisionNumber: revision.revisionNumber,
+      textEvidence: revision.textEvidence,
+      completedEvidenceIndexes: revision.completedEvidenceIndexes,
+      isLate: revision.isLate,
+      submittedAt: revision.submittedAt.toISOString(),
+      attachments: revision.attachments.map(({ attachment }) => ({
+        id: attachment.id,
+        kind: attachment.kind,
+        filename: attachment.originalFilename,
+        mediaType: attachment.mediaType,
+        byteSize: attachment.byteSize,
+        status: formalAttachmentStatus(attachment.status),
+      })),
+    })),
+  });
+  const currentSubmission = submissionByPhase.get(currentPhaseIndex) ?? null;
 
   const workspace = {
     actor: { displayName: actor.displayName },
     access: {
       canWrite: release.status === "ACTIVE" && hasCurrentMembership,
+    },
+    execution: {
+      version: release.executionVersion,
+      mode: submissionMode,
+      phaseCount,
+      currentPhaseIndex,
     },
     release: {
       id: release.id,
@@ -271,47 +377,8 @@ export async function getStudentReleaseWorkspace(
         content,
       },
     },
-    submission: submission
-      ? {
-          id: submission.id,
-          latestRevisionNumber: submission.latestRevisionNumber,
-          workingCopy: submission.workingCopy
-            ? {
-                id: submission.workingCopy.id,
-                baseRevisionNumber:
-                  submission.workingCopy.baseRevisionNumber,
-                version: submission.workingCopy.version,
-                textEvidence: submission.workingCopy.textEvidence,
-                updatedAt: submission.workingCopy.updatedAt.toISOString(),
-                attachments: submission.workingCopy.attachments.map(
-                  ({ attachment }) => ({
-                    id: attachment.id,
-                    kind: attachment.kind,
-                    filename: attachment.originalFilename,
-                    mediaType: attachment.mediaType,
-                    byteSize: attachment.byteSize,
-                    status: attachment.status,
-                  }),
-                ),
-              }
-            : null,
-          revisions: submission.revisions.map((revision) => ({
-            id: revision.id,
-            revisionNumber: revision.revisionNumber,
-            textEvidence: revision.textEvidence,
-            isLate: revision.isLate,
-            submittedAt: revision.submittedAt.toISOString(),
-            attachments: revision.attachments.map(({ attachment }) => ({
-              id: attachment.id,
-              kind: attachment.kind,
-              filename: attachment.originalFilename,
-              mediaType: attachment.mediaType,
-              byteSize: attachment.byteSize,
-              status: formalAttachmentStatus(attachment.status),
-            })),
-          })),
-        }
-      : null,
+    submission: currentSubmission ? mapSubmission(currentSubmission) : null,
+    submissions: release.submissions.map(mapSubmission),
   } satisfies StudentReleaseWorkspace;
 
   return studentWorkspaceSchema.parse(workspace);
@@ -334,12 +401,12 @@ export async function getTeacherReleaseSubmissions(
       status: true,
       publishedAt: true,
       dueAt: true,
-      classroom: { select: { managerId: true, name: true } },
+      executionVersion: true,
       snapshot: { select: { content: true } },
       submissions: {
-        where: { latestRevisionNumber: { gt: 0 } },
         select: {
           id: true,
+          phaseIndex: true,
           latestRevisionNumber: true,
           student: { select: { id: true, displayName: true } },
           revisions: {
@@ -351,6 +418,21 @@ export async function getTeacherReleaseSubmissions(
               isLate: true,
               submittedAt: true,
               feedback: { select: { version: true } },
+            },
+          },
+        },
+      },
+      classroom: {
+        select: {
+          managerId: true,
+          name: true,
+          memberships: {
+            where: {
+              joinedAt: { lte: context.now },
+              OR: [{ endedAt: null }, { endedAt: { gt: context.now } }],
+            },
+            select: {
+              student: { select: { id: true, displayName: true } },
             },
           },
         },
@@ -368,8 +450,20 @@ export async function getTeacherReleaseSubmissions(
     throw new SubmissionWorkspaceQueryError("NOT_FOUND");
   }
 
+  const content = activityContentSchema.parse(release.snapshot.content);
+  const submissionMode =
+    release.executionVersion === 1 && content.schemaVersion === 2
+      ? content.submissionMode
+      : "once";
+  const phaseCount =
+    release.executionVersion === 1 && content.schemaVersion === 2
+      ? content.phases.length
+      : 0;
+
   const submissions: TeacherReleaseSubmissions["submissions"] =
-    release.submissions.map((submission) => {
+    release.submissions
+      .filter((submission) => submission.latestRevisionNumber > 0)
+      .map((submission) => {
     const currentRevision = submission.revisions[0];
     if (
       !currentRevision ||
@@ -382,6 +476,15 @@ export async function getTeacherReleaseSubmissions(
 
     return {
       submissionId: submission.id,
+      phaseIndex: submission.phaseIndex,
+      phaseName:
+        submission.phaseIndex === 0
+          ? release.executionVersion === 1
+            ? "整项终稿"
+            : null
+          : content.schemaVersion === 2
+            ? (content.phases[submission.phaseIndex - 1]?.name ?? null)
+            : null,
       student: submission.student,
       currentRevision: {
         id: currentRevision.id,
@@ -393,7 +496,7 @@ export async function getTeacherReleaseSubmissions(
           : null,
       },
     };
-    });
+      });
 
   submissions.sort((left, right) => {
     const byTime = right.currentRevision.submittedAt.localeCompare(
@@ -405,17 +508,67 @@ export async function getTeacherReleaseSubmissions(
     );
   });
 
+  const progress: TeacherReleaseSubmissions["progress"] =
+    release.classroom.memberships.map(({ student }) => {
+      const studentSubmissions = release.submissions.filter(
+        (submission) => submission.student.id === student.id,
+      );
+      const completedPhaseIndexes = new Set(
+        studentSubmissions
+          .filter(
+            (submission) =>
+              submission.phaseIndex > 0 &&
+              submission.latestRevisionNumber > 0,
+          )
+          .map((submission) => submission.phaseIndex),
+      );
+      const finalSubmitted = studentSubmissions.some(
+        (submission) =>
+          submission.phaseIndex === 0 &&
+          submission.latestRevisionNumber > 0,
+      );
+      const firstIncompletePhase = Array.from(
+        { length: phaseCount },
+        (_, index) => index + 1,
+      ).find((phaseIndex) => !completedPhaseIndexes.has(phaseIndex));
+      const complete =
+        release.executionVersion === 0
+          ? finalSubmitted
+          : completedPhaseIndexes.size === phaseCount &&
+            (submissionMode === "phased" || finalSubmitted);
+
+      return {
+        student,
+        started: studentSubmissions.length > 0,
+        completedPhaseCount: completedPhaseIndexes.size,
+        totalPhaseCount: phaseCount,
+        currentPhaseIndex:
+          release.executionVersion === 0
+            ? 0
+            : firstIncompletePhase ??
+              (submissionMode === "mixed" ? 0 : Math.max(1, phaseCount)),
+        complete,
+      };
+    });
+  progress.sort((left, right) =>
+    left.student.displayName.localeCompare(right.student.displayName),
+  );
+
   const workspace = {
     actor: { displayName: release.publisher.displayName },
     release: {
       id: release.id,
-      title: activityContentSchema.parse(release.snapshot.content).title,
+      title: content.title,
       classroomName: release.classroom.name,
       status: release.status,
       publishedAt: release.publishedAt.toISOString(),
       dueAt: release.dueAt?.toISOString() ?? null,
+      executionVersion: release.executionVersion,
+      submissionMode,
+      phaseCount,
     },
     submissions,
+    progress,
   } satisfies TeacherReleaseSubmissions;
 
   return teacherReleaseSubmissionsSchema.parse(workspace);

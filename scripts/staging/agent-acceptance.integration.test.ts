@@ -69,6 +69,7 @@ function generatedTaskBook(
 ) {
   return {
     ...waterConservationTaskBook,
+    submissionMode: "once" as const,
     title,
     topic: "学生辨识合成证据",
     summary,

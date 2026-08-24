@@ -4,6 +4,10 @@ import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { workingTextEvidenceSchema } from "../../../../domain/submission/text-evidence";
+import {
+  completedEvidenceIndexesSchema,
+  phaseIndexSchema,
+} from "../../../../domain/submission/sequential-execution";
 import { AuthenticationError } from "../../../../server/auth/current-actor";
 import { createUiCommandContext } from "../../../../server/commands/create-ui-command-context";
 import {
@@ -33,14 +37,22 @@ const nullableVersionSchema = z.preprocess(
   (value) => (value === null || value === "" ? null : value),
   z.coerce.number().int().positive().nullable(),
 );
+const evidenceIndexesFormSchema = z
+  .string()
+  .transform((value) =>
+    value === "" ? [] : value.split(",").map((entry) => Number(entry)),
+  )
+  .pipe(completedEvidenceIndexesSchema);
 
 const saveFormSchema = z
   .object({
     releaseId: z.uuid(),
+    phaseIndex: z.coerce.number().pipe(phaseIndexSchema),
     workingCopyId: nullableUuidSchema,
     version: nullableVersionSchema,
     idempotencyKey: idempotencyKeySchema,
     text: workingTextEvidenceSchema,
+    completedEvidenceIndexes: evidenceIndexesFormSchema,
   })
   .strict()
   .superRefine((input, context) => {
@@ -56,6 +68,7 @@ const saveFormSchema = z
 const submitFormSchema = z
   .object({
     releaseId: z.uuid(),
+    phaseIndex: z.coerce.number().pipe(phaseIndexSchema),
     workingCopyId: z.uuid(),
     version: z.coerce.number().int().positive(),
     idempotencyKey: idempotencyKeySchema,
@@ -65,6 +78,7 @@ const submitFormSchema = z
 const resubmitFormSchema = z
   .object({
     releaseId: z.uuid(),
+    phaseIndex: z.coerce.number().pipe(phaseIndexSchema),
     version: z.coerce.number().int().positive(),
     idempotencyKey: idempotencyKeySchema,
   })
@@ -73,18 +87,21 @@ const resubmitFormSchema = z
 const allowedFormFields = {
   save: new Set([
     "releaseId",
+    "phaseIndex",
     "workingCopyId",
     "version",
     "idempotencyKey",
     "text",
+    "completedEvidenceIndexes",
   ]),
   submit: new Set([
     "releaseId",
+    "phaseIndex",
     "workingCopyId",
     "version",
     "idempotencyKey",
   ]),
-  resubmit: new Set(["releaseId", "version", "idempotencyKey"]),
+  resubmit: new Set(["releaseId", "phaseIndex", "version", "idempotencyKey"]),
 } satisfies Record<SubmissionActionOperation, ReadonlySet<string>>;
 
 function hasExactFormFields(
@@ -201,7 +218,7 @@ function failedActionState(
     return actionState(
       operation,
       "error",
-      "正式提交至少需要一段可见文字。工作草稿仍然保留。",
+      "正式提交至少需要文字、一个已就绪附件或一个阶段证据检查点。工作草稿仍然保留。",
       idempotencyKey,
     );
   }
@@ -220,6 +237,24 @@ function failedActionState(
       operation,
       "error",
       "活动已关闭，当前只能查看现有草稿与正式修订。",
+      idempotencyKey,
+    );
+  }
+
+  if (code === "PHASE_LOCKED") {
+    return actionState(
+      operation,
+      "conflict",
+      "前一阶段尚未正式提交，当前阶段没有写入。请刷新后按顺序继续。",
+      idempotencyKey,
+    );
+  }
+
+  if (code === "INVALID_PHASE" || code === "INVALID_CHECKPOINTS") {
+    return actionState(
+      operation,
+      "error",
+      "阶段或证据检查点与发布任务书不一致，系统没有写入。请刷新任务书后重试。",
       idempotencyKey,
     );
   }
@@ -257,18 +292,22 @@ export async function saveWorkingCopyAction(
   try {
     const input = saveFormSchema.parse({
       releaseId: formData.get("releaseId"),
+      phaseIndex: formData.get("phaseIndex"),
       workingCopyId: formData.get("workingCopyId"),
       version: formData.get("version"),
       idempotencyKey: formData.get("idempotencyKey"),
       text: formData.get("text"),
+      completedEvidenceIndexes: formData.get("completedEvidenceIndexes"),
     });
     const context = await createUiCommandContext();
     const database = getDatabaseClient();
     await saveSubmissionWorkingCopy(database, context, {
       releaseId: input.releaseId,
+      phaseIndex: input.phaseIndex,
       expectedWorkingCopyId: input.workingCopyId,
       expectedWorkingVersion: input.version,
       textEvidence: input.text,
+      completedEvidenceIndexes: input.completedEvidenceIndexes,
       idempotencyKey: input.idempotencyKey,
     });
     revalidatePath(`/student/releases/${input.releaseId}`);
@@ -299,6 +338,7 @@ export async function submitRevisionAction(
   try {
     const input = submitFormSchema.parse({
       releaseId: formData.get("releaseId"),
+      phaseIndex: formData.get("phaseIndex"),
       workingCopyId: formData.get("workingCopyId"),
       version: formData.get("version"),
       idempotencyKey: formData.get("idempotencyKey"),
@@ -307,6 +347,7 @@ export async function submitRevisionAction(
     const database = getDatabaseClient();
     const result = await submitSubmissionRevision(database, context, {
       releaseId: input.releaseId,
+      phaseIndex: input.phaseIndex,
       expectedWorkingCopyId: input.workingCopyId,
       expectedWorkingVersion: input.version,
       idempotencyKey: input.idempotencyKey,
@@ -316,8 +357,8 @@ export async function submitRevisionAction(
       operation,
       "success",
       result.isLate
-        ? `第 ${result.revisionNumber} 版已正式迟交，修订内容与迟交标记都已保留。`
-        : `第 ${result.revisionNumber} 版已正式提交，之后的修改需另开重交草稿。`,
+        ? `第 ${result.revisionNumber} 版已正式迟交，修订内容与迟交标记都已保留。${result.nextPhaseIndex !== null ? " 下一阶段草稿已经准备好。" : ""}`
+        : `第 ${result.revisionNumber} 版已正式提交。${result.nextPhaseIndex !== null ? " 下一阶段草稿已经准备好。" : "之后的修改需另开重交草稿。"}`,
       createIdempotencyKey(operation),
     );
   } catch (error) {
@@ -341,6 +382,7 @@ export async function startResubmissionAction(
   try {
     const input = resubmitFormSchema.parse({
       releaseId: formData.get("releaseId"),
+      phaseIndex: formData.get("phaseIndex"),
       version: formData.get("version"),
       idempotencyKey: formData.get("idempotencyKey"),
     });
@@ -348,6 +390,7 @@ export async function startResubmissionAction(
     const database = getDatabaseClient();
     await startSubmissionResubmission(database, context, {
       releaseId: input.releaseId,
+      phaseIndex: input.phaseIndex,
       expectedLatestRevisionNumber: input.version,
       idempotencyKey: input.idempotencyKey,
     });

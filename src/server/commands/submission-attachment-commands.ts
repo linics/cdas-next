@@ -233,12 +233,11 @@ export async function reserveSubmissionAttachment(
           );
         }
 
-        const submission = await transaction.submission.findUnique({
+        const submission = await transaction.submission.findFirst({
           where: {
-            releaseId_studentId: {
-              releaseId: input.releaseId,
-              studentId: context.actorId,
-            },
+            releaseId: input.releaseId,
+            studentId: context.actorId,
+            workingCopy: { is: { id: input.expectedWorkingCopyId } },
           },
           include: {
             workingCopy: {
@@ -595,12 +594,11 @@ export async function removeSubmissionAttachment(
               },
             },
           }),
-          transaction.submission.findUnique({
+          transaction.submission.findFirst({
             where: {
-              releaseId_studentId: {
-                releaseId: input.releaseId,
-                studentId: context.actorId,
-              },
+              releaseId: input.releaseId,
+              studentId: context.actorId,
+              workingCopy: { is: { id: input.expectedWorkingCopyId } },
             },
             include: {
               workingCopy: {

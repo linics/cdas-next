@@ -4,6 +4,10 @@ import { useActionState, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { ConfirmDialog, InlineAlert } from "../../../_components/ui";
 import {
+  evidenceTypeLabel,
+  type ActivityContentV2,
+} from "../../../../domain/activity/activity-content";
+import {
   hasMeaningfulTextEvidence,
   MAX_TEXT_EVIDENCE_CODE_POINTS,
 } from "../../../../domain/submission/text-evidence";
@@ -24,6 +28,8 @@ type Submission = StudentReleaseWorkspace["submission"];
 
 type SubmissionEditorProps = Readonly<{
   releaseId: string;
+  phaseIndex: number;
+  phase: ActivityContentV2["phases"][number] | null;
   submission: Submission;
   canWrite: boolean;
   isPastDue: boolean;
@@ -59,11 +65,13 @@ function ActionNotice({ state }: { state: SubmissionActionState }) {
 
 function HiddenActionFields({
   releaseId,
+  phaseIndex,
   workingCopyId,
   version,
   idempotencyKey,
 }: {
   releaseId: string;
+  phaseIndex: number;
   workingCopyId?: string | null;
   version?: number | null;
   idempotencyKey: string;
@@ -71,6 +79,7 @@ function HiddenActionFields({
   return (
     <>
       <input type="hidden" name="releaseId" value={releaseId} />
+      <input type="hidden" name="phaseIndex" value={phaseIndex} />
       {workingCopyId !== undefined ? (
         <input
           type="hidden"
@@ -92,6 +101,8 @@ function HiddenActionFields({
 
 export function SubmissionEditor({
   releaseId,
+  phaseIndex,
+  phase,
   submission,
   canWrite,
   isPastDue,
@@ -104,15 +115,30 @@ export function SubmissionEditor({
   const latestRevisionNumber = submission?.latestRevisionNumber ?? 0;
   const savedText = workingCopy?.textEvidence ?? "";
   const [editedText, setEditedText] = useState<string | null>(null);
+  const [editedEvidenceIndexes, setEditedEvidenceIndexes] = useState<
+    number[] | null
+  >(null);
   const text = editedText ?? savedText;
+  const savedEvidenceIndexes =
+    workingCopy?.completedEvidenceIndexes ?? [];
+  const completedEvidenceIndexes =
+    editedEvidenceIndexes ?? savedEvidenceIndexes;
   const codePointCount = Array.from(text).length;
   const textOverLimit = codePointCount > MAX_TEXT_EVIDENCE_CODE_POINTS;
   const hasVisibleSavedText = hasMeaningfulTextEvidence(savedText);
-  const hasUnsavedChanges = text !== savedText;
+  const hasUnsavedChanges =
+    text !== savedText ||
+    completedEvidenceIndexes.join(",") !== savedEvidenceIndexes.join(",");
   const attachmentsReady =
     workingCopy?.attachments.every(
       (attachment) => attachment.status === "READY",
     ) ?? true;
+  const hasSavedEvidence =
+    hasVisibleSavedText ||
+    savedEvidenceIndexes.length > 0 ||
+    (workingCopy?.attachments.some(
+      (attachment) => attachment.status === "READY",
+    ) ?? false);
 
   const [saveState, saveAction, savePending] = useActionState(
     saveWorkingCopyAction,
@@ -160,13 +186,14 @@ export function SubmissionEditor({
           <form className={styles.resubmitForm} action={resubmitAction}>
             <HiddenActionFields
               releaseId={releaseId}
+              phaseIndex={phaseIndex}
               version={latestRevisionNumber}
               idempotencyKey={resubmitIdempotencyKey}
             />
             <div>
               <strong>开始下一版</strong>
               <p>
-                系统会复制第 {latestRevisionNumber} 版文字作为新草稿，现有修订与反馈都会保留。
+                系统会复制第 {latestRevisionNumber} 版文字、检查点与附件作为新草稿，现有修订与反馈都会保留。
               </p>
             </div>
             <button
@@ -260,10 +287,51 @@ export function SubmissionEditor({
         <form className={styles.writerForm} action={saveAction}>
           <HiddenActionFields
             releaseId={releaseId}
+            phaseIndex={phaseIndex}
             workingCopyId={workingCopy?.id ?? null}
             version={workingCopy?.version ?? null}
             idempotencyKey={saveIdempotencyKey}
           />
+          <input
+            type="hidden"
+            name="completedEvidenceIndexes"
+            value={completedEvidenceIndexes.join(",")}
+          />
+          {phase ? (
+            <fieldset className={styles.checkpointFieldset}>
+              <legend>阶段证据检查点</legend>
+              <p>
+                明确勾选本阶段已经覆盖的证据要求；正式提交会把这些选择固化进历史。
+              </p>
+              {phase.evidence.map((evidence, index) => {
+                const evidenceIndex = index + 1;
+                const checked =
+                  completedEvidenceIndexes.includes(evidenceIndex);
+                return (
+                  <label key={`${evidence.type}-${evidence.description}`}>
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(event) => {
+                        const next = event.currentTarget.checked
+                          ? [...completedEvidenceIndexes, evidenceIndex]
+                          : completedEvidenceIndexes.filter(
+                              (item) => item !== evidenceIndex,
+                            );
+                        setEditedEvidenceIndexes(
+                          next.sort((left, right) => left - right),
+                        );
+                      }}
+                    />
+                    <span>
+                      <strong>{evidence.description}</strong>
+                      <small>{evidenceTypeLabel(evidence.type)}</small>
+                    </span>
+                  </label>
+                );
+              })}
+            </fieldset>
+          ) : null}
           {writingField}
           <div className={styles.saveRow}>
             <span data-dirty={hasUnsavedChanges ? "true" : "false"}>
@@ -318,6 +386,7 @@ export function SubmissionEditor({
           <form action={submitAction} ref={submitFormRef}>
             <HiddenActionFields
               releaseId={releaseId}
+              phaseIndex={phaseIndex}
               workingCopyId={workingCopy.id}
               version={workingCopy.version}
               idempotencyKey={submitIdempotencyKey}
@@ -329,8 +398,8 @@ export function SubmissionEditor({
               disabled={
                 anyPending ||
                 hasUnsavedChanges ||
-                !hasVisibleSavedText ||
                 !attachmentsReady ||
+                !hasSavedEvidence ||
                 textOverLimit
               }
             >

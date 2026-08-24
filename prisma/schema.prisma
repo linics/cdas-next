@@ -184,6 +184,7 @@ model ActivityRelease {
   classroomId         String                   @map("classroom_id") @db.Uuid
   actionIntentId      String                   @unique @map("action_intent_id") @db.Uuid
   closeActionIntentId String?                  @unique @map("close_action_intent_id") @db.Uuid
+  executionVersion    Int                      @default(0) @map("execution_version")
   status              ReleaseStatus            @default(ACTIVE)
   publishedAt         DateTime                 @default(now()) @map("published_at") @db.Timestamptz(3)
   dueAt               DateTime?                @map("due_at") @db.Timestamptz(3)
@@ -223,6 +224,7 @@ model Submission {
   id                   String                 @id @default(uuid()) @db.Uuid
   releaseId            String                 @map("release_id") @db.Uuid
   studentId            String                 @map("student_id") @db.Uuid
+  phaseIndex           Int                    @default(0) @map("phase_index")
   latestRevisionNumber Int                    @default(0) @map("latest_revision_number")
   createdAt            DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt            DateTime               @updatedAt @map("updated_at") @db.Timestamptz(3)
@@ -232,7 +234,7 @@ model Submission {
   revisions            SubmissionRevision[]
   attachments          SubmissionAttachment[]
 
-  @@unique([releaseId, studentId])
+  @@unique([releaseId, studentId, phaseIndex])
   @@index([studentId, createdAt])
   @@map("submissions")
 }
@@ -243,6 +245,7 @@ model SubmissionWorkingCopy {
   baseRevisionNumber Int                               @default(0) @map("base_revision_number")
   version            Int                               @default(1)
   textEvidence       String                            @default("") @map("text_evidence") @db.Text
+  completedEvidenceIndexes Int[]                      @default([]) @map("completed_evidence_indexes")
   createdAt          DateTime                          @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt          DateTime                          @updatedAt @map("updated_at") @db.Timestamptz(3)
   submission         Submission                        @relation(fields: [submissionId], references: [id], onDelete: Restrict)
@@ -259,6 +262,7 @@ model SubmissionRevision {
   sourceWorkingCopyId  String                         @unique @map("source_working_copy_id") @db.Uuid
   sourceWorkingVersion Int                            @map("source_working_version")
   textEvidence         String                         @map("text_evidence") @db.Text
+  completedEvidenceIndexes Int[]                     @default([]) @map("completed_evidence_indexes")
   isLate               Boolean                        @map("is_late")
   submittedAt          DateTime                       @map("submitted_at") @db.Timestamptz(3)
   submission           Submission                     @relation(fields: [submissionId], references: [id], onDelete: Restrict)
