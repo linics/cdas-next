@@ -367,7 +367,10 @@ export async function handleActivityAssistantRequest(
         }
         return undefined;
       },
-      maxOutputTokens: 1_600,
+      // A complete schema-v2 task book carries three to four phases plus four
+      // rubric levels per dimension. The former v1-sized ceiling could cut a
+      // valid tool call off before its JSON payload was complete.
+      maxOutputTokens: 4_000,
       maxRetries: 1,
       timeout: 90_000,
       abortSignal: streamAbortSignal,

@@ -451,6 +451,7 @@ describe("activity assistant route handler", () => {
     expect(languageModel.doStreamCalls[0]?.providerOptions).toEqual({
       deepseek: { thinking: { type: "disabled" } },
     });
+    expect(languageModel.doStreamCalls[0]?.maxOutputTokens).toBe(4_000);
   });
 
   it("forces the publish tool only for an explicit post-draft publish request", () => {
