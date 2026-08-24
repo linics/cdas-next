@@ -528,11 +528,11 @@ def run() -> None:
                 exact=True,
             ).wait_for(state="visible")
             teacher.locator('[aria-labelledby^="feedback-history-"]').last.get_by_text(
-                "按反馈修改并重交",
+                "形成性下一步：按反馈修改并重交",
                 exact=True,
             ).wait_for(state="visible")
             teacher.locator('[aria-labelledby^="feedback-history-"]').last.get_by_text(
-                "基础支持",
+                "支架层级：基础支持",
                 exact=True,
             ).wait_for(state="visible")
             index["04-teacher-feedback.png"] = screenshot(teacher, output, "04-teacher-feedback")

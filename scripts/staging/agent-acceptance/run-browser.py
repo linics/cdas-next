@@ -408,8 +408,8 @@ def main() -> None:
             save_feedback(teacher)
             feedback_history = teacher.locator('[aria-labelledby^="feedback-history-"]').last
             feedback_history.get_by_text(FEEDBACK_TEXT, exact=True).wait_for(state="visible")
-            feedback_history.get_by_text("按反馈修改并重交", exact=True).wait_for(state="visible")
-            feedback_history.get_by_text("基础支持", exact=True).wait_for(state="visible")
+            feedback_history.get_by_text("形成性下一步：按反馈修改并重交", exact=True).wait_for(state="visible")
+            feedback_history.get_by_text("支架层级：基础支持", exact=True).wait_for(state="visible")
             screenshot(teacher, directory, SCREENSHOTS[5])
 
             sign_in(other_teacher, base, "OTHER_TEACHER")

@@ -54,6 +54,8 @@ class HostTests(unittest.TestCase):
     self.assertIn("#teacher-feedback-body", source)
     self.assertIn('get_by_label("形成性下一步", exact=True).select_option("REVISE")', source)
     self.assertIn('get_by_label("支架层级", exact=True).select_option("FOUNDATION")', source)
+    self.assertIn('"形成性下一步：按反馈修改并重交"', source)
+    self.assertIn('"支架层级：基础支持"', source)
     self.assertIn("STRUCTURED_FORMATIVE_FEEDBACK_VISIBLE", source)
     self.assertIn("确认并保存最终反馈", source)
     self.assertIn("确认并关闭活动", source)

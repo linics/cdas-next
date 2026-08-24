@@ -130,6 +130,8 @@ class BrowserContractTests(unittest.TestCase):
         self.assertIn("GROUPMATE_SHARED_FEEDBACK_VISIBLE", source)
         self.assertIn('get_by_label("形成性下一步", exact=True).select_option("REVISE")', source)
         self.assertIn('get_by_label("支架层级", exact=True).select_option("FOUNDATION")', source)
+        self.assertIn('"形成性下一步：按反馈修改并重交"', source)
+        self.assertIn('"支架层级：基础支持"', source)
         self.assertIn("STRUCTURED_FORMATIVE_FEEDBACK_VISIBLE", source)
         self.assertIn("STUDENT_PRIVATE_ATTACHMENT_UPLOAD_AND_DOWNLOAD", source)
         self.assertIn("TEACHER_FORMAL_ATTACHMENT_DOWNLOAD", source)
