@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 import { LocalizedDateTime } from "../../../../_components/localized-date-time";
 import { ConfirmDialog, InlineAlert } from "../../../../_components/ui";
 import type { TeacherClassroomRoster } from "../../../../../server/queries/teacher-classroom-roster";
@@ -17,10 +17,19 @@ import {
 
 type Prepared = Extract<RosterPrepareActionResult, { ok: true }>;
 
+const subscribeToHydration = () => () => {};
+const hydratedSnapshot = () => true;
+const serverSnapshot = () => false;
+
 export function RosterManager({
   roster,
 }: Readonly<{ roster: TeacherClassroomRoster }>) {
   const router = useRouter();
+  const hydrated = useSyncExternalStore(
+    subscribeToHydration,
+    hydratedSnapshot,
+    serverSnapshot,
+  );
   const [rosterText, setRosterText] = useState("");
   const [previewResult, setPreviewResult] = useState<RosterPreviewActionResult | null>(null);
   const [prepared, setPrepared] = useState<Prepared | null>(null);
@@ -102,7 +111,11 @@ export function RosterManager({
     : confirmation?.student.displayName ?? "";
 
   return (
-    <div className={styles.rosterLayout}>
+    <div
+      className={styles.rosterLayout}
+      data-hydrated={hydrated ? "true" : "false"}
+      id="classroom-roster-manager"
+    >
       <section className={styles.dashboardSection} aria-labelledby="current-roster-title">
         <header className={styles.sectionHeader}>
           <div>

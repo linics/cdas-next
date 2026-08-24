@@ -118,6 +118,7 @@ class BrowserContractTests(unittest.TestCase):
         self.assertIn("!window.Clerk.user && !window.Clerk.session", source)
         self.assertIn("STAGING_ACCEPTANCE_SIGN_OUT_RELOGIN_FAILED", source)
         self.assertIn("AI_DISABLED_MANUAL_PATH", source)
+        self.assertEqual(source.count('#classroom-roster-manager[data-hydrated="true"]'), 2)
         self.assertIn('("基本设置", "背景设定", "三维目标", "总体任务", "任务链", "评价标准")', source)
         self.assertIn('("任务设置", "背景设定", "学习目标", "总体任务", "任务链", "评价标准")', source)
         self.assertNotIn("#activity-learningObjectives", source)
