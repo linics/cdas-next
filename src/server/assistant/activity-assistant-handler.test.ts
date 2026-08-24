@@ -14,6 +14,7 @@ import { ActivityAssistantConfigError } from "./assistant-config";
 import { PreparePublishActivityIntentError } from "../commands/prepare-publish-activity-intent";
 import {
   handleActivityAssistantRequest,
+  selectActivityAssistantToolChoice,
   type ActivityAssistantHandlerDependencies,
 } from "./activity-assistant-handler";
 import { createActivityAssistantTools } from "./activity-assistant-tools";
@@ -99,6 +100,40 @@ function messageRequest(messages: unknown[], signal?: AbortSignal): Request {
     body: JSON.stringify({ messages }),
     signal,
   });
+}
+
+function postDraftPublishConversation() {
+  return [
+    {
+      id: "message_1",
+      role: "user",
+      parts: [{ type: "text", text: "建立這份活動草稿" }],
+    },
+    {
+      id: "assistant_1",
+      role: "assistant",
+      parts: [
+        {
+          type: "tool-create_activity_draft",
+          toolCallId: "draft_call",
+          state: "output-available",
+          input: content,
+          output: {
+            draftId,
+            version: 1,
+            status: "READY_FOR_PREVIEW",
+            editHref: `/teacher/activities/${draftId}`,
+            previewHref: `/teacher/activities/${draftId}/preview`,
+          },
+        },
+      ],
+    },
+    {
+      id: "message_2",
+      role: "user",
+      parts: [{ type: "text", text: "發佈這份活動" }],
+    },
+  ];
 }
 
 function publishApprovalModel() {
@@ -420,6 +455,53 @@ describe("activity assistant route handler", () => {
     );
     expect(mocks.publishRelease).not.toHaveBeenCalled();
     expect(languageModel.doStreamCalls).toHaveLength(1);
+    expect(languageModel.doStreamCalls[0]?.toolChoice).toEqual({ type: "auto" });
+  });
+
+  it("forces the publish tool only for an explicit post-draft publish request", () => {
+    const draftMessage = {
+      id: "assistant_1",
+      role: "assistant" as const,
+      parts: [
+        {
+          type: "tool-create_activity_draft" as const,
+          toolCallId: "draft_call",
+          state: "output-available" as const,
+          input: content,
+          output: {
+            draftId,
+            version: 1,
+            status: "READY_FOR_PREVIEW" as const,
+            editHref: `/teacher/activities/${draftId}`,
+            previewHref: `/teacher/activities/${draftId}/preview`,
+          },
+        },
+      ],
+    };
+    const request = (text: string) => [
+      {
+        id: "message_1",
+        role: "user" as const,
+        parts: [{ type: "text" as const, text }],
+      },
+      draftMessage,
+      {
+        id: "message_2",
+        role: "user" as const,
+        parts: [{ type: "text" as const, text }],
+      },
+    ];
+
+    expect(selectActivityAssistantToolChoice(request("請立即發佈版本 2"))).toEqual({
+      type: "tool",
+      toolName: "publish_activity_release",
+    });
+    expect(selectActivityAssistantToolChoice(request("不要發佈，先保留草稿"))).toBe(
+      "auto",
+    );
+    expect(
+      selectActivityAssistantToolChoice(request("請解釋目前的活動內容")),
+    ).toBe("auto");
   });
 
   it("executes a signed approval continuation once and aborts the post-write provider step", async () => {
@@ -455,21 +537,21 @@ describe("activity assistant route handler", () => {
       publishedAt: now.toISOString(),
     });
 
-    const userMessage = {
-      id: "message_1",
-      role: "user",
-      parts: [{ type: "text", text: "發佈這份活動" }],
-    };
+    const publishConversation = postDraftPublishConversation();
     const approvalResponse = await handleActivityAssistantRequest(
-      messageRequest([userMessage]),
+      messageRequest(publishConversation),
       dependencies(),
     );
     const approvalBody = await approvalResponse.text();
     const approvedMessage = approvalMessage(approvalBody, true);
 
     expect(mocks.publishRelease).not.toHaveBeenCalled();
+    expect(approvalModel.doStreamCalls[0]?.toolChoice).toEqual({
+      type: "tool",
+      toolName: "publish_activity_release",
+    });
     const executionResponse = await handleActivityAssistantRequest(
-      messageRequest([userMessage, approvedMessage]),
+      messageRequest([...publishConversation, approvedMessage]),
       dependencies(),
     );
     const executionBody = await executionResponse.text();
@@ -510,7 +592,7 @@ describe("activity assistant route handler", () => {
       new PreparePublishActivityIntentError("IDEMPOTENCY_MISMATCH"),
     );
     const replayResponse = await handleActivityAssistantRequest(
-      messageRequest([userMessage, approvedMessage]),
+      messageRequest([...publishConversation, approvedMessage]),
       dependencies(),
     );
     await replayResponse.text();

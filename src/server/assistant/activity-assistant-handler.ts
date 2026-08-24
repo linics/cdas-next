@@ -32,6 +32,7 @@ import {
   activityAssistantMessageValidationTools,
 } from "./activity-assistant-tools";
 import {
+  type ActivityAssistantMessage,
   ActivityAssistantRequestError,
   parseActivityAssistantRequest,
 } from "./activity-assistant-request";
@@ -105,6 +106,56 @@ export function buildActivityAssistantInstructions(
 
 活動內容必須完全符合工具 schema；不要把正文放在普通工具之外持久化。
 ${classroomInstructions(classrooms)}`;
+}
+
+function explicitlyRequestsPublish(text: string): boolean {
+  const normalized = text.normalize("NFKC").toLowerCase();
+  if (
+    /(?:不要|請勿|请勿|取消|拒絕|拒绝|do\s+not\s+publish|don't\s+publish)/u.test(
+      normalized,
+    )
+  ) {
+    return false;
+  }
+  return /(?:publish_activity_release|發佈|发布|\bpublish\b)/u.test(normalized);
+}
+
+export function selectActivityAssistantToolChoice(
+  messages: ActivityAssistantMessage[],
+) {
+  const latest = messages.at(-1);
+  if (latest?.role !== "user") return "auto" as const;
+  const latestText = latest.parts
+    .filter((part) => part.type === "text")
+    .map((part) => part.text)
+    .join("\n");
+  const hasCreatedDraft = messages.some(
+    (message) =>
+      message.role === "assistant" &&
+      message.parts.some(
+        (part) =>
+          part.type === "tool-create_activity_draft" &&
+          part.state === "output-available",
+      ),
+  );
+  const hasPublishCall = messages.some(
+    (message) =>
+      message.role === "assistant" &&
+      message.parts.some(
+        (part) => part.type === "tool-publish_activity_release",
+      ),
+  );
+  if (
+    hasCreatedDraft &&
+    !hasPublishCall &&
+    explicitlyRequestsPublish(latestText)
+  ) {
+    return {
+      type: "tool" as const,
+      toolName: "publish_activity_release" as const,
+    };
+  }
+  return "auto" as const;
 }
 
 function authenticationResponse(error: AuthenticationError): Response {
@@ -270,6 +321,7 @@ export async function handleActivityAssistantRequest(
       instructions: buildActivityAssistantInstructions(classrooms),
       messages: modelMessages,
       tools,
+      toolChoice: selectActivityAssistantToolChoice(uiMessages),
       toolApproval: {
         create_activity_draft: () => {
           if (createApprovalSelected) {
