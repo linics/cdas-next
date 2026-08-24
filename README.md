@@ -2,7 +2,7 @@
 
 面向 K12 教师与学生的跨学科学习活动工作台。第一阶段只完成一条可追溯闭环：教师设计并确认发布，学生提交学习证据，教师确认反馈、学生查看反馈，并由发布教师兼当前班级管理员明确确认关闭发布。
 
-当前源码已覆盖手工完整闭环：活动草稿与冻结发布、学生文本证据的工作稿与正式修订、教师确认后的反馈修订、学生查看反馈，以及发布教师兼当前班级管理员明确确认关闭 Release。关闭会阻止学生后续写入，但保留活动、提交和反馈的可读历史，并允许有权教师继续反馈。另有一个可关闭的活动助手试行场景，使用 AI SDK 直连 DeepSeek 官方 API 整理可编辑草稿，并在教师核对精确参数后复用同一发布命令；第一阶段不向助手开放关闭工具。发布、关闭、提交与反馈命令共用资源级授权、可信服务端上下文、乐观并发、幂等、不可变历史和审计。本地真实浏览器门禁已使用 Clerk development 双账号会话和专用 PostgreSQL 重放两版草稿、发布、两次提交、逐版反馈、历史成员只读、关闭只读、同角色越权、陈旧确认与幂等重放；真实 DeepSeek API 的合成数据 smoke 和受保护 GitHub Environment 入口也已固化。生产相似 staging 的实际外部证据仍取决于受管环境与凭据。
+当前源码已覆盖手工完整闭环：活动草稿与冻结发布、学生文本证据的工作稿与正式修订、教师确认后的反馈修订、学生查看反馈，以及发布教师兼当前班级管理员明确确认关闭 Release。关闭会阻止学生后续写入，但保留活动、提交和反馈的可读历史，并允许有权教师继续反馈。另有一个可关闭的活动助手试行场景，使用 AI SDK 直连 DeepSeek 官方 API 整理可编辑草稿，并在教师核对精确参数后复用同一发布命令；第一阶段不向助手开放关闭工具。发布、关闭、提交与反馈命令共用资源级授权、可信服务端上下文、乐观并发、幂等、不可变历史和审计。本地真实浏览器门禁已使用 Clerk development 双账号会话和专用 PostgreSQL 重放两版草稿、发布、两次提交、逐版反馈、历史成员只读、关闭只读、同角色越权、陈旧确认与幂等重放；真实 DeepSeek API 的合成数据 smoke 和受保护 GitHub Environment 入口也已固化。AI-disabled 受保护 Preview 的四身份手工闭环已有脱敏远程 PASS 证据；DeepSeek Agent 启动的完整闭环仍须取得一次新的费用批准并产出完整 PASS artifact。
 
 ## 快速开始
 
@@ -90,7 +90,7 @@ pnpm e2e:real-model
 
 ### 受保护 staging Go/No-Go
 
-新增的手动 `protected staging Go/No-Go` workflow 只验证已经存在的隔离 staging：它 fail-closed 检查 test Clerk、远端 pooled/runtime 与 direct PostgreSQL URL、生产 build、只读 migration metadata、schema drift 和不连数据库的 `/api/health`，再聚合为脱敏的机器可读结论。它不会部署、执行 migration、写 fixture、创建账号或调用模型。即使自动检查全部通过，结论也只允许 synthetic staging；`realStudentDataAllowed` 固定为 `false`、`productionDecision` 固定为 `NO_GO`。配置项、人工 attestations、证据、回滚边界和当前仍无外部凭据的 `NO_GO` 见 [STAGING.md](./STAGING.md)。
+新增的手动 `protected staging Go/No-Go` workflow 只验证已经存在的隔离 staging：它 fail-closed 检查 test Clerk、远端 pooled/runtime 与 direct PostgreSQL URL、生产 build、只读 migration metadata、schema drift 和不连数据库的 `/api/health`，再聚合为脱敏的机器可读结论。它不会部署、执行 migration、写 fixture、创建账号或调用模型。即使自动检查全部通过，结论也只允许 synthetic staging；`realStudentDataAllowed` 固定为 `false`、`productionDecision` 固定为 `NO_GO`。配置项、人工 attestations、当前脱敏证据、回滚边界和 Agent 待验状态见 [STAGING.md](./STAGING.md)。
 
 开发期测试基础设施由 `pnpm development:infra` 从仓库根目录、Git 忽略且权限为 `0600` 的 `.env.staging.local` 自动收敛。该命令只接受文件中列出的变量名，不回显值；它核验 Vercel 仍为 Hobby、Private Blob 不含长期 token、Clerk 为 development instance、Neon 为独立 schema-only staging，并部署 AI-disabled Preview、配置合成账号与 GitHub Environment、运行完整手工闭环。Vercel 构建不会执行 `db:deploy`，迁移只由此受控命令使用 Neon direct URL 单独执行。
 
