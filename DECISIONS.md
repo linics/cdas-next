@@ -233,6 +233,13 @@
 - 决策：受保护合成验收增加一名 Clerk test 教师，并只为其建立独立 `AppUser`，不创建或授予目标班级、成员关系或业务资源。真实浏览器必须以该身份直接访问目标 Release 与 Submission 的精确 URL，并得到资源级 404。
 - 理由：仅用学生账号或不存在的 AppUser 会分别证明角色拒绝或未开通拒绝，不能证明“另一教师”通过认证且具备教师角色后仍受资源所有权约束。第四身份只扩展验收证据，不改变产品角色、成员或授权模型。
 
+## D-029：真实模型验收不关闭 Vercel Preview 保护
+
+- 状态：已接受
+- 日期：2026-08-24
+- 决策：`staging-agent-acceptance` 与 AI-enabled Preview 继续启用 Vercel Deployment Protection。受保护 workflow 将 project、精确 Preview URL、保护模式与 automation bypass 一并绑定到 Agent gate；浏览器只向该 origin 添加 bypass header，跨 origin 请求不携带。
+- 理由：真实模型验收需要浏览器访问 Preview，但不能为一次测试降低共享开发部署保护。origin-scoped bypass 复用现有合成验收边界，也避免把 secret 放入 URL、截图或 artifact。
+
 ## 尚未决定
 
 以下生产选择仍需在真实账号和学生数据进入前完成小型验证或合规审查：

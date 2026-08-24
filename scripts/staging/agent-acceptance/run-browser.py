@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib, ipaddress, json, os, re, subprocess
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Mapping
 from urllib.parse import urlsplit
 
 SCREENSHOTS=("01-ready.png","02-approval.png","03-published.png","04-release.png")
@@ -33,6 +34,33 @@ def canonical_origin(value: str) -> str:
     return f"{parsed.scheme.lower()}://{rendered_host}{'' if default_port else f':{port}'}"
 def assert_origin(candidate: str, expected: str) -> None:
     if not exact_origin(candidate,expected): raise RuntimeError("STAGING_AGENT_ACCEPTANCE_ORIGIN_MISMATCH")
+def required(name: str) -> str:
+    value=os.environ.get(name,"").strip()
+    if not value: raise RuntimeError(f"{name}_REQUIRED")
+    return value
+def valid_vercel_project_name(value: str) -> bool:
+    return bool(re.fullmatch(r"[a-z0-9](?:[a-z0-9-]{0,98}[a-z0-9])?",value.lower()))
+def allowed_vercel_preview(raw: str, project_name: str) -> bool:
+    project=project_name.strip().lower()
+    if not valid_vercel_project_name(project): return False
+    try: parsed=urlsplit(raw); port=parsed.port
+    except ValueError: return False
+    hostname=(parsed.hostname or "").lower(); suffix=".vercel.app"; prefix=f"{project}-"
+    deployment=hostname[len(prefix):-len(suffix)] if hostname.startswith(prefix) and hostname.endswith(suffix) else ""
+    return parsed.scheme=="https" and port in (None,443) and parsed.path in ("","/") and not parsed.query and not parsed.fragment and parsed.username is None and parsed.password is None and bool(re.fullmatch(r"[a-z0-9](?:[a-z0-9-]{0,251}[a-z0-9])?",deployment)) and "." not in deployment
+def valid_bypass_secret(value: str) -> bool:
+    return bool(re.fullmatch(r"[A-Za-z0-9]{32}",value))
+def origin_scoped_bypass_headers(candidate: str, expected: str, secret: str, headers: Mapping[str,str]|None=None) -> dict[str,str]:
+    if not valid_bypass_secret(secret): raise RuntimeError("STAGING_AGENT_ACCEPTANCE_BYPASS_INVALID")
+    result={name:value for name,value in (headers or {}).items() if name.lower() not in ("x-vercel-protection-bypass","x-vercel-set-bypass-cookie")}
+    if exact_origin(candidate,expected):
+        result["x-vercel-protection-bypass"]=secret
+        result["x-vercel-set-bypass-cookie"]="true"
+    return result
+def install_origin_scoped_bypass(context, expected: str, secret: str) -> None:
+    def continue_request(route) -> None:
+        route.continue_(headers=origin_scoped_bypass_headers(route.request.url,expected,secret,route.request.headers))
+    context.route("**/*",continue_request)
 def fail() -> None:
     print('{"schema":"staging-agent-acceptance-browser.v1","status":"FAIL"}'); raise SystemExit(1)
 def marker() -> str:
@@ -45,8 +73,8 @@ def run(command:list[str], capture:bool=False)->str:
     if result.returncode: fail()
     return result.stdout
 def main() -> None:
-    value=marker(); base=os.environ.get("STAGING_BASE_URL","").rstrip("/")
-    if not re.fullmatch(r"https://[^/?#]+/?",base) or not public_hostname(base.split("//",1)[1].rstrip("/")): fail()
+    value=marker(); base=required("STAGING_BASE_URL").rstrip("/"); project=required("STAGING_VERCEL_PROJECT_NAME"); bypass=required("STAGING_VERCEL_AUTOMATION_BYPASS_SECRET")
+    if not allowed_vercel_preview(base,project) or os.environ.get("STAGING_DEPLOYMENT_PROTECTION_REQUIRED")!="1" or not valid_bypass_secret(bypass): fail()
     run(["pnpm","staging:agent:assert-browser-prerequisites"])
     started=datetime.now(timezone.utc).isoformat().replace("+00:00","Z")
     # Import is deliberately deferred: no test or prerequisite path opens a browser.
@@ -56,7 +84,7 @@ def main() -> None:
     browser=None; context=None; page=None
     try:
       with sync_playwright() as p:
-        browser=p.chromium.launch(); context=browser.new_context(); page=context.new_page(); page.set_default_timeout(30000)
+        browser=p.chromium.launch(); context=browser.new_context(); install_origin_scoped_bypass(context,base,bypass); page=context.new_page(); page.set_default_timeout(30000)
         page.goto(base)
         assert_origin(page.url,base)
         page.wait_for_function("() => Boolean(window.Clerk?.loaded && window.Clerk.status === 'ready' && window.Clerk.client)", timeout=60000)
@@ -101,7 +129,7 @@ def main() -> None:
       if browser is not None: browser.close()
     completed=datetime.now(timezone.utc).isoformat().replace("+00:00","Z")
     hashes={name:hashlib.sha256((directory/name).read_bytes()).hexdigest() for name in SCREENSHOTS}
-    evidence={"schema":"staging-agent-acceptance-browser.v1","status":"PASS","startedAt":started,"completedAt":completed,"checks":[{"code":f"SCREENSHOT_{index+1}","status":"PASS"} for index in range(4)],"screenshots":hashes,"realStudentDataAllowed":False,"productionDecision":"NO_GO"}
+    evidence={"schema":"staging-agent-acceptance-browser.v1","status":"PASS","startedAt":started,"completedAt":completed,"checks":[{"code":"VERCEL_PROTECTION_BYPASS_SCOPED","status":"PASS"},*[{"code":f"SCREENSHOT_{index+1}","status":"PASS"} for index in range(4)]],"screenshots":hashes,"realStudentDataAllowed":False,"productionDecision":"NO_GO"}
     (directory/"browser.json").write_text(json.dumps(evidence,indent=2)+"\n",encoding="utf8")
     print('{"schema":"staging-agent-acceptance-browser.v1","status":"PASS"}')
 if __name__=="__main__":

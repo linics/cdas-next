@@ -66,9 +66,9 @@ Environment variables：
 
 首个 Agent 场景使用第三个独立且需要人工审批者的 GitHub Environment：`staging-agent-acceptance`，入口是 `protected staging Agent acceptance`。它不继承前两个 Environment，也不把 AI-enabled staging 变成 production。默认输入 `run_real_model=false` 会保留零模型调用并明确得到 `NO_GO`；只有审批者已经确认合成写入、短期 Clerk ticket 与模型费用后，才可手动选择 `run_real_model=true`。
 
-这个 Environment 必须重新配置前述全部基础 secrets，包括 `STAGING_DATABASE_URL`、`STAGING_DIRECT_URL`、`STAGING_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`、`STAGING_CLERK_SECRET_KEY`、`STAGING_TEST_TEACHER_CLERK_ID`、`STAGING_TEST_STUDENT_CLERK_ID` 与 `STAGING_HEALTH_PROOF_SECRET`。另外增加 `STAGING_DEEPSEEK_API_KEY` 和至少 32 bytes 的 `STAGING_AI_TOOL_APPROVAL_SECRET`。这些值只注入确实需要它们的 shell step；checkout、依赖安装、Chromium 安装和 artifact actions 不继承业务 secrets。不得把任何 secret 粘贴到聊天、issue、日志或 artifact。
+这个 Environment 必须重新配置前述全部基础 secrets，包括 `STAGING_DATABASE_URL`、`STAGING_DIRECT_URL`、`STAGING_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`、`STAGING_CLERK_SECRET_KEY`、`STAGING_TEST_TEACHER_CLERK_ID`、`STAGING_TEST_STUDENT_CLERK_ID`、`STAGING_HEALTH_PROOF_SECRET` 与 `STAGING_VERCEL_AUTOMATION_BYPASS_SECRET`。另外增加 `STAGING_DEEPSEEK_API_KEY` 和至少 32 bytes 的 `STAGING_AI_TOOL_APPROVAL_SECRET`。这些值只注入确实需要它们的 shell step；checkout、依赖安装、Chromium 安装和 artifact actions 不继承业务 secrets。不得把任何 secret 粘贴到聊天、issue、日志或 artifact。
 
-Environment variables 必须包含 `STAGING_BASE_URL`、`STAGING_DATABASE_NAME`、`STAGING_AI_MODEL` 和六项基础 attestation。以下五项 Agent attestation 也必须精确为 `true`：
+Environment variables 必须包含精确 Vercel Preview 根地址 `STAGING_BASE_URL`、`STAGING_VERCEL_PROJECT_NAME`、`STAGING_DATABASE_NAME`、`STAGING_AI_MODEL` 和六项基础 attestation。workflow 固定 `STAGING_DEPLOYMENT_PROTECTION_REQUIRED=1`，不能通过 Environment 覆盖。以下五项 Agent attestation 也必须精确为 `true`：
 
 - `STAGING_AGENT_WRITES_ATTESTED`：允许本次唯一 marker 的追加式合成草稿、班级与 Release 写入。
 - `STAGING_AGENT_CLERK_TOKENS_ATTESTED`：允许 runner 为预留 test identity 签发 60 秒 ticket；能力探测 ticket 会立即撤销，浏览器 ticket 只驻内存。
@@ -78,7 +78,7 @@ Environment variables 必须包含 `STAGING_BASE_URL`、`STAGING_DATABASE_NAME`�
 
 第六项 `STAGING_AGENT_RUN_MODEL_ATTESTED` 只能由 `run_real_model` dispatch 输入派生，不能用 Environment variable 伪造。显示名仍固定为 `CDAS Staging Synthetic Teacher` 和 `CDAS Staging Synthetic Student`；既有 AppUser 的角色或显示名不匹配时直接 `NO_GO`，工作流不会覆盖或修改 Clerk 用户。
 
-远端 deployment 必须在构建期冻结当前 workflow SHA 的 `CDAS_DEPLOYMENT_ID` 与当前源码指纹，并在同一隔离 staging runtime 注入 pooled `DATABASE_URL`、同一 Clerk test instance、`AI_PROVIDER_DISABLED=0`、与 `STAGING_AI_MODEL` 相同的 `AI_MODEL`、对应 DeepSeek API key、approval secret 和 health proof secret。`/api/health` 的 challenge HMAC 会同时绑定源码、部署、runtime DB URL、Clerk key、AI enabled 状态、DeepSeek API key 指纹、模型与 approval secret 指纹；响应只返回不透明 proof，不返回这些值或指纹。
+远端 deployment 必须在构建期冻结当前 workflow SHA 的 `CDAS_DEPLOYMENT_ID` 与当前源码指纹，并在同一隔离 staging runtime 注入 pooled `DATABASE_URL`、同一 Clerk test instance、`AI_PROVIDER_DISABLED=0`、与 `STAGING_AI_MODEL` 相同的 `AI_MODEL`、对应 DeepSeek API key、approval secret 和 health proof secret。`/api/health` 的 challenge HMAC 会同时绑定源码、部署、runtime DB URL、Clerk key、AI enabled 状态、DeepSeek API key 指纹、模型与 approval secret 指纹；响应只返回不透明 proof，不返回这些值或指纹。Vercel Deployment Protection 必须保持启用，health 与浏览器请求仅向绑定 Preview 的精确 origin 添加 automation bypass；Clerk、DeepSeek、重定向及其他 origin 不得接收该 header。
 
 工作流不会部署应用、执行 migration、创建 Clerk 用户、reset、truncate、delete、cleanup 或结束成员关系。它先在同一 run 重做基础 Go/No-Go，再把 run、attempt、源码、部署、DB、Clerk、AI 配置、固定 identity 和全部 attestation 绑定到 Agent gate。第二个 job 下载并重新校验这份 gate 后，顺序执行 Chromium 安装、Clerk identity 与 ticket capability 探测、紧邻写入前的 health proof、marker 派生班级 bootstrap、第一方浏览器流程、只读 verifier 和最终证据聚合。任一步失败都会阻断后续写入或模型步骤，并由 final 保持 `NO_GO`。
 

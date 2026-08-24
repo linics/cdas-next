@@ -8,11 +8,15 @@ spec.loader.exec_module(module)
 public_hostname = module.public_hostname
 exact_origin = module.exact_origin
 canonical_origin = module.canonical_origin
+allowed_vercel_preview = module.allowed_vercel_preview
+origin_scoped_bypass_headers = module.origin_scoped_bypass_headers
 class HostTests(unittest.TestCase):
   def test_public_and_private_boundaries(self):
     for value in ("localhost","10.0.0.1","100.64.0.1","127.0.0.1","224.0.0.1","::","::ffff:127.0.0.1","x.lan"):
       self.assertFalse(public_hostname(value))
     self.assertTrue(public_hostname("staging.example.test"))
+    self.assertTrue(allowed_vercel_preview("https://cdas-next-agent-linics1.vercel.app","cdas-next"))
+    self.assertFalse(allowed_vercel_preview("https://other-agent.vercel.app","cdas-next"))
   def test_source_contract_uses_deterministic_real_ui_surface(self):
     source = pathlib.Path(__file__).with_name("run-browser.py").read_text(encoding="utf8")
     self.assertIn("#activity-assistant-prompt", source)
@@ -27,8 +31,13 @@ class HostTests(unittest.TestCase):
     self.assertIn('aria-label="发布确认"', source)
     self.assertIn("level=1,exact=True", source)
     self.assertIn("full_page=True", source)
+    self.assertIn("install_origin_scoped_bypass(context,base,bypass)", source)
+    self.assertIn("VERCEL_PROTECTION_BYPASS_SCOPED", source)
     self.assertNotIn("sign-in?ticket=", source)
     self.assertNotIn("rm -rf", source)
+    secret="A"*32
+    self.assertIn("x-vercel-protection-bypass",origin_scoped_bypass_headers("https://cdas-next-agent-linics1.vercel.app/path","https://cdas-next-agent-linics1.vercel.app",secret))
+    self.assertNotIn("x-vercel-protection-bypass",origin_scoped_bypass_headers("https://accounts.clerk.com/path","https://cdas-next-agent-linics1.vercel.app",secret))
   def test_ticket_origin_rejects_cross_origin_redirects(self):
     expected="https://staging.example.test"
     self.assertTrue(exact_origin("https://staging.example.test/teacher/activities/new",expected))

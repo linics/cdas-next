@@ -122,15 +122,13 @@ describe("evaluateStagingPreflight", () => {
     );
   });
 
-  it("keeps generic Go/No-Go and Agent workflows free of protected-mode secrets", () => {
-    for (const workflow of [
-      ".github/workflows/staging-go-no-go.yml",
-      ".github/workflows/staging-agent-acceptance.yml",
-    ]) {
-      const source = readFileSync(workflow, "utf8");
-      expect(source).not.toContain("STAGING_DEPLOYMENT_PROTECTION_REQUIRED");
-      expect(source).not.toContain("STAGING_VERCEL_AUTOMATION_BYPASS_SECRET");
-    }
+  it("keeps generic Go/No-Go free of protected-mode secrets while Agent acceptance binds them", () => {
+    const generic = readFileSync(".github/workflows/staging-go-no-go.yml", "utf8");
+    expect(generic).not.toContain("STAGING_DEPLOYMENT_PROTECTION_REQUIRED");
+    expect(generic).not.toContain("STAGING_VERCEL_AUTOMATION_BYPASS_SECRET");
+    const agent = readFileSync(".github/workflows/staging-agent-acceptance.yml", "utf8");
+    expect(agent).toContain('STAGING_DEPLOYMENT_PROTECTION_REQUIRED: "1"');
+    expect(agent).toContain("STAGING_VERCEL_AUTOMATION_BYPASS_SECRET");
   });
 });
 

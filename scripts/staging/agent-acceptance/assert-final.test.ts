@@ -17,7 +17,9 @@ const screenshotNames = [
 ] as const;
 const readinessCodes = [
   "AGENT_MARKER",
-  "AGENT_PUBLIC_HTTPS",
+  "AGENT_VERCEL_PREVIEW",
+  "AGENT_DEPLOYMENT_PROTECTION",
+  "AGENT_VERCEL_BYPASS",
   "AGENT_AI_ENABLED",
   "AGENT_AI_ACK",
   "AGENT_DEEPSEEK_KEY",
@@ -104,7 +106,10 @@ function exactEvidence(): AgentAcceptanceEvidenceSet {
       status: "PASS",
       startedAt: "2026-08-23T05:00:00.000Z",
       completedAt: "2026-08-23T05:01:00.000Z",
-      checks: checks(screenshotNames.map((_, index) => `SCREENSHOT_${index + 1}`)),
+      checks: checks([
+        "VERCEL_PROTECTION_BYPASS_SCOPED",
+        ...screenshotNames.map((_, index) => `SCREENSHOT_${index + 1}`),
+      ]),
       screenshots: Object.fromEntries(
         screenshotNames.map((name, index) => [
           name,

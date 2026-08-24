@@ -302,7 +302,8 @@ Agent 不是新的业务主体。审计中的 actor 始终是登录用户，`age
 
 场景: 受保护 staging 的首个 Agent 场景以真实模型和人类确认发布
   假如受保护 Environment 已批准唯一合成写入、短期 Clerk ticket、模型费用、identity reservation 与历史保留
-  并且同一次 run 的 GO 证据绑定当前源码、AI-enabled deployment、隔离数据库、Clerk test instance、DeepSeek API key、模型和 approval secret
+  并且同一次 run 的 GO 证据绑定当前源码、AI-enabled deployment、隔离数据库、Clerk test instance、DeepSeek API key、模型、approval secret、Vercel project 与 automation bypass
+  并且 Vercel Deployment Protection 保持启用，automation bypass 只发送到绑定 Preview 的精确 origin，不发送给 Clerk、DeepSeek、重定向或其他主机
   当 runner 为预留教师签发只驻内存的 60 秒 ticket
   并且 ticket 只能在首页最终 scheme、host 与有效 port 精确等于已绑定 staging origin 后签发，且每次关键导航后重新校验 origin
   并且教师在第一方助手提交固定六段合成 prompt

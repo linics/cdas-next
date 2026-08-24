@@ -16,7 +16,10 @@ const marker = "cdas-staging-agent-12345678-1";
 function environment(extra: Record<string, string | undefined> = {}) {
   return {
     STAGING_RUN_MARKER: marker,
-    STAGING_BASE_URL: "https://staging.example.test",
+    STAGING_BASE_URL: "https://cdas-next-agent-linics1.vercel.app",
+    STAGING_VERCEL_PROJECT_NAME: "cdas-next",
+    STAGING_DEPLOYMENT_PROTECTION_REQUIRED: "1",
+    STAGING_VERCEL_AUTOMATION_BYPASS_SECRET: "V".repeat(32),
     AI_PROVIDER_DISABLED: "0",
     STAGING_AI_ACK: "synthetic-data-cost-approved",
     DEEPSEEK_API_KEY: "deepseek-key-012345",
@@ -74,6 +77,11 @@ describe("agent acceptance contracts", () => {
         environment({ STAGING_AGENT_IDENTITIES_RESERVED_ATTESTED: "false" }),
       ).status,
     ).toBe("FAIL");
+    expect(
+      evaluateAgentAcceptanceReadiness(
+        environment({ STAGING_VERCEL_AUTOMATION_BYPASS_SECRET: "short" }),
+      ).status,
+    ).toBe("FAIL");
   });
 
   it("binds secret configuration without serializing it", async () => {
@@ -103,6 +111,12 @@ describe("agent acceptance contracts", () => {
     expect(isAgentGate(go, boundEnvironment)).toBe(true);
     expect(
       isAgentGate(go, { ...boundEnvironment, AI_MODEL: "deepseek-v4-pro" }),
+    ).toBe(false);
+    expect(
+      isAgentGate(go, {
+        ...boundEnvironment,
+        STAGING_VERCEL_AUTOMATION_BYPASS_SECRET: "W".repeat(32),
+      }),
     ).toBe(false);
     expect(JSON.stringify(go)).not.toContain(actual.DEEPSEEK_API_KEY);
   });
@@ -152,6 +166,8 @@ describe("agent acceptance contracts", () => {
     expect(workflow).not.toMatch(/^\s*uses:\s*[^\s]+@(v\d+|main|master)\s*$/gmu);
     expect(workflow).toContain("STAGING_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY");
     expect(workflow).not.toContain("STAGING_CLERK_PUBLISHABLE_KEY");
+    expect(workflow).toContain("STAGING_VERCEL_AUTOMATION_BYPASS_SECRET");
+    expect(workflow).toContain('STAGING_DEPLOYMENT_PROTECTION_REQUIRED: "1"');
 
     expect(workflow.indexOf("id: agent-gate")).toBeLessThan(
       workflow.indexOf("id: chromium"),

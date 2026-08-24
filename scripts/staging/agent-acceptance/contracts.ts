@@ -1,7 +1,11 @@
 import { createHash } from "node:crypto";
 
 import { isSafeStagingRunMarker, stagingAiAcknowledgement } from "../contracts";
-import { isPublicHostname } from "../../../src/server/staging/deployment-proof";
+import {
+  isAllowedVercelPreviewBaseUrl,
+  isValidVercelAutomationBypassSecret,
+  isValidVercelProjectName,
+} from "../preview-protection";
 
 export type AgentAcceptanceEnvironment = Readonly<Record<string, string | undefined>>;
 export type AgentCheck = Readonly<{ code: string; status: "PASS" | "FAIL" }>;
@@ -41,14 +45,13 @@ export function agentAcceptanceNamespace(marker: string) {
   } as const;
 }
 
-export function isAgentAcceptancePublicHttps(raw: string): boolean {
-  try { const url = new URL(raw); return url.protocol === "https:" && !url.username && !url.password && !url.search && !url.hash && (url.pathname === "" || url.pathname === "/") && isPublicHostname(url.hostname); } catch { return false; }
-}
-
 export function evaluateAgentAcceptanceReadiness(environment: AgentAcceptanceEnvironment) {
+  const projectName = text(environment, "STAGING_VERCEL_PROJECT_NAME");
   const checks = [
     check("AGENT_MARKER", (() => { try { return agentAcceptanceNamespace(text(environment, "STAGING_RUN_MARKER")).marker.length > 0; } catch { return false; } })()),
-    check("AGENT_PUBLIC_HTTPS", isAgentAcceptancePublicHttps(text(environment, "STAGING_BASE_URL"))),
+    check("AGENT_VERCEL_PREVIEW", isValidVercelProjectName(projectName) && isAllowedVercelPreviewBaseUrl(text(environment, "STAGING_BASE_URL"), projectName)),
+    check("AGENT_DEPLOYMENT_PROTECTION", text(environment, "STAGING_DEPLOYMENT_PROTECTION_REQUIRED") === "1"),
+    check("AGENT_VERCEL_BYPASS", isValidVercelAutomationBypassSecret(text(environment, "STAGING_VERCEL_AUTOMATION_BYPASS_SECRET"))),
     check("AGENT_AI_ENABLED", text(environment, "AI_PROVIDER_DISABLED") === "0"),
     check("AGENT_AI_ACK", text(environment, "STAGING_AI_ACK") === stagingAiAcknowledgement),
     check("AGENT_DEEPSEEK_KEY", Buffer.byteLength(text(environment, "DEEPSEEK_API_KEY"), "utf8") >= 16),
@@ -69,5 +72,5 @@ export function stableAgentAcceptanceError(error: unknown): string {
 }
 
 export function redactAgentAcceptanceText(input: string): string {
-  return input.replace(/postgres(?:ql)?:\/\/[^\s"']+/giu, "[REDACTED_DATABASE_URL]").replace(/\b(?:pk|sk)_(?:test|live)_[A-Za-z0-9_-]+\b/gu, "[REDACTED_CLERK_KEY]").replace(/\b(?:Bearer|Cookie)\s+[^\s"']+/giu, "$1 [REDACTED]").replace(/\b(?:ticket|token)=[A-Za-z0-9._-]+/giu, "$1=[REDACTED]").replace(/\b(?:DEEPSEEK_API_KEY|AI_TOOL_APPROVAL_SECRET)=[^\s"']+/gu, "$1=[REDACTED]");
+  return input.replace(/postgres(?:ql)?:\/\/[^\s"']+/giu, "[REDACTED_DATABASE_URL]").replace(/\b(?:pk|sk)_(?:test|live)_[A-Za-z0-9_-]+\b/gu, "[REDACTED_CLERK_KEY]").replace(/\b(?:Bearer|Cookie)\s+[^\s"']+/giu, "$1 [REDACTED]").replace(/\b(?:ticket|token)=[A-Za-z0-9._-]+/giu, "$1=[REDACTED]").replace(/\b(?:DEEPSEEK_API_KEY|AI_TOOL_APPROVAL_SECRET|STAGING_VERCEL_AUTOMATION_BYPASS_SECRET)=[^\s"']+/gu, "$1=[REDACTED]");
 }

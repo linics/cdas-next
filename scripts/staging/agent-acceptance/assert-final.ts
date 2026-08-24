@@ -17,7 +17,9 @@ const screenshots = [
 
 const readinessCodes = [
   "AGENT_MARKER",
-  "AGENT_PUBLIC_HTTPS",
+  "AGENT_VERCEL_PREVIEW",
+  "AGENT_DEPLOYMENT_PROTECTION",
+  "AGENT_VERCEL_BYPASS",
   "AGENT_AI_ENABLED",
   "AGENT_AI_ACK",
   "AGENT_DEEPSEEK_KEY",
@@ -265,7 +267,10 @@ function passingBrowser(value: unknown): boolean {
       Date.parse(evidence.startedAt) < Date.parse(evidence.completedAt) &&
       exactPassingChecks(
         evidence.checks,
-        screenshots.map((_, index) => `SCREENSHOT_${index + 1}`),
+        [
+          "VERCEL_PROTECTION_BYPASS_SCOPED",
+          ...screenshots.map((_, index) => `SCREENSHOT_${index + 1}`),
+        ],
       ) &&
       recorded &&
       exactKeys(recorded, screenshots) &&
