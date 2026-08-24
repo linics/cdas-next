@@ -92,6 +92,7 @@ Environment variables 必须包含精确 Vercel Preview 根地址 `STAGING_BASE_
 
 | 日期 | 提交 | 证据 | 结论 |
 | --- | --- | --- | --- |
+| 2026-08-25 | `b1a96a28dc789d96707d6e1b7f47317bd2a4d633` | [AI-disabled 双学生小组完整合成闭环](https://github.com/linics/cdas-next/actions/runs/32780071107) | Hobby Preview、18 个迁移与 schema drift、教师建立两人 Release 小组及角色、两名学生接力完成三个共享阶段、Private Blob 附件、共享反馈、关闭后拒写与只读、学生/其他教师资源隔离、8 项只读小组历史核验及六张截图全部 PASS。 |
 | 2026-08-25 | `b4035bba44287c298b4a3e8a1b2b05162a806c8e` | [AI-disabled 三阶段完整合成闭环](https://github.com/linics/cdas-next/actions/runs/32763998574) | Hobby Preview、17 个迁移与 schema drift、三阶段顺序解锁、三个发布内检查点、Private Blob 附件、教师反馈、关闭后拒写与只读、其他学生/教师隔离、只读阶段索引/修订精确计数及六张截图全部 PASS。 |
 | 2026-08-25 | `df1d37a3ea454418b38ef8e9a9b1d336a6b0d1a2` | [schema v2 真实 DeepSeek Agent 完整合成闭环](https://github.com/linics/cdas-next/actions/runs/32755788543) | 原版 CTS 能力下限的结构化任务书、教师人工版本 2、签名发布确认、主学生提交、教师反馈、学生读取、教师关闭、关闭后拒写与只读、其他学生/教师隔离、三个精确 `SUCCEEDED` AgentRun、13 项只读数据库核验及七张截图全部 PASS。 |
 | 2026-08-24 | `2192a2790af6a2eddf63716be47309445a3d41e9` | [真实 DeepSeek Agent 完整合成闭环](https://github.com/linics/cdas-next/actions/runs/32732773297) | 模型草稿、教师人工版本 2、签名发布确认、唯一 Release、主学生非空文本正式提交、教师确认反馈、学生读取、教师确认关闭、关闭后陈旧写拒绝与只读、其他学生/教师资源隔离、三个精确 `SUCCEEDED` AgentRun、只读数据库核验及七张截图全部 PASS。 |
