@@ -335,12 +335,12 @@ Agent 不是新的业务主体。审计中的 actor 始终是登录用户，`age
   并且 DeepSeek V4 使用 non-thinking 模式；已有草稿会话中的明确发布请求只向模型开放并指定 publish_activity_release，仍必须等待签名的人类确认
   当 runner 为预留教师签发只驻内存的 60 秒 ticket
   并且 ticket 只能在首页最终 scheme、host 与有效 port 精确等于已绑定 staging origin 后签发，且每次关键导航后重新校验 origin
-  并且教师在第一方助手提交固定合成主题与 marker 标题；模型生成的六段正文必须全部非空，但不把生成文本逐字照抄 prompt 当成成功条件
+  并且教师在第一方助手提交固定合成主题与 marker 标题；模型生成的 schema v2 任务书必须满足 D-030 的基本设置、真实情境、三维目标、连续阶段、类型化证据与四档评价合同，但不把生成文本逐字照抄 prompt 当成成功条件
   那么模型通过共享 saveActivityDraft 命令创建唯一 READY_FOR_PREVIEW 版本 1 与 AGENT revision
   并且客户端只在工具返回的 draft ID 与精确站内路径一致时导航到预览
   并且共享 activities layout 在内存保留同一官方 AI SDK message session
   当教师返回普通编辑页人工修改摘要并保存为 READY_FOR_PREVIEW 版本 2
-  那么版本 1 AGENT revision 与版本 2 MANUAL revision 都不可改写，且版本 2 只把摘要替换为固定人工修订值、其余模型生成正文保持一致
+  那么版本 1 AGENT revision 与版本 2 MANUAL revision 都不可改写，且版本 2 把摘要替换为固定人工修订值；其余教师可见结构保持一致，兼容投影按三维目标、阶段证据与评价维度规范化
   当教师逐段核对版本 2 预览并明确要求把版本 2 发布到 marker 班级且不设置截止时间
   那么模型只能提出带精确版本 2、班级与 null dueAt 的签名发布 approval
   并且在教师点击确认前没有 ActionIntent 或 Release
