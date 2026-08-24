@@ -244,7 +244,11 @@ jobs:
         id: chromium
         if: ${{ inputs.run_real_model && needs.gate.result == 'success' && steps.gate.outcome == 'success' }}
         continue-on-error: true
-        run: pnpm exec playwright install --with-deps chromium
+        run: |
+          python3 -m venv .venv-staging-agent-acceptance
+          .venv-staging-agent-acceptance/bin/python -m pip install -r scripts/e2e/requirements.txt
+          .venv-staging-agent-acceptance/bin/python -m playwright install --with-deps chromium
+          echo "$PWD/.venv-staging-agent-acceptance/bin" >> "$GITHUB_PATH"
       - name: Verify reserved Clerk identities and revoke capability probes
         id: identity
         if: ${{ steps.chromium.outcome == 'success' }}

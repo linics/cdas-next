@@ -168,6 +168,16 @@ describe("agent acceptance contracts", () => {
     expect(workflow).not.toContain("STAGING_CLERK_PUBLISHABLE_KEY");
     expect(workflow).toContain("STAGING_VERCEL_AUTOMATION_BYPASS_SECRET");
     expect(workflow).toContain('STAGING_DEPLOYMENT_PROTECTION_REQUIRED: "1"');
+    expect(workflow).toContain(
+      ".venv-staging-agent-acceptance/bin/python -m pip install -r scripts/e2e/requirements.txt",
+    );
+    expect(workflow).toContain(
+      ".venv-staging-agent-acceptance/bin/python -m playwright install --with-deps chromium",
+    );
+    expect(workflow).toContain(
+      'echo "$PWD/.venv-staging-agent-acceptance/bin" >> "$GITHUB_PATH"',
+    );
+    expect(workflow).not.toContain("pnpm exec playwright install");
 
     expect(workflow.indexOf("id: agent-gate")).toBeLessThan(
       workflow.indexOf("id: chromium"),
