@@ -101,7 +101,7 @@ pnpm development:agent-acceptance -- \
   --model-cost-approved=synthetic-data-cost-approved
 ```
 
-该命令先重新核验 Hobby、Private Blob、Clerk、Neon、源码 SHA 与 AI-enabled health，再把费用闸门作为最后一项配置并精确派发 `staging-agent-acceptance`。成功后会下载并重新验证脱敏 artifact；无论成功或失败，`finally` 都会先关闭 GitHub 费用闸门、删除 GitHub 与 Vercel 分支级模型/审批 secrets，然后部署并核验 AI-disabled Preview。命令参数只是技术上的 fail-closed 门槛，仍必须在每次执行前取得本项目约定的单次人工费用授权。
+该命令先重新核验 Hobby、Private Blob、Clerk、Neon、源码 SHA 与 AI-enabled health，再把费用闸门作为最后一项配置并精确派发 `staging-agent-acceptance`。工作流使用四个预留合成身份，让同一个 AI 创建并由教师确认发布的 Release 继续经过学生正式提交、教师确认反馈、学生读取反馈、教师关闭、关闭后拒写与其他师生资源隔离；后半段全部走普通第一方 UI，不产生额外 AgentRun。成功后命令会下载并重新验证脱敏 artifact；无论成功或失败，`finally` 都会先关闭 GitHub 费用闸门、删除 GitHub 与 Vercel分支级模型/审批 secrets，然后部署并核验 AI-disabled Preview。命令参数只是技术上的 fail-closed 门槛，仍必须在每次执行前取得本项目约定的单次人工费用授权。
 
 `db:test`、`test:db` 与 `db:test:diff` 只接受独立的 `TEST_DATABASE_URL`，并拒绝与 `DATABASE_URL`、`DIRECT_URL` 或文档默认开发库指向同一 PostgreSQL 目标；不会把 append-only fixture 写进开发库。缺少或不安全的测试库 URL 会明确失败，不会以跳过测试伪装成绿色结果。数据库测试覆盖成员关系、ActionIntent 状态机、Release 与唯一已执行发布意图的绑定、精确快照及规范化 SHA-256、显式关闭意图与前向生命周期、不可变草稿、提交和反馈修订、AgentRun 单向终态与不可擦除 provenance；命令集成测试覆盖越权、确认换参、串行与并发幂等、空证据、迟交、重交使旧反馈确认失效、关闭后学生只读且教师仍可反馈，以及 `AI_PROVIDER_DISABLED=1` 下不依赖 AgentRun 的完整手工闭环。助手测试另行覆盖严格消息合同、AgentRun 生命周期、工具来源、签名审批续传、拒绝、伪造签名、跨新运行重放、工具前模型中断零写入，以及写入后映射或 provider step 失败仍保留已提交结果的成功 provenance。
 

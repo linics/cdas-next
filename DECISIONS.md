@@ -184,7 +184,7 @@
 - 日期：2026-08-23
 - 决策：`/teacher/activities` 的共享客户端 layout 持有唯一官方 AI SDK `useChat` session，使 `create_activity_draft` 成功后的客户端导航可以在精确预览页继续原消息与签名 approval。session 不写入 URL、localStorage、cookie 或业务数据库；直接进入、刷新预览或导航离开 activities subtree 都不会恢复该对话。
 - 理由：首个场景必须先看到服务端重新授权读取的不可变修订预览，再由同一消息历史让模型提出精确发布工具和官方签名 approval。把消息或 approval 放进 URL 会泄漏并允许篡改；为一个短场景增加服务端聊天存储会引入新的保留、读取授权与恢复协议，而当前 ActionIntent、audit 与幂等账本已经承担业务事实。
-- 后果：预览页同时保留既有手工发布面板；助手 session 丢失时教师可以继续手工闭环，但必须重新从新建页开始新的 Agent 会话，不能拼接旧 approval。受保护的首次外部验收用真实浏览器证明 new → preview → 普通编辑页人工保存版本 2 → preview 的内存连续性，并以只读账本验证 AGENT 版本 1、MANUAL 版本 2、三次 AgentRun、教师确认和唯一 Release；它不引入第二后端、持久工作流或通用聊天系统。
+- 后果：预览页同时保留既有手工发布面板；助手 session 丢失时教师可以继续手工闭环，但必须重新从新建页开始新的 Agent 会话，不能拼接旧 approval。受保护的首次外部验收用真实浏览器证明 new → preview → 普通编辑页人工保存版本 2 → preview 的内存连续性，并以只读账本验证 AGENT 版本 1、MANUAL 版本 2、三次 AgentRun、教师确认和唯一 Release；随后以普通第一方 UI 让同一 Release 完成学生提交、教师反馈、学生读取、教师关闭和关闭后只读，不把这些动作扩展成 Agent 工具，也不引入第二后端、持久工作流或通用聊天系统。
 
 ## D-024：首个助手试行直连 DeepSeek 官方 API
 

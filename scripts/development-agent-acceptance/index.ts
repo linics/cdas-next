@@ -29,6 +29,8 @@ import {
 } from "../development-infrastructure/remote-providers";
 import {
   agentAcceptanceAttestations,
+  agentAcceptanceOtherStudentDisplayName,
+  agentAcceptanceOtherTeacherDisplayName,
   agentAcceptanceStudentDisplayName,
   agentAcceptanceTeacherDisplayName,
 } from "../staging/agent-acceptance/contracts";
@@ -480,6 +482,8 @@ function artifactEnvironment(input: Readonly<{
   connection: NeonConnection;
   teacher: AgentIdentity;
   student: AgentIdentity;
+  otherStudent: AgentIdentity;
+  otherTeacher: AgentIdentity;
   baseUrl: string;
   modelKey: string;
   approvalSecret: string;
@@ -506,10 +510,16 @@ function artifactEnvironment(input: Readonly<{
     CLERK_SECRET_KEY: input.config.clerkSecretKey,
     STAGING_TEST_TEACHER_CLERK_ID: input.teacher.id,
     STAGING_TEST_STUDENT_CLERK_ID: input.student.id,
+    STAGING_TEST_OTHER_STUDENT_CLERK_ID: input.otherStudent.id,
+    STAGING_TEST_OTHER_TEACHER_CLERK_ID: input.otherTeacher.id,
     STAGING_ACCEPTANCE_TEST_TEACHER_NAME:
       agentAcceptanceTeacherDisplayName,
     STAGING_ACCEPTANCE_TEST_STUDENT_NAME:
       agentAcceptanceStudentDisplayName,
+    STAGING_ACCEPTANCE_TEST_OTHER_STUDENT_NAME:
+      agentAcceptanceOtherStudentDisplayName,
+    STAGING_ACCEPTANCE_TEST_OTHER_TEACHER_NAME:
+      agentAcceptanceOtherTeacherDisplayName,
     AI_PROVIDER_DISABLED: "0",
     STAGING_AI_ACK: agentModelCostAcknowledgement,
     DEEPSEEK_API_KEY: input.modelKey,
@@ -530,6 +540,8 @@ async function configureAgentEnvironment(
     connection: NeonConnection;
     teacher: AgentIdentity;
     student: AgentIdentity;
+    otherStudent: AgentIdentity;
+    otherTeacher: AgentIdentity;
     baseUrl: string;
     modelKey: string;
     approvalSecret: string;
@@ -565,6 +577,8 @@ async function configureAgentEnvironment(
     STAGING_CLERK_SECRET_KEY: input.config.clerkSecretKey,
     STAGING_TEST_TEACHER_CLERK_ID: input.teacher.id,
     STAGING_TEST_STUDENT_CLERK_ID: input.student.id,
+    STAGING_TEST_OTHER_STUDENT_CLERK_ID: input.otherStudent.id,
+    STAGING_TEST_OTHER_TEACHER_CLERK_ID: input.otherTeacher.id,
     STAGING_HEALTH_PROOF_SECRET: input.healthProofSecret,
     STAGING_VERCEL_AUTOMATION_BYPASS_SECRET: input.bypassSecret,
     STAGING_DEEPSEEK_API_KEY: input.modelKey,
@@ -617,7 +631,7 @@ async function main(): Promise<void> {
     ]);
     connection = await neon.ensureIsolatedDatabase();
     await deployMigrationsWithMinimalEnvironment(connection, runner);
-    const [teacher, student] = await Promise.all([
+    const [teacher, student, otherStudent, otherTeacher] = await Promise.all([
       clerk.ensureSyntheticIdentity(
         syntheticExternalIds.teacher,
         syntheticUsernames.teacher,
@@ -630,8 +644,20 @@ async function main(): Promise<void> {
         "CDAS Staging Synthetic",
         "Student",
       ),
+      clerk.ensureSyntheticIdentity(
+        syntheticExternalIds.otherStudent,
+        syntheticUsernames.otherStudent,
+        "CDAS Staging Synthetic Other",
+        "Student",
+      ),
+      clerk.ensureSyntheticIdentity(
+        syntheticExternalIds.otherTeacher,
+        syntheticUsernames.otherTeacher,
+        "CDAS Staging Synthetic Other",
+        "Teacher",
+      ),
     ]);
-    if (teacher.id === student.id) {
+    if (new Set([teacher.id, student.id, otherStudent.id, otherTeacher.id]).size !== 4) {
       throw new Error("DEVELOPMENT_AGENT_IDENTITIES_NOT_DISTINCT");
     }
 
@@ -672,6 +698,8 @@ async function main(): Promise<void> {
       connection,
       teacher,
       student,
+      otherStudent,
+      otherTeacher,
       baseUrl: deployment.url,
       modelKey,
       approvalSecret,
@@ -689,6 +717,8 @@ async function main(): Promise<void> {
         connection,
         teacher,
         student,
+        otherStudent,
+        otherTeacher,
         baseUrl: deployment.url,
         modelKey,
         approvalSecret,

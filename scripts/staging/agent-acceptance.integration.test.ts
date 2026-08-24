@@ -6,24 +6,43 @@ import {
   finishActivityAssistantRun,
   startActivityAssistantRun,
 } from "../../src/server/assistant/agent-run-lifecycle";
-import { bootstrapClerkClassroom } from "../../src/server/bootstrap/bootstrap-clerk-classroom";
+import {
+  bootstrapAdditionalClerkClassroomStudent,
+  bootstrapClerkClassroom,
+  bootstrapStandaloneClerkTeacher,
+} from "../../src/server/bootstrap/bootstrap-clerk-classroom";
 import type {
   CommandContext,
   CommandSource,
 } from "../../src/server/commands/command-context";
 import { decideActionIntent } from "../../src/server/commands/decide-action-intent";
+import { closeActivityRelease } from "../../src/server/commands/close-activity-release";
+import { prepareCloseActivityIntent } from "../../src/server/commands/prepare-close-activity-intent";
 import { preparePublishActivityIntent } from "../../src/server/commands/prepare-publish-activity-intent";
+import { prepareTeacherFeedbackIntent } from "../../src/server/commands/prepare-teacher-feedback-intent";
 import { publishActivityRelease } from "../../src/server/commands/publish-activity-release";
 import { saveActivityDraft } from "../../src/server/commands/save-activity-draft";
+import {
+  saveSubmissionWorkingCopy,
+  SaveSubmissionWorkingCopyError,
+} from "../../src/server/commands/save-submission-working-copy";
+import { saveTeacherFeedback } from "../../src/server/commands/save-teacher-feedback";
+import { startSubmissionResubmission } from "../../src/server/commands/start-submission-resubmission";
+import { submitSubmissionRevision } from "../../src/server/commands/submit-submission-revision";
 import { createDatabaseClient } from "../../src/server/db/client";
 import {
   agentAcceptanceEditedSummary,
+  agentAcceptanceEvidenceText,
+  agentAcceptanceFeedbackText,
   agentAcceptanceNamespace,
+  agentAcceptanceOtherStudentDisplayName,
+  agentAcceptanceOtherTeacherDisplayName,
   agentAcceptanceStudentDisplayName,
   agentAcceptanceTeacherDisplayName,
 } from "./agent-acceptance/contracts";
 import {
   evaluateAgentVerification,
+  fullLoopVerificationSql,
   verificationSql,
   type VerificationRow,
 } from "./agent-acceptance/verify";
@@ -67,6 +86,8 @@ async function queryVerification(input: {
   activityTitle: string;
   teacherSubject: string;
   studentSubject: string;
+  otherStudentSubject: string;
+  otherTeacherSubject: string;
 }): Promise<VerificationRow> {
   const client = new Client({ connectionString: databaseUrl });
   await client.connect();
@@ -82,10 +103,25 @@ async function queryVerification(input: {
       windowStartedAt.toISOString(),
       windowCompletedAt.toISOString(),
       agentAcceptanceEditedSummary,
+      input.otherStudentSubject,
     ]);
+    const fullLoop = await client.query<VerificationRow>(
+      fullLoopVerificationSql,
+      [
+        input.classroomId,
+        input.activityTitle,
+        input.teacherSubject,
+        input.studentSubject,
+        input.otherStudentSubject,
+        input.otherTeacherSubject,
+        agentAcceptanceEvidenceText,
+        agentAcceptanceFeedbackText,
+      ],
+    );
     await client.query("ROLLBACK");
     if (!result.rows[0]) throw new Error("AGENT_VERIFICATION_ROW_REQUIRED");
-    return result.rows[0];
+    if (!fullLoop.rows[0]) throw new Error("AGENT_LOOP_VERIFICATION_ROW_REQUIRED");
+    return { ...result.rows[0], ...fullLoop.rows[0] };
   } finally {
     await client.end();
   }
@@ -102,14 +138,39 @@ describeWithDatabase("staging Agent acceptance read-only verifier", () => {
     const suffix = randomUUID().replaceAll("-", "");
     const teacherSubject = `user_agentteacher${suffix}`;
     const studentSubject = `user_agentstudent${suffix}`;
-    const resources = await bootstrapClerkClassroom(database, {
-      teacherAuthSubject: teacherSubject,
-      teacherDisplayName: agentAcceptanceTeacherDisplayName,
-      studentAuthSubject: studentSubject,
-      studentDisplayName: agentAcceptanceStudentDisplayName,
-      classroomId: namespace.classroomId,
-      classroomName: namespace.classroomName,
-    });
+    const otherStudentSubject = `user_agentotherstudent${suffix}`;
+    const otherTeacherSubject = `user_agentotherteacher${suffix}`;
+    const resources = await bootstrapClerkClassroom(
+      database,
+      {
+        teacherAuthSubject: teacherSubject,
+        teacherDisplayName: agentAcceptanceTeacherDisplayName,
+        studentAuthSubject: studentSubject,
+        studentDisplayName: agentAcceptanceStudentDisplayName,
+        classroomId: namespace.classroomId,
+        classroomName: namespace.classroomName,
+      },
+      () => windowStartedAt,
+    );
+    await bootstrapAdditionalClerkClassroomStudent(
+      database,
+      {
+        teacherAuthSubject: teacherSubject,
+        classroomId: namespace.classroomId,
+        classroomName: namespace.classroomName,
+        additionalStudentAuthSubject: otherStudentSubject,
+        additionalStudentDisplayName: agentAcceptanceOtherStudentDisplayName,
+      },
+      () => windowStartedAt,
+    );
+    await bootstrapStandaloneClerkTeacher(
+      database,
+      {
+        teacherAuthSubject: otherTeacherSubject,
+        teacherDisplayName: agentAcceptanceOtherTeacherDisplayName,
+      },
+      () => windowStartedAt,
+    );
 
     const run1 = await startActivityAssistantRun(
       database,
@@ -222,7 +283,7 @@ describeWithDatabase("staging Agent acceptance read-only verifier", () => {
       ),
       { actionIntentId: prepared.actionIntentId, decision: "CONFIRM" },
     );
-    await publishActivityRelease(
+    const published = await publishActivityRelease(
       database,
       context(
         resources.teacher.id,
@@ -235,12 +296,146 @@ describeWithDatabase("staging Agent acceptance read-only verifier", () => {
       },
     );
 
+    const workingCopy = await saveSubmissionWorkingCopy(
+      database,
+      context(
+        resources.student.id,
+        "UI",
+        new Date("2026-08-23T05:00:46.000Z"),
+      ),
+      {
+        releaseId: published.releaseId,
+        expectedWorkingCopyId: null,
+        expectedWorkingVersion: null,
+        textEvidence: agentAcceptanceEvidenceText,
+        idempotencyKey: `agent_loop_save_${randomUUID()}`,
+      },
+    );
+    const submitted = await submitSubmissionRevision(
+      database,
+      context(
+        resources.student.id,
+        "UI",
+        new Date("2026-08-23T05:00:47.000Z"),
+      ),
+      {
+        releaseId: published.releaseId,
+        expectedWorkingCopyId: workingCopy.workingCopyId,
+        expectedWorkingVersion: workingCopy.workingVersion,
+        idempotencyKey: `agent_loop_submit_${randomUUID()}`,
+      },
+    );
+    const preparedFeedback = await prepareTeacherFeedbackIntent(
+      database,
+      context(
+        resources.teacher.id,
+        "UI",
+        new Date("2026-08-23T05:00:48.000Z"),
+      ),
+      {
+        submissionId: submitted.submissionId,
+        expectedSubmissionRevisionId: submitted.revisionId,
+        expectedSubmissionRevisionNumber: 1,
+        expectedFeedbackVersion: 0,
+        body: agentAcceptanceFeedbackText,
+        suggestionAgentRunId: null,
+        idempotencyKey: `agent_loop_feedback_prepare_${randomUUID()}`,
+      },
+    );
+    await decideActionIntent(
+      database,
+      context(
+        resources.teacher.id,
+        "UI",
+        new Date("2026-08-23T05:00:49.000Z"),
+      ),
+      { actionIntentId: preparedFeedback.actionIntentId, decision: "CONFIRM" },
+    );
+    await saveTeacherFeedback(
+      database,
+      context(
+        resources.teacher.id,
+        "UI",
+        new Date("2026-08-23T05:00:50.000Z"),
+      ),
+      {
+        actionIntentId: preparedFeedback.actionIntentId,
+        idempotencyKey: `agent_loop_feedback_save_${randomUUID()}`,
+      },
+    );
+    const resubmission = await startSubmissionResubmission(
+      database,
+      context(
+        resources.student.id,
+        "UI",
+        new Date("2026-08-23T05:00:51.000Z"),
+      ),
+      {
+        releaseId: published.releaseId,
+        expectedLatestRevisionNumber: 1,
+        idempotencyKey: `agent_loop_resubmit_${randomUUID()}`,
+      },
+    );
+    const preparedClose = await prepareCloseActivityIntent(
+      database,
+      context(
+        resources.teacher.id,
+        "UI",
+        new Date("2026-08-23T05:00:52.000Z"),
+      ),
+      {
+        releaseId: published.releaseId,
+        expectedStatus: "ACTIVE",
+        idempotencyKey: `agent_loop_close_prepare_${randomUUID()}`,
+      },
+    );
+    await decideActionIntent(
+      database,
+      context(
+        resources.teacher.id,
+        "UI",
+        new Date("2026-08-23T05:00:53.000Z"),
+      ),
+      { actionIntentId: preparedClose.actionIntentId, decision: "CONFIRM" },
+    );
+    await closeActivityRelease(
+      database,
+      context(
+        resources.teacher.id,
+        "UI",
+        new Date("2026-08-23T05:00:54.000Z"),
+      ),
+      {
+        actionIntentId: preparedClose.actionIntentId,
+        idempotencyKey: `agent_loop_close_${randomUUID()}`,
+      },
+    );
+    await expect(
+      saveSubmissionWorkingCopy(
+        database,
+        context(
+          resources.student.id,
+          "UI",
+          new Date("2026-08-23T05:00:55.000Z"),
+        ),
+        {
+          releaseId: published.releaseId,
+          expectedWorkingCopyId: resubmission.workingCopyId,
+          expectedWorkingVersion: resubmission.workingVersion,
+          textEvidence: `${agentAcceptanceEvidenceText} stale write after close`,
+          idempotencyKey: `agent_loop_stale_save_${randomUUID()}`,
+        },
+      ),
+    ).rejects.toEqual(new SaveSubmissionWorkingCopyError("RELEASE_NOT_ACTIVE"));
+
     const scope = {
       classroomId: namespace.classroomId,
       classroomName: namespace.classroomName,
       activityTitle: namespace.activityTitle,
       teacherSubject,
       studentSubject,
+      otherStudentSubject,
+      otherTeacherSubject,
     };
     const passing = evaluateAgentVerification(await queryVerification(scope));
     expect(passing.every((candidate) => candidate.status === "PASS")).toBe(

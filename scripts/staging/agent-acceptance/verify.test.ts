@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   evaluateAgentVerification,
+  fullLoopVerificationSql,
   verificationSql,
 } from "./verify";
 
@@ -15,7 +16,12 @@ const happy = {
   runs: true,
   audits: true,
   idempotency: true,
-  studentHistory: true,
+  primarySubmission: true,
+  teacherFeedback: true,
+  closeIntentAndAudits: true,
+  staleWrite: true,
+  otherStudentHistory: true,
+  otherTeacherActions: true,
 };
 
 describe("agent acceptance verifier", () => {
@@ -49,9 +55,18 @@ describe("agent acceptance verifier", () => {
     expect(verificationSql).toContain("count(*) = 5 FROM target_audits");
     expect(verificationSql).toContain("count(*) = 4 FROM target_idempotency");
     expect(verificationSql).toContain("count(*) = 1 FROM marker_drafts");
-    expect(verificationSql).toContain("FROM teacher_feedback_revisions");
+    expect(verificationSql).toContain("target.release_status = 'CLOSED'");
+    expect(verificationSql).toContain("membership.student_id = (SELECT id FROM other_student)");
+    expect(fullLoopVerificationSql).toContain("submit_submission_revision");
+    expect(fullLoopVerificationSql).toContain("save_teacher_feedback");
+    expect(fullLoopVerificationSql).toContain("close_activity_release");
+    expect(fullLoopVerificationSql).toContain("RELEASE_NOT_ACTIVE");
+    expect(fullLoopVerificationSql).toContain("other_teacher_target_audits");
     expect(verificationSql).not.toContain("DELETE");
     expect(verificationSql).not.toContain("UPDATE");
     expect(verificationSql).not.toContain("INSERT");
+    expect(fullLoopVerificationSql).not.toContain("DELETE");
+    expect(fullLoopVerificationSql).not.toContain("UPDATE");
+    expect(fullLoopVerificationSql).not.toContain("INSERT");
   });
 });

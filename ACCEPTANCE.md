@@ -300,7 +300,7 @@ Agent 不是新的业务主体。审计中的 actor 始终是登录用户，`age
   当同 marker 已经留下任意业务草稿
   那么重跑在追加新的业务历史前拒绝，并要求新的 run attempt 使用新 marker
 
-场景: 受保护 staging 的首个 Agent 场景以真实模型和人类确认发布
+场景: 受保护 staging 的首个 Agent 场景以真实模型启动同一 Release 的完整教学闭环
   假如受保护 Environment 已批准唯一合成写入、短期 Clerk ticket、模型费用、identity reservation 与历史保留
   并且同一次 run 的 GO 证据绑定当前源码、AI-enabled deployment、隔离数据库、Clerk test instance、DeepSeek API key、模型、approval secret、Vercel project 与 automation bypass
   并且 Vercel Deployment Protection 保持启用，automation bypass 只发送到绑定 Preview 的精确 origin，不发送给 Clerk、DeepSeek、重定向或其他主机
@@ -321,7 +321,21 @@ Agent 不是新的业务主体。审计中的 actor 始终是登录用户，`age
   并且三个同教师、同模型、同浏览器时间窗的 AgentRun 恰好分别绑定草稿写入、无业务写入的 approval 提议和发布执行
   并且该教师在 marker 精确标题下只能存在这一份草稿，包括未发布草稿
   并且两次 save、prepare、decide、publish audit 与两次 save、prepare、publish 幂等记录的 actor、来源、run、intent、版本和结果资源精确一致
-  并且该 Release 没有学生提交、提交修订或反馈历史
+  当预留主学生通过第一方学生界面打开该 Release，保存非空固定合成文本并明确正式提交
+  那么该 Release 只产生该学生的一份 Submission 与不可变版本 1 SubmissionRevision
+  并且学生直接访问教师 Release URL 返回资源级 404
+  当发布教师通过第一方界面查看该 Submission 并明确确认固定合成反馈
+  那么系统产生一份 MANUAL TeacherFeedbackRevision、EXECUTED feedback intent 与 UI provenance audit，且不增加 AgentRun
+  并且主学生重新打开活动能看到该反馈
+  当预留其他教师直接访问目标 Release 与 Submission URL
+  那么两个资源均返回 404，且不泄漏主学生显示名、evidence 或 feedback
+  当预留其他学生打开同一 Release
+  那么活动可见，但其工作区为空且主学生显示名、evidence 与 feedback 均不可见；目标 Submission URL 返回 404
+  当主学生在开始重交后保留陈旧页面，发布教师明确确认关闭活动，再由该陈旧页面保存
+  那么 Release 进入 CLOSED，关闭 intent 与 UI audit 成功，陈旧保存由服务端以 RELEASE_NOT_ACTIVE 拒绝
+  并且主学生刷新后仍能读取原正式 evidence 与 feedback，但输入不可编辑且所有写按钮消失
+  并且发布教师直接访问学生活动 URL 返回资源级 404
+  并且只读 verifier 在同一 marker 与同一 Release 上同时证明 Agent 发布 provenance、主学生提交、教师反馈、关闭、陈旧写拒绝、其他学生零历史与其他教师零目标操作
   当直接打开或刷新预览页
   那么系统不从 URL、localStorage 或业务数据库恢复对话或 approval
   并且既有手工发布路径仍可使用

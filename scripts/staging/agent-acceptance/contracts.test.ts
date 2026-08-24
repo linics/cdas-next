@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   agentAcceptanceNamespace,
+  agentAcceptanceOtherStudentDisplayName,
+  agentAcceptanceOtherTeacherDisplayName,
   agentAcceptanceStudentDisplayName,
   agentAcceptanceTeacherDisplayName,
   evaluateAgentAcceptanceReadiness,
@@ -29,10 +31,16 @@ function environment(extra: Record<string, string | undefined> = {}) {
     CLERK_SECRET_KEY: "sk_test_0123456789abcdef",
     STAGING_TEST_TEACHER_CLERK_ID: "user_Teacher123",
     STAGING_TEST_STUDENT_CLERK_ID: "user_Student123",
+    STAGING_TEST_OTHER_STUDENT_CLERK_ID: "user_OtherStudent123",
+    STAGING_TEST_OTHER_TEACHER_CLERK_ID: "user_OtherTeacher123",
     STAGING_ACCEPTANCE_TEST_TEACHER_NAME:
       agentAcceptanceTeacherDisplayName,
     STAGING_ACCEPTANCE_TEST_STUDENT_NAME:
       agentAcceptanceStudentDisplayName,
+    STAGING_ACCEPTANCE_TEST_OTHER_STUDENT_NAME:
+      agentAcceptanceOtherStudentDisplayName,
+    STAGING_ACCEPTANCE_TEST_OTHER_TEACHER_NAME:
+      agentAcceptanceOtherTeacherDisplayName,
     GITHUB_RUN_ID: "12345678",
     GITHUB_RUN_ATTEMPT: "1",
     CDAS_DEPLOYMENT_ID: "a".repeat(40),

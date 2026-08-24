@@ -12,7 +12,15 @@ export type AgentCheck = Readonly<{ code: string; status: "PASS" | "FAIL" }>;
 
 export const agentAcceptanceTeacherDisplayName = "CDAS Staging Synthetic Teacher";
 export const agentAcceptanceStudentDisplayName = "CDAS Staging Synthetic Student";
+export const agentAcceptanceOtherStudentDisplayName =
+  "CDAS Staging Synthetic Other Student";
+export const agentAcceptanceOtherTeacherDisplayName =
+  "CDAS Staging Synthetic Other Teacher";
 export const agentAcceptanceEditedSummary = "固定合成验收摘要（教师人工修订）";
+export const agentAcceptanceEvidenceText =
+  "Synthetic Agent acceptance text evidence.";
+export const agentAcceptanceFeedbackText =
+  "Synthetic Agent acceptance teacher feedback.";
 export const agentAcceptanceAttestations = [
   "STAGING_SYNTHETIC_ONLY_ATTESTED", "STAGING_CLERK_INSTANCE_ATTESTED",
   "STAGING_DATABASE_ISOLATION_ATTESTED", "STAGING_HOSTING_ACCESS_ATTESTED",
@@ -40,6 +48,12 @@ export function agentAcceptanceNamespace(marker: string) {
 
 export function evaluateAgentAcceptanceReadiness(environment: AgentAcceptanceEnvironment) {
   const projectName = text(environment, "STAGING_VERCEL_PROJECT_NAME");
+  const identityIds = [
+    text(environment, "STAGING_TEST_TEACHER_CLERK_ID"),
+    text(environment, "STAGING_TEST_STUDENT_CLERK_ID"),
+    text(environment, "STAGING_TEST_OTHER_STUDENT_CLERK_ID"),
+    text(environment, "STAGING_TEST_OTHER_TEACHER_CLERK_ID"),
+  ];
   const checks = [
     check("AGENT_MARKER", (() => { try { return agentAcceptanceNamespace(text(environment, "STAGING_RUN_MARKER")).marker.length > 0; } catch { return false; } })()),
     check("AGENT_VERCEL_PREVIEW", isValidVercelProjectName(projectName) && isAllowedVercelPreviewBaseUrl(text(environment, "STAGING_BASE_URL"), projectName)),
@@ -51,8 +65,8 @@ export function evaluateAgentAcceptanceReadiness(environment: AgentAcceptanceEnv
     check("AGENT_MODEL", /^deepseek-[a-z0-9][a-z0-9._:-]*$/u.test(text(environment, "AI_MODEL"))),
     check("AGENT_APPROVAL_SECRET", Buffer.byteLength(text(environment, "AI_TOOL_APPROVAL_SECRET"), "utf8") >= 32),
     check("AGENT_CLERK_TEST", /^pk_test_[A-Za-z0-9_-]{10,}$/u.test(text(environment, "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY")) && /^sk_test_[A-Za-z0-9_-]{10,}$/u.test(text(environment, "CLERK_SECRET_KEY"))),
-    check("AGENT_IDENTITIES", /^user_[A-Za-z0-9]+$/u.test(text(environment, "STAGING_TEST_TEACHER_CLERK_ID")) && /^user_[A-Za-z0-9]+$/u.test(text(environment, "STAGING_TEST_STUDENT_CLERK_ID")) && text(environment, "STAGING_TEST_TEACHER_CLERK_ID") !== text(environment, "STAGING_TEST_STUDENT_CLERK_ID")),
-    check("AGENT_FIXED_DISPLAY_NAMES", text(environment, "STAGING_ACCEPTANCE_TEST_TEACHER_NAME") === agentAcceptanceTeacherDisplayName && text(environment, "STAGING_ACCEPTANCE_TEST_STUDENT_NAME") === agentAcceptanceStudentDisplayName),
+    check("AGENT_IDENTITIES", identityIds.every((id) => /^user_[A-Za-z0-9]+$/u.test(id)) && new Set(identityIds).size === 4),
+    check("AGENT_FIXED_DISPLAY_NAMES", text(environment, "STAGING_ACCEPTANCE_TEST_TEACHER_NAME") === agentAcceptanceTeacherDisplayName && text(environment, "STAGING_ACCEPTANCE_TEST_STUDENT_NAME") === agentAcceptanceStudentDisplayName && text(environment, "STAGING_ACCEPTANCE_TEST_OTHER_STUDENT_NAME") === agentAcceptanceOtherStudentDisplayName && text(environment, "STAGING_ACCEPTANCE_TEST_OTHER_TEACHER_NAME") === agentAcceptanceOtherTeacherDisplayName),
     check("AGENT_RUN_METADATA", /^[1-9][0-9]*$/u.test(text(environment, "GITHUB_RUN_ID")) && /^[1-9][0-9]*$/u.test(text(environment, "GITHUB_RUN_ATTEMPT")) && /^[a-f0-9]{40}$/u.test(text(environment, "CDAS_DEPLOYMENT_ID")) && /^[a-f0-9]{64}$/u.test(text(environment, "CDAS_SOURCE_FINGERPRINT"))),
     ...agentAcceptanceAttestations.map((name) => check(name, text(environment, name) === "true")),
   ];
