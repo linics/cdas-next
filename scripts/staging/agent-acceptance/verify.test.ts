@@ -50,6 +50,14 @@ describe("agent acceptance verifier", () => {
     expect(verificationSql).toContain("target.summary = $9");
     expect(verificationSql).toContain("cardinality(target.learning_objectives) > 0");
     expect(verificationSql).toContain("revision.summary <> target.summary");
+    expect(verificationSql).toContain(
+      "revision.task_book -> 'learningObjectives' = to_jsonb(revision.learning_objectives)",
+    );
+    expect(
+      verificationSql.match(
+        /revision\.learning_objectives = target\.learning_objectives/gu,
+      ),
+    ).toHaveLength(1);
     expect(verificationSql).toContain("manual_revision");
     expect(verificationSql).toContain("revision.version = 2");
     expect(verificationSql).toContain("audit.source = 'AGENT'");

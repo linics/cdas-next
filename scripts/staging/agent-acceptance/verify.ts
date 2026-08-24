@@ -330,10 +330,10 @@ SELECT
         AND "cdas_activity_task_book_v2_is_valid"(revision.task_book)
         AND btrim(revision.summary) <> ''
         AND revision.summary <> target.summary
-        AND revision.learning_objectives = target.learning_objectives
-        AND revision.task_instructions = target.task_instructions
-        AND revision.evidence_requirements = target.evidence_requirements
-        AND revision.feedback_criteria = target.feedback_criteria)
+        AND revision.task_book -> 'learningObjectives' = to_jsonb(revision.learning_objectives)
+        AND revision.task_book ->> 'taskInstructions' = revision.task_instructions
+        AND revision.task_book -> 'evidenceRequirements' = to_jsonb(revision.evidence_requirements)
+        AND revision.task_book -> 'feedbackCriteria' = to_jsonb(revision.feedback_criteria))
     AND
     (SELECT count(*) = 1
       FROM manual_revision AS revision
