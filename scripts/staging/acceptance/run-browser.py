@@ -470,6 +470,9 @@ def run() -> None:
             student.locator("#text-evidence").fill(evidence)
             student.get_by_role("button", name="保存草稿", exact=True).click()
             wait_text(student, "草稿已保存")
+            student.reload(wait_until="domcontentloaded")
+            assert_origin(student.url, remote)
+            student.get_by_text("第 3 阶段", exact=True).wait_for(state="visible")
             student.locator('input[type="file"]').set_input_files({
                 "name": attachment_filename,
                 "mimeType": "image/png",
