@@ -340,6 +340,10 @@ def main() -> None:
             approval.get_by_text("版本 2", exact=True).wait_for()
             approval.get_by_text(classroom, exact=True).wait_for()
             approval.get_by_text("未设置截止时间", exact=True).wait_for()
+            # The approval part can become visible before the assistant stream
+            # emits its final frame. Wait for the idle state so AI SDK can
+            # deterministically schedule the approved continuation request.
+            teacher.get_by_text("可使用", exact=True).wait_for(timeout=120_000)
             screenshot(teacher, directory, SCREENSHOTS[1])
             approval.get_by_role("button", name="确认并发布", exact=True).click()
             wait_text(teacher, "活动已发布")

@@ -97,7 +97,7 @@ pnpm e2e:real-model
 真实 DeepSeek Agent 验收使用另一个同样 Git 忽略、权限为 `0600` 的 `.env.model-acceptance.local`，文件只能包含变量名 `DEEPSEEK_API_KEY`。即使凭据存在，下面命令缺少精确费用确认参数时也会在任何远程变更或模型请求前退出：
 
 ```bash
-pnpm development:agent-acceptance -- \
+pnpm development:agent-acceptance \
   --model-cost-approved=synthetic-data-cost-approved
 ```
 

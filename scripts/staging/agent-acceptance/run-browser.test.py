@@ -31,6 +31,7 @@ class HostTests(unittest.TestCase):
     self.assertIn('get_by_text("草稿修订 2"', source)
     self.assertIn("signIn.create", source)
     self.assertIn('aria-label="发布确认"', source)
+    self.assertIn('get_by_text("可使用", exact=True).wait_for(timeout=120_000)', source)
     self.assertIn("level=1, exact=True", source)
     self.assertIn("full_page=True", source)
     self.assertIn("install_origin_scoped_bypass(context, base, bypass)", source)
