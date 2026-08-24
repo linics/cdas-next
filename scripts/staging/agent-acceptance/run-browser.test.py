@@ -20,6 +20,7 @@ class HostTests(unittest.TestCase):
   def test_source_contract_uses_deterministic_real_ui_surface(self):
     source = pathlib.Path(__file__).with_name("run-browser.py").read_text(encoding="utf8")
     self.assertIn("#activity-assistant-prompt", source)
+    self.assertEqual(source.count('#activity-assistant-prompt[data-hydrated="true"]'), 2)
     self.assertIn("交给助手整理", source)
     self.assertIn("继续核对活动并准备发布", source)
     self.assertIn("立即调用 create_activity_draft 工具", source)

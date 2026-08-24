@@ -14,6 +14,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 import {
@@ -75,6 +76,10 @@ type ActivityAssistantSession = ReturnType<
 const ActivityAssistantSessionContext = createContext<
   ActivityAssistantSession | null
 >(null);
+
+const subscribeToHydration = () => () => {};
+const hydratedSnapshot = () => true;
+const serverSnapshot = () => false;
 
 export function ActivityAssistantSessionProvider({
   children,
@@ -154,6 +159,11 @@ export function ActivityAssistant({
   classrooms,
   continuationOnly = false,
 }: ActivityAssistantProps) {
+  const hydrated = useSyncExternalStore(
+    subscribeToHydration,
+    hydratedSnapshot,
+    serverSnapshot,
+  );
   const [input, setInput] = useState("");
   const {
     messages,
@@ -372,6 +382,8 @@ export function ActivityAssistant({
         <label htmlFor="activity-assistant-prompt">描述活动构想或下一步</label>
         <textarea
           id="activity-assistant-prompt"
+          data-hydrated={hydrated}
+          disabled={!hydrated}
           value={input}
           maxLength={4_000}
           rows={4}
@@ -385,7 +397,10 @@ export function ActivityAssistant({
               停止
             </button>
           ) : null}
-          <button type="submit" disabled={busy || input.trim().length === 0}>
+          <button
+            type="submit"
+            disabled={!hydrated || busy || input.trim().length === 0}
+          >
             交给助手整理
           </button>
         </div>

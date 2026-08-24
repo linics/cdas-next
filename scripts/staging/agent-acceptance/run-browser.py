@@ -312,7 +312,9 @@ def main() -> None:
             checks.append({"code": "VERCEL_PROTECTION_BYPASS_SCOPED", "status": "PASS"})
             teacher.goto(f"{base}/teacher/activities/new", wait_until="domcontentloaded")
             assert_origin(teacher.url, base)
-            teacher.locator("#activity-assistant-prompt").fill(CREATE_PROMPT.format(title=title))
+            teacher.locator('#activity-assistant-prompt[data-hydrated="true"]').fill(
+                CREATE_PROMPT.format(title=title)
+            )
             teacher.get_by_role("button", name="交给助手整理").click()
             teacher.wait_for_url(re.compile(r"/teacher/activities/.+/preview"), timeout=120_000)
             assert_origin(teacher.url, base)
@@ -333,7 +335,9 @@ def main() -> None:
             teacher.get_by_text("草稿修订 2", exact=True).wait_for()
             teacher.get_by_text(EDITED_SUMMARY, exact=True).wait_for()
             teacher.get_by_role("heading", name="继续核对活动并准备发布").wait_for()
-            teacher.locator("#activity-assistant-prompt").fill(PUBLISH_PROMPT.format(classroom=classroom))
+            teacher.locator('#activity-assistant-prompt[data-hydrated="true"]').fill(
+                PUBLISH_PROMPT.format(classroom=classroom)
+            )
             teacher.get_by_role("button", name="交给助手整理").click()
             approval = teacher.locator('[role="group"][aria-label="发布确认"]')
             approval.get_by_role("button", name="确认并发布", exact=True).wait_for(timeout=120_000)

@@ -84,6 +84,10 @@ describe("ActivityAssistant", () => {
     expect(markup).toContain("把活动构想整理成可编辑草稿");
     expect(markup).toContain("没有你的明确确认就不会发布");
     expect(markup).toContain('maxLength="4000"');
+    expect(markup).toContain('data-hydrated="false"');
+    expect(markup).toMatch(
+      /<textarea[^>]*id="activity-assistant-prompt"[^>]*disabled=""/u,
+    );
     expect(markup).toContain("手动创建与编辑活动仍可正常使用");
     expect(markup).not.toContain("AI_TOOL_APPROVAL_SECRET");
   });
