@@ -273,7 +273,8 @@ export async function verifyDownloadedAcceptanceArtifact(
     if (entries.length !== 1 || !entries[0]?.isDirectory() || entries[0].name !== marker) throw new Error("DEVELOPMENT_INFRA_ARTIFACT_FINAL_MISSING");
     const final = object(JSON.parse(await readFile(path.join(candidate, entries[0].name, "final.json"), "utf8")));
     if (final.schema !== "staging-synthetic-acceptance-final.v1" || final.status !== "PASS" || final.realStudentDataAllowed !== false || final.productionDecision !== "NO_GO") throw new Error("DEVELOPMENT_INFRA_ARTIFACT_NOT_PASS");
-    await runner.run("node", ["--import", "tsx", path.join(process.cwd(), "scripts", "staging", "acceptance", "assert-final.ts")], { cwd: directory, env: { ...minimalCommandEnvironment(), ...context.environment, STAGING_RUN_MARKER: marker } });
+    const tsxLoader = import.meta.resolve("tsx");
+    await runner.run("node", ["--import", tsxLoader, path.join(process.cwd(), "scripts", "staging", "acceptance", "assert-final.ts")], { cwd: directory, env: { ...minimalCommandEnvironment(), ...context.environment, STAGING_RUN_MARKER: marker } });
   } catch (error) {
     if (error instanceof Error && error.message.startsWith("DEVELOPMENT_INFRA_")) throw error;
     throw new Error("DEVELOPMENT_INFRA_ARTIFACT_INVALID");

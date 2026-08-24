@@ -325,6 +325,7 @@ describe("provider fail-closed contracts", () => {
     await expect(verifyDownloadedAcceptanceArtifact(run, runner, { environment: {} })).resolves.toBeUndefined();
     expect(calls[0]).toContain("staging-synthetic-acceptance-123-2");
     expect(calls[0]?.[calls[0].indexOf("--dir") + 1]).toMatch(/output\/staging-acceptance$/u);
+    expect(calls[1]?.[1]).toMatch(/^file:/u);
   });
   it("briefly retries the exact artifact when GitHub has completed before download propagation", async () => {
     const run = { id: "123", attempt: 2, url: "https://github.com/o/r/actions/runs/123", headSha: "a".repeat(40) };
