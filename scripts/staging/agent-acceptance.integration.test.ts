@@ -145,7 +145,7 @@ async function queryVerification(input: {
 describeWithDatabase("staging Agent acceptance read-only verifier", () => {
   afterAll(async () => database?.$disconnect());
 
-  it("accepts only one marker draft and exactly three session runs", async () => {
+  it("accepts only one marker draft and exactly four session runs", async () => {
     if (!database) throw new Error("TEST_DATABASE_URL is required");
 
     const marker = `cdas-staging-agent-${randomUUID().replaceAll("-", "")}`;
@@ -196,19 +196,38 @@ describeWithDatabase("staging Agent acceptance read-only verifier", () => {
       ),
       { model },
     );
+    await finishActivityAssistantRun(
+      database,
+      context(
+        resources.teacher.id,
+        "AGENT",
+        new Date("2026-08-23T05:00:06.000Z"),
+      ),
+      { agentRunId: run1.id, status: "SUCCEEDED", failureCode: null },
+    );
+
+    const run2 = await startActivityAssistantRun(
+      database,
+      context(
+        resources.teacher.id,
+        "UI",
+        new Date("2026-08-23T05:00:10.000Z"),
+      ),
+      { model },
+    );
     const saved = await saveActivityDraft(
       database,
       context(
         resources.teacher.id,
         "AGENT",
-        new Date("2026-08-23T05:00:10.000Z"),
+        new Date("2026-08-23T05:00:12.000Z"),
       ),
       {
         draftId: null,
         expectedVersion: null,
         desiredStatus: "READY_FOR_PREVIEW",
         content: generatedTaskBook(namespace.activityTitle),
-        agentRunId: run1.id,
+        agentRunId: run2.id,
         idempotencyKey: idempotencyKey("draft"),
       },
     );
@@ -232,7 +251,7 @@ describeWithDatabase("staging Agent acceptance read-only verifier", () => {
       },
     );
 
-    const run2 = await startActivityAssistantRun(
+    const run3 = await startActivityAssistantRun(
       database,
       context(
         resources.teacher.id,
@@ -248,10 +267,10 @@ describeWithDatabase("staging Agent acceptance read-only verifier", () => {
         "AGENT",
         new Date("2026-08-23T05:00:25.000Z"),
       ),
-      { agentRunId: run2.id, status: "SUCCEEDED", failureCode: null },
+      { agentRunId: run3.id, status: "SUCCEEDED", failureCode: null },
     );
 
-    const run3 = await startActivityAssistantRun(
+    const run4 = await startActivityAssistantRun(
       database,
       context(
         resources.teacher.id,
@@ -272,7 +291,7 @@ describeWithDatabase("staging Agent acceptance read-only verifier", () => {
         expectedDraftVersion: 2,
         classroomId: namespace.classroomId,
         dueAt: null,
-        agentRunId: run3.id,
+        agentRunId: run4.id,
         idempotencyKey: idempotencyKey("prepare"),
       },
     );
@@ -469,7 +488,7 @@ describeWithDatabase("staging Agent acceptance read-only verifier", () => {
       status: "FAIL",
     });
     expect(duplicateDraft).toContainEqual({
-      code: "EXACT_THREE_AGENT_RUNS",
+      code: "EXACT_FOUR_AGENT_RUNS",
       status: "PASS",
     });
 
@@ -494,7 +513,7 @@ describeWithDatabase("staging Agent acceptance read-only verifier", () => {
 
     const tampered = evaluateAgentVerification(await queryVerification(scope));
     expect(tampered).toContainEqual({
-      code: "EXACT_THREE_AGENT_RUNS",
+      code: "EXACT_FOUR_AGENT_RUNS",
       status: "FAIL",
     });
   });
