@@ -92,6 +92,17 @@ pnpm e2e:real-model
 
 新增的手动 `protected staging Go/No-Go` workflow 只验证已经存在的隔离 staging：它 fail-closed 检查 test Clerk、远端 pooled/runtime 与 direct PostgreSQL URL、生产 build、只读 migration metadata、schema drift 和不连数据库的 `/api/health`，再聚合为脱敏的机器可读结论。它不会部署、执行 migration、写 fixture、创建账号或调用模型。即使自动检查全部通过，结论也只允许 synthetic staging；`realStudentDataAllowed` 固定为 `false`、`productionDecision` 固定为 `NO_GO`。配置项、人工 attestations、证据、回滚边界和当前仍无外部凭据的 `NO_GO` 见 [STAGING.md](./STAGING.md)。
 
+开发期测试基础设施由 `pnpm development:infra` 从仓库根目录、Git 忽略且权限为 `0600` 的 `.env.staging.local` 自动收敛。该命令只接受文件中列出的变量名，不回显值；它核验 Vercel 仍为 Hobby、Private Blob 不含长期 token、Clerk 为 development instance、Neon 为独立 schema-only staging，并部署 AI-disabled Preview、配置合成账号与 GitHub Environment、运行完整手工闭环。Vercel 构建不会执行 `db:deploy`，迁移只由此受控命令使用 Neon direct URL 单独执行。
+
+真实 DeepSeek Agent 验收使用另一个同样 Git 忽略、权限为 `0600` 的 `.env.model-acceptance.local`，文件只能包含变量名 `DEEPSEEK_API_KEY`。即使凭据存在，下面命令缺少精确费用确认参数时也会在任何远程变更或模型请求前退出：
+
+```bash
+pnpm development:agent-acceptance -- \
+  --model-cost-approved=synthetic-data-cost-approved
+```
+
+该命令先重新核验 Hobby、Private Blob、Clerk、Neon、源码 SHA 与 AI-enabled health，再把费用闸门作为最后一项配置并精确派发 `staging-agent-acceptance`。成功后会下载并重新验证脱敏 artifact；无论成功或失败，`finally` 都会先关闭 GitHub 费用闸门、删除 GitHub 与 Vercel 分支级模型/审批 secrets，然后部署并核验 AI-disabled Preview。命令参数只是技术上的 fail-closed 门槛，仍必须在每次执行前取得本项目约定的单次人工费用授权。
+
 `db:test`、`test:db` 与 `db:test:diff` 只接受独立的 `TEST_DATABASE_URL`，并拒绝与 `DATABASE_URL`、`DIRECT_URL` 或文档默认开发库指向同一 PostgreSQL 目标；不会把 append-only fixture 写进开发库。缺少或不安全的测试库 URL 会明确失败，不会以跳过测试伪装成绿色结果。数据库测试覆盖成员关系、ActionIntent 状态机、Release 与唯一已执行发布意图的绑定、精确快照及规范化 SHA-256、显式关闭意图与前向生命周期、不可变草稿、提交和反馈修订、AgentRun 单向终态与不可擦除 provenance；命令集成测试覆盖越权、确认换参、串行与并发幂等、空证据、迟交、重交使旧反馈确认失效、关闭后学生只读且教师仍可反馈，以及 `AI_PROVIDER_DISABLED=1` 下不依赖 AgentRun 的完整手工闭环。助手测试另行覆盖严格消息合同、AgentRun 生命周期、工具来源、签名审批续传、拒绝、伪造签名、跨新运行重放、工具前模型中断零写入，以及写入后映射或 provider step 失败仍保留已提交结果的成功 provenance。
 
 生产构建显式使用 Next.js 官方 `--webpack` 选项。当前依赖图在 Next.js 16.3.1 的默认 Turbopack build 中会无诊断停滞，而同一源码的 Webpack build 能完成编译、类型检查、静态页面生成和构建追踪；升级 Next.js 或 AI SDK 后应重新验证默认 bundler。

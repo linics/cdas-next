@@ -255,6 +255,29 @@ describe("provider fail-closed contracts", () => {
     await multi.assertProject({ owner: "o", name: "r", branch: "codex/x", sha: "a".repeat(40), repositoryId: 1 });
     await expect(multi.ensurePreviewEnvironment({ DATABASE_URL: "value" })).rejects.toThrow("DEVELOPMENT_INFRA_VERCEL_ENV_RESPONSE_UNSAFE");
   });
+  it("removes only paid secrets from the exact preview branch", async () => {
+    const requests: Request[] = [];
+    const project = { name: "cdas-next", link: { type: "github", repoId: 1 }, buildCommand: null, ssoProtection: { deploymentType: "preview" }, targets: hobbyTargets, protectionBypass: {} };
+    const deepseek = { id: "deepseek", key: "DEEPSEEK_API_KEY", type: "encrypted", target: ["preview"], gitBranch: "codex/x" };
+    const approval = { id: "approval", key: "AI_TOOL_APPROVAL_SECRET", type: "encrypted", target: "preview", gitBranch: "codex/x" };
+    const retained = [
+      { id: "database", key: "DATABASE_URL", type: "encrypted", target: ["preview"], gitBranch: "codex/x" },
+      { ...deepseek, id: "other", gitBranch: "codex/other" },
+    ];
+    const client = new VercelApiProvider("t", "cdas-next", undefined, queuedFetch([
+      response(project),
+      response({ envs: [deepseek, approval, ...retained] }),
+      response({}),
+      response({}),
+      response({ envs: retained }),
+    ], requests));
+    await client.assertProject({ owner: "o", name: "r", branch: "codex/x", sha: "a".repeat(40), repositoryId: 1 });
+    await expect(client.removePaidPreviewEnvironment()).resolves.toBeUndefined();
+    expect(requests.filter((request) => request.method === "DELETE").map((request) => request.url)).toEqual([
+      "https://api.vercel.com/v9/projects/cdas-next/env/deepseek",
+      "https://api.vercel.com/v9/projects/cdas-next/env/approval",
+    ]);
+  });
   it("accepts Vercel bypass only when the derived secret is a protectionBypass map key", async () => {
     const secret = "B".repeat(32);
     const project = { name: "cdas-next", link: { type: "github", repoId: 1 }, buildCommand: null, ssoProtection: { deploymentType: "preview" }, targets: hobbyTargets, protectionBypass: {} };

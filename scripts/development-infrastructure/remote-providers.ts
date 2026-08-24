@@ -60,6 +60,24 @@ export class VercelApiProvider implements VercelProvider {
       if ((!match[0] && (!Array.isArray(response.failed) || response.failed.length !== 0)) || configured.key !== key || configured.type !== "encrypted" || configured.gitBranch !== this.branch || !isSinglePreviewTarget(configured.target)) throw new Error("DEVELOPMENT_INFRA_VERCEL_ENV_RESPONSE_UNSAFE");
     }
   }
+  async removePaidPreviewEnvironment(): Promise<void> {
+    if (!this.branch) throw new Error("DEVELOPMENT_INFRA_VERCEL_PROJECT_NOT_ASSERTED");
+    const paidKeys = new Set(["DEEPSEEK_API_KEY", "AI_TOOL_APPROVAL_SECRET"]);
+    const list = async () => {
+      const value = object(await api(this.fetcher, this.endpoint(`/v10/projects/${encodeURIComponent(this.projectName)}/env`), this.token));
+      if (!Array.isArray(value.envs)) throw new Error("DEVELOPMENT_INFRA_PROVIDER_SCHEMA_INVALID");
+      return value.envs.map(object);
+    };
+    const matches = (await list()).filter((entry) => paidKeys.has(String(entry.key)) && entry.gitBranch === this.branch && isSinglePreviewTarget(entry.target));
+    for (const key of paidKeys) {
+      if (matches.filter((entry) => entry.key === key).length > 1) throw new Error("DEVELOPMENT_INFRA_VERCEL_ENV_AMBIGUOUS");
+    }
+    for (const entry of matches) {
+      await api(this.fetcher, this.endpoint(`/v9/projects/${encodeURIComponent(this.projectName)}/env/${encodeURIComponent(string(entry.id))}`), this.token, "DELETE");
+    }
+    const remaining = (await list()).filter((entry) => paidKeys.has(String(entry.key)) && entry.gitBranch === this.branch && isSinglePreviewTarget(entry.target));
+    if (remaining.length !== 0) throw new Error("DEVELOPMENT_INFRA_VERCEL_PAID_ENV_NOT_REMOVED");
+  }
   async ensureProtectionBypass(secret: string): Promise<void> {
     if (!/^[A-Za-z0-9]{32}$/u.test(secret)) throw new Error("DEVELOPMENT_INFRA_VERCEL_BYPASS_INVALID");
     const contains = (value: unknown): boolean => Boolean(value && typeof value === "object" && !Array.isArray(value) && Object.prototype.hasOwnProperty.call(value, secret));
