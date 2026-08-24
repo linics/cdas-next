@@ -23,6 +23,8 @@ class HostTests(unittest.TestCase):
     self.assertIn("交给助手整理", source)
     self.assertIn("继续核对活动并准备发布", source)
     self.assertIn("立即调用 create_activity_draft 工具", source)
+    self.assertIn("三个数组各至少包含一个非空条目", source)
+    self.assertIn('name="教师反馈将关注",level=3,exact=True', source)
     self.assertIn("#activity-summary", source)
     self.assertIn("固定合成验收摘要（教师人工修订）", source)
     self.assertIn("保存并标记可预览", source)

@@ -111,7 +111,7 @@ CDAS 助手是嵌入产品的上下文助手，不是独立聊天机器人，也
 
 这个场景的官方 AI SDK message session 只在覆盖 `/teacher/activities/new` 与精确预览页的共享客户端 layout 内存中续接。草稿工具返回的 draft ID 与站内路径精确一致时才导航；预览页继续使用同一 session 提出签名发布 approval。对话、prompt、ticket 或 approval 签名不写入 URL、localStorage 或业务数据库。直接进入或刷新预览页不会恢复助手对话，教师仍可使用既有手工发布面板完成闭环。
 
-第一次外部验收必须由独立、受保护且明确批准模型费用的 `staging-agent-acceptance` workflow 完成。它只能使用预留的 Clerk test identity、marker 派生 namespace 和固定合成正文；教师 ticket 只可在最终 staging origin 精确锁定后签发，关键导航不得跨 origin。任何 deployment、DB、Clerk、模型、approval secret、同 run 证据或人工 attestation 不匹配都必须在模型或业务写入前得到 `NO_GO`。正常发布账本必须证明 marker 标题下只有一份草稿，且三次 `SUCCEEDED` AgentRun 分别对应草稿写入、无业务写入的 approval 提议和教师确认后的发布执行；最终证据 schema 与截图索引缺少或畸形同样必须 `NO_GO`。
+第一次外部验收必须由独立、受保护且明确批准模型费用的 `staging-agent-acceptance` workflow 完成。它只能使用预留的 Clerk test identity、marker 派生 namespace 和固定合成主题；marker 标题必须精确，模型生成的六段正文须全部非空，但不得把生成文本逐字照抄 prompt 当成产品成功条件。教师 ticket 只可在最终 staging origin 精确锁定后签发，关键导航不得跨 origin。任何 deployment、DB、Clerk、模型、approval secret、同 run 证据或人工 attestation 不匹配都必须在模型或业务写入前得到 `NO_GO`。正常发布账本必须证明 marker 标题下只有一份草稿，且三次 `SUCCEEDED` AgentRun 分别对应草稿写入、无业务写入的 approval 提议和教师确认后的发布执行；最终证据 schema 与截图索引缺少或畸形同样必须 `NO_GO`。
 
 如果这个场景不能稳定通过正常、拒绝确认、无权限、重复调用和模型不可用测试，不增加第二个 Agent 场景。
 

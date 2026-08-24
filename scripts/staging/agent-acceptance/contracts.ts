@@ -12,13 +12,6 @@ export type AgentCheck = Readonly<{ code: string; status: "PASS" | "FAIL" }>;
 
 export const agentAcceptanceTeacherDisplayName = "CDAS Staging Synthetic Teacher";
 export const agentAcceptanceStudentDisplayName = "CDAS Staging Synthetic Student";
-export const agentAcceptanceActivityContent = {
-  summary: "固定合成验收摘要",
-  learningObjectives: ["识别合成证据"],
-  taskInstructions: "提交固定合成内容",
-  evidenceRequirements: ["合成文本"],
-  feedbackCriteria: ["固定标准"],
-} as const;
 export const agentAcceptanceEditedSummary = "固定合成验收摘要（教师人工修订）";
 export const agentAcceptanceAttestations = [
   "STAGING_SYNTHETIC_ONLY_ATTESTED", "STAGING_CLERK_INSTANCE_ATTESTED",

@@ -4,7 +4,6 @@ import { pathToFileURL } from "node:url";
 import { Client } from "pg";
 
 import {
-  agentAcceptanceActivityContent,
   agentAcceptanceEditedSummary,
   agentAcceptanceNamespace,
   stableAgentAcceptanceError,
@@ -282,18 +281,31 @@ SELECT
         AND target.version = 2
         AND target.sealed_at IS NOT NULL
         AND target.sealed_at = target.published_at
-        AND target.summary = $14
-        AND target.learning_objectives = ARRAY[$10]::text[]
-        AND target.task_instructions = $11
-        AND target.evidence_requirements = ARRAY[$12]::text[]
-        AND target.feedback_criteria = ARRAY[$13]::text[])
+        AND target.summary = $9
+        AND btrim(target.task_instructions) <> ''
+        AND cardinality(target.learning_objectives) > 0
+        AND cardinality(target.evidence_requirements) > 0
+        AND cardinality(target.feedback_criteria) > 0
+        AND NOT EXISTS (
+          SELECT 1 FROM unnest(target.learning_objectives) AS item
+          WHERE btrim(item) = ''
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM unnest(target.evidence_requirements) AS item
+          WHERE btrim(item) = ''
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM unnest(target.feedback_criteria) AS item
+          WHERE btrim(item) = ''
+        ))
   ) AS draft,
   (
     (SELECT count(*) = 1
       FROM agent_revision AS revision
       JOIN target ON target.id = revision.draft_id
       WHERE revision.title = target.title
-        AND revision.summary = $9
+        AND btrim(revision.summary) <> ''
+        AND revision.summary <> target.summary
         AND revision.learning_objectives = target.learning_objectives
         AND revision.task_instructions = target.task_instructions
         AND revision.evidence_requirements = target.evidence_requirements
@@ -303,7 +315,7 @@ SELECT
       FROM manual_revision AS revision
       JOIN target ON target.id = revision.draft_id
       WHERE revision.title = target.title
-        AND revision.summary = $14
+        AND revision.summary = $9
         AND revision.learning_objectives = target.learning_objectives
         AND revision.task_instructions = target.task_instructions
         AND revision.evidence_requirements = target.evidence_requirements
@@ -528,11 +540,6 @@ async function main(): Promise<void> {
       required("AI_MODEL"),
       browserWindow.startedAt,
       browserWindow.completedAt,
-      agentAcceptanceActivityContent.summary,
-      agentAcceptanceActivityContent.learningObjectives[0],
-      agentAcceptanceActivityContent.taskInstructions,
-      agentAcceptanceActivityContent.evidenceRequirements[0],
-      agentAcceptanceActivityContent.feedbackCriteria[0],
       agentAcceptanceEditedSummary,
     ]);
     await database.query("ROLLBACK");

@@ -17,7 +17,6 @@ import { publishActivityRelease } from "../../src/server/commands/publish-activi
 import { saveActivityDraft } from "../../src/server/commands/save-activity-draft";
 import { createDatabaseClient } from "../../src/server/db/client";
 import {
-  agentAcceptanceActivityContent,
   agentAcceptanceEditedSummary,
   agentAcceptanceNamespace,
   agentAcceptanceStudentDisplayName,
@@ -36,6 +35,13 @@ const database = databaseUrl ? createDatabaseClient(databaseUrl) : null;
 const model = "openai/test-agent";
 const windowStartedAt = new Date("2026-08-23T05:00:00.000Z");
 const windowCompletedAt = new Date("2026-08-23T05:01:00.000Z");
+const generatedContent = {
+  summary: "模型生成的合成活动摘要",
+  learningObjectives: ["辨识合成资料中的证据"],
+  taskInstructions: "阅读资料并提交你的判断依据",
+  evidenceRequirements: ["一段非空合成文本"],
+  feedbackCriteria: ["证据是否支持判断"],
+} as const;
 
 function context(
   actorId: string,
@@ -75,11 +81,6 @@ async function queryVerification(input: {
       model,
       windowStartedAt.toISOString(),
       windowCompletedAt.toISOString(),
-      agentAcceptanceActivityContent.summary,
-      agentAcceptanceActivityContent.learningObjectives[0],
-      agentAcceptanceActivityContent.taskInstructions,
-      agentAcceptanceActivityContent.evidenceRequirements[0],
-      agentAcceptanceActivityContent.feedbackCriteria[0],
       agentAcceptanceEditedSummary,
     ]);
     await client.query("ROLLBACK");
@@ -133,17 +134,11 @@ describeWithDatabase("staging Agent acceptance read-only verifier", () => {
         content: {
           schemaVersion: 1,
           title: namespace.activityTitle,
-          summary: agentAcceptanceActivityContent.summary,
-          learningObjectives: [
-            agentAcceptanceActivityContent.learningObjectives[0],
-          ],
-          taskInstructions: agentAcceptanceActivityContent.taskInstructions,
-          evidenceRequirements: [
-            agentAcceptanceActivityContent.evidenceRequirements[0],
-          ],
-          feedbackCriteria: [
-            agentAcceptanceActivityContent.feedbackCriteria[0],
-          ],
+          summary: generatedContent.summary,
+          learningObjectives: [...generatedContent.learningObjectives],
+          taskInstructions: generatedContent.taskInstructions,
+          evidenceRequirements: [...generatedContent.evidenceRequirements],
+          feedbackCriteria: [...generatedContent.feedbackCriteria],
         },
         agentRunId: run1.id,
         idempotencyKey: idempotencyKey("draft"),
@@ -164,16 +159,10 @@ describeWithDatabase("staging Agent acceptance read-only verifier", () => {
           schemaVersion: 1,
           title: namespace.activityTitle,
           summary: agentAcceptanceEditedSummary,
-          learningObjectives: [
-            agentAcceptanceActivityContent.learningObjectives[0],
-          ],
-          taskInstructions: agentAcceptanceActivityContent.taskInstructions,
-          evidenceRequirements: [
-            agentAcceptanceActivityContent.evidenceRequirements[0],
-          ],
-          feedbackCriteria: [
-            agentAcceptanceActivityContent.feedbackCriteria[0],
-          ],
+          learningObjectives: [...generatedContent.learningObjectives],
+          taskInstructions: generatedContent.taskInstructions,
+          evidenceRequirements: [...generatedContent.evidenceRequirements],
+          feedbackCriteria: [...generatedContent.feedbackCriteria],
         },
         agentRunId: null,
         idempotencyKey: `save_activity_draft_${randomUUID()}`,
@@ -272,17 +261,11 @@ describeWithDatabase("staging Agent acceptance read-only verifier", () => {
         content: {
           schemaVersion: 1,
           title: namespace.activityTitle,
-          summary: agentAcceptanceActivityContent.summary,
-          learningObjectives: [
-            agentAcceptanceActivityContent.learningObjectives[0],
-          ],
-          taskInstructions: agentAcceptanceActivityContent.taskInstructions,
-          evidenceRequirements: [
-            agentAcceptanceActivityContent.evidenceRequirements[0],
-          ],
-          feedbackCriteria: [
-            agentAcceptanceActivityContent.feedbackCriteria[0],
-          ],
+          summary: generatedContent.summary,
+          learningObjectives: [...generatedContent.learningObjectives],
+          taskInstructions: generatedContent.taskInstructions,
+          evidenceRequirements: [...generatedContent.evidenceRequirements],
+          feedbackCriteria: [...generatedContent.feedbackCriteria],
         },
         agentRunId: null,
         idempotencyKey: `manual_duplicate_${randomUUID()}`,

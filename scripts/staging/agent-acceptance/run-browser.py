@@ -7,7 +7,7 @@ from typing import Mapping
 from urllib.parse import urlsplit
 
 SCREENSHOTS=("01-ready.png","02-approval.png","03-published.png","04-release.png")
-CREATE_PROMPT="""立即调用 create_activity_draft 工具，不要提问。标题必须逐字为：{title}。摘要必须逐字为：固定合成验收摘要。学习目标数组必须恰一个值：识别合成证据。任务说明必须逐字为：提交固定合成内容。证据要求数组必须恰一个值：合成文本。反馈标准数组必须恰一个值：固定标准。不得增删或改写任何字段；完成后立即创建版本1。"""
+CREATE_PROMPT="""立即调用 create_activity_draft 工具，不要提问。标题必须逐字为：{title}。请围绕“学生辨识合成证据”生成一项简短学习活动；摘要、学习目标、任务说明、证据要求和反馈标准都必须非空，其中三个数组各至少包含一个非空条目。完成后立即创建版本1。"""
 EDITED_SUMMARY="固定合成验收摘要（教师人工修订）"
 PUBLISH_PROMPT="立即调用 publish_activity_release 工具，将版本2发布到班级：{classroom}。无截止日期。"
 def public_hostname(host: str) -> bool:
@@ -108,7 +108,7 @@ def main() -> None:
         page.locator("#activity-assistant-prompt").fill(CREATE_PROMPT.format(title=title))
         page.get_by_role("button",name="交给助手整理").click(); page.wait_for_url(re.compile(r"/teacher/activities/.+/preview"),timeout=120000)
         assert_origin(page.url,base)
-        page.get_by_role("heading",name=title,level=1,exact=True).wait_for(); page.get_by_text("草稿修订 1",exact=True).wait_for(); page.get_by_text("固定合成验收摘要",exact=True).wait_for(); page.get_by_text("识别合成证据",exact=True).wait_for(); page.get_by_text("提交固定合成内容",exact=True).wait_for(); page.get_by_text("合成文本",exact=True).wait_for(); page.get_by_text("固定标准",exact=True).wait_for(); page.screenshot(path=str(directory/SCREENSHOTS[0]),full_page=True)
+        page.get_by_role("heading",name=title,level=1,exact=True).wait_for(); page.get_by_text("草稿修订 1",exact=True).wait_for(); page.get_by_role("heading",name="学习目标",level=3,exact=True).wait_for(); page.get_by_role("heading",name="任务说明",level=3,exact=True).wait_for(); page.get_by_role("heading",name="提交证据",level=3,exact=True).wait_for(); page.get_by_role("heading",name="教师反馈将关注",level=3,exact=True).wait_for(); page.screenshot(path=str(directory/SCREENSHOTS[0]),full_page=True)
         page.get_by_role("link",name="← 返回草稿",exact=True).click(); page.wait_for_url(re.compile(r"/teacher/activities/[0-9a-f-]+$"),timeout=30000); assert_origin(page.url,base)
         page.locator("#activity-summary").fill(EDITED_SUMMARY); page.get_by_role("button",name="保存并标记可预览",exact=True).click(); preview=page.get_by_role("link",name=re.compile("查看发布预览")); preview.wait_for(state="visible"); preview.click(); assert_origin(page.url,base)
         page.get_by_role("heading",name=title,level=1,exact=True).wait_for(); page.get_by_text("草稿修订 2",exact=True).wait_for(); page.get_by_text(EDITED_SUMMARY,exact=True).wait_for()
