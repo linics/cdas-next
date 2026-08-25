@@ -1,4 +1,3 @@
-// SHA-256 exact catalog identity plus definition, PostgreSQL 17 final state.
 export const historyProtectionDefinitionManifest: Readonly<Record<string, string>> = {
   "constraint:public.action_audits.action_audits_agent_run_id_fkey": "49e11e62d2d887dc2b9e159ecd82e263b7385c7df8c6cce4a828bd82b8aa45dd",
   "constraint:public.action_intents.action_intents_agent_run_id_fkey": "85024c4fde5c4e571066e18de35155774f3cdb910f2dd9858a9864cd310cec56",
@@ -44,7 +43,7 @@ export const historyProtectionDefinitionManifest: Readonly<Record<string, string
   "function:public.assert_submission_evidence_indexes(submission_uuid uuid, evidence_indexes integer[])": "f0ea73f7b890fea9751dd3974d3325617cf0d0de872169088d8b7f86bca5982e",
   "function:public.assert_submission_phase_scope(release_uuid uuid, student_uuid uuid, phase_number integer)": "ab70d0ef94b35d35cb2f849e48b45afb36f0023369ac5f3736c0e6c175e49877",
   "function:public.assert_submission_subject(release_uuid uuid, student_uuid uuid, group_uuid uuid, phase_number integer)": "bb6fdae8522b1c558512496dc86938a0dae4a92853153ca0a16d7420034f1e6b",
-  "function:public.assert_teacher_evaluation_outcomes(target_submission_revision_id uuid, outcomes jsonb)": "fb05f7e27efaeece357970362d666fc8be3bcb8a47a51c6510295047d9671c05",
+  "function:public.assert_teacher_evaluation_outcomes(target_submission_revision_id uuid, outcomes jsonb)": "cfc75a68ccd4831e04781820d42d1e3cfe11bc201c573a87115e4cd928021918",
   "function:public.assert_teacher_evaluation_target_current(target_submission_revision_id uuid, target_teacher_id uuid)": "e2f56594dcbac1677bbd5f9319295c448afa2972f64a02702baef2b0abe39755",
   "function:public.assert_teacher_feedback_target_current(target_submission_revision_id uuid, target_teacher_id uuid)": "00a44016f5f83d4287141b21bcc4bc4ba37e3076b3493032232120c7887ad989",
   "function:public.cdas_activity_content_v1_canonical(title_value text, summary_value text, learning_objectives_value text[], task_instructions_value text, evidence_requirements_value text[], feedback_criteria_value text[])": "996da96f6d278733d85ebcdd86b4597af4499428ec54a6c4f7e1ecd13d7e72ed",
