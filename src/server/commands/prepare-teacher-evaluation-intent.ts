@@ -65,7 +65,7 @@ export class PrepareTeacherEvaluationIntentError extends Error {
 }
 
 const commandName = "prepare_teacher_evaluation_intent";
-const retryablePrismaCodes = new Set(["P2002", "P2024", "P2028", "P2034"]);
+const retryablePrismaCodes = new Set(["P2002", "P2034"]);
 
 function isZodError(error: unknown): boolean {
   return (
@@ -384,6 +384,9 @@ export async function prepareTeacherEvaluationIntent(
       const retryable =
         error instanceof Prisma.PrismaClientKnownRequestError &&
         retryablePrismaCodes.has(error.code);
+      const timedOut =
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        (error.code === "P2024" || error.code === "P2028");
 
       if (retryable && attempt < 3) {
         continue;
@@ -392,7 +395,7 @@ export async function prepareTeacherEvaluationIntent(
       const domainError =
         error instanceof PrepareTeacherEvaluationIntentError
           ? error
-          : retryable
+          : retryable || timedOut
             ? new PrepareTeacherEvaluationIntentError("CONCURRENT_WRITE")
             : isZodError(error)
               ? new PrepareTeacherEvaluationIntentError("INVALID_EVALUATION")

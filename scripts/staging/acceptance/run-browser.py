@@ -312,6 +312,8 @@ def evaluation_action_failure_code(page: Page, *, save: bool) -> str | None:
             if save
             else "STAGING_ACCEPTANCE_EVALUATION_PREPARE_FAILED"
         )
+    if page.get_by_role("button", name="正在准备…").count():
+        return "STAGING_ACCEPTANCE_EVALUATION_PREPARE_HUNG"
     return None
 
 
@@ -319,15 +321,12 @@ def confirm_evaluation(page: Page) -> None:
     title = "确认并保存量规评价"
     dialog = page.get_by_role("dialog").filter(has_text=title)
     try:
-        dialog.or_(page.get_by_role("alert")).wait_for(state="visible", timeout=30_000)
+        dialog.wait_for(state="visible", timeout=45_000)
     except PlaywrightError as error:
-        code = evaluation_action_failure_code(page, save=False)
-        raise AcceptanceFailure(code or "STAGING_ACCEPTANCE_EVALUATION_CONFIRM_MISSING") from error
-    if not dialog.is_visible():
         raise AcceptanceFailure(
             evaluation_action_failure_code(page, save=False)
-            or "STAGING_ACCEPTANCE_EVALUATION_PREPARE_FAILED"
-        )
+            or "STAGING_ACCEPTANCE_EVALUATION_CONFIRM_MISSING"
+        ) from error
     dialog.get_by_role("button", name=title, exact=True).click()
     try:
         dialog.wait_for(state="hidden", timeout=30_000)
@@ -341,7 +340,7 @@ def confirm_evaluation(page: Page) -> None:
 def wait_evaluation_history(page: Page, summary: str) -> None:
     history = page.locator('[aria-labelledby^="evaluation-history-"]').last
     try:
-        history.get_by_text(summary, exact=True).or_(page.get_by_role("alert")).wait_for(
+        history.get_by_text(summary, exact=True).wait_for(
             state="visible",
             timeout=30_000,
         )

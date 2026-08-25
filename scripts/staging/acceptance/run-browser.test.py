@@ -146,6 +146,7 @@ class BrowserContractTests(unittest.TestCase):
         self.assertIn("STAGING_ACCEPTANCE_SUBMISSION_LINK_MISSING", source)
         self.assertIn("STAGING_ACCEPTANCE_PLAYWRIGHT_TIMEOUT", source)
         self.assertIn("STAGING_ACCEPTANCE_EVALUATION_PREPARE_FAILED", source)
+        self.assertIn("STAGING_ACCEPTANCE_EVALUATION_PREPARE_HUNG", source)
         self.assertIn("STAGING_ACCEPTANCE_EVALUATION_SAVE_FAILED", source)
         self.assertIn("STAGING_ACCEPTANCE_EVALUATION_CHECKPOINT_MISSING", source)
         self.assertIn("STAGING_ACCEPTANCE_EVALUATION_CONFIRM_MISSING", source)
