@@ -403,13 +403,15 @@ def wait_shared_teacher_review(
     activity_href: str,
     feedback_text: str,
     evaluation_text: str,
+    release_not_visible_code: str,
+    review_not_visible_code: str,
 ) -> None:
     last_error: BaseException | None = None
     for attempt in range(6):
         response = page.goto(f"{remote}{activity_href}", wait_until="domcontentloaded")
         assert_origin(page.url, remote)
         if not response or response.status != 200:
-            raise AcceptanceFailure("STAGING_ACCEPTANCE_STUDENT_RELEASE_NOT_VISIBLE")
+            raise AcceptanceFailure(release_not_visible_code)
         try:
             page.get_by_text(feedback_text, exact=False).last.wait_for(state="visible", timeout=10_000)
             page.get_by_text("按反馈修改并重交", exact=False).last.wait_for(state="visible", timeout=10_000)
@@ -422,7 +424,7 @@ def wait_shared_teacher_review(
             if attempt == 5:
                 break
             page.wait_for_timeout(2_000)
-    raise AcceptanceFailure("STAGING_ACCEPTANCE_STUDENT_FEEDBACK_NOT_VISIBLE") from last_error
+    raise AcceptanceFailure(review_not_visible_code) from last_error
 
 
 def fill_activity(page: Page, title: str, summary: str) -> None:
@@ -745,15 +747,26 @@ def run() -> None:
             assert_origin(other_student.url, remote)
             if not visible or visible.status != 200:
                 raise AcceptanceFailure("STAGING_ACCEPTANCE_GROUPMATE_RELEASE_NOT_VISIBLE")
-            other_student.get_by_role("heading", name=title, exact=True).wait_for(state="visible")
-            other_student.get_by_role("heading", name=group_name, exact=True).wait_for(state="visible")
-            wait_text(other_student, evidence)
+            wait_visible(
+                other_student.get_by_role("heading", name=title, exact=True),
+                "STAGING_ACCEPTANCE_GROUPMATE_RELEASE_TITLE_MISSING",
+            )
+            wait_visible(
+                other_student.get_by_role("heading", name=group_name, exact=True),
+                "STAGING_ACCEPTANCE_GROUPMATE_GROUP_MISSING",
+            )
+            wait_visible(
+                other_student.get_by_text(evidence, exact=False).last,
+                "STAGING_ACCEPTANCE_GROUPMATE_EVIDENCE_NOT_VISIBLE",
+            )
             wait_shared_teacher_review(
                 other_student,
                 remote=remote,
                 activity_href=activity_href,
                 feedback_text=feedback_text,
                 evaluation_text=evaluation_text,
+                release_not_visible_code="STAGING_ACCEPTANCE_GROUPMATE_RELEASE_NOT_VISIBLE",
+                review_not_visible_code="STAGING_ACCEPTANCE_GROUPMATE_REVIEW_NOT_VISIBLE",
             )
             if attachment_download_href(other_student, attachment_filename) != attachment_href:
                 raise AcceptanceFailure("STAGING_ACCEPTANCE_GROUPMATE_ATTACHMENT_LINK_CHANGED")
@@ -776,6 +789,8 @@ def run() -> None:
                 activity_href=activity_href,
                 feedback_text=feedback_text,
                 evaluation_text=evaluation_text,
+                release_not_visible_code="STAGING_ACCEPTANCE_STUDENT_RELEASE_NOT_VISIBLE",
+                review_not_visible_code="STAGING_ACCEPTANCE_STUDENT_REVIEW_NOT_VISIBLE",
             )
             student.goto(f"{remote}/student", wait_until="domcontentloaded")
             assert_origin(student.url, remote)
@@ -852,6 +867,8 @@ def run() -> None:
             for page, name in (
                 (teacher, "fail-teacher"),
                 (student, "fail-student"),
+                (other_student, "fail-other-student"),
+                (other_teacher, "fail-other-teacher"),
             ):
                 try:
                     screenshot(page, output, name)
