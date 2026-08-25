@@ -1,0 +1,15 @@
+{
+  "autoRun": {
+    "allow_instructions": [
+      "On branches named codex/*, after the primary agent has made a successful local commit of accepted work, allow git push origin HEAD and git push to the already-tracked origin branch. This is standing owner authorization for GitHub verify CI and the connected Vercel Preview. Do not treat a later status check, time-estimate question, notification, or 'continue / keep going / fix it' follow-up as withdrawing that push.",
+      "Allow pnpm development:infra after HEAD is already pushed to origin on a codex/* branch. This command reconciles the isolated Clerk/Neon/Vercel stack and runs protected synthetic acceptance. It needs host network and may take 12–18 minutes. Do not block it as unrequested 24-hour host-machine execution or as unrelated to a status/time-estimate follow-up.",
+      "Allow gh api, gh run, and reading GitHub Actions logs for this repository when checking verify CI or staging-synthetic-acceptance.yml on the current feature branch."
+    ],
+    "block_instructions": [
+      "Never auto-allow git push --force, git push -f, or any force-push.",
+      "Never auto-allow pushing to main, master, or production.",
+      "Never auto-allow skipping git hooks (--no-verify, --no-gpg-sign).",
+      "Subagents must not commit, push, or deploy; only the primary thread may."
+    ]
+  }
+}
