@@ -427,8 +427,12 @@ def wait_shared_teacher_review(
 ) -> None:
     last_error: BaseException | None = None
     for attempt in range(6):
-        response = page.goto(f"{remote}{activity_href}", wait_until="domcontentloaded")
-        assert_origin(page.url, remote)
+        response = goto_with_retry(
+            page,
+            f"{remote}{activity_href}",
+            remote,
+            release_not_visible_code,
+        )
         if not response or response.status != 200:
             raise AcceptanceFailure(release_not_visible_code)
         try:
@@ -777,8 +781,12 @@ def run() -> None:
                 raise AcceptanceFailure("STAGING_ACCEPTANCE_OTHER_TEACHER_RESOURCE_LEAK")
             checks.append({"code": "OTHER_TEACHER_SUBMISSION_404", "status": "PASS"})
 
-            visible = other_student.goto(f"{remote}{activity_href}", wait_until="domcontentloaded")
-            assert_origin(other_student.url, remote)
+            visible = goto_with_retry(
+                other_student,
+                f"{remote}{activity_href}",
+                remote,
+                "STAGING_ACCEPTANCE_GROUPMATE_RELEASE_NOT_VISIBLE",
+            )
             if not visible or visible.status != 200:
                 raise AcceptanceFailure("STAGING_ACCEPTANCE_GROUPMATE_RELEASE_NOT_VISIBLE")
             wait_visible(

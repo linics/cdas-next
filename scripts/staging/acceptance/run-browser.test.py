@@ -210,6 +210,61 @@ class BrowserContractTests(unittest.TestCase):
             with self.assertRaisesRegex(MODULE.AcceptanceFailure, "STAGING_ACCEPTANCE_BROWSER_PREREQUISITES_NOT_GO"):
                 MODULE.assert_browser_prerequisites()
 
+    def test_retrying_navigation_recovers_from_a_transient_timeout(self):
+        class Response:
+            status = 200
+
+        class Page:
+            url = "https://staging.example.test/student"
+
+            def __init__(self):
+                self.attempts = 0
+                self.waits = []
+
+            def goto(self, url, *, wait_until):
+                self.attempts += 1
+                self.url = url
+                if self.attempts == 1:
+                    raise MODULE.PlaywrightError("transient navigation timeout")
+                return Response()
+
+            def wait_for_timeout(self, milliseconds):
+                self.waits.append(milliseconds)
+
+        page = Page()
+        response = MODULE.goto_with_retry(
+            page,
+            "https://staging.example.test/student/releases/00000000-0000-0000-0000-000000000000",
+            "https://staging.example.test",
+            "STAGING_ACCEPTANCE_STUDENT_RELEASE_NOT_VISIBLE",
+        )
+
+        self.assertEqual(response.status, 200)
+        self.assertEqual(page.attempts, 2)
+        self.assertEqual(page.waits, [2_000])
+
+    def test_retrying_navigation_emits_only_the_stable_failure_code(self):
+        class Page:
+            url = "https://staging.example.test/student"
+
+            def goto(self, url, *, wait_until):
+                self.url = url
+                raise MODULE.PlaywrightError("postgresql://secret")
+
+            def wait_for_timeout(self, milliseconds):
+                pass
+
+        with self.assertRaisesRegex(
+            MODULE.AcceptanceFailure,
+            "^STAGING_ACCEPTANCE_GROUPMATE_RELEASE_NOT_VISIBLE$",
+        ):
+            MODULE.goto_with_retry(
+                Page(),
+                "https://staging.example.test/student/releases/00000000-0000-0000-0000-000000000000",
+                "https://staging.example.test",
+                "STAGING_ACCEPTANCE_GROUPMATE_RELEASE_NOT_VISIBLE",
+            )
+
 
 if __name__ == "__main__":
     unittest.main()
