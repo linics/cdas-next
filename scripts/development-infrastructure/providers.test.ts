@@ -192,6 +192,31 @@ describe("provider fail-closed contracts", () => {
     expect(migrationUrl.searchParams.get("sslmode")).toBe("require");
     expect(directUrl).toContain("connect_timeout=5");
   });
+  it("retries migrate deploy once after a Neon cold-start command failure", async () => {
+    const calls: string[] = [];
+    const waits: number[] = [];
+    let attempts = 0;
+    const runner = {
+      run: async (command: string, args: readonly string[]) => {
+        calls.push(`${command} ${args.join(" ")}`);
+        attempts += 1;
+        if (attempts === 1) throw new Error("DEVELOPMENT_INFRA_COMMAND_FAILED");
+        return { stdout: "", stderr: "" };
+      },
+    };
+    await deployMigrationsWithMinimalEnvironment(
+      {
+        pooledUrl: "postgresql://role:password@ep-pooler.example.neon.tech/database?sslmode=require",
+        directUrl: "postgresql://role:password@ep.example.neon.tech/database?sslmode=require",
+      },
+      runner,
+      async (milliseconds) => {
+        waits.push(milliseconds);
+      },
+    );
+    expect(calls).toEqual(["pnpm db:deploy", "pnpm db:deploy"]);
+    expect(waits).toEqual([5_000]);
+  });
   it("refuses unsafe Vercel build command before any preview configuration", async () => {
     const fetcher: typeof fetch = (async () => response({ name: "cdas-next", link: { type: "github", repoId: 1 }, buildCommand: "pnpm db:deploy && pnpm build" })) as typeof fetch;
     await expect(new VercelApiProvider("t", "cdas-next", undefined, fetcher).assertProject({ owner: "o", name: "r", branch: "codex/x", sha: "a".repeat(40), repositoryId: 1 })).rejects.toThrow("DEVELOPMENT_INFRA_VERCEL_BUILD_COMMAND_UNSAFE");

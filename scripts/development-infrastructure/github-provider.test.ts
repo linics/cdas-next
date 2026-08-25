@@ -93,6 +93,27 @@ describe("GitHub CLI provider", () => {
     } };
     await expect(new GitHubCliProvider(runner, async () => undefined).dispatchAndVerify(target())).resolves.toEqual({ id: "2", attempt: 1, url: "https://github.com/owner/repo/actions/runs/2", headSha: "a".repeat(40) });
   });
+  it("retries a transient gh command failure once before surfacing it", async () => {
+    let attempts = 0;
+    const waits: number[] = [];
+    const runner: CommandRunner = {
+      run: async (_command, args) => {
+        if (args[0] === "variable" && args[1] === "list") {
+          attempts += 1;
+          if (attempts === 1) throw new Error("DEVELOPMENT_INFRA_COMMAND_FAILED");
+          return { stdout: JSON.stringify([{ name: "STAGING_DATABASE_NAME", value: "cdas_next_staging" }]), stderr: "" };
+        }
+        return { stdout: "", stderr: "" };
+      },
+    };
+    await expect(
+      new GitHubCliProvider(runner, async (milliseconds) => {
+        waits.push(milliseconds);
+      }).setVariable("STAGING_DATABASE_NAME", "cdas_next_staging"),
+    ).resolves.toBeUndefined();
+    expect(attempts).toBe(2);
+    expect(waits).toEqual([2_000]);
+  });
   it("rejects workflow run URLs bound to another repository, host, or id", async () => {
     for (const url of ["https://github.com/other/repo/actions/runs/2", "https://evil.test/owner/repo/actions/runs/2", "https://github.com/owner/repo/actions/runs/3"]) {
       let listCount = 0;

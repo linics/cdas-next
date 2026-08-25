@@ -216,13 +216,33 @@ export class NeonApiProvider implements NeonProvider {
   }
 }
 
-export async function deployMigrationsWithMinimalEnvironment(connection: NeonConnection, runner: CommandRunner): Promise<void> {
+export async function deployMigrationsWithMinimalEnvironment(
+  connection: NeonConnection,
+  runner: CommandRunner,
+  sleep: (milliseconds: number) => Promise<void> = async (milliseconds) =>
+    new Promise((resolve) => setTimeout(resolve, milliseconds)),
+): Promise<void> {
   const migrationUrl = new URL(connection.directUrl);
   // Prisma's native schema engine can time out while Neon resumes a compute even
   // when the JavaScript driver connects successfully. Keep channel binding and
   // give only the migration connection a bounded cold-start window.
   migrationUrl.searchParams.set("connect_timeout", "60");
-  await runner.run("pnpm", ["db:deploy"], { env: { PATH: process.env.PATH ?? "", DATABASE_URL: connection.pooledUrl, DIRECT_URL: migrationUrl.toString(), AI_PROVIDER_DISABLED: "1", NEXT_TELEMETRY_DISABLED: "1" } });
+  const env = {
+    PATH: process.env.PATH ?? "",
+    DATABASE_URL: connection.pooledUrl,
+    DIRECT_URL: migrationUrl.toString(),
+    AI_PROVIDER_DISABLED: "1",
+    NEXT_TELEMETRY_DISABLED: "1",
+  };
+  try {
+    await runner.run("pnpm", ["db:deploy"], { env });
+  } catch (error) {
+    if (!(error instanceof Error) || error.message !== "DEVELOPMENT_INFRA_COMMAND_FAILED") {
+      throw error;
+    }
+    await sleep(5_000);
+    await runner.run("pnpm", ["db:deploy"], { env });
+  }
 }
 
 export async function downloadArtifactWithPropagationRetry(

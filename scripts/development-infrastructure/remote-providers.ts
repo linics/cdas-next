@@ -111,7 +111,16 @@ export class VercelApiProvider implements VercelProvider {
 
 export class GitHubCliProvider implements GitHubProvider {
   constructor(private readonly runner: CommandRunner, private readonly sleep: (milliseconds: number) => Promise<void> = async (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds))) {}
-  private async gh(args: readonly string[], input?: string): Promise<Readonly<{ stdout: string; stderr: string }>> { return this.runner.run("gh", args, { env: minimalCommandEnvironment({ github: true }), input }); }
+  private async gh(args: readonly string[], input?: string): Promise<Readonly<{ stdout: string; stderr: string }>> {
+    const run = () => this.runner.run("gh", args, { env: minimalCommandEnvironment({ github: true }), input });
+    try {
+      return await run();
+    } catch (error) {
+      if (!(error instanceof Error) || error.message !== "DEVELOPMENT_INFRA_COMMAND_FAILED") throw error;
+      await this.sleep(2_000);
+      return run();
+    }
+  }
   async repositoryTarget(): Promise<RepositoryTarget> {
     const [branch, sha, repo, remote, status] = await Promise.all([
       this.runner.run("git", ["branch", "--show-current"], { env: minimalCommandEnvironment() }), this.runner.run("git", ["rev-parse", "HEAD"], { env: minimalCommandEnvironment() }), this.gh(["api", "repos/{owner}/{repo}", "--jq", "[.full_name,.id] | @tsv"]), this.runner.run("git", ["remote", "get-url", "origin"], { env: minimalCommandEnvironment() }), this.runner.run("git", ["status", "--porcelain"], { env: minimalCommandEnvironment() }),
@@ -167,7 +176,18 @@ export class GitHubCliProvider implements GitHubProvider {
   async setSecret(name: string, value: string): Promise<void> {
     const allowed = /^STAGING_(?:BASE_URL|DATABASE_URL|DIRECT_URL|NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY|CLERK_SECRET_KEY|TEST_(?:TEACHER|STUDENT|OTHER_STUDENT|OTHER_TEACHER)_CLERK_ID|HEALTH_PROOF_SECRET|VERCEL_AUTOMATION_BYPASS_SECRET)$/u;
     if (!allowed.test(name)) throw new Error("DEVELOPMENT_INFRA_GITHUB_SECRET_UNSAFE");
-    await this.runner.run("gh", ["secret", "set", name, "--env", infrastructureEnvironment], { env: minimalCommandEnvironment({ github: true }), input: value });
+    const run = () =>
+      this.runner.run("gh", ["secret", "set", name, "--env", infrastructureEnvironment], {
+        env: minimalCommandEnvironment({ github: true }),
+        input: value,
+      });
+    try {
+      await run();
+    } catch (error) {
+      if (!(error instanceof Error) || error.message !== "DEVELOPMENT_INFRA_COMMAND_FAILED") throw error;
+      await this.sleep(2_000);
+      await run();
+    }
   }
   async dispatchAndVerify(repository: RepositoryTarget): Promise<WorkflowRun> {
     const before = await this.gh(["run", "list", "--workflow", "staging-synthetic-acceptance.yml", "--branch", repository.branch, "--limit", "100", "--json", "databaseId"]);
