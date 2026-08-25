@@ -107,8 +107,10 @@ model AppUser {
   submissions           Submission[]              @relation("SubmissionStudent")
   releaseGroupMembers   ReleaseGroupMember[]
   submissionAttachments SubmissionAttachment[]    @relation("SubmissionAttachmentStudent")
-  feedback              TeacherFeedback[]         @relation("TeacherFeedbackTeacher")
-  feedbackConfirmations TeacherFeedbackRevision[] @relation("TeacherFeedbackConfirmer")
+  feedback                 TeacherFeedback[]           @relation("TeacherFeedbackTeacher")
+  feedbackConfirmations    TeacherFeedbackRevision[]   @relation("TeacherFeedbackConfirmer")
+  evaluations              TeacherEvaluation[]         @relation("TeacherEvaluationTeacher")
+  evaluationConfirmations  TeacherEvaluationRevision[] @relation("TeacherEvaluationConfirmer")
 
   @@map("app_users")
 }
@@ -312,6 +314,7 @@ model SubmissionRevision {
   submittedAt              DateTime                       @map("submitted_at") @db.Timestamptz(3)
   submission               Submission                     @relation(fields: [submissionId], references: [id], onDelete: Restrict)
   feedback                 TeacherFeedback?
+  evaluation               TeacherEvaluation?
   attachments              SubmissionRevisionAttachment[]
 
   @@unique([submissionId, revisionNumber])
@@ -407,6 +410,43 @@ model TeacherFeedbackRevision {
   @@map("teacher_feedback_revisions")
 }
 
+model TeacherEvaluation {
+  id                   String                      @id @default(uuid()) @db.Uuid
+  submissionRevisionId String                      @unique @map("submission_revision_id") @db.Uuid
+  teacherId            String                      @map("teacher_id") @db.Uuid
+  version              Int
+  createdAt            DateTime                    @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt            DateTime                    @updatedAt @map("updated_at") @db.Timestamptz(3)
+  submissionRevision   SubmissionRevision          @relation(fields: [submissionRevisionId], references: [id], onDelete: Restrict)
+  teacher              AppUser                     @relation("TeacherEvaluationTeacher", fields: [teacherId], references: [id], onDelete: Restrict)
+  revisions            TeacherEvaluationRevision[]
+
+  @@index([teacherId, updatedAt])
+  @@map("teacher_evaluations")
+}
+
+model TeacherEvaluationRevision {
+  id                  String                 @id @default(uuid()) @db.Uuid
+  teacherEvaluationId String                 @map("teacher_evaluation_id") @db.Uuid
+  version             Int
+  summary             String                 @db.Text
+  summaryHash         String                 @map("summary_hash") @db.Char(64)
+  outcomes            Json
+  source              FeedbackRevisionSource
+  confirmedById       String                 @map("confirmed_by_id") @db.Uuid
+  actionIntentId      String                 @unique @map("action_intent_id") @db.Uuid
+  agentRunId          String?                @map("agent_run_id") @db.Uuid
+  confirmedAt         DateTime               @default(now()) @map("confirmed_at") @db.Timestamptz(3)
+  evaluation          TeacherEvaluation      @relation(fields: [teacherEvaluationId], references: [id], onDelete: Restrict)
+  confirmedBy         AppUser                @relation("TeacherEvaluationConfirmer", fields: [confirmedById], references: [id], onDelete: Restrict)
+  actionIntent        ActionIntent           @relation(fields: [actionIntentId], references: [id], onDelete: Restrict)
+  agentRun            AgentRun?              @relation(fields: [agentRunId], references: [id], onDelete: Restrict)
+
+  @@unique([teacherEvaluationId, version])
+  @@index([agentRunId])
+  @@map("teacher_evaluation_revisions")
+}
+
 model AgentRun {
   id                String                    @id @default(uuid()) @db.Uuid
   actorId           String                    @map("actor_id") @db.Uuid
@@ -416,10 +456,11 @@ model AgentRun {
   completedAt       DateTime?                 @map("completed_at") @db.Timestamptz(3)
   failureCode       String?                   @map("failure_code")
   actor             AppUser                   @relation(fields: [actorId], references: [id], onDelete: Restrict)
-  draftRevision     ActivityDraftRevision?
-  intents           ActionIntent[]
-  auditEntries      ActionAudit[]
-  feedbackRevisions TeacherFeedbackRevision[]
+  draftRevision       ActivityDraftRevision?
+  intents             ActionIntent[]
+  auditEntries        ActionAudit[]
+  feedbackRevisions   TeacherFeedbackRevision[]
+  evaluationRevisions TeacherEvaluationRevision[]
 
   @@index([actorId, startedAt])
   @@map("agent_runs")
@@ -444,9 +485,10 @@ model ActionIntent {
   actor            AppUser                  @relation("ActionIntentActor", fields: [actorId], references: [id], onDelete: Restrict)
   decidedBy        AppUser?                 @relation("ActionIntentDecider", fields: [decidedById], references: [id], onDelete: Restrict)
   agentRun         AgentRun?                @relation(fields: [agentRunId], references: [id], onDelete: Restrict)
-  auditEntries     ActionAudit[]
-  feedbackRevision TeacherFeedbackRevision?
-  publishRelease   ActivityRelease?         @relation("PublishActionIntent")
+  auditEntries        ActionAudit[]
+  feedbackRevision    TeacherFeedbackRevision?
+  evaluationRevision  TeacherEvaluationRevision?
+  publishRelease      ActivityRelease?         @relation("PublishActionIntent")
   closedRelease    ActivityRelease?         @relation("CloseActionIntent")
 
   @@index([actorId, status, expiresAt])

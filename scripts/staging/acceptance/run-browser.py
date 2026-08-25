@@ -323,6 +323,32 @@ def feedback(page: Page, body: str) -> None:
     confirm(page, "确认并保存最终反馈", "确认并保存最终反馈")
 
 
+def evaluation(page: Page, summary: str, attachment_filename: str) -> None:
+    dim1 = page.get_by_role("group", name="维度 1：问题意识")
+    dim1.get_by_label("判断方式", exact=True).select_option("LEVEL")
+    dim1.get_by_label("达成等级", exact=True).select_option("excellent")
+    dim1.get_by_label("引用本版文字证据", exact=True).check()
+    dim2 = page.get_by_role("group", name="维度 2：证据质量")
+    dim2.get_by_label("判断方式", exact=True).select_option("INSUFFICIENT_EVIDENCE")
+    dim3 = page.get_by_role("group", name="维度 3：跨学科连接")
+    dim3.get_by_label("判断方式", exact=True).select_option("LEVEL")
+    dim3.get_by_label("达成等级", exact=True).select_option("good")
+    dim3.get_by_label(f"引用附件 {attachment_filename}", exact=True).check()
+    dim4 = page.get_by_role("group", name="维度 4：方案表达")
+    dim4.get_by_label("判断方式", exact=True).select_option("LEVEL")
+    dim4.get_by_label("达成等级", exact=True).select_option("pass")
+    dim4.get_by_role("checkbox", name=re.compile(r"^引用检查点 1：")).check()
+    textarea = page.locator("#teacher-evaluation-summary")
+    textarea.wait_for(state="visible", timeout=30_000)
+    textarea.fill(summary)
+    button = page.get_by_role("button", name="准备评价确认", exact=True)
+    button.wait_for(state="visible", timeout=30_000)
+    if not button.is_enabled():
+        raise AcceptanceFailure("STAGING_ACCEPTANCE_EVALUATION_NOT_READY")
+    button.click()
+    confirm(page, "确认并保存量规评价", "确认并保存量规评价")
+
+
 def run() -> None:
     marker_value = marker()
     remote = base_url()
@@ -339,6 +365,7 @@ def run() -> None:
     phase_one_evidence = f"{evidence} phase 1"
     phase_two_evidence = f"{evidence} phase 2"
     feedback_text = f"Synthetic teacher feedback for {marker_value}."
+    evaluation_text = f"Synthetic teacher evaluation for {marker_value}."
     group_name = f"Synthetic group {marker_value}"
     other_student_roster_key = "CDASSTUDENT0002"
     attachment_filename = f"synthetic-{marker_value}.png"
@@ -535,6 +562,20 @@ def run() -> None:
                 "支架层级：基础支持",
                 exact=True,
             ).wait_for(state="visible")
+            evaluation(teacher, evaluation_text, attachment_filename)
+            teacher.locator('[aria-labelledby^="evaluation-history-"]').last.get_by_text(
+                evaluation_text,
+                exact=True,
+            ).wait_for(state="visible")
+            teacher.locator('[aria-labelledby^="evaluation-history-"]').last.get_by_text(
+                "证据不足",
+                exact=True,
+            ).wait_for(state="visible")
+            teacher.locator('[aria-labelledby^="evaluation-history-"]').last.get_by_text(
+                "优秀",
+                exact=True,
+            ).wait_for(state="visible")
+            checks.append({"code": "EVIDENCE_BOUND_EVALUATION_VISIBLE", "status": "PASS"})
             index["04-teacher-feedback.png"] = screenshot(teacher, output, "04-teacher-feedback")
 
             sign_in(other_teacher, remote, "other_teacher")
@@ -548,7 +589,7 @@ def run() -> None:
             if not denied_submission or denied_submission.status != 404:
                 raise AcceptanceFailure("STAGING_ACCEPTANCE_OTHER_TEACHER_SUBMISSION_NOT_HIDDEN")
             other_teacher_text = other_teacher.locator("body").inner_text()
-            if evidence in other_teacher_text or feedback_text in other_teacher_text or required("STAGING_ACCEPTANCE_TEST_STUDENT_NAME") in other_teacher_text:
+            if evidence in other_teacher_text or feedback_text in other_teacher_text or evaluation_text in other_teacher_text or required("STAGING_ACCEPTANCE_TEST_STUDENT_NAME") in other_teacher_text:
                 raise AcceptanceFailure("STAGING_ACCEPTANCE_OTHER_TEACHER_RESOURCE_LEAK")
             checks.append({"code": "OTHER_TEACHER_SUBMISSION_404", "status": "PASS"})
 
@@ -562,6 +603,8 @@ def run() -> None:
             wait_text(other_student, feedback_text)
             wait_text(other_student, "按反馈修改并重交")
             wait_text(other_student, "基础支持")
+            wait_text(other_student, evaluation_text)
+            wait_text(other_student, "证据不足")
             if attachment_download_href(other_student, attachment_filename) != attachment_href:
                 raise AcceptanceFailure("STAGING_ACCEPTANCE_GROUPMATE_ATTACHMENT_LINK_CHANGED")
             assert_attachment_download(other_student, attachment_filename, attachment_sha256)
@@ -573,7 +616,7 @@ def run() -> None:
             if not denied_other or denied_other.status != 404:
                 raise AcceptanceFailure("STAGING_ACCEPTANCE_GROUPMATE_TEACHER_RESOURCE_NOT_HIDDEN")
             denied_text = other_student.locator("body").inner_text()
-            if evidence in denied_text or feedback_text in denied_text:
+            if evidence in denied_text or feedback_text in denied_text or evaluation_text in denied_text:
                 raise AcceptanceFailure("STAGING_ACCEPTANCE_GROUPMATE_TEACHER_RESOURCE_LEAK")
             checks.append({"code": "GROUPMATE_TEACHER_SUBMISSION_404", "status": "PASS"})
 
@@ -582,6 +625,8 @@ def run() -> None:
             wait_text(student, feedback_text)
             wait_text(student, "按反馈修改并重交")
             wait_text(student, "基础支持")
+            wait_text(student, evaluation_text)
+            wait_text(student, "证据不足")
             student.get_by_role("button", name="开始重交", exact=True).click()
             student.locator("#text-evidence").wait_for(state="visible")
             student.locator("#text-evidence").fill(f"{evidence} stale write after close")
@@ -610,6 +655,7 @@ def run() -> None:
             if readonly.input_value() != evidence or readonly.is_editable() or any(student.get_by_role("button", name=label, exact=True).count() for label in ("保存草稿", "正式提交", "正式迟交", "开始重交")):
                 raise AcceptanceFailure("STAGING_ACCEPTANCE_CLOSED_READONLY_FAILED")
             wait_text(student, feedback_text)
+            wait_text(student, evaluation_text)
             if attachment_download_href(student, attachment_filename) != attachment_href:
                 raise AcceptanceFailure("STAGING_ACCEPTANCE_CLOSED_ATTACHMENT_LINK_CHANGED")
             assert_attachment_download(student, attachment_filename, attachment_sha256)

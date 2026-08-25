@@ -307,6 +307,20 @@
 - 非目标：自动形成性反馈、教师批准后才解锁阶段的强制闸门、自动评分、量规维度—证据绑定、长期学生画像、自评互评、跨提交的持久差异化计划、通用工作流和第二后端。
 - 验收：覆盖个人与小组正常读取、`REVISE → 开始重交 → 新正式修订`、`CONTINUE` 不改变阶段状态、旧历史兼容、其他学生/教师隔离、学生重交与反馈版本并发使确认失效、幂等重放和 AI 失败手工降级。2026-08-25 的开发期受保护合成验收在提交 `6612ebd968303280fe11963ced1c8f2ff66fe5ac`、GitHub Actions run `32792068879` 上以 `AI_PROVIDER_DISABLED=1` 完整通过浏览器闭环和只读数据库核对。
 
+## D-035：证据驱动量规评价独立于形成性反馈
+
+- 状态：已接受
+- 日期：2026-08-25
+- 用户场景：教师查看某名学生或小组的当前正式修订后，需要按发布快照中冻结的四档量规给出终审式判断，并把每个维度绑定到本版证据，或明确标记证据不足；学生需要看到已确认评价，同时保留形成性 CONTINUE/REVISE 反馈。
+- 聚合边界：新建 `TeacherEvaluation` 与 `TeacherEvaluationRevision`，1:1 绑定 `SubmissionRevision`，不混入 `TeacherFeedback`。形成性下一步与支架层级继续只存在于反馈；量规评价不改变阶段状态，也不是自动分数。
+- 数据合同：评价 payload `schemaVersion` 为 1。维度身份是快照顺序中 1 起始的 `dimensionIndex` 加上精确 `dimensionName`。必须覆盖冻结 v2 `rubricDimensions` 的全部 4–8 项，不得增删或改名。LEVEL 必须带 `excellent|good|pass|improve` 和 1–5 条不重复本版引用；`INSUFFICIENT_EVIDENCE` 不得带等级或引用。综评遵循与反馈相同的 NFC/可见文字规则，最多 10,000 个 code point。
+- 证据授权：`{ kind: "text" }` 仅当本版文字有可见内容；`{ kind: "attachment", attachmentId }` 仅限本版 READY 附件；`{ kind: "checkpoint", evidenceIndex }` 必须落在本版 `completedEvidenceIndexes`。v1 snapshot 没有四档量规，命令与 UI 均不开放评价，也不得从 `feedbackCriteria` 发明维度。
+- 授权与交互：只有发布教师且仍管理目标班级可以准备并保存；关闭后仍允许评价。学生本人或小组成员只读自己的已确认评价；其他学生、组外学生和其他教师得到资源级不存在。教师提交页使用第二个独立确认面板，文案为「确认并保存量规评价」，不得与反馈确认合并。
+- 命令与历史：复制 `prepare_teacher_feedback_intent` / `save_teacher_feedback` 的 Serializable、幂等、审计与十分钟确认边界。修改只追加评价修订。来源本切片固定 MANUAL，`suggestionAgentRunId` 为空。
+- Agent 与降级：本切片不新增 Agent 工具。AI 不可用时手写评价完整可用。AI 建议与教师终审差异历史延后。
+- 非目标：自动评分、把量规分数写成阶段状态、v1 回填量规、Agent 评价工具、把评价混入反馈确认。
+- 验收：覆盖全部维度、证据不足、v1 拒绝、隔离、陈旧确认、幂等和 AI 关闭手写路径；同一变更扩展 staging 浏览器与只读核对。
+
 ## 尚未决定
 
 以下生产选择仍需在真实账号和学生数据进入前完成小型验证或合规审查：

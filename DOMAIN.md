@@ -85,6 +85,16 @@
 - 形成性下一步是学生行动建议，不是阶段状态或评分：`CONTINUE` 不构成正式评价，`REVISE` 也不回拨或锁定已经按 D-031 创建的后续阶段。学生是否能够写入仍由 Release 状态、成员关系、阶段顺序和既有提交命令决定。
 - 迁移前的反馈修订保持原文字历史且不补造下一步或支架层级；所有 D-034 新修订必须同时具有这两个字段，并与已执行 ActionIntent 的 payload 精确一致。
 
+### TeacherEvaluation（教师量规评价）
+
+- 归属于一个具体的 SubmissionRevision 和一名有权教师，与 TeacherFeedback 分离；一对一绑定当前正式修订。
+- 只对 schema v2 发布快照开放。量规来自冻结 snapshot 的 `rubricDimensions`，按 1 起始的 `dimensionIndex` 与精确 `dimensionName` 覆盖全部 4–8 个维度，不得增删或改名。不得从 v1 `feedbackCriteria` 发明维度。
+- 每个维度要么给出 `excellent|good|pass|improve` 并引用本版 1–5 条不重复证据，要么标记 `INSUFFICIENT_EVIDENCE` 且引用为空。证据只能是本版有可见文字的 `{ kind: "text" }`、本版 READY 附件，或本版 `completedEvidenceIndexes` 中的检查点。
+- 综评正文统一为 NFC 与 `\n` 换行，最多 10,000 个 Unicode code point；规则与反馈正文相同。
+- 修改评价时追加不可变的 TeacherEvaluationRevision，不覆盖旧内容。payload `schemaVersion` 为评价合同 1，不是活动内容 schema。
+- CONTINUE/REVISE 仍只存在于形成性反馈；量规评价不改变阶段状态，也不是自动评分。
+- 本切片来源固定为 MANUAL，`suggestionAgentRunId` 为空；不新增 Agent 工具，也不保存 AI 建议与教师终审差异。
+
 ### AgentRun / ActionAudit（助手运行与动作审计）
 
 - AgentRun 记录一次助手会话的业务上下文、模型与结果状态。
@@ -115,6 +125,7 @@ Teacher ──manages──> Classroom ──has──> ClassroomMembership ─�
                    └──receives──> Submission (Student XOR ReleaseGroup) ──contains──> Evidence
                                          │
                                          └──receives──> TeacherFeedback
+                                         └──receives──> TeacherEvaluation
 ```
 
 ## 状态边界
@@ -173,6 +184,9 @@ upload_pending → scan_pending → ready
 - 每个 TeacherFeedback 的教师必须有权管理目标班级和发布实例。
 - TeacherFeedback 必须指向该 Submission 当前的正式修订；若学生在确认后已产生新修订，保存反馈必须失败并要求重新确认。
 - D-034 新增的形成性下一步、支架层级和反馈正文必须在同一个已执行 ActionIntent、TeacherFeedbackRevision、审计及幂等结果中冻结；修改只能追加下一版，不能改写旧决定。个人反馈仅本人可见，小组反馈仅该组成员共享。
+- 每个 TeacherEvaluation 的教师必须同时是发布者且仍管理目标班级。评价必须指向该 Submission 当前正式修订；学生重交后原确认失效。
+- D-035 的维度结果、综评、精确 SubmissionRevision、评价预期版本与 payload hash 必须在同一个已执行 ActionIntent、TeacherEvaluationRevision、审计及幂等结果中冻结；必须覆盖冻结 v2 量规的全部维度。个人评价仅本人可见，小组评价仅该组成员共享；其他调用者得到资源级不存在。
+- v1 snapshot 不得写入量规评价。关闭后仍允许有权教师评价，但不允许学生继续写入。
 - AI 不是任何业务实体的所有者、发布者或最终评价者。
 - 权限在服务端业务命令执行时重新验证，不能相信前端页面状态或 Agent 提供的上下文。
 - actor、调用来源、追踪号和当前时间来自服务端可信 CommandContext，不属于表单或工具的业务输入。
@@ -188,7 +202,7 @@ upload_pending → scan_pending → ready
 - 所有业务时间由服务端以 UTC 生成和保存，界面按用户时区展示。
 - 发布截止时间的确认参数必须是带 offset 的 ISO 时间点，且不得包含 `TIMESTAMPTZ(3)` 无法精确保存的亚毫秒精度。
 - Release 超过可选截止时间后仍可迟交；`late` 在每次正式提交时计算并固化。
-- Release 只能 `active → closed → archived`，不支持重新打开；第一阶段仅实现 UI 驱动的 `active → closed`，关闭后仍允许有权教师反馈。
+- Release 只能 `active → closed → archived`，不支持重新打开；第一阶段仅实现 UI 驱动的 `active → closed`，关闭后仍允许有权教师反馈和量规评价。
 - 当前班级成员可以查看 active Release 并提交。历史成员可以继续读取其成员有效期内可见的 Release、自己的提交和反馈，但不能继续写入。
 - Release 关闭后，原本可见的学生可以继续读取该 Release、自己的提交和反馈，但不能保存工作副本、开始重交或正式提交。
 - Release 关闭后才加入班级的学生看不到该历史 Release，除非该学生已经拥有其中的提交。
@@ -199,9 +213,8 @@ upload_pending → scan_pending → ready
 - 通用 StageType 状态机、条件依赖、教师审批解锁与阶段退回/回溯；D-031 只接受快照索引、线性前置与多次正式阶段提交
 - 自动形成性反馈、阶段审核闸门与跨提交的长期差异化方案
 - 互评、自评
-- 评价维度与具体提交证据的绑定、自动评价建议
+- 量规评价的 AI 建议、教师终审差异历史与自动评分
 - 知识库与向量索引
-- 自动评分
 - 过程诊断、案例库与复用目录
 - 跨校组织和多租户管理
 

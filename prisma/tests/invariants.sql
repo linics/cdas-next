@@ -2115,6 +2115,479 @@ BEGIN
 END
 $test$;
 
+-- Schema v1 snapshots have no four-level rubric, so a current v1 revision
+-- cannot receive an evidence-bound evaluation even with a well-formed payload.
+INSERT INTO action_intents (
+  id,
+  actor_id,
+  action_name,
+  payload,
+  payload_hash,
+  target_type,
+  target_id,
+  expected_version,
+  expires_at
+)
+VALUES (
+  '00000000-0000-4000-8000-0000000000ca',
+  '00000000-0000-4000-8000-000000000001',
+  'save_teacher_evaluation',
+  '{
+    "schemaVersion": 1,
+    "submissionId": "00000000-0000-4000-8000-000000000080",
+    "submissionRevisionId": "00000000-0000-4000-8000-000000000085",
+    "expectedSubmissionRevisionNumber": 2,
+    "expectedEvaluationVersion": 0,
+    "summary": "v1 快照不应接受量规评价。",
+    "outcomes": [
+      {"dimensionIndex":1,"dimensionName":"问题意识","status":"LEVEL","level":"good","citations":[{"kind":"text"}]},
+      {"dimensionIndex":2,"dimensionName":"证据质量","status":"LEVEL","level":"good","citations":[{"kind":"text"}]},
+      {"dimensionIndex":3,"dimensionName":"跨学科连接","status":"LEVEL","level":"good","citations":[{"kind":"text"}]},
+      {"dimensionIndex":4,"dimensionName":"方案表达","status":"LEVEL","level":"good","citations":[{"kind":"text"}]}
+    ],
+    "suggestionAgentRunId": null
+  }'::jsonb,
+  repeat('c', 64),
+  'Submission',
+  '00000000-0000-4000-8000-000000000080',
+  2,
+  now() + interval '10 minutes'
+);
+
+UPDATE action_intents
+SET status = 'CONFIRMED', decided_by_id = actor_id, decided_at = now()
+WHERE id = '00000000-0000-4000-8000-0000000000ca';
+
+UPDATE action_intents
+SET status = 'EXECUTED', executed_at = now()
+WHERE id = '00000000-0000-4000-8000-0000000000ca';
+
+DO $test$
+BEGIN
+  BEGIN
+    INSERT INTO teacher_evaluations (
+      id,
+      submission_revision_id,
+      teacher_id,
+      version,
+      updated_at
+    )
+    VALUES (
+      '00000000-0000-4000-8000-0000000000cb',
+      '00000000-0000-4000-8000-000000000085',
+      '00000000-0000-4000-8000-000000000001',
+      1,
+      now()
+    );
+
+    INSERT INTO teacher_evaluation_revisions (
+      id,
+      teacher_evaluation_id,
+      version,
+      summary,
+      summary_hash,
+      outcomes,
+      source,
+      confirmed_by_id,
+      action_intent_id,
+      confirmed_at
+    )
+    VALUES (
+      '00000000-0000-4000-8000-0000000000cc',
+      '00000000-0000-4000-8000-0000000000cb',
+      1,
+      'v1 快照不应接受量规评价。',
+      encode(sha256(convert_to('v1 快照不应接受量规评价。', 'UTF8')), 'hex'),
+      '[
+        {"dimensionIndex":1,"dimensionName":"问题意识","status":"LEVEL","level":"good","citations":[{"kind":"text"}]},
+        {"dimensionIndex":2,"dimensionName":"证据质量","status":"LEVEL","level":"good","citations":[{"kind":"text"}]},
+        {"dimensionIndex":3,"dimensionName":"跨学科连接","status":"LEVEL","level":"good","citations":[{"kind":"text"}]},
+        {"dimensionIndex":4,"dimensionName":"方案表达","status":"LEVEL","level":"good","citations":[{"kind":"text"}]}
+      ]'::jsonb,
+      'MANUAL',
+      '00000000-0000-4000-8000-000000000001',
+      '00000000-0000-4000-8000-0000000000ca',
+      now()
+    );
+    RAISE EXCEPTION 'schema v1 snapshot accepted an evidence-bound evaluation';
+  EXCEPTION WHEN check_violation THEN
+    NULL;
+  END;
+END
+$test$;
+
+WITH evaluation_task_book AS (
+  SELECT $json$
+  {
+    "schemaVersion": 2,
+    "title": "量规评价测试活动",
+    "topic": "校园节水",
+    "summary": "从真实现象形成证据与建议。",
+    "schoolStage": "MIDDLE",
+    "grade": 7,
+    "mainDisciplineCode": "physics",
+    "integratedDisciplineCodes": ["math", "chinese"],
+    "crossDisciplinaryConceptCodes": ["system_model"],
+    "assignmentType": "inquiry",
+    "assignmentSubtype": "survey",
+    "inquiryDepth": "deep",
+    "submissionMode": "once",
+    "durationWeeks": 2,
+    "backgroundSetting": "学校需要同学们提出有证据的节水建议。",
+    "objectiveKnowledge": "理解校园用水与资源节约的关系。",
+    "objectiveProcess": "使用观察和统计形成判断。",
+    "objectiveEmotion": "愿意为公共资源负责。",
+    "learningObjectives": ["理解校园用水与资源节约的关系。", "使用观察和统计形成判断。", "愿意为公共资源负责。"],
+    "taskInstructions": "完成观察、分析和公开建议。",
+    "evidenceRequirements": ["观察记录", "统计表", "建议稿"],
+    "feedbackCriteria": ["问题意识", "证据质量", "跨学科连接", "方案表达"],
+    "phases": [
+      {"name":"观察","action":"观察场景。","context":"选择真实地点。","support":"使用记录表。","evidence":[{"type":"text","description":"观察记录"}],"evaluationFocus":"问题清楚。","suggestedLessons":1},
+      {"name":"分析","action":"分析数据。","context":"比较记录。","support":"使用统计表。","evidence":[{"type":"document","description":"统计表"}],"evaluationFocus":"证据可靠。","suggestedLessons":1},
+      {"name":"表达","action":"提出建议。","context":"面向真实对象。","support":"按证据组织表达。","evidence":[{"type":"text","description":"建议稿"}],"evaluationFocus":"建议可行。","suggestedLessons":1}
+    ],
+    "rubricDimensions": [
+      {"name":"问题意识","excellent":"清楚可查。","good":"较清楚。","pass":"基本相关。","improve":"问题不清。"},
+      {"name":"证据质量","excellent":"完整可靠。","good":"较充分。","pass":"有证据。","improve":"证据不足。"},
+      {"name":"跨学科连接","excellent":"连接清楚。","good":"使用两科。","pass":"使用一科。","improve":"没有连接。"},
+      {"name":"方案表达","excellent":"具体可行。","good":"较具体。","pass":"有建议。","improve":"建议空泛。"}
+    ]
+  }
+  $json$::JSONB AS value
+)
+INSERT INTO activity_drafts (
+  id, owner_id, status, version, schema_version, task_book,
+  title, summary, learning_objectives, task_instructions,
+  evidence_requirements, feedback_criteria, updated_at
+)
+SELECT
+  '00000000-0000-4000-8000-0000000000c0',
+  '00000000-0000-4000-8000-000000000001',
+  'READY_FOR_PREVIEW',
+  1,
+  2,
+  evaluation_task_book.value,
+  evaluation_task_book.value ->> 'title',
+  evaluation_task_book.value ->> 'summary',
+  ARRAY(SELECT jsonb_array_elements_text(evaluation_task_book.value -> 'learningObjectives')),
+  evaluation_task_book.value ->> 'taskInstructions',
+  ARRAY(SELECT jsonb_array_elements_text(evaluation_task_book.value -> 'evidenceRequirements')),
+  ARRAY(SELECT jsonb_array_elements_text(evaluation_task_book.value -> 'feedbackCriteria')),
+  now()
+FROM evaluation_task_book;
+
+INSERT INTO activity_draft_revisions (
+  id, draft_id, version, source, schema_version, task_book,
+  title, summary, learning_objectives, task_instructions,
+  evidence_requirements, feedback_criteria
+)
+SELECT
+  '00000000-0000-4000-8000-0000000000c1',
+  draft.id,
+  draft.version,
+  'MANUAL',
+  draft.schema_version,
+  draft.task_book,
+  draft.title,
+  draft.summary,
+  draft.learning_objectives,
+  draft.task_instructions,
+  draft.evidence_requirements,
+  draft.feedback_criteria
+FROM activity_drafts AS draft
+WHERE draft.id = '00000000-0000-4000-8000-0000000000c0';
+
+WITH publish_payload AS (
+  SELECT jsonb_build_object(
+    'draftId', '00000000-0000-4000-8000-0000000000c0',
+    'expectedDraftVersion', 1,
+    'classroomId', '00000000-0000-4000-8000-000000000010',
+    'dueAt', NULL
+  ) AS value
+)
+INSERT INTO action_intents (
+  id,
+  actor_id,
+  action_name,
+  payload,
+  payload_hash,
+  target_type,
+  target_id,
+  expected_version,
+  expires_at
+)
+SELECT
+  '00000000-0000-4000-8000-0000000000c2',
+  '00000000-0000-4000-8000-000000000001',
+  'publish_activity_release',
+  publish_payload.value,
+  encode(
+    sha256(convert_to("cdas_publish_payload_canonical"(publish_payload.value), 'UTF8')),
+    'hex'
+  ),
+  'ActivityDraft',
+  '00000000-0000-4000-8000-0000000000c0',
+  1,
+  now() + interval '10 minutes'
+FROM publish_payload;
+
+UPDATE action_intents
+SET status = 'CONFIRMED', decided_by_id = actor_id, decided_at = now()
+WHERE id = '00000000-0000-4000-8000-0000000000c2';
+
+UPDATE action_intents
+SET status = 'EXECUTED', executed_at = now()
+WHERE id = '00000000-0000-4000-8000-0000000000c2';
+
+UPDATE activity_drafts
+SET status = 'SEALED', sealed_at = now(), updated_at = now()
+WHERE id = '00000000-0000-4000-8000-0000000000c0';
+
+INSERT INTO activity_releases (
+  id,
+  source_draft_id,
+  publisher_id,
+  classroom_id,
+  action_intent_id,
+  execution_version,
+  published_at,
+  due_at
+)
+SELECT
+  '00000000-0000-4000-8000-0000000000c3',
+  '00000000-0000-4000-8000-0000000000c0',
+  '00000000-0000-4000-8000-000000000001',
+  '00000000-0000-4000-8000-000000000010',
+  '00000000-0000-4000-8000-0000000000c2',
+  0,
+  intent.executed_at,
+  NULL
+FROM action_intents AS intent
+WHERE intent.id = '00000000-0000-4000-8000-0000000000c2';
+
+INSERT INTO activity_release_snapshots (
+  release_id,
+  source_draft_id,
+  source_draft_version,
+  schema_version,
+  content,
+  content_hash
+)
+SELECT
+  '00000000-0000-4000-8000-0000000000c3',
+  revision.draft_id,
+  revision.version,
+  2,
+  revision.task_book,
+  encode(sha256(convert_to(revision.task_book::TEXT, 'UTF8')), 'hex')
+FROM activity_draft_revisions AS revision
+WHERE revision.id = '00000000-0000-4000-8000-0000000000c1';
+
+SET CONSTRAINTS
+  "activity_releases_integrity",
+  "publish_action_intents_require_release",
+  "sealed_activity_drafts_require_release"
+  IMMEDIATE;
+
+SET CONSTRAINTS
+  "activity_releases_integrity",
+  "publish_action_intents_require_release",
+  "sealed_activity_drafts_require_release"
+  DEFERRED;
+
+INSERT INTO submissions (
+  id,
+  release_id,
+  student_id,
+  updated_at
+)
+VALUES (
+  '00000000-0000-4000-8000-0000000000c4',
+  '00000000-0000-4000-8000-0000000000c3',
+  '00000000-0000-4000-8000-000000000002',
+  now()
+);
+
+INSERT INTO submission_working_copies (
+  id,
+  submission_id,
+  base_revision_number,
+  version,
+  text_evidence,
+  updated_at
+)
+VALUES (
+  '00000000-0000-4000-8000-0000000000c5',
+  '00000000-0000-4000-8000-0000000000c4',
+  0,
+  1,
+  '观察记录：午间饮水区持续流水。',
+  now()
+);
+
+UPDATE submissions
+SET latest_revision_number = 1, updated_at = now()
+WHERE id = '00000000-0000-4000-8000-0000000000c4';
+
+INSERT INTO submission_revisions (
+  id,
+  submission_id,
+  revision_number,
+  base_revision_number,
+  source_working_copy_id,
+  source_working_version,
+  text_evidence,
+  is_late,
+  submitted_at
+)
+VALUES (
+  '00000000-0000-4000-8000-0000000000c6',
+  '00000000-0000-4000-8000-0000000000c4',
+  1,
+  0,
+  '00000000-0000-4000-8000-0000000000c5',
+  1,
+  '观察记录：午间饮水区持续流水。',
+  false,
+  now()
+);
+
+DELETE FROM submission_working_copies
+WHERE id = '00000000-0000-4000-8000-0000000000c5';
+
+INSERT INTO action_intents (
+  id,
+  actor_id,
+  action_name,
+  payload,
+  payload_hash,
+  target_type,
+  target_id,
+  expected_version,
+  expires_at
+)
+VALUES (
+  '00000000-0000-4000-8000-0000000000c7',
+  '00000000-0000-4000-8000-000000000001',
+  'save_teacher_evaluation',
+  '{
+    "schemaVersion": 1,
+    "submissionId": "00000000-0000-4000-8000-0000000000c4",
+    "submissionRevisionId": "00000000-0000-4000-8000-0000000000c6",
+    "expectedSubmissionRevisionNumber": 1,
+    "expectedEvaluationVersion": 0,
+    "summary": "证据能支持四个维度的判断。",
+    "outcomes": [
+      {"dimensionIndex":1,"dimensionName":"问题意识","status":"LEVEL","level":"good","citations":[{"kind":"text"}]},
+      {"dimensionIndex":2,"dimensionName":"证据质量","status":"INSUFFICIENT_EVIDENCE","citations":[]},
+      {"dimensionIndex":3,"dimensionName":"跨学科连接","status":"LEVEL","level":"pass","citations":[{"kind":"text"}]},
+      {"dimensionIndex":4,"dimensionName":"方案表达","status":"LEVEL","level":"good","citations":[{"kind":"text"}]}
+    ],
+    "suggestionAgentRunId": null
+  }'::jsonb,
+  repeat('d', 64),
+  'Submission',
+  '00000000-0000-4000-8000-0000000000c4',
+  1,
+  now() + interval '10 minutes'
+);
+
+UPDATE action_intents
+SET status = 'CONFIRMED', decided_by_id = actor_id, decided_at = now()
+WHERE id = '00000000-0000-4000-8000-0000000000c7';
+
+UPDATE action_intents
+SET status = 'EXECUTED', executed_at = now()
+WHERE id = '00000000-0000-4000-8000-0000000000c7';
+
+INSERT INTO teacher_evaluations (
+  id,
+  submission_revision_id,
+  teacher_id,
+  version,
+  created_at,
+  updated_at
+)
+SELECT
+  '00000000-0000-4000-8000-0000000000c8',
+  '00000000-0000-4000-8000-0000000000c6',
+  '00000000-0000-4000-8000-000000000001',
+  1,
+  intent.executed_at,
+  intent.executed_at
+FROM action_intents AS intent
+WHERE intent.id = '00000000-0000-4000-8000-0000000000c7';
+
+INSERT INTO teacher_evaluation_revisions (
+  id,
+  teacher_evaluation_id,
+  version,
+  summary,
+  summary_hash,
+  outcomes,
+  source,
+  confirmed_by_id,
+  action_intent_id,
+  confirmed_at
+)
+SELECT
+  '00000000-0000-4000-8000-0000000000c9',
+  '00000000-0000-4000-8000-0000000000c8',
+  1,
+  '证据能支持四个维度的判断。',
+  encode(sha256(convert_to('证据能支持四个维度的判断。', 'UTF8')), 'hex'),
+  '[
+    {"dimensionIndex":1,"dimensionName":"问题意识","status":"LEVEL","level":"good","citations":[{"kind":"text"}]},
+    {"dimensionIndex":2,"dimensionName":"证据质量","status":"INSUFFICIENT_EVIDENCE","citations":[]},
+    {"dimensionIndex":3,"dimensionName":"跨学科连接","status":"LEVEL","level":"pass","citations":[{"kind":"text"}]},
+    {"dimensionIndex":4,"dimensionName":"方案表达","status":"LEVEL","level":"good","citations":[{"kind":"text"}]}
+  ]'::jsonb,
+  'MANUAL',
+  '00000000-0000-4000-8000-000000000001',
+  '00000000-0000-4000-8000-0000000000c7',
+  intent.executed_at
+FROM action_intents AS intent
+WHERE intent.id = '00000000-0000-4000-8000-0000000000c7';
+
+DO $test$
+BEGIN
+  BEGIN
+    UPDATE teacher_evaluation_revisions
+    SET summary = '不应覆盖已确认评价'
+    WHERE id = '00000000-0000-4000-8000-0000000000c9';
+    RAISE EXCEPTION 'evaluation revision mutation was accepted';
+  EXCEPTION WHEN SQLSTATE '55000' THEN
+    NULL;
+  END;
+END
+$test$;
+
+DO $test$
+BEGIN
+  BEGIN
+    UPDATE teacher_evaluations
+    SET teacher_id = '00000000-0000-4000-8000-000000000002', updated_at = now()
+    WHERE id = '00000000-0000-4000-8000-0000000000c8';
+    RAISE EXCEPTION 'evaluation identity was reassigned';
+  EXCEPTION WHEN SQLSTATE '55000' THEN
+    NULL;
+  END;
+END
+$test$;
+
+DO $test$
+BEGIN
+  BEGIN
+    UPDATE teacher_evaluations
+    SET version = 3, updated_at = now()
+    WHERE id = '00000000-0000-4000-8000-0000000000c8';
+    RAISE EXCEPTION 'evaluation version skipped a revision';
+  EXCEPTION WHEN SQLSTATE '55000' THEN
+    NULL;
+  END;
+END
+$test$;
+
 INSERT INTO action_audits (
   id,
   actor_id,

@@ -16,6 +16,11 @@ import {
   teacherFeedbackNextStepLabels,
   teacherFeedbackSupportLevelLabels,
 } from "../../../../domain/feedback/teacher-feedback-policy";
+import {
+  teacherEvaluationCitationKindLabels,
+  teacherEvaluationLevelLabels,
+  teacherEvaluationOutcomeStatusLabels,
+} from "../../../../domain/evaluation/teacher-evaluation-policy";
 import { LocalizedDateTime } from "../../../_components/localized-date-time";
 import { InlineAlert, StatusBadge } from "../../../_components/ui";
 import { WorkspaceShell } from "../../../_components/workspace-shell";
@@ -176,7 +181,12 @@ function RevisionHistory({
               queriedRevision?.revisionNumber === revision.revisionNumber
                 ? queriedRevision.feedback
                 : null;
+            const evaluation =
+              queriedRevision?.revisionNumber === revision.revisionNumber
+                ? queriedRevision.evaluation
+                : null;
             const feedbackHeadingId = `feedback-${revision.id}`;
+            const evaluationHeadingId = `evaluation-${revision.id}`;
 
             return (
               <article className={styles.revision} key={revision.id}>
@@ -296,6 +306,97 @@ function RevisionHistory({
                   ) : (
                     <p className={styles.emptyFeedback}>
                       此正式修订尚无教师已确认的反馈。
+                    </p>
+                  )}
+                </section>
+
+                <section
+                  className={styles.feedbackSection}
+                  aria-labelledby={evaluationHeadingId}
+                >
+                  <div className={styles.feedbackHeading}>
+                    <div>
+                      <p className={styles.eyebrow}>量规评价</p>
+                      <h4 id={evaluationHeadingId}>
+                        {evaluation ? evaluation.teacher.displayName : "尚待确认"}
+                      </h4>
+                    </div>
+                    {evaluation ? (
+                      <span>当前第 {evaluation.currentVersion} 版</span>
+                    ) : null}
+                  </div>
+
+                  {evaluation ? (
+                    <ol className={styles.feedbackVersions}>
+                      {[...evaluation.revisions].reverse().map((entry) => (
+                        <li
+                          className={styles.feedbackVersion}
+                          data-current={
+                            entry.version === evaluation.currentVersion
+                              ? "true"
+                              : "false"
+                          }
+                          key={entry.id}
+                        >
+                          <div className={styles.feedbackVersionMeta}>
+                            <strong>评价第 {entry.version} 版</strong>
+                            {entry.version === evaluation.currentVersion ? (
+                              <span>当前版本</span>
+                            ) : null}
+                            <p>
+                              {evaluation.teacher.displayName} · {entry.source ===
+                              "MANUAL"
+                                ? "教师手写"
+                                : "AI 建议，教师已确认"}
+                            </p>
+                            <LocalizedDateTime dateTime={entry.confirmedAt} />
+                          </div>
+                          <div>
+                            <ul className={styles.evaluationOutcomeList}>
+                              {entry.outcomes.map((outcome) => (
+                                <li key={outcome.dimensionIndex}>
+                                  <strong>
+                                    {outcome.dimensionIndex}. {outcome.dimensionName}
+                                  </strong>
+                                  <span>
+                                    {outcome.status === "LEVEL" &&
+                                    "level" in outcome
+                                      ? teacherEvaluationLevelLabels[outcome.level]
+                                      : teacherEvaluationOutcomeStatusLabels.INSUFFICIENT_EVIDENCE}
+                                  </span>
+                                  {outcome.citations.length > 0 ? (
+                                    <small>
+                                      {outcome.citations
+                                        .map((citation) => {
+                                          if (citation.kind === "text") {
+                                            return teacherEvaluationCitationKindLabels.text;
+                                          }
+                                          if (citation.kind === "attachment") {
+                                            const filename =
+                                              revision.attachments.find(
+                                                (item) =>
+                                                  item.id === citation.attachmentId,
+                                              )?.filename ?? citation.attachmentId;
+                                            return `${teacherEvaluationCitationKindLabels.attachment}：${filename}`;
+                                          }
+                                          return `${teacherEvaluationCitationKindLabels.checkpoint} ${citation.evidenceIndex}`;
+                                        })
+                                        .join("；")}
+                                    </small>
+                                  ) : null}
+                                </li>
+                              ))}
+                            </ul>
+                            <div className={styles.feedbackBody}>
+                              {entry.summary}
+                            </div>
+                          </div>
+                        </li>
+                      ))}
+                    </ol>
+                  ) : (
+                    <p className={styles.emptyFeedback}>
+                      此正式修订尚无教师已确认的量规评价。
                     </p>
                   )}
                 </section>

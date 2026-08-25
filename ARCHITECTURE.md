@@ -82,7 +82,7 @@ ActionIntent 的 action、payload、hash、目标、预期版本、创建者和�
 3. 在 Serializable 事务内重新读取 Release 与目标班级管理关系；只有仍为 `ACTIVE` 的精确 Release 可以继续。
 4. 原子消费确认，将 Release 迁移为 `CLOSED`、保存其唯一关闭 ActionIntent 关联，并保存成功审计与幂等结果后提交。
 
-数据库用 Release 更新与关闭 ActionIntent 执行的双向延迟约束，拒绝没有精确确认、actor、参数摘要和执行时间的直接状态修改。关闭后学生写命令在重新授权时拒绝，已有 Release、学生自己的提交和反馈仍可读取，且有权教师仍可反馈。第一阶段不实现 `CLOSED → ARCHIVED`，也不提供关闭的 Agent 工具。
+数据库用 Release 更新与关闭 ActionIntent 执行的双向延迟约束，拒绝没有精确确认、actor、参数摘要和执行时间的直接状态修改。关闭后学生写命令在重新授权时拒绝，已有 Release、学生自己的提交、反馈和量规评价仍可读取，且有权教师仍可反馈或评价。第一阶段不实现 `CLOSED → ARCHIVED`，也不提供关闭的 Agent 工具。
 
 ## 教师反馈确认流程
 
@@ -94,6 +94,16 @@ ActionIntent 的 action、payload、hash、目标、预期版本、创建者和�
 - 手写路径不创建 AgentRun，也不调用模型；关闭 AI provider 时仍能完成确认与保存。
 
 数据库同时校验反馈容器身份、连续版本、确认时间、正文可见性、来源 provenance，以及不可变修订与已执行 ActionIntent 的精确对应关系；新修订的结构化字段必须与该意图 payload 一致。
+
+## 教师量规评价确认流程
+
+- `prepareTeacherEvaluationIntent` 在事务内读取当前正式修订、冻结 snapshot 与本版证据，校验全部量规维度后创建十分钟有效的 ActionIntent。评价 payload `schemaVersion` 为 1；v1 snapshot 返回 `RUBRIC_UNAVAILABLE`。
+- 第一方 UI 通过独立确认面板调用 `decideActionIntent`；该面板不得与反馈确认合并。本切片不呼叫模型，也不新增 Agent 工具。
+- `saveTeacherEvaluation` 锁定 Submission 后重新授权并核对当前修订。学生若已经重交，原确认失效且不会产生评价。每个 SubmissionRevision 对应一个稳定 TeacherEvaluation 容器；首次确认创建版本 1，之后修改只追加 TeacherEvaluationRevision。
+- LEVEL 必须引用本版文字、READY 附件或已确认检查点；`INSUFFICIENT_EVIDENCE` 必须空引用。关闭后有权教师仍可评价。
+- 手写路径不创建 AgentRun；关闭 AI provider 时仍能完成确认与保存。
+
+数据库同时校验评价容器身份、连续版本、综评可见性、outcomes 覆盖冻结量规、引用授权，以及不可变修订与已执行 ActionIntent 的精确对应关系。
 
 ## 班级成员变更
 
@@ -124,6 +134,7 @@ ActionIntent 的 action、payload、hash、目标、预期版本、创建者和�
 - ActivityRelease 的身份、发布时间、目标班级与截止时间
 - SubmissionRevision
 - TeacherFeedbackRevision（含 D-034 起冻结的 `nextStep` 与 `supportLevel`；历史正文-only 行不回填）
+- TeacherEvaluationRevision
 - 成功 IdempotencyRecord
 - ActionAudit
 

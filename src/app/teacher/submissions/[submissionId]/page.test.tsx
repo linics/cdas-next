@@ -80,8 +80,27 @@ vi.mock("./feedback-composer", () => ({
     />
   ),
 }));
+vi.mock("./evaluation-composer", () => ({
+  EvaluationComposer: ({
+    submissionRevisionNumber,
+    expectedEvaluationVersion,
+    initialSummary,
+  }: {
+    submissionRevisionNumber: number;
+    expectedEvaluationVersion: number;
+    initialSummary: string;
+  }) => (
+    <div
+      data-evaluation-composer="true"
+      data-revision={submissionRevisionNumber}
+      data-evaluation-version={expectedEvaluationVersion}
+      data-initial-summary={initialSummary}
+    />
+  ),
+}));
 
 import { AuthenticationError } from "../../../../server/auth/current-actor";
+import { waterConservationTaskBook } from "../../../../fixtures/water-conservation";
 import { FeedbackWorkspaceQueryError } from "../../../../server/queries/feedback-workspace";
 import TeacherSubmissionPage from "./page";
 
@@ -103,6 +122,8 @@ const workspace = {
   },
   submission: {
     id: submissionId,
+    phaseIndex: 0,
+    phaseName: null,
     latestRevisionNumber: 1,
     release: {
       id: "40000000-0000-4000-8000-000000000004",
@@ -132,6 +153,7 @@ const workspace = {
         id: "60000000-0000-4000-8000-000000000006",
         revisionNumber: 1,
         textEvidence: secretSubmissionBody,
+        completedEvidenceIndexes: [],
         isLate: false,
         submittedAt: "2026-08-18T11:00:00.000Z",
         attachments: [],
@@ -154,6 +176,7 @@ const workspace = {
             },
           ],
         },
+        evaluation: null,
       },
     ],
   },
@@ -221,6 +244,101 @@ describe("teacher feedback page access boundary", () => {
     expect(markup).toContain('data-revision="1"');
     expect(markup).toContain('data-feedback-version="1"');
     expect(markup).toContain(`data-initial-body="${currentFeedbackBody}"`);
+    expect(markup).toContain("这份发布快照是 schema v1，没有四档量规");
+    expect(markup).not.toContain("data-evaluation-composer");
+  });
+
+  it("opens a separate evaluation composer for a schema v2 snapshot", async () => {
+    mocks.getTeacherFeedbackWorkspace.mockResolvedValue({
+      ...workspace,
+      submission: {
+        ...workspace.submission,
+        phaseIndex: 3,
+        phaseName: "建议与公开表达",
+        release: {
+          ...workspace.submission.release,
+          snapshot: {
+            ...workspace.submission.release.snapshot,
+            content: waterConservationTaskBook,
+          },
+        },
+        revisions: [
+          {
+            ...workspace.submission.revisions[0],
+            completedEvidenceIndexes: [1],
+            attachments: [
+              {
+                id: "90000000-0000-4000-8000-000000000009",
+                kind: "IMAGE",
+                filename: "evidence.png",
+                mediaType: "image/png",
+                byteSize: 128,
+              },
+            ],
+            evaluation: {
+              id: "a0000000-0000-4000-8000-00000000000a",
+              currentVersion: 1,
+              teacher: {
+                id: trustedContext.actorId,
+                displayName: "林老师",
+              },
+              revisions: [
+                {
+                  id: "b0000000-0000-4000-8000-00000000000b",
+                  version: 1,
+                  summary: "按冻结量规给出综评。",
+                  outcomes: [
+                    {
+                      dimensionIndex: 1,
+                      dimensionName: "问题意识",
+                      status: "LEVEL",
+                      level: "excellent",
+                      citations: [{ kind: "text" }],
+                    },
+                    {
+                      dimensionIndex: 2,
+                      dimensionName: "证据质量",
+                      status: "INSUFFICIENT_EVIDENCE",
+                      citations: [],
+                    },
+                    {
+                      dimensionIndex: 3,
+                      dimensionName: "跨学科连接",
+                      status: "LEVEL",
+                      level: "good",
+                      citations: [
+                        {
+                          kind: "attachment",
+                          attachmentId: "90000000-0000-4000-8000-000000000009",
+                        },
+                      ],
+                    },
+                    {
+                      dimensionIndex: 4,
+                      dimensionName: "方案表达",
+                      status: "LEVEL",
+                      level: "pass",
+                      citations: [{ kind: "checkpoint", evidenceIndex: 1 }],
+                    },
+                  ],
+                  source: "MANUAL",
+                  confirmedAt: "2026-08-18T11:40:00.000Z",
+                },
+              ],
+            },
+          },
+        ],
+      },
+    });
+
+    const markup = await renderPage();
+
+    expect(markup).toContain("data-evaluation-composer");
+    expect(markup).toContain('data-evaluation-version="1"');
+    expect(markup).toContain("按冻结量规给出综评。");
+    expect(markup).toContain("证据不足");
+    expect(markup).toContain("优秀");
+    expect(markup).not.toContain("这份发布快照是 schema v1");
   });
 
   it("labels shared group feedback with every member and role", async () => {

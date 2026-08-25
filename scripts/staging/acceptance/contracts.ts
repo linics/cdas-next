@@ -44,6 +44,7 @@ export type AcceptanceNamespace = Readonly<{
   activitySummary: string;
   evidenceText: string;
   feedbackText: string;
+  evaluationText: string;
 }>;
 
 function value(environment: AcceptanceEnvironment, name: string): string {
@@ -94,6 +95,7 @@ export function acceptanceNamespace(marker: string): AcceptanceNamespace {
     activitySummary: `Synthetic-only acceptance evidence for ${marker}.`,
     evidenceText: `Synthetic text evidence for ${marker}.`,
     feedbackText: `Synthetic teacher feedback for ${marker}.`,
+    evaluationText: `Synthetic teacher evaluation for ${marker}.`,
   };
 }
 

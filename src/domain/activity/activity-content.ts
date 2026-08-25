@@ -113,7 +113,7 @@ const taskPhaseSchema = z.object({
   suggestedLessons: z.int().min(1).max(16),
 }).strict();
 
-const rubricDimensionSchema = z.object({
+export const rubricDimensionSchema = z.object({
   name: nonBlankText.max(100),
   excellent: nonBlankText.max(300),
   good: nonBlankText.max(300),

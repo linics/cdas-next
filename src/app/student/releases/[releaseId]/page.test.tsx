@@ -200,10 +200,54 @@ const confirmedFeedbackWorkspace = {
           payloadHash: "feedback-payload-hash-secret",
           agentRun: { id: "agent-run-secret" },
         },
+        evaluation: {
+          id: "83000000-0000-4000-8000-000000000008",
+          currentVersion: 1,
+          teacher: { id: teacherId, displayName: "林老师" },
+          revisions: [
+            {
+              id: "84000000-0000-4000-8000-000000000008",
+              version: 1,
+              summary: "第一版量规综评：问题清楚，证据仍不足。",
+              outcomes: [
+                {
+                  dimensionIndex: 1,
+                  dimensionName: "问题意识",
+                  status: "LEVEL",
+                  level: "excellent",
+                  citations: [{ kind: "text" }],
+                },
+                {
+                  dimensionIndex: 2,
+                  dimensionName: "证据质量",
+                  status: "INSUFFICIENT_EVIDENCE",
+                  citations: [],
+                },
+                {
+                  dimensionIndex: 3,
+                  dimensionName: "跨学科连接",
+                  status: "LEVEL",
+                  level: "good",
+                  citations: [{ kind: "text" }],
+                },
+                {
+                  dimensionIndex: 4,
+                  dimensionName: "方案表达",
+                  status: "LEVEL",
+                  level: "pass",
+                  citations: [{ kind: "text" }],
+                },
+              ],
+              source: "MANUAL",
+              confirmedAt: "2026-08-18T11:05:00.000Z",
+            },
+          ],
+        },
       },
       {
         ...submittedWorkspace.submission.revisions[1],
         feedback: null,
+        evaluation: null,
       },
     ],
     pendingIntent: {
@@ -349,6 +393,11 @@ describe("student release page access boundary", () => {
     expect(markup).toContain("单位已补齐，再说明两次数据的差值。");
     expect(markup).toContain("先补上两次读数的单位。");
     expect(markup).toContain("此正式修订尚无教师已确认的反馈");
+    expect(markup).toContain("评价第 1 版");
+    expect(markup).toContain("第一版量规综评：问题清楚，证据仍不足。");
+    expect(markup).toContain("证据不足");
+    expect(markup).toContain("优秀");
+    expect(markup).toContain("此正式修订尚无教师已确认的量规评价");
     expect(markup).not.toContain("feedback-payload-hash-secret");
     expect(markup).not.toContain("agent-run-secret");
     expect(markup).not.toContain("尚未确认的反馈不能显示");

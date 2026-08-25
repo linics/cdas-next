@@ -2,6 +2,8 @@ import "server-only";
 
 import { z } from "zod";
 import { activityContentSchema } from "../../domain/activity/activity-content";
+import { teacherEvaluationCitationSchema } from "../../domain/evaluation/teacher-evaluation-intent";
+import { teacherEvaluationLevels } from "../../domain/evaluation/teacher-evaluation-policy";
 import {
   teacherFeedbackNextSteps,
   teacherFeedbackSupportLevels,
@@ -80,6 +82,69 @@ const confirmedFeedbackRevisionSchema = z
     }
   });
 
+const confirmedEvaluationOutcomeSchema = z
+  .discriminatedUnion("status", [
+    z
+      .object({
+        dimensionIndex: z.int().min(1).max(8),
+        dimensionName: visibleTextSchema.max(100),
+        status: z.literal("LEVEL"),
+        level: z.enum(teacherEvaluationLevels),
+        citations: z.array(teacherEvaluationCitationSchema).min(1).max(5),
+      })
+      .strict(),
+    z
+      .object({
+        dimensionIndex: z.int().min(1).max(8),
+        dimensionName: visibleTextSchema.max(100),
+        status: z.literal("INSUFFICIENT_EVIDENCE"),
+        citations: z.array(teacherEvaluationCitationSchema).max(0),
+      })
+      .strict(),
+  ]);
+
+const confirmedEvaluationRevisionSchema = z
+  .object({
+    id: z.uuid(),
+    version: z.int().positive(),
+    summary: visibleTextSchema,
+    outcomes: z.array(confirmedEvaluationOutcomeSchema).min(4).max(8),
+    source: feedbackSourceSchema,
+    confirmedAt: isoDateSchema,
+  })
+  .strict();
+
+const confirmedEvaluationSchema = z
+  .object({
+    id: z.uuid(),
+    currentVersion: z.int().positive(),
+    teacher: z
+      .object({
+        id: z.uuid(),
+        displayName: visibleTextSchema,
+      })
+      .strict(),
+    revisions: z.array(confirmedEvaluationRevisionSchema).min(1),
+  })
+  .strict()
+  .superRefine((evaluation, context) => {
+    if (evaluation.revisions.length !== evaluation.currentVersion) {
+      context.addIssue({
+        code: "custom",
+        message: "Evaluation history must match its current version",
+      });
+    }
+    evaluation.revisions.forEach((revision, index) => {
+      if (revision.version !== index + 1) {
+        context.addIssue({
+          code: "custom",
+          message: "Evaluation revision versions must be contiguous",
+          path: ["revisions", index, "version"],
+        });
+      }
+    });
+  });
+
 const confirmedFeedbackSchema = z
   .object({
     id: z.uuid(),
@@ -121,6 +186,7 @@ const formalSubmissionRevisionSchema = z
     submittedAt: isoDateSchema,
     attachments: z.array(formalAttachmentSchema).max(5),
     feedback: confirmedFeedbackSchema.nullable(),
+    evaluation: confirmedEvaluationSchema.nullable(),
   })
   .strict()
   .superRefine((revision, context) => {
@@ -287,6 +353,29 @@ const safeSubmissionSelect = {
           },
         },
       },
+      evaluation: {
+        select: {
+          id: true,
+          version: true,
+          teacher: {
+            select: {
+              id: true,
+              displayName: true,
+            },
+          },
+          revisions: {
+            orderBy: { version: "asc" as const },
+            select: {
+              id: true,
+              version: true,
+              summary: true,
+              outcomes: true,
+              source: true,
+              confirmedAt: true,
+            },
+          },
+        },
+      },
     },
   },
 } as const;
@@ -335,6 +424,19 @@ function mapSubmissionHistory(
           body: string;
           nextStep: "CONTINUE" | "REVISE" | null;
           supportLevel: "FOUNDATION" | "STANDARD" | "CHALLENGE" | null;
+          source: "MANUAL" | "AI_ASSISTED";
+          confirmedAt: Date;
+        }>;
+      } | null;
+      evaluation: {
+        id: string;
+        version: number;
+        teacher: { id: string; displayName: string };
+        revisions: Array<{
+          id: string;
+          version: number;
+          summary: string;
+          outcomes: unknown;
           source: "MANUAL" | "AI_ASSISTED";
           confirmedAt: Date;
         }>;
@@ -409,6 +511,27 @@ function mapSubmissionHistory(
                 source: feedbackRevision.source,
                 confirmedAt:
                   feedbackRevision.confirmedAt.toISOString(),
+              }),
+            ),
+          }
+        : null,
+      evaluation: revision.evaluation
+        ? {
+            id: revision.evaluation.id,
+            currentVersion: revision.evaluation.version,
+            teacher: revision.evaluation.teacher,
+            revisions: revision.evaluation.revisions.map(
+              (evaluationRevision) => ({
+                id: evaluationRevision.id,
+                version: evaluationRevision.version,
+                summary: evaluationRevision.summary,
+                outcomes: z
+                  .array(confirmedEvaluationOutcomeSchema)
+                  .min(4)
+                  .max(8)
+                  .parse(evaluationRevision.outcomes),
+                source: evaluationRevision.source,
+                confirmedAt: evaluationRevision.confirmedAt.toISOString(),
               }),
             ),
           }
