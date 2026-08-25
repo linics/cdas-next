@@ -188,8 +188,8 @@ class BrowserContractTests(unittest.TestCase):
         self.assertIn("CLOSED_STUDENT_ATTACHMENT_READABLE", source)
         self.assertIn("expect_download", source)
         self.assertIn('locator("li").filter(has_text=filename).get_by_role("link")', source)
-        self.assertIn("other_student_context.close()", source)
-        self.assertIn("other_teacher_context.close()", source)
+        self.assertIn("close_quietly(other_student_context)", source)
+        self.assertIn("close_quietly(other_teacher_context)", source)
         self.assertIn('teacher.goto(f"{remote}{activity_href}"', source)
         self.assertNotIn("release_href.rsplit", source)
         self.assertNotIn("localStorage", source)
@@ -264,6 +264,13 @@ class BrowserContractTests(unittest.TestCase):
                 "https://staging.example.test",
                 "STAGING_ACCEPTANCE_GROUPMATE_RELEASE_NOT_VISIBLE",
             )
+
+    def test_cleanup_does_not_replace_the_primary_acceptance_failure(self):
+        class Resource:
+            def close(self):
+                raise MODULE.PlaywrightError("cleanup timeout with secret detail")
+
+        MODULE.close_quietly(Resource())
 
 
 if __name__ == "__main__":

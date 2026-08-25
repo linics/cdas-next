@@ -257,6 +257,14 @@ def screenshot(page: Page, output: Path, name: str) -> str:
     return hashlib.sha256(destination.read_bytes()).hexdigest()
 
 
+def close_quietly(resource: object) -> None:
+    """Best-effort browser cleanup must not replace the acceptance failure."""
+    try:
+        resource.close()
+    except Exception:
+        pass
+
+
 def wait_text(page: Page, text: str) -> None:
     page.get_by_text(text, exact=False).last.wait_for(state="visible", timeout=30_000)
 
@@ -918,11 +926,11 @@ def run() -> None:
                     pass
             raise
         finally:
-            teacher_context.close()
-            student_context.close()
-            other_student_context.close()
-            other_teacher_context.close()
-            browser.close()
+            close_quietly(teacher_context)
+            close_quietly(student_context)
+            close_quietly(other_student_context)
+            close_quietly(other_teacher_context)
+            close_quietly(browser)
 
     payload = {
         "schema": "staging-synthetic-acceptance-evidence.v1",

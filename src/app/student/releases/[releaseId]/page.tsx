@@ -42,6 +42,11 @@ import {
 import { SubmissionEditor } from "./submission-editor";
 import styles from "./submission-workspace.module.css";
 
+// A teacher can append feedback or evaluation while this student session is
+// open. Render the authenticated workspace from current database state rather
+// than the Full Route Cache.
+export const dynamic = "force-dynamic";
+
 function AccessUnavailable({
   code,
   releaseId,
