@@ -11,7 +11,7 @@ Use this skill only for the development workflow. It must not add a multi-Agent 
 
 Before changing business behavior, read `PRODUCT.md`, `DOMAIN.md`, `ACCEPTANCE.md`, and `AGENT.md`. Read the relevant installed Next.js guide under `node_modules/next/dist/docs/` before relying on framework APIs or conventions.
 
-Keep the primary thread on GPT-5.6 Sol for delegated work in Codex. In Cursor, keep the primary thread on Grok 4.6 and reserve the Other Models pool for Fable 5 expert review via `cdas-reviewer`. The primary thread owns scope, product and domain decisions, authorization boundaries, accepted task contracts, integration, and final verification. If the runtime cannot confirm a requested model, report the model as unknown instead of claiming that routing succeeded.
+Keep the primary thread on GPT-5.6 Sol for delegated work in Codex. In Cursor, keep the primary thread on Grok 4.6; use Grok 4.6 for ordinary code review; auto-call Fable 5 via `cdas-reviewer` only on protected-invariant must-call gates. The primary thread owns scope, product and domain decisions, authorization boundaries, accepted task contracts, integration, and final verification. If the runtime cannot confirm a requested model, report the model as unknown instead of claiming that routing succeeded.
 
 For Cursor model routing, cheap-model exceptions, Fable 5 review gates, and subagent defaults, read [references/cursor-routing.md](references/cursor-routing.md).
 
@@ -32,7 +32,7 @@ Prefer these project agents:
 - `cdas_reviewer` / `cdas-reviewer`: independent read-only correctness and invariant review.
 - `cdas_verifier` / `cdas-verifier`: focused checks and failure-evidence collection without source edits.
 
-Codex maps explorer and verifier to Luna, builder and reviewer to Terra, with Sol as coordinator. Cursor maps the primary thread and builder to Grok 4.6, explorer and verifier to Composer 2.5, and reviewer to Fable 5.
+Codex maps explorer and verifier to Luna, builder and reviewer to Terra, with Sol as coordinator. Cursor maps the primary thread and builder to Grok 4.6, explorer and verifier to Composer 2.5 `[fast=false]`, ordinary review to Grok 4.6, and automatic protected-invariant review to Fable 5.
 
 Keep delegation one level deep. Subagents must not spawn more agents. Run at most three subagents concurrently, and never run two source-code writers at the same time.
 

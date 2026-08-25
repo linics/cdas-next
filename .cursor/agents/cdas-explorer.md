@@ -1,7 +1,7 @@
 ---
 name: cdas-explorer
 description: Read-only CDAS Next codebase and framework explorer. Use proactively before implementation to map entry points, domain commands, authorization, tests, and acceptance coverage.
-model: composer-2.5
+model: composer-2.5[fast=false]
 readonly: true
 ---
 
