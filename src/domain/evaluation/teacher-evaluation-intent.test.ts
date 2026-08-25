@@ -127,6 +127,30 @@ describe("teacher evaluation intent payload", () => {
     ).toThrow();
   });
 
+  it("keeps mixed citation hashes after JSON persistence", () => {
+    const input = payloadInput();
+    input.outcomes = coveringOutcomes();
+    input.outcomes[1] = {
+      dimensionIndex: 2,
+      dimensionName: waterConservationTaskBook.rubricDimensions[1]!.name,
+      status: "INSUFFICIENT_EVIDENCE",
+      citations: [],
+    };
+    input.outcomes[2] = {
+      ...input.outcomes[2]!,
+      citations: [{ kind: "attachment", attachmentId }],
+    };
+    input.outcomes[3] = {
+      ...input.outcomes[3]!,
+      citations: [{ kind: "checkpoint", evidenceIndex: 1 }],
+    };
+    const payload = createTeacherEvaluationPayload(input, evidence());
+    const persisted = JSON.parse(JSON.stringify(payload));
+    expect(hashTeacherEvaluationPayload(persisted)).toBe(
+      hashTeacherEvaluationPayload(payload),
+    );
+  });
+
   it("hashes the complete payload and rejects extra fields or oversized summaries", () => {
     const payload = createTeacherEvaluationPayload(payloadInput(), evidence());
     expect(hashTeacherEvaluationPayload({ ...payload, outcomes: [...payload.outcomes] })).toBe(

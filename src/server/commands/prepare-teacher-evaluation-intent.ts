@@ -65,6 +65,14 @@ export class PrepareTeacherEvaluationIntentError extends Error {
 }
 
 const commandName = "prepare_teacher_evaluation_intent";
+const retryablePrismaCodes = new Set(["P2002", "P2024", "P2028", "P2034"]);
+
+function isZodError(error: unknown): boolean {
+  return (
+    error instanceof z.ZodError ||
+    (error instanceof Error && error.name === "ZodError")
+  );
+}
 
 function hashValue(value: unknown): string {
   const canonicalValue = canonicalize(value);
@@ -191,9 +199,17 @@ async function runTransaction(
         );
       }
 
-      const content = activityContentSchema.parse(
-        submission.release.snapshot.content,
-      );
+      let content: ReturnType<typeof activityContentSchema.parse>;
+      try {
+        content = activityContentSchema.parse(
+          submission.release.snapshot.content,
+        );
+      } catch (error) {
+        if (isZodError(error)) {
+          throw new PrepareTeacherEvaluationIntentError("RUBRIC_UNAVAILABLE");
+        }
+        throw error;
+      }
       if (content.schemaVersion !== 2) {
         throw new PrepareTeacherEvaluationIntentError("RUBRIC_UNAVAILABLE");
       }
@@ -249,13 +265,14 @@ async function runTransaction(
           },
         );
       } catch (error) {
-        if (error instanceof z.ZodError) {
+        if (isZodError(error)) {
           throw new PrepareTeacherEvaluationIntentError("INVALID_EVALUATION");
         }
         throw error;
       }
 
-      const requestHash = hashTeacherEvaluationPayload(payload);
+      const storedPayload = JSON.parse(JSON.stringify(payload)) as typeof payload;
+      const requestHash = hashTeacherEvaluationPayload(storedPayload);
       const existing = await transaction.idempotencyRecord.findUnique({
         where: {
           actorId_commandName_idempotencyKey: {
@@ -281,9 +298,9 @@ async function runTransaction(
       const intent = await transaction.actionIntent.create({
         data: {
           actorId: context.actorId,
-          agentRunId: payload.suggestionAgentRunId,
+          agentRunId: storedPayload.suggestionAgentRunId,
           actionName: "save_teacher_evaluation",
-          payload,
+          payload: storedPayload,
           payloadHash: requestHash,
           targetType: "Submission",
           targetId: submission.id,
@@ -304,7 +321,7 @@ async function runTransaction(
       await transaction.actionAudit.create({
         data: {
           actorId: context.actorId,
-          agentRunId: payload.suggestionAgentRunId,
+          agentRunId: storedPayload.suggestionAgentRunId,
           actionIntentId: intent.id,
           source: context.source,
           actionName: commandName,
@@ -366,7 +383,7 @@ export async function prepareTeacherEvaluationIntent(
     } catch (error) {
       const retryable =
         error instanceof Prisma.PrismaClientKnownRequestError &&
-        (error.code === "P2034" || error.code === "P2002");
+        retryablePrismaCodes.has(error.code);
 
       if (retryable && attempt < 3) {
         continue;
@@ -377,7 +394,9 @@ export async function prepareTeacherEvaluationIntent(
           ? error
           : retryable
             ? new PrepareTeacherEvaluationIntentError("CONCURRENT_WRITE")
-            : null;
+            : isZodError(error)
+              ? new PrepareTeacherEvaluationIntentError("INVALID_EVALUATION")
+              : null;
 
       if (domainError) {
         await recordFailureAudit(
@@ -390,6 +409,14 @@ export async function prepareTeacherEvaluationIntent(
         throw domainError;
       }
 
+      console.error("prepare_teacher_evaluation_intent failed", {
+        errorName: error instanceof Error ? error.name : "UnknownError",
+        prismaCode:
+          error instanceof Prisma.PrismaClientKnownRequestError
+            ? error.code
+            : undefined,
+        traceId: context.traceId,
+      });
       throw error;
     }
   }

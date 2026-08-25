@@ -309,6 +309,21 @@ describe("teacher evaluation server actions", () => {
     },
   );
 
+  it("maps a ZodError-shaped exception from a different Zod copy as validation", async () => {
+    const foreign = new Error("hidden schema path");
+    foreign.name = "ZodError";
+    mocks.prepareEvaluation.mockRejectedValue(foreign);
+
+    const state = await prepareTeacherEvaluationAction(
+      initialEvaluationActionState,
+      prepareForm(),
+    );
+
+    expect(state.status).toBe("validation_error");
+    expect(state.message).toContain("量规评价必须覆盖全部冻结维度");
+    expect(state.message).not.toContain("hidden schema path");
+  });
+
   it("does not prepare when the Clerk session is unavailable", async () => {
     mocks.createUiCommandContext.mockRejectedValue(
       new AuthenticationError("UNAUTHENTICATED"),

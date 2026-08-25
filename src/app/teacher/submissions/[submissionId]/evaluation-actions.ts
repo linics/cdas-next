@@ -140,8 +140,13 @@ function failedActionState(
   error: unknown,
   resolvedIntentId: string | null = null,
 ): EvaluationActionState {
-  if (error instanceof z.ZodError) {
-    const tooLong = error.issues.some((issue) => issue.code === "too_big");
+  if (
+    error instanceof z.ZodError ||
+    (error instanceof Error && error.name === "ZodError")
+  ) {
+    const tooLong =
+      error instanceof z.ZodError &&
+      error.issues.some((issue) => issue.code === "too_big");
     return actionState({
       operation,
       status: "validation_error",
