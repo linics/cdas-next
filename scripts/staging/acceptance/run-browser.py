@@ -760,7 +760,10 @@ def run() -> None:
             index["04-teacher-feedback.png"] = screenshot(teacher, output, "04-teacher-feedback")
             teacher.goto(f"{remote}{release_href}", wait_until="domcontentloaded")
             assert_origin(teacher.url, remote)
-            teacher.get_by_text("已评价 v1", exact=True).wait_for(state="visible")
+            wait_visible(
+                teacher.get_by_text("已评价 v1", exact=False).last,
+                "STAGING_ACCEPTANCE_TEACHER_EVALUATION_SUMMARY_MISSING",
+            )
 
             sign_in(other_teacher, remote, "other_teacher")
             wait_visible(

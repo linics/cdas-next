@@ -178,6 +178,7 @@ class BrowserContractTests(unittest.TestCase):
         self.assertIn("STAGING_ACCEPTANCE_ATTACHMENT_UPLOAD_TIMEOUT", source)
         self.assertIn("STAGING_ACCEPTANCE_ATTACHMENT_UPLOAD_FAILED", source)
         self.assertIn("TEACHER_FORMAL_ATTACHMENT_DOWNLOAD", source)
+        self.assertIn("STAGING_ACCEPTANCE_TEACHER_EVALUATION_SUMMARY_MISSING", source)
         self.assertIn("GROUPMATE_SHARED_ATTACHMENT_DOWNLOAD", source)
         self.assertIn('review_href = f"{activity_href}?phase=3"', source)
         self.assertIn("GROUPMATE_TEACHER_SUBMISSION_404", source)
