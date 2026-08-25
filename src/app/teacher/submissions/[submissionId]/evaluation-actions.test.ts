@@ -83,6 +83,7 @@ const evaluationId = "40000000-0000-4000-8000-000000000004";
 const evaluationRevisionId = "50000000-0000-4000-8000-000000000005";
 const actorId = "60000000-0000-4000-8000-000000000006";
 const attachmentId = "70000000-0000-4000-8000-000000000007";
+const releaseId = "80000000-0000-4000-8000-000000000008";
 const outcomes = [
   {
     dimensionIndex: 1,
@@ -180,6 +181,7 @@ describe("teacher evaluation server actions", () => {
       teacherEvaluationId: evaluationId,
       teacherEvaluationRevisionId: evaluationRevisionId,
       submissionRevisionId: revisionId,
+      releaseId,
       version: 2,
       confirmedAt: "2026-08-18T12:01:00.000Z",
     });
@@ -364,6 +366,10 @@ describe("teacher evaluation server actions", () => {
       "/teacher/submissions/[submissionId]",
       "page",
     );
+    expect(mocks.revalidatePath).toHaveBeenCalledWith(
+      `/student/releases/${releaseId}`,
+    );
+    expect(mocks.revalidatePath).toHaveBeenCalledWith("/student");
     expect(state).toMatchObject({
       operation: "confirm",
       status: "saved",

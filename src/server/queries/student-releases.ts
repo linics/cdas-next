@@ -135,6 +135,7 @@ export async function listStudentReleases(
       },
       submissions: {
         where: isSubmissionAudienceMemberWhere(context.actorId),
+        orderBy: { phaseIndex: "desc" },
         take: 1,
         select: {
           latestRevisionNumber: true,

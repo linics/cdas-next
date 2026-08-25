@@ -82,6 +82,7 @@ const intentId = "30000000-0000-4000-8000-000000000003";
 const feedbackId = "40000000-0000-4000-8000-000000000004";
 const feedbackRevisionId = "50000000-0000-4000-8000-000000000005";
 const actorId = "60000000-0000-4000-8000-000000000006";
+const releaseId = "70000000-0000-4000-8000-000000000007";
 const payloadHash = hashTeacherFeedbackPayload({
   schemaVersion: 2,
   submissionId,
@@ -152,6 +153,7 @@ describe("teacher feedback server actions", () => {
       teacherFeedbackId: feedbackId,
       teacherFeedbackRevisionId: feedbackRevisionId,
       submissionRevisionId: revisionId,
+      releaseId,
       version: 2,
       confirmedAt: "2026-08-18T12:01:00.000Z",
     });
@@ -327,6 +329,10 @@ describe("teacher feedback server actions", () => {
       "/teacher/submissions/[submissionId]",
       "page",
     );
+    expect(mocks.revalidatePath).toHaveBeenCalledWith(
+      `/student/releases/${releaseId}`,
+    );
+    expect(mocks.revalidatePath).toHaveBeenCalledWith("/student");
     expect(state).toMatchObject({
       operation: "confirm",
       status: "saved",

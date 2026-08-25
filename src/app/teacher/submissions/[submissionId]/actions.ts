@@ -435,6 +435,8 @@ export async function decideTeacherFeedbackAction(
       idempotencyKey: input.idempotencyKey,
     });
     revalidatePath("/teacher/submissions/[submissionId]", "page");
+    revalidatePath(`/student/releases/${saved.releaseId}`);
+    revalidatePath("/student");
     return actionState({
       operation: "confirm",
       status: "saved",

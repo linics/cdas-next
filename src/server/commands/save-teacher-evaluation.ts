@@ -27,6 +27,7 @@ const commandResponseSchema = z.object({
   teacherEvaluationId: z.uuid(),
   teacherEvaluationRevisionId: z.uuid(),
   submissionRevisionId: z.uuid(),
+  releaseId: z.uuid(),
   version: z.int().positive(),
   confirmedAt: z.iso.datetime({ offset: true }),
 });
@@ -219,6 +220,7 @@ async function runTransaction(
         where: { id: payload.submissionId },
         select: {
           id: true,
+          releaseId: true,
           latestRevisionNumber: true,
           release: {
             select: {
@@ -367,6 +369,7 @@ async function runTransaction(
         teacherEvaluationId,
         teacherEvaluationRevisionId: evaluationRevisionId,
         submissionRevisionId: revision.id,
+        releaseId: submission.releaseId,
         version: nextVersion,
         confirmedAt: now.toISOString(),
       } satisfies SaveTeacherEvaluationResult;
