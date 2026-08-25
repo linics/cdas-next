@@ -11,9 +11,12 @@ from unittest.mock import patch
 try:
     import playwright.sync_api  # noqa: F401
 except ModuleNotFoundError:
+    class _PlaywrightError(Exception):
+        """Distinct from Exception so stable_code can tell timeouts from other failures."""
+
     playwright = types.ModuleType("playwright")
     sync_api = types.ModuleType("playwright.sync_api")
-    sync_api.Error = Exception
+    sync_api.Error = _PlaywrightError
     sync_api.Page = object
     sync_api.sync_playwright = lambda: None
     playwright.sync_api = sync_api
