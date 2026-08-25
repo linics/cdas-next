@@ -27,6 +27,12 @@ class AcceptanceFailure(RuntimeError):
 
 
 def stable_code(error: BaseException) -> str:
+    if isinstance(error, AcceptanceFailure):
+        candidate = str(error)
+        if re.fullmatch(r"[A-Z0-9_]{3,120}", candidate):
+            return candidate
+    if isinstance(error, PlaywrightError):
+        return "STAGING_ACCEPTANCE_PLAYWRIGHT_TIMEOUT"
     candidate = str(error)
     return candidate if re.fullmatch(r"[A-Z0-9_]{3,120}", candidate) else "STAGING_ACCEPTANCE_BROWSER_FAILED"
 
@@ -253,6 +259,13 @@ def screenshot(page: Page, output: Path, name: str) -> str:
 
 def wait_text(page: Page, text: str) -> None:
     page.get_by_text(text, exact=False).last.wait_for(state="visible", timeout=30_000)
+
+
+def wait_visible(locator: object, code: str) -> None:
+    try:
+        locator.wait_for(state="visible", timeout=30_000)
+    except PlaywrightError as error:
+        raise AcceptanceFailure(code) from error
 
 
 def attachment_download_href(page: Page, filename: str) -> str:
@@ -539,7 +552,12 @@ def run() -> None:
 
             teacher.goto(f"{remote}{release_href}", wait_until="domcontentloaded")
             assert_origin(teacher.url, remote)
+            wait_visible(
+                teacher.get_by_role("heading", name=title, exact=True),
+                "STAGING_ACCEPTANCE_TEACHER_RELEASE_NOT_VISIBLE",
+            )
             submission = teacher.get_by_role("link", name=re.compile("查看反馈与评价")).first
+            wait_visible(submission, "STAGING_ACCEPTANCE_SUBMISSION_LINK_MISSING")
             submission_href = submission.get_attribute("href")
             if not submission_href:
                 raise AcceptanceFailure("STAGING_ACCEPTANCE_SUBMISSION_LINK_MISSING")
@@ -701,6 +719,16 @@ def run() -> None:
             if current_roster.locator("header").get_by_text("2 名", exact=True).count() != 1:
                 raise AcceptanceFailure("STAGING_ACCEPTANCE_MEMBER_REJOIN_COUNT_FAILED")
             checks.append({"code": "TEACHER_MEMBER_END_AND_REJOIN", "status": "PASS"})
+        except BaseException:
+            for page, name in (
+                (teacher, "fail-teacher"),
+                (student, "fail-student"),
+            ):
+                try:
+                    screenshot(page, output, name)
+                except Exception:
+                    pass
+            raise
         finally:
             teacher_context.close()
             student_context.close()

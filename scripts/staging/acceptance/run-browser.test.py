@@ -37,6 +37,11 @@ class BrowserContractTests(unittest.TestCase):
 
     def test_error_output_is_stable_and_never_echoes_connection_details(self):
         self.assertEqual(MODULE.stable_code(RuntimeError("EXPECTED_CODE")), "EXPECTED_CODE")
+        self.assertEqual(MODULE.stable_code(MODULE.AcceptanceFailure("STAGING_ACCEPTANCE_SUBMISSION_LINK_MISSING")), "STAGING_ACCEPTANCE_SUBMISSION_LINK_MISSING")
+        self.assertEqual(
+            MODULE.stable_code(MODULE.PlaywrightError("Timeout 30000ms exceeded.\npostgresql://secret")),
+            "STAGING_ACCEPTANCE_PLAYWRIGHT_TIMEOUT",
+        )
         self.assertEqual(MODULE.stable_code(RuntimeError("postgresql://secret")), "STAGING_ACCEPTANCE_BROWSER_FAILED")
 
     def test_origin_contract_rejects_deceptive_port_and_canonicalizes_https(self):
@@ -137,6 +142,11 @@ class BrowserContractTests(unittest.TestCase):
         self.assertIn("确认并保存量规评价", source)
         self.assertIn("当前版已有量规评价", source)
         self.assertIn("STAGING_ACCEPTANCE_STUDENT_LIST_EVALUATION_LEAK", source)
+        self.assertIn("STAGING_ACCEPTANCE_TEACHER_RELEASE_NOT_VISIBLE", source)
+        self.assertIn("STAGING_ACCEPTANCE_SUBMISSION_LINK_MISSING", source)
+        self.assertIn("STAGING_ACCEPTANCE_PLAYWRIGHT_TIMEOUT", source)
+        self.assertIn("fail-teacher", source)
+        self.assertIn("fail-student", source)
         self.assertIn("问题意识", source)
         self.assertIn("STUDENT_PRIVATE_ATTACHMENT_UPLOAD_AND_DOWNLOAD", source)
         self.assertIn("TEACHER_FORMAL_ATTACHMENT_DOWNLOAD", source)
