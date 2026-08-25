@@ -268,6 +268,25 @@ def wait_visible(locator: object, code: str) -> None:
         raise AcceptanceFailure(code) from error
 
 
+def goto_with_retry(
+    page: Page,
+    url: str,
+    remote: str,
+    failure_code: str,
+):
+    last_error: BaseException | None = None
+    for attempt in range(2):
+        try:
+            response = page.goto(url, wait_until="domcontentloaded")
+            assert_origin(page.url, remote)
+            return response
+        except PlaywrightError as error:
+            last_error = error
+            if attempt == 0:
+                page.wait_for_timeout(2_000)
+    raise AcceptanceFailure(failure_code) from last_error
+
+
 def attachment_download_href(page: Page, filename: str) -> str:
     link = page.locator("li").filter(has_text=filename).get_by_role("link").last
     link.wait_for(state="visible", timeout=30_000)
@@ -729,13 +748,28 @@ def run() -> None:
             teacher.get_by_text("已评价 v1", exact=True).wait_for(state="visible")
 
             sign_in(other_teacher, remote, "other_teacher")
-            denied_release = other_teacher.goto(f"{remote}{release_href}", wait_until="domcontentloaded")
-            assert_origin(other_teacher.url, remote)
+            wait_visible(
+                other_teacher.get_by_text(
+                    required("STAGING_ACCEPTANCE_TEST_OTHER_TEACHER_NAME"),
+                    exact=False,
+                ).first,
+                "STAGING_ACCEPTANCE_OTHER_TEACHER_SIGN_IN_NOT_STABLE",
+            )
+            denied_release = goto_with_retry(
+                other_teacher,
+                f"{remote}{release_href}",
+                remote,
+                "STAGING_ACCEPTANCE_OTHER_TEACHER_RELEASE_NAVIGATION_FAILED",
+            )
             if not denied_release or denied_release.status != 404:
                 raise AcceptanceFailure("STAGING_ACCEPTANCE_OTHER_TEACHER_RELEASE_NOT_HIDDEN")
             checks.append({"code": "OTHER_TEACHER_RELEASE_404", "status": "PASS"})
-            denied_submission = other_teacher.goto(f"{remote}{submission_href}", wait_until="domcontentloaded")
-            assert_origin(other_teacher.url, remote)
+            denied_submission = goto_with_retry(
+                other_teacher,
+                f"{remote}{submission_href}",
+                remote,
+                "STAGING_ACCEPTANCE_OTHER_TEACHER_SUBMISSION_NAVIGATION_FAILED",
+            )
             if not denied_submission or denied_submission.status != 404:
                 raise AcceptanceFailure("STAGING_ACCEPTANCE_OTHER_TEACHER_SUBMISSION_NOT_HIDDEN")
             other_teacher_text = other_teacher.locator("body").inner_text()
