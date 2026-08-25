@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState, useSyncExternalStore } from "react";
 import { uploadPresigned as uploadBlob } from "@vercel/blob/client";
 import { useRouter } from "next/navigation";
 import {
@@ -59,6 +59,10 @@ const statusCopy = {
   REJECTED: "内容验证未通过",
 } as const;
 
+const subscribeToHydration = () => () => {};
+const hydratedSnapshot = () => true;
+const serverSnapshot = () => false;
+
 export function AttachmentEditor({
   releaseId,
   workingCopy,
@@ -73,13 +77,13 @@ export function AttachmentEditor({
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
-  const [hydrated, setHydrated] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const hydrated = useSyncExternalStore(
+    subscribeToHydration,
+    hydratedSnapshot,
+    serverSnapshot,
+  );
   const attachments = workingCopy.attachments;
-
-  useEffect(() => {
-    setHydrated(true);
-  }, []);
 
   async function upload(files: FileList | null) {
     if (!files || files.length === 0) return;
