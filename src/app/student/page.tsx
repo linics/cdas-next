@@ -1,6 +1,7 @@
 import { SignInButton, SignOutButton } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { ZodError } from "zod";
 import { LocalizedDateTime } from "../_components/localized-date-time";
@@ -271,6 +272,7 @@ function ReleaseGroup({
 }
 
 export default async function StudentDashboardPage() {
+  await connection();
   let context;
   let releaseList: StudentReleaseList;
 

@@ -396,6 +396,35 @@ def wait_evaluation_history(page: Page, summary: str) -> None:
     )
 
 
+def wait_shared_teacher_review(
+    page: Page,
+    *,
+    remote: str,
+    activity_href: str,
+    feedback_text: str,
+    evaluation_text: str,
+) -> None:
+    last_error: BaseException | None = None
+    for attempt in range(6):
+        response = page.goto(f"{remote}{activity_href}", wait_until="domcontentloaded")
+        assert_origin(page.url, remote)
+        if not response or response.status != 200:
+            raise AcceptanceFailure("STAGING_ACCEPTANCE_STUDENT_RELEASE_NOT_VISIBLE")
+        try:
+            page.get_by_text(feedback_text, exact=False).last.wait_for(state="visible", timeout=10_000)
+            page.get_by_text("按反馈修改并重交", exact=False).last.wait_for(state="visible", timeout=10_000)
+            page.get_by_text("基础支持", exact=False).last.wait_for(state="visible", timeout=10_000)
+            page.get_by_text(evaluation_text, exact=False).last.wait_for(state="visible", timeout=10_000)
+            page.get_by_text("证据不足", exact=True).last.wait_for(state="visible", timeout=10_000)
+            return
+        except PlaywrightError as error:
+            last_error = error
+            if attempt == 5:
+                break
+            page.wait_for_timeout(2_000)
+    raise AcceptanceFailure("STAGING_ACCEPTANCE_STUDENT_FEEDBACK_NOT_VISIBLE") from last_error
+
+
 def fill_activity(page: Page, title: str, summary: str) -> None:
     page.locator('#activity-draft-form[data-hydrated="true"]').wait_for(state="visible")
     page.locator("#activity-title").fill(title)
@@ -719,11 +748,13 @@ def run() -> None:
             other_student.get_by_role("heading", name=title, exact=True).wait_for(state="visible")
             other_student.get_by_role("heading", name=group_name, exact=True).wait_for(state="visible")
             wait_text(other_student, evidence)
-            wait_text(other_student, feedback_text)
-            wait_text(other_student, "按反馈修改并重交")
-            wait_text(other_student, "基础支持")
-            wait_text(other_student, evaluation_text)
-            wait_text(other_student, "证据不足")
+            wait_shared_teacher_review(
+                other_student,
+                remote=remote,
+                activity_href=activity_href,
+                feedback_text=feedback_text,
+                evaluation_text=evaluation_text,
+            )
             if attachment_download_href(other_student, attachment_filename) != attachment_href:
                 raise AcceptanceFailure("STAGING_ACCEPTANCE_GROUPMATE_ATTACHMENT_LINK_CHANGED")
             assert_attachment_download(other_student, attachment_filename, attachment_sha256)
@@ -739,13 +770,13 @@ def run() -> None:
                 raise AcceptanceFailure("STAGING_ACCEPTANCE_GROUPMATE_TEACHER_RESOURCE_LEAK")
             checks.append({"code": "GROUPMATE_TEACHER_SUBMISSION_404", "status": "PASS"})
 
-            student.goto(f"{remote}{activity_href}", wait_until="domcontentloaded")
-            assert_origin(student.url, remote)
-            wait_text(student, feedback_text)
-            wait_text(student, "按反馈修改并重交")
-            wait_text(student, "基础支持")
-            wait_text(student, evaluation_text)
-            wait_text(student, "证据不足")
+            wait_shared_teacher_review(
+                student,
+                remote=remote,
+                activity_href=activity_href,
+                feedback_text=feedback_text,
+                evaluation_text=evaluation_text,
+            )
             student.goto(f"{remote}/student", wait_until="domcontentloaded")
             assert_origin(student.url, remote)
             wait_text(student, "已有评价")

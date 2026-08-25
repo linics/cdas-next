@@ -39,6 +39,9 @@ vi.mock("next/navigation", () => ({
   notFound: mocks.notFound,
   usePathname: () => "/student",
 }));
+vi.mock("next/server", () => ({
+  connection: async () => undefined,
+}));
 vi.mock("../../server/db/client", () => ({
   getDatabaseClient: mocks.getDatabaseClient,
 }));

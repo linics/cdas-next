@@ -368,8 +368,9 @@ describe("teacher evaluation server actions", () => {
     );
     expect(mocks.revalidatePath).toHaveBeenCalledWith(
       `/student/releases/${releaseId}`,
+      "page",
     );
-    expect(mocks.revalidatePath).toHaveBeenCalledWith("/student");
+    expect(mocks.revalidatePath).toHaveBeenCalledWith("/student", "layout");
     expect(state).toMatchObject({
       operation: "confirm",
       status: "saved",

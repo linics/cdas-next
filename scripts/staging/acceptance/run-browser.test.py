@@ -141,6 +141,8 @@ class BrowserContractTests(unittest.TestCase):
         self.assertIn('"形成性下一步：按反馈修改并重交"', source)
         self.assertIn('"支架层级：基础支持"', source)
         self.assertIn("STRUCTURED_FORMATIVE_FEEDBACK_VISIBLE", source)
+        self.assertIn("wait_shared_teacher_review", source)
+        self.assertIn("STAGING_ACCEPTANCE_STUDENT_FEEDBACK_NOT_VISIBLE", source)
         self.assertIn("EVIDENCE_BOUND_EVALUATION_VISIBLE", source)
         self.assertIn("确认并保存量规评价", source)
         self.assertIn("当前版已有量规评价", source)

@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { SignInButton, SignOutButton } from "@clerk/nextjs";
 import Link from "next/link";
+import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { ZodError } from "zod";
 import {
@@ -522,6 +523,9 @@ export default async function StudentReleasePage({
   params: Promise<{ releaseId: string }>;
   searchParams?: Promise<{ phase?: string | string[] }>;
 }) {
+  // Teacher feedback/evaluation saves invalidate this route, but Preview can
+  // still serve a stale RSC payload unless the page is request-bound.
+  await connection();
   const { releaseId } = await params;
   const requestedPhaseValue = searchParams
     ? (await searchParams).phase
