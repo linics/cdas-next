@@ -179,7 +179,7 @@ DECLARE
   distinct_citation_count INTEGER;
   outcome_index INTEGER;
   evidence_index INTEGER;
-  attachment_id UUID;
+  cited_attachment_id UUID;
   status TEXT;
 BEGIN
   SELECT
@@ -307,7 +307,7 @@ BEGIN
           END IF;
         ELSIF citation ->> 'kind' = 'attachment' THEN
           BEGIN
-            attachment_id := (citation ->> 'attachmentId')::UUID;
+            cited_attachment_id := (citation ->> 'attachmentId')::UUID;
           EXCEPTION WHEN invalid_text_representation THEN
             RAISE EXCEPTION 'attachment citations must name a ready revision attachment'
               USING ERRCODE = '23514';
@@ -318,7 +318,7 @@ BEGIN
             JOIN "submission_attachments" AS attachment
               ON attachment."id" = link."attachment_id"
             WHERE link."submission_revision_id" = target_submission_revision_id
-              AND attachment."id" = attachment_id
+              AND attachment."id" = cited_attachment_id
               AND attachment."status" = 'READY'
           ) THEN
             RAISE EXCEPTION 'attachment citations must name a ready revision attachment'

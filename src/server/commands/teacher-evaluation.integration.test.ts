@@ -64,7 +64,12 @@ function coveringOutcomes(
   });
 }
 
-async function createEvaluationFixture() {
+async function createEvaluationFixture(options?: {
+  withReadyAttachment?: boolean;
+  completedEvidenceIndexes?: number[];
+  content?: typeof waterConservationTaskBook;
+  phaseIndex?: number;
+}) {
   if (!database) {
     throw new Error("TEST_DATABASE_URL is required");
   }
@@ -74,6 +79,7 @@ async function createEvaluationFixture() {
   const otherTeacherId = randomUUID();
   const studentId = randomUUID();
   const classroomId = randomUUID();
+  const phaseIndex = options?.phaseIndex ?? 0;
 
   await database.appUser.createMany({
     data: [
@@ -111,23 +117,55 @@ async function createEvaluationFixture() {
     teacherId,
     classroomId,
     publishedAt: minutesAfter(baseTime, -20),
+    content: options?.content,
   });
   const workingCopy = await saveSubmissionWorkingCopy(
     database,
     commandContext(studentId, minutesAfter(baseTime, -5)),
     {
       releaseId: published.releaseId,
+      phaseIndex,
       expectedWorkingCopyId: null,
       expectedWorkingVersion: null,
       textEvidence: "第一版节水观察证据。",
+      completedEvidenceIndexes: options?.completedEvidenceIndexes ?? [],
       idempotencyKey: `save_${randomUUID()}`,
     },
   );
+
+  let attachmentId: string | null = null;
+  if (options?.withReadyAttachment) {
+    const attachment = await database.submissionAttachment.create({
+      data: {
+        submissionId: workingCopy.submissionId,
+        studentId,
+        kind: "IMAGE",
+        originalFilename: "synthetic.png",
+        mediaType: "image/png",
+        byteSize: 1_024,
+        storageKey: `submissions/${workingCopy.submissionId}/${randomUUID()}`,
+        status: "READY",
+        createdAt: minutesAfter(baseTime, -4),
+        uploadedAt: minutesAfter(baseTime, -3),
+        scannedAt: minutesAfter(baseTime, -2),
+        workingCopies: {
+          create: {
+            workingCopyId: workingCopy.workingCopyId,
+            position: 0,
+            addedAt: minutesAfter(baseTime, -4),
+          },
+        },
+      },
+    });
+    attachmentId = attachment.id;
+  }
+
   const submissionRevision = await submitSubmissionRevision(
     database,
     commandContext(studentId, baseTime),
     {
       releaseId: published.releaseId,
+      phaseIndex,
       expectedWorkingCopyId: workingCopy.workingCopyId,
       expectedWorkingVersion: workingCopy.workingVersion,
       idempotencyKey: `submit_${randomUUID()}`,
@@ -142,6 +180,7 @@ async function createEvaluationFixture() {
     releaseId: published.releaseId,
     submissionId: submissionRevision.submissionId,
     submissionRevisionId: submissionRevision.revisionId,
+    attachmentId,
   };
 }
 
@@ -183,6 +222,88 @@ async function prepareAndConfirm(
 describeWithDatabase("teacher evaluation commands", () => {
   afterAll(async () => {
     await database?.$disconnect();
+  });
+
+  it("saves staging-shaped mixed citation outcomes through DB triggers", async () => {
+    const fixture = await createEvaluationFixture({
+      withReadyAttachment: true,
+      completedEvidenceIndexes: [1],
+      content: waterConservationTaskBook,
+      phaseIndex: 1,
+    });
+    expect(fixture.attachmentId).toBeTruthy();
+
+    const dimensions = waterConservationTaskBook.rubricDimensions;
+    const outcomes = [
+      {
+        dimensionIndex: 1,
+        dimensionName: dimensions[0]!.name,
+        status: "LEVEL" as const,
+        level: "excellent" as const,
+        citations: [{ kind: "text" as const }],
+      },
+      {
+        dimensionIndex: 2,
+        dimensionName: dimensions[1]!.name,
+        status: "INSUFFICIENT_EVIDENCE" as const,
+        citations: [],
+      },
+      {
+        dimensionIndex: 3,
+        dimensionName: dimensions[2]!.name,
+        status: "LEVEL" as const,
+        level: "good" as const,
+        citations: [
+          {
+            kind: "attachment" as const,
+            attachmentId: fixture.attachmentId!,
+          },
+        ],
+      },
+      {
+        dimensionIndex: 4,
+        dimensionName: dimensions[3]!.name,
+        status: "LEVEL" as const,
+        level: "pass" as const,
+        citations: [{ kind: "checkpoint" as const, evidenceIndex: 1 }],
+      },
+    ];
+
+    const prepared = await prepareTeacherEvaluationIntent(
+      database!,
+      commandContext(fixture.teacherId, minutesAfter(fixture.baseTime, 1)),
+      {
+        submissionId: fixture.submissionId,
+        expectedSubmissionRevisionId: fixture.submissionRevisionId,
+        expectedSubmissionRevisionNumber: 1,
+        expectedEvaluationVersion: 0,
+        summary: "Synthetic teacher evaluation for mixed citations.",
+        outcomes,
+        suggestionAgentRunId: null,
+        idempotencyKey: `prepare_evaluation_${randomUUID()}`,
+      },
+    );
+    await decideActionIntent(
+      database!,
+      commandContext(fixture.teacherId, minutesAfter(fixture.baseTime, 2)),
+      { actionIntentId: prepared.actionIntentId, decision: "CONFIRM" },
+    );
+
+    const saved = await saveTeacherEvaluation(
+      database!,
+      commandContext(fixture.teacherId, minutesAfter(fixture.baseTime, 3)),
+      {
+        actionIntentId: prepared.actionIntentId,
+        idempotencyKey: `save_evaluation_${randomUUID()}`,
+      },
+    );
+
+    expect(saved.version).toBe(1);
+    const revision =
+      await database!.teacherEvaluationRevision.findUniqueOrThrow({
+        where: { id: saved.teacherEvaluationRevisionId },
+      });
+    expect(revision.outcomes).toEqual(outcomes);
   });
 
   it("creates version one, then appends a confirmed edit without rewriting history", async () => {

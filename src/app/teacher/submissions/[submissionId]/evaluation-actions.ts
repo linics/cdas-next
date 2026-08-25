@@ -287,7 +287,15 @@ function failedActionState(
 
   console.error("Teacher evaluation action failed", {
     errorName: error instanceof Error ? error.name : "UnknownError",
+    errorMessage: error instanceof Error ? error.message : undefined,
     errorCode: code,
+    prismaCode:
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      typeof (error as { code?: unknown }).code === "string"
+        ? (error as { code: string }).code
+        : undefined,
     operation,
   });
   return actionState({
