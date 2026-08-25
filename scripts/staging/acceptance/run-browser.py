@@ -539,7 +539,7 @@ def run() -> None:
 
             teacher.goto(f"{remote}{release_href}", wait_until="domcontentloaded")
             assert_origin(teacher.url, remote)
-            submission = teacher.get_by_role("link", name=re.compile("查看与反馈")).first
+            submission = teacher.get_by_role("link", name=re.compile("查看反馈与评价")).first
             submission_href = submission.get_attribute("href")
             if not submission_href:
                 raise AcceptanceFailure("STAGING_ACCEPTANCE_SUBMISSION_LINK_MISSING")
@@ -577,6 +577,9 @@ def run() -> None:
             ).wait_for(state="visible")
             checks.append({"code": "EVIDENCE_BOUND_EVALUATION_VISIBLE", "status": "PASS"})
             index["04-teacher-feedback.png"] = screenshot(teacher, output, "04-teacher-feedback")
+            teacher.goto(f"{remote}{release_href}", wait_until="domcontentloaded")
+            assert_origin(teacher.url, remote)
+            teacher.get_by_text("已评价 v1", exact=True).wait_for(state="visible")
 
             sign_in(other_teacher, remote, "other_teacher")
             denied_release = other_teacher.goto(f"{remote}{release_href}", wait_until="domcontentloaded")

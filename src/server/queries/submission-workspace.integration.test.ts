@@ -357,6 +357,7 @@ describeWithDatabase("submission workspace queries", () => {
           revisionNumber: 1,
           isLate: false,
           feedback: { currentVersion: 1 },
+          evaluation: null,
         }),
       },
     ]);
@@ -372,6 +373,7 @@ describeWithDatabase("submission workspace queries", () => {
     expect(result.release).toMatchObject({
       title: "校园水表观察",
       classroomName: "工作台测试班级",
+      rubricAvailable: true,
     });
   });
 });

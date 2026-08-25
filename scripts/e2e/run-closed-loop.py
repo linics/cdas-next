@@ -423,7 +423,7 @@ def run_browser_flow(
             switch_account(page, base_url, "teacher", broker_secret)
             page.goto(f"{base_url}{release_href}", wait_until="domcontentloaded")
             submission_link = page.get_by_role(
-                "link", name=re.compile("查看与反馈")
+                "link", name=re.compile("查看反馈与评价")
             ).first
             submission_href = submission_link.get_attribute("href")
             if not submission_href:

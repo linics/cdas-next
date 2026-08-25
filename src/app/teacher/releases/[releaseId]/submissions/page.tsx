@@ -197,13 +197,18 @@ export default async function TeacherReleaseSubmissionsPage({
                       {submission.currentRevision.feedback
                         ? ` · 已反馈 v${submission.currentRevision.feedback.currentVersion}`
                         : " · 待反馈"}
+                      {workspace.release.rubricAvailable
+                        ? submission.currentRevision.evaluation
+                          ? ` · 已评价 v${submission.currentRevision.evaluation.currentVersion}`
+                          : " · 待评价"
+                        : " · 无量规"}
                     </small>
                   </div>
                   <Link
                     className={styles.rowLink}
                     href={`/teacher/submissions/${submission.submissionId}`}
                   >
-                    查看与反馈 →
+                    查看反馈与评价 →
                   </Link>
                 </article>
               ))}

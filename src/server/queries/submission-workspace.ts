@@ -122,6 +122,7 @@ const teacherReleaseSubmissionsSchema = z.strictObject({
     executionVersion: z.int().min(0).max(1),
     submissionMode: z.enum(["once", "phased", "mixed"]),
     phaseCount: z.int().nonnegative(),
+    rubricAvailable: z.boolean(),
   }),
   submissions: z.array(
     z.strictObject({
@@ -146,6 +147,9 @@ const teacherReleaseSubmissionsSchema = z.strictObject({
         isLate: z.boolean(),
         submittedAt: isoDateSchema,
         feedback: z
+          .strictObject({ currentVersion: z.int().positive() })
+          .nullable(),
+        evaluation: z
           .strictObject({ currentVersion: z.int().positive() })
           .nullable(),
       }),
@@ -473,6 +477,7 @@ export async function getTeacherReleaseSubmissions(
               isLate: true,
               submittedAt: true,
               feedback: { select: { version: true } },
+              evaluation: { select: { version: true } },
             },
           },
         },
@@ -522,6 +527,7 @@ export async function getTeacherReleaseSubmissions(
       ? content.phases.length
       : 0;
 
+  const rubricAvailable = content.schemaVersion === 2;
   const submissions: TeacherReleaseSubmissions["submissions"] =
     release.submissions
       .filter((submission) => submission.latestRevisionNumber > 0)
@@ -560,6 +566,10 @@ export async function getTeacherReleaseSubmissions(
         feedback: currentRevision.feedback
           ? { currentVersion: currentRevision.feedback.version }
           : null,
+        evaluation:
+          rubricAvailable && currentRevision.evaluation
+            ? { currentVersion: currentRevision.evaluation.version }
+            : null,
       },
     };
       });
@@ -657,6 +667,7 @@ export async function getTeacherReleaseSubmissions(
       executionVersion: release.executionVersion,
       submissionMode,
       phaseCount,
+      rubricAvailable,
     },
     submissions,
     progress,

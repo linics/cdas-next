@@ -100,6 +100,7 @@ ActionIntent 的 action、payload、hash、目标、预期版本、创建者和�
 - `prepareTeacherEvaluationIntent` 在事务内读取当前正式修订、冻结 snapshot 与本版证据，校验全部量规维度后创建十分钟有效的 ActionIntent。评价 payload `schemaVersion` 为 1；v1 snapshot 返回 `RUBRIC_UNAVAILABLE`。
 - 第一方 UI 通过独立确认面板调用 `decideActionIntent`；该面板不得与反馈确认合并。本切片不呼叫模型，也不新增 Agent 工具。
 - `saveTeacherEvaluation` 锁定 Submission 后重新授权并核对当前修订。学生若已经重交，原确认失效且不会产生评价。每个 SubmissionRevision 对应一个稳定 TeacherEvaluation 容器；首次确认创建版本 1，之后修改只追加 TeacherEvaluationRevision。
+- 教师 Release 正式提交列表只读取当前修订的评价版本号和快照是否提供量规，不把综评或维度结果带进列表。
 - LEVEL 必须引用本版文字、READY 附件或已确认检查点；`INSUFFICIENT_EVIDENCE` 必须空引用。关闭后有权教师仍可评价。
 - 手写路径不创建 AgentRun；关闭 AI provider 时仍能完成确认与保存。
 

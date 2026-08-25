@@ -400,7 +400,7 @@ def main() -> None:
 
             teacher.goto(f"{base}{release_href}", wait_until="domcontentloaded")
             assert_origin(teacher.url, base)
-            submission_link = teacher.get_by_role("link", name=re.compile("查看与反馈")).first
+            submission_link = teacher.get_by_role("link", name=re.compile("查看反馈与评价")).first
             submission_href = submission_link.get_attribute("href")
             if not submission_href or not re.fullmatch(r"/teacher/submissions/[0-9a-f-]+", submission_href):
                 raise AcceptanceFailure("STAGING_AGENT_ACCEPTANCE_SUBMISSION_LINK_MISSING")

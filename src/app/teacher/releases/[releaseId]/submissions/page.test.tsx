@@ -90,7 +90,7 @@ const workspace = {
     executionVersion: 0,
     submissionMode: "once",
     phaseCount: 0,
-    publisherAuthSubject: "clerk_auth_subject",
+    rubricAvailable: false,
   },
   submissions: [
     {
@@ -110,6 +110,7 @@ const workspace = {
           currentVersion: 3,
           body: "教师正式反馈正文",
         },
+        evaluation: null,
       },
     },
   ],
@@ -184,6 +185,10 @@ describe("teacher release submissions page boundary", () => {
     expect(markup).toContain("陈同学");
     expect(markup).toContain("正式修订 2");
     expect(markup).toContain("已反馈 v3");
+    expect(markup).toContain("无量规");
+    expect(markup).toContain("查看反馈与评价");
+    expect(markup).not.toContain("待评价");
+    expect(markup).not.toContain("已评价");
     expect(markup).toContain("迟交");
     expect(markup).not.toContain("学生工作副本正文");
     expect(markup).not.toContain("学生正式提交正文");
@@ -191,6 +196,44 @@ describe("teacher release submissions page boundary", () => {
     expect(markup).not.toContain("clerk_auth_subject");
     expect(markup).toContain("准备关闭活动");
     expect(markup).not.toContain("确认并关闭活动");
+  });
+
+  it("shows pending or confirmed evaluation status only for schema v2 releases", async () => {
+    mocks.getTeacherReleaseSubmissions.mockResolvedValue({
+      ...workspace,
+      release: { ...workspace.release, rubricAvailable: true },
+      submissions: [
+        {
+          ...workspace.submissions[0],
+          currentRevision: {
+            ...workspace.submissions[0]!.currentRevision,
+            evaluation: null,
+          },
+        },
+      ],
+    });
+
+    expect(await renderPage()).toContain("待评价");
+    expect(await renderPage()).not.toContain("无量规");
+
+    mocks.getTeacherReleaseSubmissions.mockResolvedValue({
+      ...workspace,
+      release: { ...workspace.release, rubricAvailable: true },
+      submissions: [
+        {
+          ...workspace.submissions[0],
+          currentRevision: {
+            ...workspace.submissions[0]!.currentRevision,
+            evaluation: { currentVersion: 1, summary: "不应出现在列表" },
+          },
+        },
+      ],
+    });
+
+    const confirmed = await renderPage();
+    expect(confirmed).toContain("已评价 v1");
+    expect(confirmed).not.toContain("不应出现在列表");
+    expect(confirmed).not.toContain("待评价");
   });
 
   it("renders one shared group progress row with member roles", async () => {

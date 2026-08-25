@@ -20,6 +20,7 @@ import {
 import { saveSubmissionWorkingCopy } from "./save-submission-working-copy";
 import { startSubmissionResubmission } from "./start-submission-resubmission";
 import { submitSubmissionRevision } from "./submit-submission-revision";
+import { getTeacherReleaseSubmissions } from "../queries/submission-workspace";
 
 const databaseUrl = process.env.TEST_DATABASE_URL;
 const describeWithDatabase = databaseUrl ? describe : describe.skip;
@@ -223,6 +224,23 @@ describeWithDatabase("teacher evaluation commands", () => {
       },
     );
     expect(first.version).toBe(1);
+    await expect(
+      getTeacherReleaseSubmissions(
+        database!,
+        commandContext(fixture.teacherId, minutesAfter(fixture.baseTime, 3)),
+        { releaseId: fixture.releaseId },
+      ),
+    ).resolves.toMatchObject({
+      release: { rubricAvailable: true },
+      submissions: [
+        {
+          submissionId: fixture.submissionId,
+          currentRevision: {
+            evaluation: { currentVersion: 1 },
+          },
+        },
+      ],
+    });
 
     const secondIntent = await prepareAndConfirm(fixture, {
       summary: "第二版综评：四个维度都有对应证据。",

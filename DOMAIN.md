@@ -186,6 +186,7 @@ upload_pending → scan_pending → ready
 - D-034 新增的形成性下一步、支架层级和反馈正文必须在同一个已执行 ActionIntent、TeacherFeedbackRevision、审计及幂等结果中冻结；修改只能追加下一版，不能改写旧决定。个人反馈仅本人可见，小组反馈仅该组成员共享。
 - 每个 TeacherEvaluation 的教师必须同时是发布者且仍管理目标班级。评价必须指向该 Submission 当前正式修订；学生重交后原确认失效。
 - D-035 的维度结果、综评、精确 SubmissionRevision、评价预期版本与 payload hash 必须在同一个已执行 ActionIntent、TeacherEvaluationRevision、审计及幂等结果中冻结；必须覆盖冻结 v2 量规的全部维度。个人评价仅本人可见，小组评价仅该组成员共享；其他调用者得到资源级不存在。
+- D-036 的教师提交列表只读取当前正式修订是否存在评价及其版本号，以及快照是否提供量规；不得把综评、outcomes 或工作草稿带进列表。v1 快照在列表中标记为无量规。
 - v1 snapshot 不得写入量规评价。关闭后仍允许有权教师评价，但不允许学生继续写入。
 - AI 不是任何业务实体的所有者、发布者或最终评价者。
 - 权限在服务端业务命令执行时重新验证，不能相信前端页面状态或 Agent 提供的上下文。
