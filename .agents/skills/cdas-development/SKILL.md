@@ -32,7 +32,7 @@ Prefer these project agents:
 - `cdas_reviewer` / `cdas-reviewer`: independent read-only correctness and invariant review.
 - `cdas_verifier` / `cdas-verifier`: focused checks and failure-evidence collection without source edits.
 
-Codex maps explorer and verifier to Luna, builder and reviewer to Terra, with Sol as coordinator. Cursor maps the primary thread and explorer, builder, and verifier to Grok 4.6, and reviewer to Fable 5.
+Codex maps explorer and verifier to Luna, builder and reviewer to Terra, with Sol as coordinator. Cursor maps the primary thread and builder to Grok 4.6, explorer and verifier to Composer 2.5, and reviewer to Fable 5.
 
 Keep delegation one level deep. Subagents must not spawn more agents. Run at most three subagents concurrently, and never run two source-code writers at the same time.
 
@@ -47,5 +47,7 @@ Keep delegation one level deep. Subagents must not spawn more agents. Run at mos
 Prefer the primary Sol thread as the sole writer for authorization, resource ownership, Prisma schema or migrations, database invariants, `ActionIntent`, idempotency, `AgentRun` provenance, append-only business history, and shared UI/Agent domain commands. A Terra builder may touch these areas only after the primary thread has fixed the exact invariant, file scope, negative tests, and transaction boundary.
 
 Never allow a subagent to commit, push, deploy, run a production migration, change credentials, or perform another external side effect unless the user separately authorizes that action.
+
+On a `codex/*` branch, the primary thread must `git push` to origin after committing accepted work so Vercel Preview and GitHub CI stay in sync. That push is standing owner authorization for this development branch, not a per-session exception. `pnpm development:infra` still needs a clean, already-pushed HEAD and is not a substitute for the push.
 
 For concrete task envelopes, return contracts, escalation triggers, and verification gates, read [references/orchestration.md](references/orchestration.md).

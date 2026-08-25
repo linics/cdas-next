@@ -4,38 +4,34 @@ Use this reference when working in Cursor. Codex routing (Sol / Luna / Terra) re
 
 ## Budget posture
 
-This project has a short development window (~7 days). Prefer Grok 4.6 liberally for speed and quality. Reserve roughly 30% of the monthly Cursor allowance for non-project work later in the billing cycle, but do not under-delegate to save tokens when parallel subagents materially help.
+This project has a short development window (~7 days). Keep **Grok 4.6 on the primary thread and builder** — coordination and implementation must not fall onto a cheap Auto path. Explorer and verifier use Composer so parallel read/verify work does not burn 4.6 capacity. Reserve roughly 30% of the monthly Cursor allowance for non-project work later in the billing cycle, but do not under-delegate when parallel subagents materially help.
+
+If Grok 4.6 returns High Load / `resource_exhausted`, retry briefly or use **Grok 4.6 Fast** for primary/builder; do not switch those roles to Auto Cost/Balance or Composer.
 
 ## Pool rules
 
 | Pool | Models | Use for |
 |------|--------|---------|
-| **Cursor Models** | Grok 4.6, Grok 4.5, Composer 2.5 | All primary work and most subagents |
+| **Cursor Models** | Grok 4.6 (primary + builder), Composer 2.5 (explorer + verifier) | Graded Cursor work |
 | **Other Models** | Claude Fable 5 only | Expert review via `cdas-reviewer` |
 
-Do not spend the Other Models pool on GPT, Opus, Terra, or Sol unless the user explicitly overrides this routing for a session.
+Do not spend the Other Models pool on GPT, Opus, Terra, or Sol unless the user explicitly overrides this routing for a session. Prefer **standard** Composer over Composer Fast for explorer/verifier unless the user asks otherwise.
 
-## Default routing
+## Default routing (gradient)
 
 | Role | Agent | Model | When |
 |------|-------|-------|------|
 | Primary coordinator | main thread | **Grok 4.6** | scope, domain decisions, integration, final acceptance |
-| Explorer | `cdas-explorer` | **Grok 4.6** | read-only mapping before implementation |
 | Builder | `cdas-builder` | **Grok 4.6** | one accepted implementation slice |
-| Verifier | `cdas-verifier` | **Grok 4.6** | assigned checks and failure evidence |
+| Explorer | `cdas-explorer` | **Composer 2.5** | read-only mapping before implementation |
+| Verifier | `cdas-verifier` | **Composer 2.5** | assigned checks and failure evidence |
 | Expert reviewer | `cdas-reviewer` | **Fable 5** | post-implementation or high-risk invariant review |
 
-Subagents still spawn when the skill calls for them. Use another Grok 4.6 subagent rather than doing everything inline when exploration, verification, or parallel read work is independent.
+Subagents still spawn when the skill calls for them. Explorer and verifier stay on Composer; do not pin them to Grok 4.6.
 
-## Cheap-model exception
+## Domain-sensitive work
 
-Use **Composer 2.5 Fast** or **Grok 4.5** only for clearly batch, repetitive, low-judgment work, such as:
-
-- wide but shallow file/symbol sweeps with a fixed checklist;
-- formatting or import cleanup across many files with no behavior change;
-- running a known command matrix and collecting stdout.
-
-Do not use cheap models for domain commands, authorization, Prisma, transactions, append-only history, or acceptance-scenario changes.
+Grok 4.6 builder may implement an accepted card that touches domain commands, authorization, Prisma, transactions, append-only history, or acceptance scenarios **only after** the primary thread has fixed the exact invariant, file scope, negative tests, and transaction boundary in the card. Unresolved product or domain decisions escalate to the Grok 4.6 primary.
 
 ## Fable 5 review gates
 

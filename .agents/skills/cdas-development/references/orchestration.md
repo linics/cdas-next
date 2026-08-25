@@ -92,3 +92,5 @@ The primary thread must verify the actual diff and explicitly check:
 - AI unavailability does not break the core teacher-student workflow.
 
 Only P0/P1 findings, protected-invariant violations, or failures of the accepted user journey block acceptance. Summarize lower-severity findings once and continue delivery.
+
+On `codex/*`, after the primary thread commits accepted work, push to origin before considering the slice delivered. Do not leave the commit local-only. `pnpm development:infra` is optional follow-on for isolated-stack reconcile or protected synthetic acceptance, and it will refuse an unpushed HEAD.
