@@ -1,7 +1,7 @@
 # CDAS Next 实现架构
 
-状态：手工六步闭环与活动助手试行实现基线；真实外部验收待完成
-日期：2026-08-20
+状态：第一阶段 v0.1 已完成外部验收；D-025–D-034 已完成开发期远程验收
+日期：2026-08-25
 
 ## 运行时边界
 
@@ -58,16 +58,20 @@ ActionIntent 的 action、payload、hash、目标、预期版本、创建者和�
 - `preparePublishActivityIntent` 只在教师拥有草稿、仍管理目标班级、版本精确且状态为 READY_FOR_PREVIEW 时创建十分钟 ActionIntent。它不封存草稿，也不创建 Release。
 - 第一方 `decideActionIntent` 确认后，既有 `publishActivityRelease` 才重新授权、消费意图、封存同一版本并创建同源快照。
 
-数据库在提交时要求草稿版本从 1 连续、head 内容等于当前不可变修订；只允许 READY 草稿在正文和版本不变时由发布事务变为 SEALED。每个 Release 还必须以唯一外键绑定已执行的发布 ActionIntent；ActionIntent、SEALED 草稿、Release 与精确快照由双向延迟约束要求在同一事务完整出现。快照 JSON 必须等于绑定版本的完整修订，摘要由 PostgreSQL 17 核心 SHA-256 对固定 schema-v1 canonical UTF-8 字节重新计算，不信任调用方传入的 64 位字符串。
+数据库在提交时要求草稿版本从 1 连续、head 内容等于当前不可变修订；只允许 READY 草稿在正文和版本不变时由发布事务变为 SEALED。每个 Release 还必须以唯一外键绑定已执行的发布 ActionIntent；ActionIntent、SEALED 草稿、Release 与精确快照由双向延迟约束要求在同一事务完整出现。快照 JSON 必须等于绑定版本的完整修订，摘要由 PostgreSQL 17 核心 SHA-256 按 schema 分支复算，不信任调用方传入的 64 位字符串。v1 快照继续用 canonicalize@4 对封闭七字段 UTF-8 字节计算 SHA-256，历史 v1 hash 不重写；v2 快照对完整任务书使用 v2 canonicalizer，并与 migration `20260824120000_structured_task_book_v2` 中 PostgreSQL jsonb 文本 SHA-256 对齐。新写入统一为完整 schema v2，v1 历史仍可原样读取。发布时冻结 `executionVersion`：历史发布与新的 `once` 为 0，新的 `phased`/`mixed` 为 1，发布后不可改写。
 
-## 学生文本提交流程
+## 学生提交流程
 
-- `saveSubmissionWorkingCopy` 保存可为空的工作内容，以工作副本 UUID + version 做 CAS。
-- `submitSubmissionRevision` 不接收正文，只复制学生精确确认的已保存工作副本；提交后删除该工作副本并追加不可变修订。
+提交容器身份是 Release ×（个人学生 XOR ReleaseGroup）× `phaseIndex`。协议 0（历史发布与新 `once`）只使用 `phaseIndex = 0`；协议 1（新 `phased`/`mixed`）按冻结快照从阶段 1 线性推进 `1..N`，学生不能跳阶段；`mixed` 在最后阶段正式提交后于同一事务幂等准备 `phaseIndex = 0` 整项终稿。这是快照索引上的顺序执行，不是通用流程引擎。
+
+- `saveSubmissionWorkingCopy` 保存可为空的工作内容，以工作副本 UUID + version 做 CAS；工作草稿与正式修订中的 `completedEvidenceIndexes` 必须来自冻结快照当前阶段，服务端拒绝未定义、重复或越界条目。
+- `submitSubmissionRevision` 不接收正文，只复制学生精确确认的已保存工作副本；正式提交至少需要非空文字、一个 `READY` 附件或一个已确认检查点。提交后删除该工作副本并追加不可变修订；协议 1 在同一事务内查找或创建下一阶段工作草稿，幂等重试返回同一结果。
 - `startSubmissionResubmission` 显式从当前正式修订创建新工作副本；重复请求返回现有副本，不重置学生修改。
 - 三个命令都重新验证当前班级成员关系与 active Release。超过截止时间但仍 active 时允许提交，并把 late 固化在修订上。
+- 附件仍走 D-025/D-026 命令；OIDC 签名、对象元数据、文件头验证与下载流留在数据库事务外。
+- 同组成员解析到同一容器并共享工作草稿、正式修订、附件和反馈；其他小组、未分组学生和非管理教师得到资源级不存在。任一阶段出现第一份 Submission 后，该 ReleaseGroup 的身份、名称、成员、角色与删除全部锁定。
 
-数据库在事务提交时校验 Submission 最新指针、连续修订序列和可选工作副本 base 是否一致；容器身份不可改，正式修订不可更新或删除。
+数据库在事务提交时校验 Submission 最新指针、连续修订序列和可选工作副本 base 是否一致；容器身份、`phaseIndex` 与提交主体不可改，正式修订不可更新或删除。
 
 ## 发布关闭事务
 
@@ -82,20 +86,29 @@ ActionIntent 的 action、payload、hash、目标、预期版本、创建者和�
 
 ## 教师反馈确认流程
 
-- `prepareTeacherFeedbackIntent` 读取学生当前正式修订与反馈版本，规范化反馈正文，并创建十分钟有效、绑定精确 Submission 修订和正文摘要的 ActionIntent。
+- `prepareTeacherFeedbackIntent` 读取学生当前正式修订与反馈版本，规范化反馈正文，并创建十分钟有效、绑定精确 Submission 修订和正文摘要的 ActionIntent。D-034 起新修订还必须在同一 payload 中携带 schema v2 的 `nextStep`（`CONTINUE|REVISE`）与 `supportLevel`（`FOUNDATION|STANDARD|CHALLENGE`）。
 - 第一方 UI 通过 `decideActionIntent` 记录教师本人确认；AI 建议本身不构成业务反馈。
-- `saveTeacherFeedback` 锁定 Submission 后重新授权并核对当前修订。学生若已经重交，原确认失效且不会产生反馈。
+- `saveTeacherFeedback` 锁定 Submission 后重新授权并核对当前修订。学生若已经重交，原确认失效且不会产生反馈。新修订把正文与两个结构化字段写入同一个已执行 ActionIntent；D-034 之前只有正文的历史行保持原样，不得回填。
 - 每个 SubmissionRevision 对应一个稳定 TeacherFeedback 容器；首次确认创建版本 1，之后修改只追加 TeacherFeedbackRevision 并以容器版本做 CAS。
+- `CONTINUE`/`REVISE` 是形成性教学建议，不是评分或阶段状态变更。`CONTINUE` 不构成终评；`REVISE` 不删除、回拨或锁住 D-031 已创建的后续阶段。学生看到 `REVISE` 时使用既有“开始重交”入口。
 - 手写路径不创建 AgentRun，也不调用模型；关闭 AI provider 时仍能完成确认与保存。
 
-数据库同时校验反馈容器身份、连续版本、确认时间、正文可见性、来源 provenance，以及不可变修订与已执行 ActionIntent 的精确对应关系。
+数据库同时校验反馈容器身份、连续版本、确认时间、正文可见性、来源 provenance，以及不可变修订与已执行 ActionIntent 的精确对应关系；新修订的结构化字段必须与该意图 payload 一致。
+
+## 班级成员变更
+
+`prepareClassroomMembershipChange` / `applyClassroomMembershipChange` 只允许班级当前管理员通过第一方 UI 管理既有 STUDENT。教师按规范化名单码（`rosterKey`）批量预览后明确确认加入，或明确确认结束当前成员关系；重新加入追加新的有效区间，既有区间不得删除或改写身份、开始时间与已固化的结束时间。成员区间写入、班级版本递增、意图执行、幂等结果和成功审计在同一 Serializable 事务提交。名单码不是认证凭证；切片不向 Agent 提供成员工具，也不调用 Clerk 管理 API，因此 Clerk 中断不阻断既有 AppUser 的名单读取与成员写入。
+
+## 发布作业小组配置
+
+`saveReleaseGroup` / `deleteReleaseGroup` 仅允许发布教师且仍为目标班级管理员配置只属于当前 Release 的作业小组与角色标签。同一学生在同一 Release 最多属于一个小组；已有个人 Submission 的学生不能迁入。任一 Submission 出现后，组名、成员、角色与删除全部锁定；尚无提交的小组仍可调整，命令必须幂等并留下动作审计。小组不是 ClassroomMembership、长期班级分组或 Clerk 组织，也不传播到其他 Release。阶段顺序与提交流水线复用既有提交命令，不另建工作流引擎。
 
 ## 活动助手试行
 
 - “新建学习活动”是助手会话的唯一起点。`/teacher/activities` 共享客户端 layout 持有唯一官方 `useChat` session，使草稿工具返回后的客户端导航可以在精确预览页继续同一消息与签名 approval；直接进入或刷新预览页时 session 为空，页面不伪造恢复。消息、prompt、ticket 与 approval 签名不进入 URL、localStorage 或业务数据库，导航到 Release 后 layout 卸载。Server Component 仅在 `AI_PROVIDER_DISABLED=0` 且 DeepSeek API key、模型和审批签名配置全部有效时渲染助手；这个检查不构造 provider，也不创建 AgentRun。
 - Route Handler 先从 Clerk 会话解析应用教师，再严格校验消息数量、总字节、角色顺序、文本长度和 AI SDK 工具 part。学生、未配置账号和伪造历史不能进入 provider 或业务工具。
 - AI SDK 官方 `useChat + streamText` 负责消息流与工具 part，不维护第二套聊天协议。模型调用始终在数据库事务之外；请求正文、Prompt、工具正文和 provider 原始 chunk 不写日志或 tracing。
-- `create_activity_draft` 复用 `saveActivityDraft`，以当前教师、`AGENT` 来源和 owned RUNNING AgentRun 保存严格六段内容。成功输出包含精确 draft ID 和站内路径；客户端只在两者一致时进入预览。
+- `create_activity_draft` 是 D-033 的 L1 工具。资料不足时每轮只提出一个会改变设计的必要问题，且不写入。资料充分后，签名 approval 展示理解摘要、教师已提供要求、明确假设、各融合学科贡献、知识/过程/情感三条目标—任务—证据—评价链和完整 schema v2 内容；教师批准前不执行草稿写入。批准后仍以当前教师、`AGENT` 来源和 owned RUNNING AgentRun 调用共享 `saveActivityDraft`；拒绝确认不产生草稿。该理解确认不是发布确认，也不建立 ActionIntent。成功输出包含精确 draft ID 和站内路径；客户端只在两者一致时进入预览。
 - `publish_activity_release` 先由 AI SDK 签名 `toolApproval` 暂停交互；教师批准后仍依次调用发布 prepare、第一方 UI decide 与原有 publish command。ActionIntent 才是精确参数、资源版本、确认人和重新授权的业务信任边界。
 - 普通模型工具写入由 AI SDK `stopWhen` 在该工具 step 后结束。`saveActivityDraft` 与 `publishActivityRelease` 的 Agent 路径会在同一领域事务提交业务结果、成功审计、幂等结果与 AgentRun 的 `RUNNING → SUCCEEDED`；若运行已经失败或取消，事务整体回滚。签名审批续传会先执行已批准工具，成功后再由官方 `prepareStep` 给后续 provider adapter 一个已中止 signal；后续流或连接失败不能把已提交业务事实改写成失败。模型在工具前中断不会创建草稿、Release 或反馈。
 - 同一工具调用可由命令幂等重放。若整个 HTTP 请求在确认执行后丢失并以新的 AgentRun 原样重建，当前会安全地返回幂等冲突，而不是弱化 AgentRun provenance；跨运行恢复仍是明确的可用性缺口。
@@ -110,9 +123,11 @@ ActionIntent 的 action、payload、hash、目标、预期版本、创建者和�
 - ActivityReleaseSnapshot
 - ActivityRelease 的身份、发布时间、目标班级与截止时间
 - SubmissionRevision
-- TeacherFeedbackRevision
+- TeacherFeedbackRevision（含 D-034 起冻结的 `nextStep` 与 `supportLevel`；历史正文-only 行不回填）
 - 成功 IdempotencyRecord
 - ActionAudit
+
+ReleaseGroup 在出现第一份 Submission 后，其身份、名称、成员与角色冻结，不能再改写归属。
 
 初始 migration 使用数据库 trigger 拒绝对已存在行的更新或删除。页面隐藏按钮、TypeScript 类型和 ORM 调用约定都不能替代数据库约束。
 
