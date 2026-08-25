@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { uploadPresigned as uploadBlob } from "@vercel/blob/client";
 import { useRouter } from "next/navigation";
 import {
@@ -73,8 +73,13 @@ export function AttachmentEditor({
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const attachments = workingCopy.attachments;
+
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
 
   async function upload(files: FileList | null) {
     if (!files || files.length === 0) return;
@@ -171,7 +176,12 @@ export function AttachmentEditor({
   }
 
   return (
-    <section className={styles.attachmentEditor} aria-labelledby="attachment-title">
+    <section
+      className={styles.attachmentEditor}
+      aria-labelledby="attachment-title"
+      data-attachment-editor=""
+      data-hydrated={hydrated ? "true" : "false"}
+    >
       <div className={styles.attachmentHeading}>
         <div>
           <p className={styles.eyebrow}>附件证据</p>
@@ -217,7 +227,7 @@ export function AttachmentEditor({
             type="file"
             accept={acceptedMediaTypes}
             multiple
-            disabled={busy}
+            disabled={busy || !hydrated}
             onChange={(event) => upload(event.target.files)}
           />
         </label>

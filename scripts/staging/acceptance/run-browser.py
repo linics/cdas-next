@@ -289,6 +289,45 @@ def assert_attachment_download(page: Page, filename: str, expected_sha256: str) 
         raise AcceptanceFailure("STAGING_ACCEPTANCE_ATTACHMENT_CONTENT_MISMATCH")
 
 
+def upload_student_attachment(page: Page, filename: str, payload: bytes) -> None:
+    if page.get_by_text("附件存储尚未启用", exact=False).count() > 0:
+        raise AcceptanceFailure("STAGING_ACCEPTANCE_ATTACHMENT_STORAGE_DISABLED")
+    editor = page.locator('[data-attachment-editor][data-hydrated="true"]')
+    wait_visible(editor, "STAGING_ACCEPTANCE_ATTACHMENT_EDITOR_NOT_READY")
+    file_input = editor.locator('input[type="file"]')
+    try:
+        file_input.wait_for(state="attached", timeout=30_000)
+    except PlaywrightError as error:
+        raise AcceptanceFailure("STAGING_ACCEPTANCE_ATTACHMENT_PICKER_MISSING") from error
+    try:
+        file_input.set_input_files(
+            {
+                "name": filename,
+                "mimeType": "image/png",
+                "buffer": payload,
+            }
+        )
+        page.get_by_text("文件已上传并完成内容验证，可正式提交。", exact=False).last.wait_for(
+            state="visible",
+            timeout=60_000,
+        )
+    except PlaywrightError as error:
+        body = page.locator("body").inner_text()
+        if "附件存储尚未启用" in body:
+            raise AcceptanceFailure("STAGING_ACCEPTANCE_ATTACHMENT_STORAGE_DISABLED") from error
+        if any(
+            token in body
+            for token in (
+                "无法创建附件",
+                "附件上传失败",
+                "内容与声明格式不一致",
+                "必须小于等于",
+            )
+        ):
+            raise AcceptanceFailure("STAGING_ACCEPTANCE_ATTACHMENT_UPLOAD_FAILED") from error
+        raise AcceptanceFailure("STAGING_ACCEPTANCE_ATTACHMENT_UPLOAD_TIMEOUT") from error
+
+
 def confirm(page: Page, title: str, button: str) -> None:
     dialog = page.get_by_role("dialog").filter(has_text=title)
     dialog.wait_for(state="visible", timeout=30_000)
@@ -594,12 +633,7 @@ def run() -> None:
             student.reload(wait_until="domcontentloaded")
             assert_origin(student.url, remote)
             student.get_by_text("第 3 阶段", exact=True).wait_for(state="visible")
-            student.locator('input[type="file"]').set_input_files({
-                "name": attachment_filename,
-                "mimeType": "image/png",
-                "buffer": attachment_bytes,
-            })
-            wait_text(student, "文件已上传并完成内容验证，可正式提交。")
+            upload_student_attachment(student, attachment_filename, attachment_bytes)
             attachment_href = attachment_download_href(student, attachment_filename)
             assert_attachment_download(student, attachment_filename, attachment_sha256)
             checks.append({"code": "STUDENT_PRIVATE_ATTACHMENT_UPLOAD_AND_DOWNLOAD", "status": "PASS"})
