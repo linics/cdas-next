@@ -20,11 +20,6 @@ import {
 } from "../../server/queries/student-releases";
 import styles from "./student-dashboard.module.css";
 
-// Student progress, feedback, and evaluation status must reflect committed
-// business history on every request; never serve this authenticated workspace
-// from the Full Route Cache.
-export const dynamic = "force-dynamic";
-
 export const metadata: Metadata = {
   title: "我的学习活动 | CDAS Next",
   description: "查看可见活动、提交状态、教师反馈与量规评价",

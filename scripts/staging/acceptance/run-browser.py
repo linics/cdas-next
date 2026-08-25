@@ -297,7 +297,10 @@ def goto_with_retry(
 
 def attachment_download_href(page: Page, filename: str) -> str:
     link = page.locator("li").filter(has_text=filename).get_by_role("link").last
-    link.wait_for(state="visible", timeout=30_000)
+    try:
+        link.wait_for(state="visible", timeout=30_000)
+    except PlaywrightError as error:
+        raise AcceptanceFailure("STAGING_ACCEPTANCE_ATTACHMENT_LINK_MISSING") from error
     href = link.get_attribute("href")
     if not href or not re.fullmatch(r"/attachments/[0-9a-f-]{36}/download", href):
         raise AcceptanceFailure("STAGING_ACCEPTANCE_ATTACHMENT_LINK_INVALID")
@@ -789,9 +792,12 @@ def run() -> None:
                 raise AcceptanceFailure("STAGING_ACCEPTANCE_OTHER_TEACHER_RESOURCE_LEAK")
             checks.append({"code": "OTHER_TEACHER_SUBMISSION_404", "status": "PASS"})
 
+            # The groupmate last viewed phase 2. Select the reviewed phase
+            # explicitly instead of relying on the route's default phase.
+            review_href = f"{activity_href}?phase=3"
             visible = goto_with_retry(
                 other_student,
-                f"{remote}{activity_href}",
+                f"{remote}{review_href}",
                 remote,
                 "STAGING_ACCEPTANCE_GROUPMATE_RELEASE_NOT_VISIBLE",
             )
@@ -812,7 +818,7 @@ def run() -> None:
             wait_shared_teacher_review(
                 other_student,
                 remote=remote,
-                activity_href=activity_href,
+                activity_href=review_href,
                 feedback_text=feedback_text,
                 evaluation_text=evaluation_text,
                 release_not_visible_code="STAGING_ACCEPTANCE_GROUPMATE_RELEASE_NOT_VISIBLE",
@@ -836,7 +842,7 @@ def run() -> None:
             wait_shared_teacher_review(
                 student,
                 remote=remote,
-                activity_href=activity_href,
+                activity_href=review_href,
                 feedback_text=feedback_text,
                 evaluation_text=evaluation_text,
                 release_not_visible_code="STAGING_ACCEPTANCE_STUDENT_RELEASE_NOT_VISIBLE",
