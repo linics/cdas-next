@@ -280,6 +280,7 @@ describe("teacher evaluation server actions", () => {
 
     expect(state.status).toBe("error");
     expect(state.confirmation).toBeNull();
+    expect(state.message).toContain("未能与提交内容对齐");
     expect(state.message).not.toContain("payload");
   });
 
@@ -289,6 +290,7 @@ describe("teacher evaluation server actions", () => {
     ["CONCURRENT_WRITE", "concurrent"],
     ["RUBRIC_UNAVAILABLE", "validation_error"],
     ["INVALID_EVALUATION", "validation_error"],
+    ["INVALID_AGENT_RUN", "validation_error"],
   ] as const)(
     "maps prepare %s without exposing the internal exception",
     async (code, expectedStatus) => {
@@ -408,6 +410,16 @@ describe("teacher evaluation server actions", () => {
       confirmForm(),
     );
     expect(versionConflict.status).toBe("version_conflict");
+
+    mocks.saveEvaluation.mockRejectedValueOnce(
+      new SaveTeacherEvaluationError("INTENT_TAMPERED"),
+    );
+    const tampered = await decideTeacherEvaluationAction(
+      initialEvaluationActionState,
+      confirmForm(),
+    );
+    expect(tampered.status).toBe("concurrent");
+    expect(tampered.message).not.toContain("INTENT_TAMPERED");
   });
 
   it("rejects a prepared intent without calling the save command", async () => {

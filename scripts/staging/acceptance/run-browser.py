@@ -296,6 +296,68 @@ def confirm(page: Page, title: str, button: str) -> None:
     dialog.wait_for(state="hidden", timeout=30_000)
 
 
+def evaluation_action_failure_code(page: Page, *, save: bool) -> str | None:
+    body = page.locator("body").inner_text()
+    if "评价确认未能与提交内容对齐" in body:
+        return "STAGING_ACCEPTANCE_EVALUATION_PAYLOAD_MISMATCH"
+    if "量规评价必须覆盖全部冻结维度" in body:
+        return "STAGING_ACCEPTANCE_EVALUATION_INVALID"
+    if "当前发布快照没有四档量规" in body:
+        return "STAGING_ACCEPTANCE_EVALUATION_RUBRIC_UNAVAILABLE"
+    if "确认状态正在变更或已被处理" in body:
+        return "STAGING_ACCEPTANCE_EVALUATION_CONCURRENT"
+    if "评价尚未保存" in body:
+        return (
+            "STAGING_ACCEPTANCE_EVALUATION_SAVE_FAILED"
+            if save
+            else "STAGING_ACCEPTANCE_EVALUATION_PREPARE_FAILED"
+        )
+    return None
+
+
+def confirm_evaluation(page: Page) -> None:
+    title = "确认并保存量规评价"
+    dialog = page.get_by_role("dialog").filter(has_text=title)
+    try:
+        dialog.or_(page.get_by_role("alert")).wait_for(state="visible", timeout=30_000)
+    except PlaywrightError as error:
+        code = evaluation_action_failure_code(page, save=False)
+        raise AcceptanceFailure(code or "STAGING_ACCEPTANCE_EVALUATION_CONFIRM_MISSING") from error
+    if not dialog.is_visible():
+        raise AcceptanceFailure(
+            evaluation_action_failure_code(page, save=False)
+            or "STAGING_ACCEPTANCE_EVALUATION_PREPARE_FAILED"
+        )
+    dialog.get_by_role("button", name=title, exact=True).click()
+    try:
+        dialog.wait_for(state="hidden", timeout=30_000)
+    except PlaywrightError as error:
+        raise AcceptanceFailure("STAGING_ACCEPTANCE_EVALUATION_CONFIRM_STUCK") from error
+    code = evaluation_action_failure_code(page, save=True)
+    if code:
+        raise AcceptanceFailure(code)
+
+
+def wait_evaluation_history(page: Page, summary: str) -> None:
+    history = page.locator('[aria-labelledby^="evaluation-history-"]').last
+    try:
+        history.get_by_text(summary, exact=True).or_(page.get_by_role("alert")).wait_for(
+            state="visible",
+            timeout=30_000,
+        )
+    except PlaywrightError as error:
+        raise AcceptanceFailure(
+            evaluation_action_failure_code(page, save=True)
+            or "STAGING_ACCEPTANCE_EVALUATION_HISTORY_MISSING"
+        ) from error
+    if history.get_by_text(summary, exact=True).is_visible():
+        return
+    raise AcceptanceFailure(
+        evaluation_action_failure_code(page, save=True)
+        or "STAGING_ACCEPTANCE_EVALUATION_HISTORY_MISSING"
+    )
+
+
 def fill_activity(page: Page, title: str, summary: str) -> None:
     page.locator('#activity-draft-form[data-hydrated="true"]').wait_for(state="visible")
     page.locator("#activity-title").fill(title)
@@ -337,20 +399,26 @@ def feedback(page: Page, body: str) -> None:
 
 
 def evaluation(page: Page, summary: str, attachment_filename: str) -> None:
-    dim1 = page.get_by_role("group", name="维度 1：问题意识")
+    composer = page.locator("section").filter(has=page.locator("#evaluation-editor-title"))
+    wait_visible(composer, "STAGING_ACCEPTANCE_EVALUATION_COMPOSER_MISSING")
+    dim1 = composer.get_by_role("group", name="维度 1：问题意识")
     dim1.get_by_label("判断方式", exact=True).select_option("LEVEL")
     dim1.get_by_label("达成等级", exact=True).select_option("excellent")
     dim1.get_by_label("引用本版文字证据", exact=True).check()
-    dim2 = page.get_by_role("group", name="维度 2：证据质量")
+    dim2 = composer.get_by_role("group", name="维度 2：证据质量")
     dim2.get_by_label("判断方式", exact=True).select_option("INSUFFICIENT_EVIDENCE")
-    dim3 = page.get_by_role("group", name="维度 3：跨学科连接")
+    dim3 = composer.get_by_role("group", name="维度 3：跨学科连接")
     dim3.get_by_label("判断方式", exact=True).select_option("LEVEL")
     dim3.get_by_label("达成等级", exact=True).select_option("good")
-    dim3.get_by_label(f"引用附件 {attachment_filename}", exact=True).check()
-    dim4 = page.get_by_role("group", name="维度 4：方案表达")
+    attachment = dim3.get_by_label(f"引用附件 {attachment_filename}", exact=True)
+    wait_visible(attachment, "STAGING_ACCEPTANCE_EVALUATION_ATTACHMENT_CITATION_MISSING")
+    attachment.check()
+    dim4 = composer.get_by_role("group", name="维度 4：方案表达")
     dim4.get_by_label("判断方式", exact=True).select_option("LEVEL")
     dim4.get_by_label("达成等级", exact=True).select_option("pass")
-    dim4.get_by_role("checkbox", name=re.compile(r"^引用检查点 1：")).check()
+    checkpoint = dim4.get_by_role("checkbox", name=re.compile(r"^引用检查点 1："))
+    wait_visible(checkpoint, "STAGING_ACCEPTANCE_EVALUATION_CHECKPOINT_MISSING")
+    checkpoint.check()
     textarea = page.locator("#teacher-evaluation-summary")
     textarea.wait_for(state="visible", timeout=30_000)
     textarea.fill(summary)
@@ -359,7 +427,7 @@ def evaluation(page: Page, summary: str, attachment_filename: str) -> None:
     if not button.is_enabled():
         raise AcceptanceFailure("STAGING_ACCEPTANCE_EVALUATION_NOT_READY")
     button.click()
-    confirm(page, "确认并保存量规评价", "确认并保存量规评价")
+    confirm_evaluation(page)
 
 
 def run() -> None:
@@ -581,10 +649,7 @@ def run() -> None:
                 exact=True,
             ).wait_for(state="visible")
             evaluation(teacher, evaluation_text, attachment_filename)
-            teacher.locator('[aria-labelledby^="evaluation-history-"]').last.get_by_text(
-                evaluation_text,
-                exact=True,
-            ).wait_for(state="visible")
+            wait_evaluation_history(teacher, evaluation_text)
             teacher.locator('[aria-labelledby^="evaluation-history-"]').last.get_by_text(
                 "证据不足",
                 exact=True,

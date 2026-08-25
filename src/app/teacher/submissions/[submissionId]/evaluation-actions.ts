@@ -231,13 +231,25 @@ function failedActionState(
     code === "CONCURRENT_WRITE" ||
     code === "IDEMPOTENCY_MISMATCH" ||
     code === "ALREADY_DECIDED" ||
-    code === "ACTION_NOT_CONFIRMED"
+    code === "ACTION_NOT_CONFIRMED" ||
+    code === "INTENT_TAMPERED"
   ) {
     return actionState({
       operation,
       status: "concurrent",
       message:
         "确认状态正在变更或已被处理。请先重试同一确认；若仍未完成，再刷新页面。",
+      resolvedIntentId,
+      nextPrepareIdempotencyKey: createIdempotencyKey("prepare"),
+    });
+  }
+
+  if (code === "INVALID_AGENT_RUN") {
+    return actionState({
+      operation,
+      status: "validation_error",
+      message:
+        "这次评价不能关联到有效的 AI 运行，系统没有保存。请改为手写评价后再确认。",
       resolvedIntentId,
       nextPrepareIdempotencyKey: createIdempotencyKey("prepare"),
     });
@@ -254,8 +266,23 @@ function failedActionState(
     });
   }
 
+  if (
+    error instanceof TypeError &&
+    error.message === "Prepared evaluation intent did not match input"
+  ) {
+    return actionState({
+      operation,
+      status: "error",
+      message:
+        "评价确认未能与提交内容对齐，系统没有保存。请刷新后再试。",
+      resolvedIntentId,
+      nextPrepareIdempotencyKey: createIdempotencyKey("prepare"),
+    });
+  }
+
   console.error("Teacher evaluation action failed", {
     errorName: error instanceof Error ? error.name : "UnknownError",
+    errorCode: code,
     operation,
   });
   return actionState({
