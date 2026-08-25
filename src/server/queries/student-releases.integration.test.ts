@@ -301,6 +301,7 @@ describeWithDatabase("student release list query", () => {
         latestRevisionNumber: 0,
         hasWorkingCopy: false,
         hasCurrentFeedback: false,
+        hasCurrentEvaluation: false,
       },
     });
     expect(
@@ -311,6 +312,7 @@ describeWithDatabase("student release list query", () => {
       latestRevisionNumber: 0,
       hasWorkingCopy: true,
       hasCurrentFeedback: false,
+      hasCurrentEvaluation: false,
     });
     expect(
       result.releases.find(
@@ -320,6 +322,7 @@ describeWithDatabase("student release list query", () => {
       latestRevisionNumber: 1,
       hasWorkingCopy: false,
       hasCurrentFeedback: true,
+      hasCurrentEvaluation: false,
     });
     expect(
       result.releases.find(

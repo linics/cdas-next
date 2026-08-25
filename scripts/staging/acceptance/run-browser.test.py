@@ -135,6 +135,8 @@ class BrowserContractTests(unittest.TestCase):
         self.assertIn("STRUCTURED_FORMATIVE_FEEDBACK_VISIBLE", source)
         self.assertIn("EVIDENCE_BOUND_EVALUATION_VISIBLE", source)
         self.assertIn("确认并保存量规评价", source)
+        self.assertIn("当前版已有量规评价", source)
+        self.assertIn("STAGING_ACCEPTANCE_STUDENT_LIST_EVALUATION_LEAK", source)
         self.assertIn("问题意识", source)
         self.assertIn("STUDENT_PRIVATE_ATTACHMENT_UPLOAD_AND_DOWNLOAD", source)
         self.assertIn("TEACHER_FORMAL_ATTACHMENT_DOWNLOAD", source)

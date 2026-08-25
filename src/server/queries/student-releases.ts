@@ -47,6 +47,7 @@ export const studentReleaseListSchema = z
               latestRevisionNumber: z.int().nonnegative(),
               hasWorkingCopy: z.boolean(),
               hasCurrentFeedback: z.boolean(),
+              hasCurrentEvaluation: z.boolean(),
             })
             .strict(),
         })
@@ -54,12 +55,13 @@ export const studentReleaseListSchema = z
         .superRefine((release, context) => {
           if (
             release.submission.latestRevisionNumber === 0 &&
-            release.submission.hasCurrentFeedback
+            (release.submission.hasCurrentFeedback ||
+              release.submission.hasCurrentEvaluation)
           ) {
             context.addIssue({
               code: "custom",
-              message: "Feedback requires a formal submission revision",
-              path: ["submission", "hasCurrentFeedback"],
+              message: "Feedback and evaluation require a formal submission revision",
+              path: ["submission"],
             });
           }
         }),
@@ -143,6 +145,7 @@ export async function listStudentReleases(
             select: {
               revisionNumber: true,
               feedback: { select: { id: true } },
+              evaluation: { select: { id: true } },
             },
           },
         },
@@ -175,6 +178,14 @@ export async function listStudentReleases(
           submission.latestRevisionNumber &&
         currentRevision.feedback,
     );
+    const hasCurrentEvaluation = Boolean(
+      submission &&
+        content.schemaVersion === 2 &&
+        submission.latestRevisionNumber > 0 &&
+        currentRevision?.revisionNumber ===
+          submission.latestRevisionNumber &&
+        currentRevision.evaluation,
+    );
 
     return [
       {
@@ -196,6 +207,7 @@ export async function listStudentReleases(
           hasWorkingCopy: submission?.workingCopy !== null &&
             submission?.workingCopy !== undefined,
           hasCurrentFeedback,
+          hasCurrentEvaluation,
         },
       },
     ];

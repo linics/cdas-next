@@ -20,6 +20,7 @@ import {
 import { saveSubmissionWorkingCopy } from "./save-submission-working-copy";
 import { startSubmissionResubmission } from "./start-submission-resubmission";
 import { submitSubmissionRevision } from "./submit-submission-revision";
+import { listStudentReleases } from "../queries/student-releases";
 import { getTeacherReleaseSubmissions } from "../queries/submission-workspace";
 
 const databaseUrl = process.env.TEST_DATABASE_URL;
@@ -241,6 +242,23 @@ describeWithDatabase("teacher evaluation commands", () => {
         },
       ],
     });
+    const studentList = await listStudentReleases(
+      database!,
+      commandContext(fixture.studentId, minutesAfter(fixture.baseTime, 3)),
+      {},
+    );
+    expect(
+      studentList.releases.find((release) => release.id === fixture.releaseId)
+        ?.submission,
+    ).toEqual({
+      latestRevisionNumber: 1,
+      hasWorkingCopy: false,
+      hasCurrentFeedback: false,
+      hasCurrentEvaluation: true,
+    });
+    const serializedStudentList = JSON.stringify(studentList);
+    expect(serializedStudentList).not.toContain("第一版综评");
+    expect(serializedStudentList).not.toContain("证据清楚");
 
     const secondIntent = await prepareAndConfirm(fixture, {
       summary: "第二版综评：四个维度都有对应证据。",

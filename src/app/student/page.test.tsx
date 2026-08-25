@@ -77,6 +77,7 @@ const trustedContext = {
 };
 const pendingReleaseId = "10000000-0000-4000-8000-000000000001";
 const feedbackReleaseId = "20000000-0000-4000-8000-000000000002";
+const evaluationReleaseId = "40000000-0000-4000-8000-000000000004";
 const historyReleaseId = "30000000-0000-4000-8000-000000000003";
 const releaseList = {
   actor: { displayName: "测试学生" },
@@ -95,6 +96,7 @@ const releaseList = {
         latestRevisionNumber: 0,
         hasWorkingCopy: true,
         hasCurrentFeedback: false,
+        hasCurrentEvaluation: false,
       },
     },
     {
@@ -111,6 +113,24 @@ const releaseList = {
         latestRevisionNumber: 1,
         hasWorkingCopy: false,
         hasCurrentFeedback: true,
+        hasCurrentEvaluation: false,
+      },
+    },
+    {
+      id: evaluationReleaseId,
+      status: "ACTIVE",
+      publishedAt: "2026-08-18T08:30:00.000Z",
+      dueAt: null,
+      access: { canWrite: true },
+      snapshot: {
+        title: "已有评价活动",
+        summary: "查看教师量规评价",
+      },
+      submission: {
+        latestRevisionNumber: 1,
+        hasWorkingCopy: false,
+        hasCurrentFeedback: true,
+        hasCurrentEvaluation: true,
       },
     },
     {
@@ -127,6 +147,7 @@ const releaseList = {
         latestRevisionNumber: 1,
         hasWorkingCopy: false,
         hasCurrentFeedback: false,
+        hasCurrentEvaluation: false,
       },
     },
   ],
@@ -186,11 +207,16 @@ describe("student dashboard page", () => {
 
     expect(markup).toContain("待提交");
     expect(markup).toContain("已有反馈");
+    expect(markup).toContain("已有评价");
+    expect(markup).toContain("当前版已有量规评价");
     expect(markup).toContain("历史与关闭");
     expect(markup).toContain("仍可迟交");
     expect(markup).toContain(`/student/releases/${pendingReleaseId}`);
     expect(markup).toContain(`/student/releases/${feedbackReleaseId}`);
+    expect(markup).toContain(`/student/releases/${evaluationReleaseId}`);
     expect(markup).toContain(`/student/releases/${historyReleaseId}`);
+    expect(markup).not.toContain("优秀");
+    expect(markup).not.toContain("问题意识");
     expect(markup).not.toContain("创建活动");
     expect(markup).not.toContain("打开导航");
     expect(markup).toContain("当前账号：测试学生 · 学生");

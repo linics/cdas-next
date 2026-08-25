@@ -21,7 +21,7 @@ import styles from "./student-dashboard.module.css";
 
 export const metadata: Metadata = {
   title: "我的学习活动 | CDAS Next",
-  description: "查看可见活动、提交状态与教师反馈",
+  description: "查看可见活动、提交状态、教师反馈与量规评价",
 };
 
 function AccessUnavailable({
@@ -79,7 +79,7 @@ function AccessUnavailable({
 }
 
 type StudentRelease = StudentReleaseList["releases"][number];
-type ReleaseGroupKey = "pending" | "submitted" | "feedback" | "history";
+type ReleaseGroupKey = "pending" | "submitted" | "feedback" | "evaluation" | "history";
 
 const groupDetails = {
   pending: {
@@ -97,8 +97,13 @@ const groupDetails = {
     title: "已有反馈",
     detail: "当前正式修订已有教师反馈，可进入活动查看。",
   },
-  history: {
+  evaluation: {
     number: "04",
+    title: "已有评价",
+    detail: "当前正式修订已有教师确认的量规评价。",
+  },
+  history: {
+    number: "05",
     title: "历史与关闭",
     detail: "保留读取权限，但当前不能继续保存或提交。",
   },
@@ -113,6 +118,9 @@ function groupRelease(release: StudentRelease): ReleaseGroupKey {
   }
   if (release.submission.hasWorkingCopy) {
     return "pending";
+  }
+  if (release.submission.hasCurrentEvaluation) {
+    return "evaluation";
   }
   if (release.submission.hasCurrentFeedback) {
     return "feedback";
@@ -138,6 +146,9 @@ function releaseStatusLabel(release: StudentRelease): string {
       ? "重交草稿"
       : "草稿未提交";
   }
+  if (release.submission.hasCurrentEvaluation) {
+    return "已有评价";
+  }
   if (release.submission.hasCurrentFeedback) {
     return "已有反馈";
   }
@@ -151,7 +162,10 @@ function releaseStatusTone(release: StudentRelease): "neutral" | "warning" | "su
   if (!release.access.canWrite) {
     return "neutral";
   }
-  if (release.submission.hasCurrentFeedback) {
+  if (
+    release.submission.hasCurrentEvaluation ||
+    release.submission.hasCurrentFeedback
+  ) {
     return "success";
   }
   if (
@@ -181,6 +195,7 @@ function ReleaseRow({
       : "尚无正式修订",
     release.submission.hasWorkingCopy ? "有未提交草稿" : null,
     release.submission.hasCurrentFeedback ? "当前版已有反馈" : null,
+    release.submission.hasCurrentEvaluation ? "当前版已有量规评价" : null,
   ].filter((part): part is string => part !== null);
 
   return (
@@ -293,6 +308,7 @@ export default async function StudentDashboardPage() {
     pending: [] as StudentRelease[],
     submitted: [] as StudentRelease[],
     feedback: [] as StudentRelease[],
+    evaluation: [] as StudentRelease[],
     history: [] as StudentRelease[],
   };
   for (const release of releaseList.releases) {
@@ -326,6 +342,10 @@ export default async function StudentDashboardPage() {
             <div>
               <dt>已有反馈</dt>
               <dd>{grouped.feedback.length}</dd>
+            </div>
+            <div>
+              <dt>已有评价</dt>
+              <dd>{grouped.evaluation.length}</dd>
             </div>
           </dl>
         </header>
