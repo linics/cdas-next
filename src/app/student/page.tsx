@@ -80,7 +80,7 @@ function AccessUnavailable({
 }
 
 type StudentRelease = StudentReleaseList["releases"][number];
-type ReleaseGroupKey = "pending" | "submitted" | "feedback" | "evaluation" | "history";
+type ReleaseGroupKey = "pending" | "submitted" | "feedback" | "resubmit" | "evaluation" | "history";
 
 const groupDetails = {
   pending: {
@@ -98,13 +98,18 @@ const groupDetails = {
     title: "已有反馈",
     detail: "当前正式修订已有教师反馈，可进入活动查看。",
   },
-  evaluation: {
+  resubmit: {
     number: "04",
+    title: "待重交",
+    detail: "教师要求按反馈修改并重交，当前还没有新的工作草稿。",
+  },
+  evaluation: {
+    number: "05",
     title: "已有评价",
     detail: "当前正式修订已有教师确认的量规评价。",
   },
   history: {
-    number: "05",
+    number: "06",
     title: "历史与关闭",
     detail: "保留读取权限，但当前不能继续保存或提交。",
   },
@@ -116,6 +121,9 @@ const groupDetails = {
 function groupRelease(release: StudentRelease): ReleaseGroupKey {
   if (!release.access.canWrite) {
     return "history";
+  }
+  if (release.submission.followUp === "AWAITING_RESUBMISSION") {
+    return "resubmit";
   }
   if (release.submission.hasWorkingCopy) {
     return "pending";
@@ -142,6 +150,12 @@ function releaseStatusLabel(release: StudentRelease): string {
   if (!release.access.canWrite) {
     return "历史唯读";
   }
+  if (release.submission.followUp === "AWAITING_RESUBMISSION") {
+    return "待重交";
+  }
+  if (release.submission.followUp === "RESUBMISSION_IN_PROGRESS") {
+    return "重交中";
+  }
   if (release.submission.hasWorkingCopy) {
     return release.submission.latestRevisionNumber > 0
       ? "重交草稿"
@@ -162,6 +176,9 @@ function releaseStatusLabel(release: StudentRelease): string {
 function releaseStatusTone(release: StudentRelease): "neutral" | "warning" | "success" | "info" {
   if (!release.access.canWrite) {
     return "neutral";
+  }
+  if (release.submission.followUp === "AWAITING_RESUBMISSION") {
+    return "warning";
   }
   if (
     release.submission.hasCurrentEvaluation ||
@@ -195,6 +212,8 @@ function ReleaseRow({
       ? `正式修订 ${release.submission.latestRevisionNumber} 版`
       : "尚无正式修订",
     release.submission.hasWorkingCopy ? "有未提交草稿" : null,
+    release.submission.followUp === "AWAITING_RESUBMISSION" ? "待重交" : null,
+    release.submission.followUp === "RESUBMISSION_IN_PROGRESS" ? "重交中" : null,
     release.submission.hasCurrentFeedback ? "当前版已有反馈" : null,
     release.submission.hasCurrentEvaluation ? "当前版已有量规评价" : null,
   ].filter((part): part is string => part !== null);
@@ -310,6 +329,7 @@ export default async function StudentDashboardPage() {
     pending: [] as StudentRelease[],
     submitted: [] as StudentRelease[],
     feedback: [] as StudentRelease[],
+    resubmit: [] as StudentRelease[],
     evaluation: [] as StudentRelease[],
     history: [] as StudentRelease[],
   };
@@ -344,6 +364,10 @@ export default async function StudentDashboardPage() {
             <div>
               <dt>已有反馈</dt>
               <dd>{grouped.feedback.length}</dd>
+            </div>
+            <div>
+              <dt>待重交</dt>
+              <dd>{grouped.resubmit.length}</dd>
             </div>
             <div>
               <dt>已有评价</dt>

@@ -233,7 +233,7 @@ async function createReleaseListFixture() {
       expectedSubmissionRevisionNumber: 1,
       expectedFeedbackVersion: 0,
       body: "教师反馈秘密正文",
-      nextStep: "CONTINUE",
+      nextStep: "REVISE",
       supportLevel: "STANDARD",
       suggestionAgentRunId: null,
       idempotencyKey: `prepare_feedback_${randomUUID()}`,
@@ -302,6 +302,7 @@ describeWithDatabase("student release list query", () => {
         hasWorkingCopy: false,
         hasCurrentFeedback: false,
         hasCurrentEvaluation: false,
+        followUp: null,
       },
     });
     expect(
@@ -313,6 +314,7 @@ describeWithDatabase("student release list query", () => {
       hasWorkingCopy: true,
       hasCurrentFeedback: false,
       hasCurrentEvaluation: false,
+      followUp: null,
     });
     expect(
       result.releases.find(
@@ -323,6 +325,7 @@ describeWithDatabase("student release list query", () => {
       hasWorkingCopy: false,
       hasCurrentFeedback: true,
       hasCurrentEvaluation: false,
+      followUp: "AWAITING_RESUBMISSION",
     });
     expect(
       result.releases.find(
@@ -342,6 +345,7 @@ describeWithDatabase("student release list query", () => {
     expect(serialized).not.toContain("未提交草稿秘密正文");
     expect(serialized).not.toContain("正式修订秘密正文");
     expect(serialized).not.toContain("教师反馈秘密正文");
+    expect(serialized).not.toContain("REVISE");
     expect(serialized).not.toContain("其他班级秘密活动");
     expect(serialized).not.toContain(fixture.beforeMembershipReleaseId);
     expect(serialized).not.toContain(fixture.unrelatedReleaseId);

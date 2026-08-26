@@ -380,6 +380,7 @@ describeWithDatabase("teacher evaluation commands", () => {
       hasWorkingCopy: false,
       hasCurrentFeedback: false,
       hasCurrentEvaluation: true,
+      followUp: null,
     });
     const serializedStudentList = JSON.stringify(studentList);
     expect(serializedStudentList).not.toContain("第一版综评");

@@ -80,6 +80,7 @@ const trustedContext = {
 };
 const pendingReleaseId = "10000000-0000-4000-8000-000000000001";
 const feedbackReleaseId = "20000000-0000-4000-8000-000000000002";
+const resubmitReleaseId = "50000000-0000-4000-8000-000000000005";
 const evaluationReleaseId = "40000000-0000-4000-8000-000000000004";
 const historyReleaseId = "30000000-0000-4000-8000-000000000003";
 const releaseList = {
@@ -100,6 +101,7 @@ const releaseList = {
         hasWorkingCopy: true,
         hasCurrentFeedback: false,
         hasCurrentEvaluation: false,
+        followUp: null,
       },
     },
     {
@@ -117,6 +119,25 @@ const releaseList = {
         hasWorkingCopy: false,
         hasCurrentFeedback: true,
         hasCurrentEvaluation: false,
+        followUp: null,
+      },
+    },
+    {
+      id: resubmitReleaseId,
+      status: "ACTIVE",
+      publishedAt: "2026-08-18T08:45:00.000Z",
+      dueAt: null,
+      access: { canWrite: true },
+      snapshot: {
+        title: "待重交活动",
+        summary: "按反馈修改后重交",
+      },
+      submission: {
+        latestRevisionNumber: 1,
+        hasWorkingCopy: false,
+        hasCurrentFeedback: true,
+        hasCurrentEvaluation: true,
+        followUp: "AWAITING_RESUBMISSION",
       },
     },
     {
@@ -134,6 +155,7 @@ const releaseList = {
         hasWorkingCopy: false,
         hasCurrentFeedback: true,
         hasCurrentEvaluation: true,
+        followUp: null,
       },
     },
     {
@@ -151,6 +173,7 @@ const releaseList = {
         hasWorkingCopy: false,
         hasCurrentFeedback: false,
         hasCurrentEvaluation: false,
+        followUp: null,
       },
     },
   ],
@@ -210,12 +233,14 @@ describe("student dashboard page", () => {
 
     expect(markup).toContain("待提交");
     expect(markup).toContain("已有反馈");
+    expect(markup).toContain("待重交");
     expect(markup).toContain("已有评价");
     expect(markup).toContain("当前版已有量规评价");
     expect(markup).toContain("历史与关闭");
     expect(markup).toContain("仍可迟交");
     expect(markup).toContain(`/student/releases/${pendingReleaseId}`);
     expect(markup).toContain(`/student/releases/${feedbackReleaseId}`);
+    expect(markup).toContain(`/student/releases/${resubmitReleaseId}`);
     expect(markup).toContain(`/student/releases/${evaluationReleaseId}`);
     expect(markup).toContain(`/student/releases/${historyReleaseId}`);
     expect(markup).not.toContain("优秀");

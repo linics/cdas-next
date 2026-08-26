@@ -2,6 +2,7 @@ import "server-only";
 
 import { z } from "zod";
 import { activityContentSchema } from "../../domain/activity/activity-content";
+import { reviewFollowUp } from "../../domain/feedback/review-follow-up";
 import type { PrismaClient } from "../../generated/prisma/client";
 import {
   type CommandContext,
@@ -48,6 +49,9 @@ export const studentReleaseListSchema = z
               hasWorkingCopy: z.boolean(),
               hasCurrentFeedback: z.boolean(),
               hasCurrentEvaluation: z.boolean(),
+              followUp: z
+                .enum(["AWAITING_RESUBMISSION", "RESUBMISSION_IN_PROGRESS"])
+                .nullable(),
             })
             .strict(),
         })
@@ -56,7 +60,8 @@ export const studentReleaseListSchema = z
           if (
             release.submission.latestRevisionNumber === 0 &&
             (release.submission.hasCurrentFeedback ||
-              release.submission.hasCurrentEvaluation)
+              release.submission.hasCurrentEvaluation ||
+              release.submission.followUp !== null)
           ) {
             context.addIssue({
               code: "custom",
@@ -145,7 +150,16 @@ export async function listStudentReleases(
             take: 1,
             select: {
               revisionNumber: true,
-              feedback: { select: { id: true } },
+              feedback: {
+                select: {
+                  version: true,
+                  revisions: {
+                    orderBy: { version: "desc" },
+                    take: 1,
+                    select: { version: true, nextStep: true },
+                  },
+                },
+              },
               evaluation: { select: { id: true } },
             },
           },
@@ -172,12 +186,23 @@ export async function listStudentReleases(
     );
     const content = activityContentSchema.parse(release.snapshot.content);
     const currentRevision = submission?.revisions[0] ?? null;
+    const currentFeedback = currentRevision?.feedback ?? null;
+    const currentFeedbackRevision = currentFeedback?.revisions[0] ?? null;
+    if (
+      currentFeedback &&
+      (!currentFeedbackRevision ||
+        currentFeedbackRevision.version !== currentFeedback.version)
+    ) {
+      throw new Error(
+        `Release ${release.id} has a submission without an exact current feedback revision`,
+      );
+    }
     const hasCurrentFeedback = Boolean(
       submission &&
         submission.latestRevisionNumber > 0 &&
         currentRevision?.revisionNumber ===
           submission.latestRevisionNumber &&
-        currentRevision.feedback,
+        currentFeedback,
     );
     const hasCurrentEvaluation = Boolean(
       submission &&
@@ -187,6 +212,13 @@ export async function listStudentReleases(
           submission.latestRevisionNumber &&
         currentRevision.evaluation,
     );
+    const hasWorkingCopy =
+      submission?.workingCopy !== null &&
+      submission?.workingCopy !== undefined;
+    const followUp = reviewFollowUp({
+      nextStep: currentFeedbackRevision?.nextStep,
+      hasWorkingCopy,
+    });
 
     return [
       {
@@ -205,10 +237,10 @@ export async function listStudentReleases(
         submission: {
           latestRevisionNumber:
             submission?.latestRevisionNumber ?? 0,
-          hasWorkingCopy: submission?.workingCopy !== null &&
-            submission?.workingCopy !== undefined,
+          hasWorkingCopy,
           hasCurrentFeedback,
           hasCurrentEvaluation,
+          followUp,
         },
       },
     ];
