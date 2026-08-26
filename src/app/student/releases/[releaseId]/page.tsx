@@ -1,12 +1,32 @@
 import { randomUUID } from "node:crypto";
 import { SignInButton, SignOutButton } from "@clerk/nextjs";
 import Link from "next/link";
+import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { ZodError } from "zod";
+import {
+  assignmentTypeDetails,
+  assignmentSubtypeLabel,
+  crossDisciplinaryConcepts,
+  disciplineLabel,
+  evidenceTypeLabel,
+  inquiryDepths,
+  submissionModes,
+} from "../../../../domain/activity/activity-content";
+import {
+  teacherFeedbackNextStepLabels,
+  teacherFeedbackSupportLevelLabels,
+} from "../../../../domain/feedback/teacher-feedback-policy";
+import {
+  teacherEvaluationCitationKindLabels,
+  teacherEvaluationLevelLabels,
+  teacherEvaluationOutcomeStatusLabels,
+} from "../../../../domain/evaluation/teacher-evaluation-policy";
 import { LocalizedDateTime } from "../../../_components/localized-date-time";
 import { InlineAlert, StatusBadge } from "../../../_components/ui";
 import { WorkspaceShell } from "../../../_components/workspace-shell";
 import { AuthenticationError } from "../../../../server/auth/current-actor";
+import { createAttachmentStorageFromEnvironment } from "../../../../server/attachments/vercel-blob-attachment-storage";
 import { createUiCommandContext } from "../../../../server/commands/create-ui-command-context";
 import { getDatabaseClient } from "../../../../server/db/client";
 import {
@@ -95,37 +115,20 @@ function ReleaseBrief({
         <span>版本 {snapshot.sourceDraftVersion}</span>
       </div>
 
-      <section>
-        <h3>任务说明</h3>
-        <p>{content.taskInstructions}</p>
-      </section>
-
-      <section>
-        <h3>学习目标</h3>
-        <ol>
-          {content.learningObjectives.map((objective) => (
-            <li key={objective}>{objective}</li>
-          ))}
-        </ol>
-      </section>
-
-      <section>
-        <h3>提交证据</h3>
-        <ul>
-          {content.evidenceRequirements.map((requirement) => (
-            <li key={requirement}>{requirement}</li>
-          ))}
-        </ul>
-      </section>
-
-      <section>
-        <h3>教师反馈将关注</h3>
-        <ul>
-          {content.feedbackCriteria.map((criterion) => (
-            <li key={criterion}>{criterion}</li>
-          ))}
-        </ul>
-      </section>
+      {content.schemaVersion === 2 ? <>
+        <section><h3>任务设置</h3><p>{content.topic} · {content.schoolStage === "PRIMARY" ? "小学" : "初中"}{content.grade}年级<br />主学科：{disciplineLabel(content.mainDisciplineCode)}；融合学科：{content.integratedDisciplineCodes.map(disciplineLabel).join("、")}<br />{assignmentTypeDetails(content.assignmentType).label}（{assignmentTypeDetails(content.assignmentType).description}）{assignmentSubtypeLabel(content.assignmentType, content.assignmentSubtype) ? ` · ${assignmentSubtypeLabel(content.assignmentType, content.assignmentSubtype)}` : ""} · {inquiryDepths.find((item) => item.code === content.inquiryDepth)?.label} · {submissionModes.find((item) => item.code === content.submissionMode)?.label} · {content.durationWeeks} 周</p></section>
+        {content.crossDisciplinaryConceptCodes.length > 0 ? <section><h3>跨学科概念</h3><p>{content.crossDisciplinaryConceptCodes.map((code) => { const concept = crossDisciplinaryConcepts.find((item) => item.code === code)!; return `${concept.label}（${concept.description}）`; }).join("；")}</p></section> : null}
+        <section><h3>背景设定</h3><p>{content.backgroundSetting}</p></section>
+        <section><h3>学习目标</h3><ol><li>知识与技能：{content.objectiveKnowledge}</li><li>过程与方法：{content.objectiveProcess}</li><li>情感态度：{content.objectiveEmotion}</li></ol></section>
+        <section><h3>总体任务</h3><p>{content.taskInstructions}</p></section>
+        <section><h3>任务链</h3><ol>{content.phases.map((phase) => <li key={phase.name}><strong>{phase.name}</strong>（建议 {phase.suggestedLessons} 课时）<br />要完成：{phase.action}<br />情境：{phase.context}<br />学习支架：{phase.support}<br />提交：{phase.evidence.map((evidence) => `${evidenceTypeLabel(evidence.type)}：${evidence.description}`).join("；")}<br />评价要点：{phase.evaluationFocus}</li>)}</ol></section>
+        <section><h3>评价标准</h3><ul>{content.rubricDimensions.map((dimension) => <li key={dimension.name}><strong>{dimension.name}</strong><br />优秀：{dimension.excellent}<br />良好：{dimension.good}<br />合格：{dimension.pass}<br />需改进：{dimension.improve}</li>)}</ul></section>
+      </> : <>
+        <section><h3>任务说明</h3><p>{content.taskInstructions}</p></section>
+        <section><h3>学习目标</h3><ol>{content.learningObjectives.map((objective) => <li key={objective}>{objective}</li>)}</ol></section>
+        <section><h3>提交证据</h3><ul>{content.evidenceRequirements.map((requirement) => <li key={requirement}>{requirement}</li>)}</ul></section>
+        <section><h3>教师反馈将关注</h3><ul>{content.feedbackCriteria.map((criterion) => <li key={criterion}>{criterion}</li>)}</ul></section>
+      </>}
 
       <p className={styles.snapshotHash} title={snapshot.contentHash}>
         快照摘要 {snapshot.contentHash.slice(0, 12)}…
@@ -137,9 +140,17 @@ function ReleaseBrief({
 function RevisionHistory({
   submission,
   feedbackWorkspace,
+  phase,
 }: {
   submission: StudentReleaseWorkspace["submission"];
   feedbackWorkspace: StudentFeedbackWorkspace | null;
+  phase: StudentReleaseWorkspace["release"]["snapshot"]["content"] extends infer Content
+    ? Content extends { schemaVersion: 2; phases: infer Phases }
+      ? Phases extends ReadonlyArray<infer Phase>
+        ? Phase | null
+        : null
+      : null
+    : null;
 }) {
   const revisions = submission ? [...submission.revisions].reverse() : [];
   const feedbackByRevisionId = new Map(
@@ -171,7 +182,12 @@ function RevisionHistory({
               queriedRevision?.revisionNumber === revision.revisionNumber
                 ? queriedRevision.feedback
                 : null;
+            const evaluation =
+              queriedRevision?.revisionNumber === revision.revisionNumber
+                ? queriedRevision.evaluation
+                : null;
             const feedbackHeadingId = `feedback-${revision.id}`;
+            const evaluationHeadingId = `evaluation-${revision.id}`;
 
             return (
               <article className={styles.revision} key={revision.id}>
@@ -195,9 +211,35 @@ function RevisionHistory({
                   </div>
                 </header>
                 <p className={styles.formalNote}>正式修订 · 内容不可覆盖</p>
-                <div className={styles.revisionText}>
-                  {revision.textEvidence}
-                </div>
+                {revision.textEvidence ? (
+                  <div className={styles.revisionText}>
+                    {revision.textEvidence}
+                  </div>
+                ) : null}
+                {phase && revision.completedEvidenceIndexes.length > 0 ? (
+                  <ul className={styles.completedCheckpoints}>
+                    {revision.completedEvidenceIndexes.map((evidenceIndex) => {
+                      const evidence = phase.evidence[evidenceIndex - 1];
+                      return evidence ? (
+                        <li key={evidenceIndex}>
+                          已确认：{evidence.description}（{evidenceTypeLabel(evidence.type)}）
+                        </li>
+                      ) : null;
+                    })}
+                  </ul>
+                ) : null}
+                {revision.attachments.length > 0 ? (
+                  <ul className={styles.formalAttachmentList}>
+                    {revision.attachments.map((attachment) => (
+                      <li key={attachment.id}>
+                        <a href={`/attachments/${attachment.id}/download`}>
+                          {attachment.filename}
+                        </a>
+                        <span>{Math.ceil(attachment.byteSize / 1024)} KB</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
 
                 <section
                   className={styles.feedbackSection}
@@ -241,12 +283,121 @@ function RevisionHistory({
                             <LocalizedDateTime dateTime={entry.confirmedAt} />
                           </div>
                           <div className={styles.feedbackBody}>{entry.body}</div>
+                          {entry.nextStep && entry.supportLevel ? (
+                            <div className={styles.feedbackStructure}>
+                              <span>
+                                形成性下一步：
+                                {teacherFeedbackNextStepLabels[entry.nextStep]}
+                              </span>
+                              <span>
+                                支架层级：
+                                {teacherFeedbackSupportLevelLabels[
+                                  entry.supportLevel
+                                ]}
+                              </span>
+                            </div>
+                          ) : (
+                            <p className={styles.legacyFeedbackStructure}>
+                              旧反馈未指定结构化下一步与支架
+                            </p>
+                          )}
                         </li>
                       ))}
                     </ol>
                   ) : (
                     <p className={styles.emptyFeedback}>
                       此正式修订尚无教师已确认的反馈。
+                    </p>
+                  )}
+                </section>
+
+                <section
+                  className={styles.feedbackSection}
+                  aria-labelledby={evaluationHeadingId}
+                >
+                  <div className={styles.feedbackHeading}>
+                    <div>
+                      <p className={styles.eyebrow}>量规评价</p>
+                      <h4 id={evaluationHeadingId}>
+                        {evaluation ? evaluation.teacher.displayName : "尚待确认"}
+                      </h4>
+                    </div>
+                    {evaluation ? (
+                      <span>当前第 {evaluation.currentVersion} 版</span>
+                    ) : null}
+                  </div>
+
+                  {evaluation ? (
+                    <ol className={styles.feedbackVersions}>
+                      {[...evaluation.revisions].reverse().map((entry) => (
+                        <li
+                          className={styles.feedbackVersion}
+                          data-current={
+                            entry.version === evaluation.currentVersion
+                              ? "true"
+                              : "false"
+                          }
+                          key={entry.id}
+                        >
+                          <div className={styles.feedbackVersionMeta}>
+                            <strong>评价第 {entry.version} 版</strong>
+                            {entry.version === evaluation.currentVersion ? (
+                              <span>当前版本</span>
+                            ) : null}
+                            <p>
+                              {evaluation.teacher.displayName} · {entry.source ===
+                              "MANUAL"
+                                ? "教师手写"
+                                : "AI 建议，教师已确认"}
+                            </p>
+                            <LocalizedDateTime dateTime={entry.confirmedAt} />
+                          </div>
+                          <div>
+                            <ul className={styles.evaluationOutcomeList}>
+                              {entry.outcomes.map((outcome) => (
+                                <li key={outcome.dimensionIndex}>
+                                  <strong>
+                                    {outcome.dimensionIndex}. {outcome.dimensionName}
+                                  </strong>
+                                  <span>
+                                    {outcome.status === "LEVEL" &&
+                                    "level" in outcome
+                                      ? teacherEvaluationLevelLabels[outcome.level]
+                                      : teacherEvaluationOutcomeStatusLabels.INSUFFICIENT_EVIDENCE}
+                                  </span>
+                                  {outcome.citations.length > 0 ? (
+                                    <small>
+                                      {outcome.citations
+                                        .map((citation) => {
+                                          if (citation.kind === "text") {
+                                            return teacherEvaluationCitationKindLabels.text;
+                                          }
+                                          if (citation.kind === "attachment") {
+                                            const filename =
+                                              revision.attachments.find(
+                                                (item) =>
+                                                  item.id === citation.attachmentId,
+                                              )?.filename ?? citation.attachmentId;
+                                            return `${teacherEvaluationCitationKindLabels.attachment}：${filename}`;
+                                          }
+                                          return `${teacherEvaluationCitationKindLabels.checkpoint} ${citation.evidenceIndex}`;
+                                        })
+                                        .join("；")}
+                                    </small>
+                                  ) : null}
+                                </li>
+                              ))}
+                            </ul>
+                            <div className={styles.feedbackBody}>
+                              {entry.summary}
+                            </div>
+                          </div>
+                        </li>
+                      ))}
+                    </ol>
+                  ) : (
+                    <p className={styles.emptyFeedback}>
+                      此正式修订尚无教师已确认的量规评价。
                     </p>
                   )}
                 </section>
@@ -259,14 +410,130 @@ function RevisionHistory({
   );
 }
 
+function PhaseNavigator({
+  workspace,
+  selectedPhaseIndex,
+}: {
+  workspace: StudentReleaseWorkspace;
+  selectedPhaseIndex: number;
+}) {
+  const content = workspace.release.snapshot.content;
+  if (workspace.execution.version !== 1 || content.schemaVersion !== 2) {
+    return null;
+  }
+
+  const byPhase = new Map(
+    workspace.submissions.map((submission) => [
+      submission.phaseIndex,
+      submission,
+    ]),
+  );
+  const entries = content.phases.map((phase, index) => ({
+    phaseIndex: index + 1,
+    label: phase.name,
+  }));
+  if (workspace.execution.mode === "mixed") {
+    entries.push({ phaseIndex: 0, label: "整项终稿" });
+  }
+
+  return (
+    <nav className={styles.phaseNavigator} aria-label="任务阶段">
+      {entries.map((entry) => {
+        const submission = byPhase.get(entry.phaseIndex);
+        const submitted = (submission?.latestRevisionNumber ?? 0) > 0;
+        const unlocked =
+          entry.phaseIndex === workspace.execution.currentPhaseIndex ||
+          submission !== undefined ||
+          (entry.phaseIndex > 0 &&
+            entry.phaseIndex < workspace.execution.currentPhaseIndex);
+        const state = submitted
+          ? "已提交"
+          : unlocked
+            ? "进行中"
+            : "待解锁";
+        const content = (
+          <>
+            <span>{entry.phaseIndex === 0 ? "终" : entry.phaseIndex}</span>
+            <strong>{entry.label}</strong>
+            <small>{state}</small>
+          </>
+        );
+        return unlocked ? (
+          <Link
+            aria-current={
+              entry.phaseIndex === selectedPhaseIndex ? "step" : undefined
+            }
+            data-current={
+              entry.phaseIndex === selectedPhaseIndex ? "true" : "false"
+            }
+            href={`/student/releases/${workspace.release.id}?phase=${entry.phaseIndex}`}
+            key={entry.phaseIndex}
+          >
+            {content}
+          </Link>
+        ) : (
+          <span data-locked="true" key={entry.phaseIndex}>
+            {content}
+          </span>
+        );
+      })}
+    </nav>
+  );
+}
+
+function PhaseFocus({
+  phase,
+  phaseIndex,
+}: {
+  phase: Extract<
+    StudentReleaseWorkspace["release"]["snapshot"]["content"],
+    { schemaVersion: 2 }
+  >["phases"][number] | null;
+  phaseIndex: number;
+}) {
+  if (!phase) {
+    return phaseIndex === 0 ? (
+      <section className={styles.phaseFocus}>
+        <p className={styles.eyebrow}>混合提交 / 整项终稿</p>
+        <h2>汇总全部阶段成果</h2>
+        <p>所有阶段已经正式提交。现在整理跨阶段说明、最终成果和必要附件。</p>
+      </section>
+    ) : null;
+  }
+
+  return (
+    <section className={styles.phaseFocus}>
+      <p className={styles.eyebrow}>第 {phaseIndex} 阶段</p>
+      <h2>{phase.name}</h2>
+      <p>{phase.context}</p>
+      <dl>
+        <div><dt>核心行动</dt><dd>{phase.action}</dd></div>
+        <div><dt>学习支架</dt><dd>{phase.support}</dd></div>
+        <div><dt>评价要点</dt><dd>{phase.evaluationFocus}</dd></div>
+        <div><dt>建议课时</dt><dd>{phase.suggestedLessons} 课时</dd></div>
+      </dl>
+    </section>
+  );
+}
+
 export default async function StudentReleasePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ releaseId: string }>;
+  searchParams?: Promise<{ phase?: string | string[] }>;
 }) {
+  // Teacher feedback/evaluation saves invalidate this route, but Preview can
+  // still serve a stale RSC payload unless the page is request-bound.
+  await connection();
   const { releaseId } = await params;
+  const requestedPhaseValue = searchParams
+    ? (await searchParams).phase
+    : undefined;
   let context;
   let workspace: StudentReleaseWorkspace;
+  let selectedSubmission: StudentReleaseWorkspace["submission"] = null;
+  let selectedPhaseIndex = 0;
   let feedbackWorkspace: StudentFeedbackWorkspace | null = null;
 
   try {
@@ -275,14 +542,37 @@ export default async function StudentReleasePage({
     workspace = await getStudentReleaseWorkspace(database, context, {
       releaseId,
     });
-    if (workspace.submission) {
+    const requestedPhase =
+      typeof requestedPhaseValue === "string" &&
+      /^\d+$/.test(requestedPhaseValue)
+        ? Number(requestedPhaseValue)
+        : workspace.execution.currentPhaseIndex;
+    const requestedSubmission = workspace.submissions.find(
+      (submission) => submission.phaseIndex === requestedPhase,
+    );
+    const requestedUnlocked =
+      workspace.execution.version === 0
+        ? requestedPhase === 0
+        : requestedPhase === workspace.execution.currentPhaseIndex ||
+          requestedSubmission !== undefined ||
+          (requestedPhase > 0 &&
+            requestedPhase < workspace.execution.currentPhaseIndex);
+    selectedPhaseIndex = requestedUnlocked
+      ? requestedPhase
+      : workspace.execution.currentPhaseIndex;
+    selectedSubmission =
+      workspace.submissions.find(
+        (submission) => submission.phaseIndex === selectedPhaseIndex,
+      ) ?? null;
+
+    if (selectedSubmission) {
       feedbackWorkspace = await getStudentFeedbackWorkspace(
         database,
         context,
-        { submissionId: workspace.submission.id },
+        { submissionId: selectedSubmission.id },
       );
       if (
-        feedbackWorkspace.submission.id !== workspace.submission.id ||
+        feedbackWorkspace.submission.id !== selectedSubmission.id ||
         feedbackWorkspace.submission.release.id !== releaseId
       ) {
         throw new FeedbackWorkspaceQueryError("NOT_FOUND");
@@ -308,6 +598,10 @@ export default async function StudentReleasePage({
   const isActive = workspace.release.status === "ACTIVE";
   const canWrite = workspace.access.canWrite;
   const content = workspace.release.snapshot.content;
+  const selectedPhase =
+    content.schemaVersion === 2 && selectedPhaseIndex > 0
+      ? (content.phases[selectedPhaseIndex - 1] ?? null)
+      : null;
   const readOnlyMessage = isActive
     ? "你当前保留这份活动与自己提交的唯读权限，但已不是可写的班级成员。"
     : "活动已关闭，现有工作草稿与正式修订仍可查看，但不能再保存或提交。";
@@ -320,21 +614,34 @@ export default async function StudentReleasePage({
       : isPastDue
         ? "截止已过 · 可迟交"
         : "开放提交";
-  const currentSubmissionLabel = workspace.submission?.workingCopy
-    ? workspace.submission.workingCopy.baseRevisionNumber > 0
-      ? `第 ${workspace.submission.workingCopy.baseRevisionNumber + 1} 版重交草稿`
+  const currentSubmission = workspace.submissions.find(
+    (submission) =>
+      submission.phaseIndex === workspace.execution.currentPhaseIndex,
+  );
+  const currentSubmissionLabel = workspace.execution.version === 1
+    ? workspace.execution.currentPhaseIndex === 0
+      ? "阶段已完成 · 正在整理整项终稿"
+      : `第 ${workspace.execution.currentPhaseIndex}/${workspace.execution.phaseCount} 阶段`
+    : currentSubmission?.workingCopy
+    ? currentSubmission.workingCopy.baseRevisionNumber > 0
+      ? `第 ${currentSubmission.workingCopy.baseRevisionNumber + 1} 版重交草稿`
       : "未提交草稿"
-    : workspace.submission && workspace.submission.latestRevisionNumber > 0
-      ? `第 ${workspace.submission.latestRevisionNumber} 版已正式提交`
+    : currentSubmission && currentSubmission.latestRevisionNumber > 0
+      ? `第 ${currentSubmission.latestRevisionNumber} 版已正式提交`
       : "尚未创建草稿";
+  const attachmentStorageEnabled =
+    createAttachmentStorageFromEnvironment() !== null;
 
   return (
-    <WorkspaceShell audience="学生">
+    <WorkspaceShell
+      audience="学生"
+      actorName={workspace.actor.displayName}
+    >
       <div className={styles.releasePage}>
         <Link className={styles.backLink} href="/student">← 返回我的活动</Link>
         <header className={styles.releaseHeader}>
           <div>
-            <p className={styles.eyebrow}>学习活动 / 文字提交</p>
+            <p className={styles.eyebrow}>学习活动 / 阶段证据</p>
             <h1>{content.title}</h1>
             <p>{content.summary}</p>
           </div>
@@ -362,6 +669,28 @@ export default async function StudentReleasePage({
           </div>
         </dl>
 
+        {workspace.group ? (
+          <section className={styles.groupNotice} aria-labelledby="student-group-title">
+            <div>
+              <p className={styles.eyebrow}>作业小组 / 全组共享</p>
+              <h2 id="student-group-title">{workspace.group.name}</h2>
+            </div>
+            <p>
+              {workspace.group.members
+                .map(
+                  (member) =>
+                    `${member.student.displayName}${
+                      member.roleLabel ? `（${member.roleLabel}）` : ""
+                    }`,
+                )
+                .join("、")}
+            </p>
+            <p>
+              你们使用同一份阶段草稿、附件、正式修订和教师反馈。任一成员保存后，其他成员刷新即可看到最新版本。
+            </p>
+          </section>
+        ) : null}
+
         {isPastDue && isActive && canWrite ? (
           <div className={styles.lateNotice}>
             <InlineAlert tone="warning">
@@ -370,18 +699,30 @@ export default async function StudentReleasePage({
           </div>
         ) : null}
 
+        <PhaseNavigator
+          workspace={workspace}
+          selectedPhaseIndex={selectedPhaseIndex}
+        />
+
         <div className={styles.workspaceGrid}>
           <div className={styles.submissionColumn}>
+            <PhaseFocus
+              phase={selectedPhase}
+              phaseIndex={selectedPhaseIndex}
+            />
             <SubmissionEditor
               releaseId={releaseId}
-              submission={workspace.submission}
+              phaseIndex={selectedPhaseIndex}
+              phase={selectedPhase}
+              submission={selectedSubmission}
               canWrite={canWrite}
               isPastDue={isPastDue}
+              attachmentStorageEnabled={attachmentStorageEnabled}
               readOnlyMessage={readOnlyMessage}
               workingCopyUpdatedLabel={
-                workspace.submission?.workingCopy
+                selectedSubmission?.workingCopy
                   ? <LocalizedDateTime
-                      dateTime={workspace.submission.workingCopy.updatedAt}
+                      dateTime={selectedSubmission.workingCopy.updatedAt}
                     />
                   : null
               }
@@ -392,8 +733,9 @@ export default async function StudentReleasePage({
               }}
             />
             <RevisionHistory
-              submission={workspace.submission}
+              submission={selectedSubmission}
               feedbackWorkspace={feedbackWorkspace}
+              phase={selectedPhase}
             />
           </div>
           <ReleaseBrief snapshot={workspace.release.snapshot} />

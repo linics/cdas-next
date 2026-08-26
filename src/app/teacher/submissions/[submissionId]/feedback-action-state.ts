@@ -23,6 +23,8 @@ export type PendingFeedbackConfirmation = Readonly<{
   submissionRevisionNumber: number;
   expectedFeedbackVersion: number;
   body: string;
+  nextStep: "CONTINUE" | "REVISE";
+  supportLevel: "FOUNDATION" | "STANDARD" | "CHALLENGE";
   payloadHash: string;
   expiresAt: string;
   saveIdempotencyKey: string;

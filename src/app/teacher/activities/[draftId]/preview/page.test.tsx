@@ -38,6 +38,7 @@ vi.mock("../../../_components/activity-assistant", () => ({
 vi.mock("./publish-panel", () => ({ PublishPanel: () => <aside data-manual-publish="true" /> }));
 
 import TeacherActivityPreviewPage from "./page";
+import { waterConservationTaskBook } from "../../../../../fixtures/water-conservation";
 
 const workspace = {
   actor: { displayName: "林老师" },
@@ -64,6 +65,27 @@ describe("teacher activity preview assistant continuation", () => {
     expect(markup).toContain('data-manual-publish="true"');
     expect(markup).not.toContain("data-assistant-continuation");
     expect(mocks.getTeacherAssistantClassrooms).not.toHaveBeenCalled();
+  });
+
+  it("previews every required structured task-book section before publish", async () => {
+    mocks.getTeacherActivityPreview.mockResolvedValue({
+      ...workspace,
+      draft: {
+        ...workspace.draft,
+        revision: { content: waterConservationTaskBook },
+      },
+    });
+
+    const markup = renderToStaticMarkup(await TeacherActivityPreviewPage({ params: Promise.resolve({ draftId: workspace.draft.id }) }));
+
+    expect(markup).toContain("基本设置");
+    expect(markup).toContain("调查探究");
+    expect(markup).toContain("三维目标");
+    expect(markup).toContain("总体任务");
+    expect(markup).toContain("任务链");
+    expect(markup).toContain("文档：统计表或图表及简要分析");
+    expect(markup).toContain("评价标准");
+    expect(markup).toContain("需改进 证据不足或与结论脱节");
   });
 
   it("renders only the continuation assistant surface with authorized classroom display names", async () => {

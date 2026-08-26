@@ -28,6 +28,7 @@ async function inspectDatabase(
 ) {
   const client = new Client({ connectionString });
   let transactionStarted = false;
+  client.on("error", () => undefined);
   try {
     await client.connect();
     await client.query("BEGIN READ ONLY");
@@ -39,7 +40,7 @@ async function inspectDatabase(
       "SELECT current_database() AS database_name, current_setting('server_version_num') AS server_version_number",
     );
     const system = await client.query<{ system_identifier: string }>(
-      "SELECT pg_control_system().system_identifier::text AS system_identifier",
+      "SELECT system_identifier::text AS system_identifier FROM pg_control_system()",
     );
     const table = await client.query<{ migrations_table_present: boolean }>(
       "SELECT EXISTS (SELECT 1 FROM pg_catalog.pg_class relation JOIN pg_catalog.pg_namespace namespace ON namespace.oid = relation.relnamespace WHERE relation.relname = '_prisma_migrations' AND namespace.nspname = 'public') AS migrations_table_present",

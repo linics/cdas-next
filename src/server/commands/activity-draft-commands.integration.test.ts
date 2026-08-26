@@ -1,6 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
-import type { ActivityContent } from "../../domain/activity/activity-content";
+import type { ActivityContentV2 } from "../../domain/activity/activity-content";
+import {
+  waterConservationActivity,
+  waterConservationTaskBook,
+} from "../../fixtures/water-conservation";
 import { createPublishedActivity } from "../../test/fixtures/published-activity";
 import { createDatabaseClient } from "../db/client";
 import type { CommandContext, CommandSource } from "./command-context";
@@ -31,21 +35,20 @@ function commandContext(
   };
 }
 
-function content(overrides?: Partial<ActivityContent>): ActivityContent {
+function content(overrides?: Partial<ActivityContentV2>): ActivityContentV2 {
   return {
-    schemaVersion: 1,
+    ...waterConservationTaskBook,
     title: "校园节水行动",
     summary: "用观察数据形成校园节水建议",
-    learningObjectives: ["使用数据支持结论"],
     taskInstructions: "记录两次水表读数，并解释变化。",
-    evidenceRequirements: ["包含时间与水表读数"],
-    feedbackCriteria: ["证据与结论一致"],
     ...overrides,
   };
 }
 
-function storedContent(value: ActivityContent = content()) {
+function storedContent(value: ActivityContentV2 = content()) {
   return {
+    schemaVersion: 2,
+    taskBook: value,
     title: value.title,
     summary: value.summary,
     learningObjectives: value.learningObjectives,
@@ -120,7 +123,7 @@ async function saveNewDraft(
     desiredStatus?: "EDITING" | "READY_FOR_PREVIEW";
     source?: CommandSource;
     agentRunId?: string | null;
-    value?: ActivityContent;
+    value?: ActivityContentV2;
     idempotencyKey?: string;
   },
 ) {
@@ -141,6 +144,21 @@ async function saveNewDraft(
 describeWithDatabase("activity draft write commands", () => {
   afterAll(async () => {
     await database?.$disconnect();
+  });
+
+  it("keeps schema v1 read-only for all new business writes", async () => {
+    const { teacherId } = await createActors();
+
+    await expect(
+      saveActivityDraft(database!, commandContext(teacherId), {
+        draftId: null,
+        expectedVersion: null,
+        desiredStatus: "EDITING",
+        content: waterConservationActivity,
+        agentRunId: null,
+        idempotencyKey: `legacy_draft_${randomUUID()}`,
+      }),
+    ).rejects.toEqual(new SaveActivityDraftError("LEGACY_SCHEMA_READ_ONLY"));
   });
 
   it("creates, normalizes, versions, and marks a manual draft ready", async () => {
@@ -691,11 +709,12 @@ describeWithDatabase("activity draft write commands", () => {
 
     await expect(
       database!.$transaction(async (transaction) => {
+        const bypassContent = content({ summary: "没有对应 Revision 的改写" });
         await transaction.activityDraft.update({
           where: { id: draft.draftId },
           data: {
             version: 2,
-            summary: "没有对应 Revision 的改写",
+            ...storedContent(bypassContent),
             updatedAt: new Date(now.getTime() + 1_000),
           },
         });
@@ -704,11 +723,12 @@ describeWithDatabase("activity draft write commands", () => {
 
     await expect(
       database!.$transaction(async (transaction) => {
+        const headContent = content({ summary: "头行正文" });
         await transaction.activityDraft.update({
           where: { id: draft.draftId },
           data: {
             version: 2,
-            summary: "头行正文",
+            ...storedContent(headContent),
             updatedAt: new Date(now.getTime() + 1_000),
           },
         });

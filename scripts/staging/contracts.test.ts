@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import { describe, expect, it } from "vitest";
 
 import {
@@ -56,6 +58,10 @@ describe("evaluateStagingPreflight", () => {
     ["localhost trailing dot", { STAGING_BASE_URL: "https://localhost." }, "STAGING_BASE_URL_HTTPS_REMOTE"],
     ["private database hostname", { DATABASE_URL: "postgresql://runtime:secret@10.0.0.1/cdas_next_staging?sslmode=require&pgbouncer=true" }, "DATABASE_URL_REMOTE_POOLED"],
     ["different cluster", { DIRECT_URL: "postgresql://direct:secret@other.example.com/cdas_next_staging?sslmode=require" }, "DATABASE_RUNTIME_DIRECT_CLUSTER_MATCH"],
+    ["missing Vercel project in protected mode", { STAGING_DEPLOYMENT_PROTECTION_REQUIRED: "1" }, "STAGING_VERCEL_PROJECT_NAME"],
+    ["custom staging domain in protected mode", { STAGING_DEPLOYMENT_PROTECTION_REQUIRED: "1" }, "STAGING_BASE_URL_HTTPS_REMOTE"],
+    ["wrong Vercel project in protected mode", { STAGING_DEPLOYMENT_PROTECTION_REQUIRED: "1", STAGING_VERCEL_PROJECT_NAME: "cdas-next", STAGING_BASE_URL: "https://other-preview.vercel.app" }, "STAGING_BASE_URL_HTTPS_REMOTE"],
+    ["invalid deployment protection mode", { STAGING_DEPLOYMENT_PROTECTION_REQUIRED: "true" }, "STAGING_DEPLOYMENT_PROTECTION_REQUIRED"],
   ])("fails closed for %s", (_name, override, code) => {
     const result = evaluateStagingPreflight({ ...validEnvironment, ...override });
 
@@ -82,7 +88,7 @@ describe("evaluateStagingPreflight", () => {
       AI_PROVIDER_DISABLED: "0",
       STAGING_AI_ACK: stagingAiAcknowledgement,
       DEEPSEEK_API_KEY: "deepseek-key-that-is-not-recorded",
-      AI_MODEL: "deepseek-v4-flash-vision-exp",
+      AI_MODEL: "deepseek-v4-flash",
       AI_TOOL_APPROVAL_SECRET: "a".repeat(32),
     });
 
@@ -97,6 +103,32 @@ describe("evaluateStagingPreflight", () => {
     expect(serialized).not.toContain("project-pooler.example.com");
     expect(serialized).not.toContain("secret");
     expect(serialized).not.toContain("user_teacher012345");
+  });
+
+  it("requires the Vercel allowlist only when protected mode is explicitly enabled", () => {
+    expect(evaluateStagingPreflight({
+      ...validEnvironment,
+      STAGING_DEPLOYMENT_PROTECTION_REQUIRED: "1",
+      STAGING_BASE_URL: "https://cdas-next-preview123-linics1.vercel.app",
+      STAGING_VERCEL_PROJECT_NAME: "cdas-next",
+    }).status).toBe("PASS");
+    const missingProject = evaluateStagingPreflight({
+      ...validEnvironment,
+      STAGING_DEPLOYMENT_PROTECTION_REQUIRED: "1",
+    });
+    expect(missingProject.status).toBe("FAIL");
+    expect(missingProject.checks).toContainEqual(
+      expect.objectContaining({ code: "STAGING_VERCEL_PROJECT_NAME", status: "FAIL" }),
+    );
+  });
+
+  it("keeps generic Go/No-Go free of protected-mode secrets while Agent acceptance binds them", () => {
+    const generic = readFileSync(".github/workflows/staging-go-no-go.yml", "utf8");
+    expect(generic).not.toContain("STAGING_DEPLOYMENT_PROTECTION_REQUIRED");
+    expect(generic).not.toContain("STAGING_VERCEL_AUTOMATION_BYPASS_SECRET");
+    const agent = readFileSync(".github/workflows/staging-agent-acceptance.yml", "utf8");
+    expect(agent).toContain('STAGING_DEPLOYMENT_PROTECTION_REQUIRED: "1"');
+    expect(agent).toContain("STAGING_VERCEL_AUTOMATION_BYPASS_SECRET");
   });
 });
 

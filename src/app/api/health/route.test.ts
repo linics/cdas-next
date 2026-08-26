@@ -53,7 +53,7 @@ describe("GET /api/health", () => {
       CLERK_SECRET_KEY: "sk_test_abcdefghijklmnopqrstuv",
       AI_PROVIDER_DISABLED: "0",
       DEEPSEEK_API_KEY: apiKey,
-      AI_MODEL: "deepseek-v4-flash-vision-exp",
+      AI_MODEL: "deepseek-v4-flash",
       AI_TOOL_APPROVAL_SECRET: approvalSecret,
       STAGING_HEALTH_PROOF_SECRET: "h".repeat(32),
       CDAS_SOURCE_FINGERPRINT: "f".repeat(64),

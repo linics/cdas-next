@@ -38,7 +38,7 @@ describe("deployment proof", () => {
       ...input,
       aiProviderDisabled: "0",
       deepseekApiKey: "deepseek-key-for-staging-012345",
-      aiModel: "deepseek-v4-flash-vision-exp",
+      aiModel: "deepseek-v4-flash",
       aiToolApprovalSecret: "a".repeat(32),
     };
     const proof = createDeploymentConfigurationProof(enabled);

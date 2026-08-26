@@ -82,13 +82,16 @@ const intentId = "30000000-0000-4000-8000-000000000003";
 const feedbackId = "40000000-0000-4000-8000-000000000004";
 const feedbackRevisionId = "50000000-0000-4000-8000-000000000005";
 const actorId = "60000000-0000-4000-8000-000000000006";
+const releaseId = "70000000-0000-4000-8000-000000000007";
 const payloadHash = hashTeacherFeedbackPayload({
-  schemaVersion: 1,
+  schemaVersion: 2,
   submissionId,
   submissionRevisionId: revisionId,
   expectedSubmissionRevisionNumber: 2,
   expectedFeedbackVersion: 1,
   body: "  évidence\n第二行  ",
+  nextStep: "REVISE",
+  supportLevel: "FOUNDATION",
   suggestionAgentRunId: null,
 });
 const trustedContext = {
@@ -113,6 +116,8 @@ function prepareForm(overrides?: Record<string, string>): FormData {
     submissionRevisionNumber: "2",
     expectedFeedbackVersion: "1",
     body: "  e\u0301vidence\r\n第二行  ",
+    nextStep: "REVISE",
+    supportLevel: "FOUNDATION",
     idempotencyKey: "prepare_feedback_request_001",
     ...overrides,
   });
@@ -148,6 +153,7 @@ describe("teacher feedback server actions", () => {
       teacherFeedbackId: feedbackId,
       teacherFeedbackRevisionId: feedbackRevisionId,
       submissionRevisionId: revisionId,
+      releaseId,
       version: 2,
       confirmedAt: "2026-08-18T12:01:00.000Z",
     });
@@ -177,6 +183,8 @@ describe("teacher feedback server actions", () => {
         expectedSubmissionRevisionNumber: 2,
         expectedFeedbackVersion: 1,
         body: "  évidence\n第二行  ",
+        nextStep: "REVISE",
+        supportLevel: "FOUNDATION",
         suggestionAgentRunId: null,
         idempotencyKey: "prepare_feedback_request_001",
       },
@@ -190,6 +198,8 @@ describe("teacher feedback server actions", () => {
         submissionRevisionNumber: 2,
         expectedFeedbackVersion: 1,
         body: "  évidence\n第二行  ",
+        nextStep: "REVISE",
+        supportLevel: "FOUNDATION",
         payloadHash,
         expiresAt: "2026-08-18T12:10:00.000Z",
       },
@@ -215,6 +225,25 @@ describe("teacher feedback server actions", () => {
 
     expect(injectedState.status).toBe("validation_error");
     expect(duplicatedState.status).toBe("validation_error");
+    expect(mocks.createUiCommandContext).not.toHaveBeenCalled();
+    expect(mocks.prepareFeedback).not.toHaveBeenCalled();
+  });
+
+  it("requires both structured feedback choices before authentication", async () => {
+    const missingNextStep = prepareForm();
+    missingNextStep.delete("nextStep");
+    const missingSupportLevel = prepareForm();
+    missingSupportLevel.set("supportLevel", "UNSUPPORTED");
+
+    await expect(
+      prepareTeacherFeedbackAction(initialFeedbackActionState, missingNextStep),
+    ).resolves.toMatchObject({ status: "validation_error" });
+    await expect(
+      prepareTeacherFeedbackAction(
+        initialFeedbackActionState,
+        missingSupportLevel,
+      ),
+    ).resolves.toMatchObject({ status: "validation_error" });
     expect(mocks.createUiCommandContext).not.toHaveBeenCalled();
     expect(mocks.prepareFeedback).not.toHaveBeenCalled();
   });
@@ -300,6 +329,11 @@ describe("teacher feedback server actions", () => {
       "/teacher/submissions/[submissionId]",
       "page",
     );
+    expect(mocks.revalidatePath).toHaveBeenCalledWith(
+      `/student/releases/${releaseId}`,
+      "page",
+    );
+    expect(mocks.revalidatePath).toHaveBeenCalledWith("/student", "layout");
     expect(state).toMatchObject({
       operation: "confirm",
       status: "saved",

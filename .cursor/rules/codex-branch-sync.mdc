@@ -1,0 +1,16 @@
+---
+description: After commits on codex/* , push so Vercel Preview and GitHub CI stay in sync
+alwaysApply: true
+---
+
+# `codex/*` development sync
+
+On `codex/*` branches, a local commit is not done until it is on origin.
+
+After the primary thread creates a successful local commit of accepted work, immediately `git push` to the tracked origin branch (`git push origin HEAD` or the existing upstream). Do not wait for a per-session “please push”. GitHub `verify` CI and the connected Vercel Preview are part of this loop.
+
+- Do not force-push.
+- Do not push `main` or production.
+- Subagents still must not commit, push, or deploy.
+- Leave unrelated dirty files unstaged; do not stash them into the pushed commit.
+- `pnpm development:infra` is a separate step. It needs a clean, already-pushed HEAD. Run it when reconciling the isolated stack or protected synthetic acceptance, not instead of `git push`.

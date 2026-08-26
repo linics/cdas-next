@@ -9,6 +9,8 @@
   "scripts": {
     "postinstall": "prisma generate",
     "bootstrap:clerk": "node --import tsx scripts/bootstrap-clerk-classroom.ts",
+    "development:infra": "node --import tsx scripts/development-infrastructure/index.ts",
+    "development:agent-acceptance": "node --import tsx scripts/development-agent-acceptance/index.ts",
     "e2e:bootstrap": "node --import tsx scripts/e2e/bootstrap.ts",
     "e2e:verify": "node --import tsx scripts/e2e/verify-closed-loop.ts",
     "e2e:closed-loop": "python3 scripts/e2e/run-closed-loop.py",
@@ -64,6 +66,7 @@
     "@next/env": "16.3.1",
     "@prisma/adapter-pg": "7.9.1",
     "@prisma/client": "7.9.1",
+    "@vercel/blob": "2.8.0",
     "ai": "7.0.66",
     "canonicalize": "4.0.0",
     "next": "16.3.1",

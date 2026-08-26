@@ -40,6 +40,9 @@ vi.mock("next/navigation", () => ({
   notFound: mocks.notFound,
   usePathname: () => `/student/releases/${releaseId}`,
 }));
+vi.mock("next/server", () => ({
+  connection: async () => undefined,
+}));
 vi.mock("../../../../server/db/client", () => ({
   getDatabaseClient: mocks.getDatabaseClient,
 }));
@@ -79,6 +82,7 @@ vi.mock("./submission-editor", () => ({
 }));
 
 import { AuthenticationError } from "../../../../server/auth/current-actor";
+import { waterConservationTaskBook } from "../../../../fixtures/water-conservation";
 import { FeedbackWorkspaceQueryError } from "../../../../server/queries/feedback-workspace";
 import StudentReleasePage from "./page";
 
@@ -94,7 +98,15 @@ const trustedContext = {
   clock: () => new Date("2026-08-18T12:00:00.000Z"),
 };
 const workspace = {
+  actor: { displayName: "陈同学" },
+  group: null,
   access: { canWrite: true },
+  execution: {
+    version: 0,
+    mode: "once",
+    phaseCount: 0,
+    currentPhaseIndex: 0,
+  },
   release: {
     id: releaseId,
     status: "ACTIVE",
@@ -115,34 +127,44 @@ const workspace = {
     },
   },
   submission: null,
+  submissions: [],
+};
+const submittedSubmission = {
+  id: submissionId,
+  phaseIndex: 0,
+  latestRevisionNumber: 2,
+  workingCopy: null,
+  revisions: [
+    {
+      id: firstRevisionId,
+      revisionNumber: 1,
+      textEvidence: "第一版正式观察记录",
+      completedEvidenceIndexes: [],
+      isLate: false,
+      submittedAt: "2026-08-18T10:30:00.000Z",
+      attachments: [],
+    },
+    {
+      id: secondRevisionId,
+      revisionNumber: 2,
+      textEvidence: "第二版正式观察记录",
+      completedEvidenceIndexes: [],
+      isLate: true,
+      submittedAt: "2026-08-18T11:30:00.000Z",
+      attachments: [],
+    },
+  ],
 };
 const submittedWorkspace = {
   ...workspace,
-  submission: {
-    id: submissionId,
-    latestRevisionNumber: 2,
-    workingCopy: null,
-    revisions: [
-      {
-        id: firstRevisionId,
-        revisionNumber: 1,
-        textEvidence: "第一版正式观察记录",
-        isLate: false,
-        submittedAt: "2026-08-18T10:30:00.000Z",
-      },
-      {
-        id: secondRevisionId,
-        revisionNumber: 2,
-        textEvidence: "第二版正式观察记录",
-        isLate: true,
-        submittedAt: "2026-08-18T11:30:00.000Z",
-      },
-    ],
-  },
+  submission: submittedSubmission,
+  submissions: [submittedSubmission],
 };
 const confirmedFeedbackWorkspace = {
   submission: {
     id: submissionId,
+    phaseIndex: 0,
+    phaseName: null,
     latestRevisionNumber: 2,
     release: {
       ...workspace.release,
@@ -163,6 +185,8 @@ const confirmedFeedbackWorkspace = {
               id: "81000000-0000-4000-8000-000000000008",
               version: 1,
               body: "先补上两次读数的单位。",
+              nextStep: null,
+              supportLevel: null,
               source: "AI_ASSISTED",
               confirmedAt: "2026-08-18T10:45:00.000Z",
             },
@@ -170,6 +194,8 @@ const confirmedFeedbackWorkspace = {
               id: "82000000-0000-4000-8000-000000000008",
               version: 2,
               body: "单位已补齐，再说明两次数据的差值。",
+              nextStep: "REVISE",
+              supportLevel: "FOUNDATION",
               source: "MANUAL",
               confirmedAt: "2026-08-18T11:00:00.000Z",
             },
@@ -177,10 +203,54 @@ const confirmedFeedbackWorkspace = {
           payloadHash: "feedback-payload-hash-secret",
           agentRun: { id: "agent-run-secret" },
         },
+        evaluation: {
+          id: "83000000-0000-4000-8000-000000000008",
+          currentVersion: 1,
+          teacher: { id: teacherId, displayName: "林老师" },
+          revisions: [
+            {
+              id: "84000000-0000-4000-8000-000000000008",
+              version: 1,
+              summary: "第一版量规综评：问题清楚，证据仍不足。",
+              outcomes: [
+                {
+                  dimensionIndex: 1,
+                  dimensionName: "问题意识",
+                  status: "LEVEL",
+                  level: "excellent",
+                  citations: [{ kind: "text" }],
+                },
+                {
+                  dimensionIndex: 2,
+                  dimensionName: "证据质量",
+                  status: "INSUFFICIENT_EVIDENCE",
+                  citations: [],
+                },
+                {
+                  dimensionIndex: 3,
+                  dimensionName: "跨学科连接",
+                  status: "LEVEL",
+                  level: "good",
+                  citations: [{ kind: "text" }],
+                },
+                {
+                  dimensionIndex: 4,
+                  dimensionName: "方案表达",
+                  status: "LEVEL",
+                  level: "pass",
+                  citations: [{ kind: "text" }],
+                },
+              ],
+              source: "MANUAL",
+              confirmedAt: "2026-08-18T11:05:00.000Z",
+            },
+          ],
+        },
       },
       {
         ...submittedWorkspace.submission.revisions[1],
         feedback: null,
+        evaluation: null,
       },
     ],
     pendingIntent: {
@@ -238,8 +308,65 @@ describe("student release page access boundary", () => {
   it("does not load a feedback workspace before a submission exists", async () => {
     const markup = await renderPage();
 
+    expect(markup).toContain("当前账号：陈同学 · 学生");
+    expect(markup).toContain("退出登录");
     expect(markup).toContain("还没有正式修订");
     expect(mocks.getStudentFeedbackWorkspace).not.toHaveBeenCalled();
+  });
+
+  it("shows the shared group identity and member roles", async () => {
+    mocks.getStudentReleaseWorkspace.mockResolvedValue({
+      ...workspace,
+      group: {
+        id: "91000000-0000-4000-8000-000000000001",
+        name: "校园调查组",
+        members: [
+          {
+            student: { id: trustedContext.actorId, displayName: "陈同学" },
+            roleLabel: "记录",
+          },
+          {
+            student: {
+              id: "92000000-0000-4000-8000-000000000002",
+              displayName: "周同学",
+            },
+            roleLabel: "汇报",
+          },
+        ],
+      },
+    });
+
+    const markup = await renderPage();
+
+    expect(markup).toContain("校园调查组");
+    expect(markup).toContain("陈同学（记录）");
+    expect(markup).toContain("周同学（汇报）");
+    expect(markup).toContain("同一份阶段草稿、附件、正式修订和教师反馈");
+  });
+
+  it("renders the complete structured task book from the immutable release snapshot", async () => {
+    mocks.getStudentReleaseWorkspace.mockResolvedValue({
+      ...workspace,
+      release: {
+        ...workspace.release,
+        snapshot: {
+          ...workspace.release.snapshot,
+          content: waterConservationTaskBook,
+        },
+      },
+    });
+
+    const markup = await renderPage();
+
+    expect(markup).toContain("任务设置");
+    expect(markup).toContain("调查探究");
+    expect(markup).toContain("背景设定");
+    expect(markup).toContain("知识与技能");
+    expect(markup).toContain("总体任务");
+    expect(markup).toContain("观察与问题界定");
+    expect(markup).toContain("文字记录");
+    expect(markup).toContain("评价标准");
+    expect(markup).toContain("需改进：证据不足或与结论脱节");
   });
 
   it("shows confirmed feedback history to a historical member without leaking internals", async () => {
@@ -259,6 +386,9 @@ describe("student release page access boundary", () => {
     expect(markup).toContain("反馈第 1 版");
     expect(markup).toContain("教师手写");
     expect(markup).toContain("AI 建议，教师已确认");
+    expect(markup).toContain("按反馈修改并重交");
+    expect(markup).toContain("基础支持");
+    expect(markup).toContain("旧反馈未指定结构化下一步与支架");
     expect(markup).toContain(
       'dateTime="2026-08-18T11:00:00.000Z"',
     );
@@ -266,6 +396,11 @@ describe("student release page access boundary", () => {
     expect(markup).toContain("单位已补齐，再说明两次数据的差值。");
     expect(markup).toContain("先补上两次读数的单位。");
     expect(markup).toContain("此正式修订尚无教师已确认的反馈");
+    expect(markup).toContain("评价第 1 版");
+    expect(markup).toContain("第一版量规综评：问题清楚，证据仍不足。");
+    expect(markup).toContain("证据不足");
+    expect(markup).toContain("优秀");
+    expect(markup).toContain("此正式修订尚无教师已确认的量规评价");
     expect(markup).not.toContain("feedback-payload-hash-secret");
     expect(markup).not.toContain("agent-run-secret");
     expect(markup).not.toContain("尚未确认的反馈不能显示");

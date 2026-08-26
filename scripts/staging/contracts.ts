@@ -1,3 +1,9 @@
+import { isPublicHostname } from "../../src/server/staging/deployment-proof";
+import {
+  isAllowedVercelPreviewBaseUrl,
+  isValidVercelProjectName,
+} from "./preview-protection";
+
 export const stagingDataAcknowledgement = "synthetic-data-only-approved";
 export const stagingAiAcknowledgement = "synthetic-data-cost-approved";
 
@@ -132,6 +138,31 @@ export function isSafeStagingRunMarker(marker: string): boolean {
   return stagingRunMarkerPattern.test(marker);
 }
 
+export function isPublicHttpsRoot(raw: string): boolean {
+  try {
+    const url = new URL(raw);
+    return (
+      url.protocol === "https:" &&
+      isPublicHostname(url.hostname) &&
+      !url.username &&
+      !url.password &&
+      !url.search &&
+      !url.hash &&
+      (url.pathname === "" || url.pathname === "/")
+    );
+  } catch {
+    return false;
+  }
+}
+
+export function isDeploymentProtectionRequired(value: string): boolean {
+  return value === "1";
+}
+
+export function isValidDeploymentProtectionMode(value: string): boolean {
+  return value === "" || isDeploymentProtectionRequired(value);
+}
+
 export function evaluateStagingPreflight(
   environment: StagingEnvironment,
 ): StagingPreflightResult {
@@ -157,26 +188,30 @@ export function evaluateStagingPreflight(
   ];
 
   const baseUrl = value(environment, "STAGING_BASE_URL");
-  let parsedBaseUrl: URL | undefined;
-  try {
-    parsedBaseUrl = new URL(baseUrl);
-  } catch {
-    parsedBaseUrl = undefined;
-  }
+  const projectName = value(environment, "STAGING_VERCEL_PROJECT_NAME");
+  const deploymentProtectionMode = value(
+    environment,
+    "STAGING_DEPLOYMENT_PROTECTION_REQUIRED",
+  );
+  const deploymentProtectionRequired = isDeploymentProtectionRequired(
+    deploymentProtectionMode,
+  );
   checks.push(
     check(
       "STAGING_BASE_URL_HTTPS_REMOTE",
-      Boolean(
-        parsedBaseUrl &&
-          parsedBaseUrl.protocol === "https:" &&
-          isPublicHostname(parsedBaseUrl.hostname) &&
-          !parsedBaseUrl.username &&
-          !parsedBaseUrl.password &&
-          !parsedBaseUrl.search &&
-          !parsedBaseUrl.hash &&
-          (parsedBaseUrl.pathname === "" || parsedBaseUrl.pathname === "/"),
-      ),
+      deploymentProtectionRequired
+        ? isAllowedVercelPreviewBaseUrl(baseUrl, projectName)
+        : isPublicHttpsRoot(baseUrl),
       { present: Boolean(baseUrl) },
+    ),
+    check(
+      "STAGING_VERCEL_PROJECT_NAME",
+      !deploymentProtectionRequired || isValidVercelProjectName(projectName),
+      { present: Boolean(projectName) },
+    ),
+    check(
+      "STAGING_DEPLOYMENT_PROTECTION_REQUIRED",
+      isValidDeploymentProtectionMode(deploymentProtectionMode),
     ),
   );
 
@@ -314,4 +349,3 @@ export function hasSafeDatabaseVerifierConfiguration(
       noTargetOverlap(direct, value(environment, "E2E_DATABASE_URL")),
   );
 }
-import { isPublicHostname } from "../../src/server/staging/deployment-proof";

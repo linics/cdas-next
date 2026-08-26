@@ -63,11 +63,36 @@ enum FeedbackRevisionSource {
   AI_ASSISTED
 }
 
+enum FeedbackNextStep {
+  CONTINUE
+  REVISE
+}
+
+enum FeedbackSupportLevel {
+  FOUNDATION
+  STANDARD
+  CHALLENGE
+}
+
+enum AttachmentKind {
+  IMAGE
+  PDF
+  WORD
+}
+
+enum AttachmentStatus {
+  UPLOAD_PENDING
+  SCAN_PENDING
+  READY
+  REJECTED
+}
+
 model AppUser {
   id                    String                    @id @default(uuid()) @db.Uuid
   authSubject           String                    @unique @map("auth_subject")
   role                  UserRole
   displayName           String                    @map("display_name")
+  rosterKey             String?                   @unique @map("roster_key") @db.VarChar(32)
   createdAt             DateTime                  @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt             DateTime                  @updatedAt @map("updated_at") @db.Timestamptz(3)
   classrooms            Classroom[]               @relation("ClassroomManager")
@@ -80,8 +105,12 @@ model AppUser {
   auditEntries          ActionAudit[]
   agentRuns             AgentRun[]
   submissions           Submission[]              @relation("SubmissionStudent")
-  feedback              TeacherFeedback[]         @relation("TeacherFeedbackTeacher")
-  feedbackConfirmations TeacherFeedbackRevision[] @relation("TeacherFeedbackConfirmer")
+  releaseGroupMembers   ReleaseGroupMember[]
+  submissionAttachments SubmissionAttachment[]    @relation("SubmissionAttachmentStudent")
+  feedback                 TeacherFeedback[]           @relation("TeacherFeedbackTeacher")
+  feedbackConfirmations    TeacherFeedbackRevision[]   @relation("TeacherFeedbackConfirmer")
+  evaluations              TeacherEvaluation[]         @relation("TeacherEvaluationTeacher")
+  evaluationConfirmations  TeacherEvaluationRevision[] @relation("TeacherEvaluationConfirmer")
 
   @@map("app_users")
 }
@@ -120,6 +149,8 @@ model ActivityDraft {
   ownerId              String                  @map("owner_id") @db.Uuid
   status               DraftStatus             @default(EDITING)
   version              Int                     @default(1)
+  schemaVersion        Int                     @default(1) @map("schema_version")
+  taskBook             Json?                   @map("task_book")
   title                String
   summary              String
   learningObjectives   String[]                @default([]) @map("learning_objectives")
@@ -142,6 +173,8 @@ model ActivityDraftRevision {
   draftId              String                    @map("draft_id") @db.Uuid
   version              Int
   source               DraftRevisionSource
+  schemaVersion        Int                       @default(1) @map("schema_version")
+  taskBook             Json?                     @map("task_book")
   title                String
   summary              String
   learningObjectives   String[]                  @default([]) @map("learning_objectives")
@@ -165,6 +198,7 @@ model ActivityRelease {
   classroomId         String                   @map("classroom_id") @db.Uuid
   actionIntentId      String                   @unique @map("action_intent_id") @db.Uuid
   closeActionIntentId String?                  @unique @map("close_action_intent_id") @db.Uuid
+  executionVersion    Int                      @default(0) @map("execution_version")
   status              ReleaseStatus            @default(ACTIVE)
   publishedAt         DateTime                 @default(now()) @map("published_at") @db.Timestamptz(3)
   dueAt               DateTime?                @map("due_at") @db.Timestamptz(3)
@@ -177,6 +211,7 @@ model ActivityRelease {
   closeActionIntent   ActionIntent?            @relation("CloseActionIntent", fields: [closeActionIntentId], references: [id], onDelete: Restrict)
   snapshot            ActivityReleaseSnapshot?
   submissions         Submission[]
+  groups              ReleaseGroup[]
 
   @@unique([id, sourceDraftId])
   @@index([classroomId, status, publishedAt])
@@ -203,48 +238,138 @@ model ActivityReleaseSnapshot {
 model Submission {
   id                   String                 @id @default(uuid()) @db.Uuid
   releaseId            String                 @map("release_id") @db.Uuid
-  studentId            String                 @map("student_id") @db.Uuid
+  studentId            String?                @map("student_id") @db.Uuid
+  groupId              String?                @map("group_id") @db.Uuid
+  phaseIndex           Int                    @default(0) @map("phase_index")
   latestRevisionNumber Int                    @default(0) @map("latest_revision_number")
   createdAt            DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt            DateTime               @updatedAt @map("updated_at") @db.Timestamptz(3)
   release              ActivityRelease        @relation(fields: [releaseId], references: [id], onDelete: Restrict)
-  student              AppUser                @relation("SubmissionStudent", fields: [studentId], references: [id], onDelete: Restrict)
+  student              AppUser?               @relation("SubmissionStudent", fields: [studentId], references: [id], onDelete: Restrict)
+  group                ReleaseGroup?          @relation(fields: [groupId], references: [id], onDelete: Restrict)
   workingCopy          SubmissionWorkingCopy?
   revisions            SubmissionRevision[]
+  attachments          SubmissionAttachment[]
 
-  @@unique([releaseId, studentId])
+  @@unique([releaseId, studentId, phaseIndex])
+  @@unique([releaseId, groupId, phaseIndex])
   @@index([studentId, createdAt])
+  @@index([groupId, createdAt])
   @@map("submissions")
 }
 
+model ReleaseGroup {
+  id          String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  releaseId   String               @map("release_id") @db.Uuid
+  name        String               @db.VarChar(120)
+  createdAt   DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime             @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(3)
+  release     ActivityRelease      @relation(fields: [releaseId], references: [id], onDelete: Restrict)
+  members     ReleaseGroupMember[]
+  submissions Submission[]
+
+  @@unique([releaseId, name])
+  @@index([releaseId])
+  @@map("release_groups")
+}
+
+model ReleaseGroupMember {
+  groupId   String       @map("group_id") @db.Uuid
+  studentId String       @map("student_id") @db.Uuid
+  roleLabel String?      @map("role_label") @db.VarChar(120)
+  createdAt DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  group     ReleaseGroup @relation(fields: [groupId], references: [id], onDelete: Restrict)
+  student   AppUser      @relation(fields: [studentId], references: [id], onDelete: Restrict)
+
+  @@id([groupId, studentId])
+  @@index([studentId])
+  @@map("release_group_members")
+}
+
 model SubmissionWorkingCopy {
-  id                 String     @id @default(uuid()) @db.Uuid
-  submissionId       String     @unique @map("submission_id") @db.Uuid
-  baseRevisionNumber Int        @default(0) @map("base_revision_number")
-  version            Int        @default(1)
-  textEvidence       String     @default("") @map("text_evidence") @db.Text
-  createdAt          DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt          DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
-  submission         Submission @relation(fields: [submissionId], references: [id], onDelete: Restrict)
+  id                       String                            @id @default(uuid()) @db.Uuid
+  submissionId             String                            @unique @map("submission_id") @db.Uuid
+  baseRevisionNumber       Int                               @default(0) @map("base_revision_number")
+  version                  Int                               @default(1)
+  textEvidence             String                            @default("") @map("text_evidence") @db.Text
+  completedEvidenceIndexes Int[]                             @default([]) @map("completed_evidence_indexes")
+  createdAt                DateTime                          @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt                DateTime                          @updatedAt @map("updated_at") @db.Timestamptz(3)
+  submission               Submission                        @relation(fields: [submissionId], references: [id], onDelete: Restrict)
+  attachments              SubmissionWorkingCopyAttachment[]
 
   @@map("submission_working_copies")
 }
 
 model SubmissionRevision {
-  id                   String           @id @default(uuid()) @db.Uuid
-  submissionId         String           @map("submission_id") @db.Uuid
-  revisionNumber       Int              @map("revision_number")
-  baseRevisionNumber   Int              @map("base_revision_number")
-  sourceWorkingCopyId  String           @unique @map("source_working_copy_id") @db.Uuid
-  sourceWorkingVersion Int              @map("source_working_version")
-  textEvidence         String           @map("text_evidence") @db.Text
-  isLate               Boolean          @map("is_late")
-  submittedAt          DateTime         @map("submitted_at") @db.Timestamptz(3)
-  submission           Submission       @relation(fields: [submissionId], references: [id], onDelete: Restrict)
-  feedback             TeacherFeedback?
+  id                       String                         @id @default(uuid()) @db.Uuid
+  submissionId             String                         @map("submission_id") @db.Uuid
+  revisionNumber           Int                            @map("revision_number")
+  baseRevisionNumber       Int                            @map("base_revision_number")
+  sourceWorkingCopyId      String                         @unique @map("source_working_copy_id") @db.Uuid
+  sourceWorkingVersion     Int                            @map("source_working_version")
+  textEvidence             String                         @map("text_evidence") @db.Text
+  completedEvidenceIndexes Int[]                          @default([]) @map("completed_evidence_indexes")
+  isLate                   Boolean                        @map("is_late")
+  submittedAt              DateTime                       @map("submitted_at") @db.Timestamptz(3)
+  submission               Submission                     @relation(fields: [submissionId], references: [id], onDelete: Restrict)
+  feedback                 TeacherFeedback?
+  evaluation               TeacherEvaluation?
+  attachments              SubmissionRevisionAttachment[]
 
   @@unique([submissionId, revisionNumber])
   @@map("submission_revisions")
+}
+
+model SubmissionAttachment {
+  id               String                            @id @default(uuid()) @db.Uuid
+  submissionId     String                            @map("submission_id") @db.Uuid
+  studentId        String                            @map("student_id") @db.Uuid
+  kind             AttachmentKind
+  originalFilename String                            @map("original_filename") @db.VarChar(255)
+  mediaType        String                            @map("media_type") @db.VarChar(127)
+  byteSize         Int                               @map("byte_size")
+  storageKey       String                            @unique @map("storage_key") @db.VarChar(512)
+  status           AttachmentStatus                  @default(UPLOAD_PENDING)
+  createdAt        DateTime                          @default(now()) @map("created_at") @db.Timestamptz(3)
+  uploadedAt       DateTime?                         @map("uploaded_at") @db.Timestamptz(3)
+  scannedAt        DateTime?                         @map("scanned_at") @db.Timestamptz(3)
+  submission       Submission                        @relation(fields: [submissionId], references: [id], onDelete: Restrict)
+  student          AppUser                           @relation("SubmissionAttachmentStudent", fields: [studentId], references: [id], onDelete: Restrict)
+  workingCopies    SubmissionWorkingCopyAttachment[]
+  revisions        SubmissionRevisionAttachment[]
+
+  @@index([submissionId, status, createdAt])
+  @@index([studentId, createdAt])
+  @@map("submission_attachments")
+}
+
+model SubmissionWorkingCopyAttachment {
+  workingCopyId String                @map("working_copy_id") @db.Uuid
+  attachmentId  String                @map("attachment_id") @db.Uuid
+  position      Int
+  addedAt       DateTime              @default(now()) @map("added_at") @db.Timestamptz(3)
+  workingCopy   SubmissionWorkingCopy @relation(fields: [workingCopyId], references: [id], onDelete: Restrict)
+  attachment    SubmissionAttachment  @relation(fields: [attachmentId], references: [id], onDelete: Restrict)
+
+  @@id([workingCopyId, attachmentId])
+  @@unique([workingCopyId, position], map: "submission_working_copy_attachments_position_key")
+  @@index([attachmentId])
+  @@map("submission_working_copy_attachments")
+}
+
+model SubmissionRevisionAttachment {
+  submissionRevisionId String               @map("submission_revision_id") @db.Uuid
+  attachmentId         String               @map("attachment_id") @db.Uuid
+  position             Int
+  createdAt            DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  submissionRevision   SubmissionRevision   @relation(fields: [submissionRevisionId], references: [id], onDelete: Restrict)
+  attachment           SubmissionAttachment @relation(fields: [attachmentId], references: [id], onDelete: Restrict)
+
+  @@id([submissionRevisionId, attachmentId])
+  @@unique([submissionRevisionId, position], map: "submission_revision_attachments_position_key")
+  @@index([attachmentId])
+  @@map("submission_revision_attachments")
 }
 
 model TeacherFeedback {
@@ -268,6 +393,8 @@ model TeacherFeedbackRevision {
   version           Int
   body              String                 @db.Text
   bodyHash          String                 @map("body_hash") @db.Char(64)
+  nextStep          FeedbackNextStep?      @map("next_step")
+  supportLevel      FeedbackSupportLevel?  @map("support_level")
   source            FeedbackRevisionSource
   confirmedById     String                 @map("confirmed_by_id") @db.Uuid
   actionIntentId    String                 @unique @map("action_intent_id") @db.Uuid
@@ -283,6 +410,43 @@ model TeacherFeedbackRevision {
   @@map("teacher_feedback_revisions")
 }
 
+model TeacherEvaluation {
+  id                   String                      @id @default(uuid()) @db.Uuid
+  submissionRevisionId String                      @unique @map("submission_revision_id") @db.Uuid
+  teacherId            String                      @map("teacher_id") @db.Uuid
+  version              Int
+  createdAt            DateTime                    @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt            DateTime                    @updatedAt @map("updated_at") @db.Timestamptz(3)
+  submissionRevision   SubmissionRevision          @relation(fields: [submissionRevisionId], references: [id], onDelete: Restrict)
+  teacher              AppUser                     @relation("TeacherEvaluationTeacher", fields: [teacherId], references: [id], onDelete: Restrict)
+  revisions            TeacherEvaluationRevision[]
+
+  @@index([teacherId, updatedAt])
+  @@map("teacher_evaluations")
+}
+
+model TeacherEvaluationRevision {
+  id                  String                 @id @default(uuid()) @db.Uuid
+  teacherEvaluationId String                 @map("teacher_evaluation_id") @db.Uuid
+  version             Int
+  summary             String                 @db.Text
+  summaryHash         String                 @map("summary_hash") @db.Char(64)
+  outcomes            Json
+  source              FeedbackRevisionSource
+  confirmedById       String                 @map("confirmed_by_id") @db.Uuid
+  actionIntentId      String                 @unique @map("action_intent_id") @db.Uuid
+  agentRunId          String?                @map("agent_run_id") @db.Uuid
+  confirmedAt         DateTime               @default(now()) @map("confirmed_at") @db.Timestamptz(3)
+  evaluation          TeacherEvaluation      @relation(fields: [teacherEvaluationId], references: [id], onDelete: Restrict)
+  confirmedBy         AppUser                @relation("TeacherEvaluationConfirmer", fields: [confirmedById], references: [id], onDelete: Restrict)
+  actionIntent        ActionIntent           @relation(fields: [actionIntentId], references: [id], onDelete: Restrict)
+  agentRun            AgentRun?              @relation(fields: [agentRunId], references: [id], onDelete: Restrict)
+
+  @@unique([teacherEvaluationId, version])
+  @@index([agentRunId])
+  @@map("teacher_evaluation_revisions")
+}
+
 model AgentRun {
   id                String                    @id @default(uuid()) @db.Uuid
   actorId           String                    @map("actor_id") @db.Uuid
@@ -292,10 +456,11 @@ model AgentRun {
   completedAt       DateTime?                 @map("completed_at") @db.Timestamptz(3)
   failureCode       String?                   @map("failure_code")
   actor             AppUser                   @relation(fields: [actorId], references: [id], onDelete: Restrict)
-  draftRevision     ActivityDraftRevision?
-  intents           ActionIntent[]
-  auditEntries      ActionAudit[]
-  feedbackRevisions TeacherFeedbackRevision[]
+  draftRevision       ActivityDraftRevision?
+  intents             ActionIntent[]
+  auditEntries        ActionAudit[]
+  feedbackRevisions   TeacherFeedbackRevision[]
+  evaluationRevisions TeacherEvaluationRevision[]
 
   @@index([actorId, startedAt])
   @@map("agent_runs")
@@ -320,9 +485,10 @@ model ActionIntent {
   actor            AppUser                  @relation("ActionIntentActor", fields: [actorId], references: [id], onDelete: Restrict)
   decidedBy        AppUser?                 @relation("ActionIntentDecider", fields: [decidedById], references: [id], onDelete: Restrict)
   agentRun         AgentRun?                @relation(fields: [agentRunId], references: [id], onDelete: Restrict)
-  auditEntries     ActionAudit[]
-  feedbackRevision TeacherFeedbackRevision?
-  publishRelease   ActivityRelease?         @relation("PublishActionIntent")
+  auditEntries        ActionAudit[]
+  feedbackRevision    TeacherFeedbackRevision?
+  evaluationRevision  TeacherEvaluationRevision?
+  publishRelease      ActivityRelease?         @relation("PublishActionIntent")
   closedRelease    ActivityRelease?         @relation("CloseActionIntent")
 
   @@index([actorId, status, expiresAt])

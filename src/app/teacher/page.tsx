@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ZodError } from "zod";
 import { LocalizedDateTime } from "../_components/localized-date-time";
+import { WorkspaceRoleGate } from "../_components/workspace-shell";
 import { AuthenticationError } from "../../server/auth/current-actor";
 import { createUiCommandContext } from "../../server/commands/create-ui-command-context";
 import { getDatabaseClient } from "../../server/db/client";
@@ -36,6 +37,19 @@ export default async function TeacherDashboardPage() {
   } catch (error) {
     if (error instanceof AuthenticationError) {
       return <TeacherAccessGate code={error.code} returnPath="/teacher" />;
+    }
+    if (
+      error instanceof TeacherActivityQueryError &&
+      error.code === "WRONG_ROLE" &&
+      error.actorName
+    ) {
+      return (
+        <WorkspaceRoleGate
+          actorName={error.actorName}
+          currentAudience="学生"
+          requestedAudience="教师"
+        />
+      );
     }
     if (error instanceof TeacherActivityQueryError || error instanceof ZodError) {
       notFound();
@@ -161,6 +175,26 @@ export default async function TeacherDashboardPage() {
                         <div>
                           <h3>{release.classroomName}</h3>
                           <p>目标班级</p>
+                          {release.attention &&
+                          (release.attention.pendingFeedbackCount > 0 ||
+                            release.attention.pendingEvaluationCount > 0 ||
+                            release.attention.awaitingResubmissionCount > 0) ? (
+                            <p>
+                              {[
+                                release.attention.pendingFeedbackCount > 0
+                                  ? `待反馈 ${release.attention.pendingFeedbackCount}`
+                                  : null,
+                                release.attention.pendingEvaluationCount > 0
+                                  ? `待评价 ${release.attention.pendingEvaluationCount}`
+                                  : null,
+                                release.attention.awaitingResubmissionCount > 0
+                                  ? `待重交 ${release.attention.awaitingResubmissionCount}`
+                                  : null,
+                              ]
+                                .filter(Boolean)
+                                .join(" · ")}
+                            </p>
+                          ) : null}
                         </div>
                         {release.canViewSubmissions ? (
                           <Link
@@ -206,6 +240,9 @@ export default async function TeacherDashboardPage() {
                       <p>当前有效成员</p>
                     </div>
                     <strong>{classroom.currentMemberCount} 名</strong>
+                    <Link href={`/teacher/classrooms/${classroom.id}/members`}>
+                      管理成员 →
+                    </Link>
                   </article>
                 ))}
               </div>

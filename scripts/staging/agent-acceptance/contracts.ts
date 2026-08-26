@@ -1,20 +1,26 @@
 import { createHash } from "node:crypto";
 
 import { isSafeStagingRunMarker, stagingAiAcknowledgement } from "../contracts";
-import { isPublicHostname } from "../../../src/server/staging/deployment-proof";
+import {
+  isAllowedVercelPreviewBaseUrl,
+  isValidVercelAutomationBypassSecret,
+  isValidVercelProjectName,
+} from "../preview-protection";
 
 export type AgentAcceptanceEnvironment = Readonly<Record<string, string | undefined>>;
 export type AgentCheck = Readonly<{ code: string; status: "PASS" | "FAIL" }>;
 
 export const agentAcceptanceTeacherDisplayName = "CDAS Staging Synthetic Teacher";
 export const agentAcceptanceStudentDisplayName = "CDAS Staging Synthetic Student";
-export const agentAcceptanceActivityContent = {
-  summary: "固定合成验收摘要",
-  learningObjectives: ["识别合成证据"],
-  taskInstructions: "提交固定合成内容",
-  evidenceRequirements: ["合成文本"],
-  feedbackCriteria: ["固定标准"],
-} as const;
+export const agentAcceptanceOtherStudentDisplayName =
+  "CDAS Staging Synthetic Other Student";
+export const agentAcceptanceOtherTeacherDisplayName =
+  "CDAS Staging Synthetic Other Teacher";
+export const agentAcceptanceEditedSummary = "固定合成验收摘要（教师人工修订）";
+export const agentAcceptanceEvidenceText =
+  "Synthetic Agent acceptance text evidence.";
+export const agentAcceptanceFeedbackText =
+  "Synthetic Agent acceptance teacher feedback.";
 export const agentAcceptanceAttestations = [
   "STAGING_SYNTHETIC_ONLY_ATTESTED", "STAGING_CLERK_INSTANCE_ATTESTED",
   "STAGING_DATABASE_ISOLATION_ATTESTED", "STAGING_HOSTING_ACCESS_ATTESTED",
@@ -40,22 +46,27 @@ export function agentAcceptanceNamespace(marker: string) {
   } as const;
 }
 
-export function isAgentAcceptancePublicHttps(raw: string): boolean {
-  try { const url = new URL(raw); return url.protocol === "https:" && !url.username && !url.password && !url.search && !url.hash && (url.pathname === "" || url.pathname === "/") && isPublicHostname(url.hostname); } catch { return false; }
-}
-
 export function evaluateAgentAcceptanceReadiness(environment: AgentAcceptanceEnvironment) {
+  const projectName = text(environment, "STAGING_VERCEL_PROJECT_NAME");
+  const identityIds = [
+    text(environment, "STAGING_TEST_TEACHER_CLERK_ID"),
+    text(environment, "STAGING_TEST_STUDENT_CLERK_ID"),
+    text(environment, "STAGING_TEST_OTHER_STUDENT_CLERK_ID"),
+    text(environment, "STAGING_TEST_OTHER_TEACHER_CLERK_ID"),
+  ];
   const checks = [
     check("AGENT_MARKER", (() => { try { return agentAcceptanceNamespace(text(environment, "STAGING_RUN_MARKER")).marker.length > 0; } catch { return false; } })()),
-    check("AGENT_PUBLIC_HTTPS", isAgentAcceptancePublicHttps(text(environment, "STAGING_BASE_URL"))),
+    check("AGENT_VERCEL_PREVIEW", isValidVercelProjectName(projectName) && isAllowedVercelPreviewBaseUrl(text(environment, "STAGING_BASE_URL"), projectName)),
+    check("AGENT_DEPLOYMENT_PROTECTION", text(environment, "STAGING_DEPLOYMENT_PROTECTION_REQUIRED") === "1"),
+    check("AGENT_VERCEL_BYPASS", isValidVercelAutomationBypassSecret(text(environment, "STAGING_VERCEL_AUTOMATION_BYPASS_SECRET"))),
     check("AGENT_AI_ENABLED", text(environment, "AI_PROVIDER_DISABLED") === "0"),
     check("AGENT_AI_ACK", text(environment, "STAGING_AI_ACK") === stagingAiAcknowledgement),
     check("AGENT_DEEPSEEK_KEY", Buffer.byteLength(text(environment, "DEEPSEEK_API_KEY"), "utf8") >= 16),
     check("AGENT_MODEL", /^deepseek-[a-z0-9][a-z0-9._:-]*$/u.test(text(environment, "AI_MODEL"))),
     check("AGENT_APPROVAL_SECRET", Buffer.byteLength(text(environment, "AI_TOOL_APPROVAL_SECRET"), "utf8") >= 32),
     check("AGENT_CLERK_TEST", /^pk_test_[A-Za-z0-9_-]{10,}$/u.test(text(environment, "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY")) && /^sk_test_[A-Za-z0-9_-]{10,}$/u.test(text(environment, "CLERK_SECRET_KEY"))),
-    check("AGENT_IDENTITIES", /^user_[A-Za-z0-9]+$/u.test(text(environment, "STAGING_TEST_TEACHER_CLERK_ID")) && /^user_[A-Za-z0-9]+$/u.test(text(environment, "STAGING_TEST_STUDENT_CLERK_ID")) && text(environment, "STAGING_TEST_TEACHER_CLERK_ID") !== text(environment, "STAGING_TEST_STUDENT_CLERK_ID")),
-    check("AGENT_FIXED_DISPLAY_NAMES", text(environment, "STAGING_ACCEPTANCE_TEST_TEACHER_NAME") === agentAcceptanceTeacherDisplayName && text(environment, "STAGING_ACCEPTANCE_TEST_STUDENT_NAME") === agentAcceptanceStudentDisplayName),
+    check("AGENT_IDENTITIES", identityIds.every((id) => /^user_[A-Za-z0-9]+$/u.test(id)) && new Set(identityIds).size === 4),
+    check("AGENT_FIXED_DISPLAY_NAMES", text(environment, "STAGING_ACCEPTANCE_TEST_TEACHER_NAME") === agentAcceptanceTeacherDisplayName && text(environment, "STAGING_ACCEPTANCE_TEST_STUDENT_NAME") === agentAcceptanceStudentDisplayName && text(environment, "STAGING_ACCEPTANCE_TEST_OTHER_STUDENT_NAME") === agentAcceptanceOtherStudentDisplayName && text(environment, "STAGING_ACCEPTANCE_TEST_OTHER_TEACHER_NAME") === agentAcceptanceOtherTeacherDisplayName),
     check("AGENT_RUN_METADATA", /^[1-9][0-9]*$/u.test(text(environment, "GITHUB_RUN_ID")) && /^[1-9][0-9]*$/u.test(text(environment, "GITHUB_RUN_ATTEMPT")) && /^[a-f0-9]{40}$/u.test(text(environment, "CDAS_DEPLOYMENT_ID")) && /^[a-f0-9]{64}$/u.test(text(environment, "CDAS_SOURCE_FINGERPRINT"))),
     ...agentAcceptanceAttestations.map((name) => check(name, text(environment, name) === "true")),
   ];
@@ -68,5 +79,5 @@ export function stableAgentAcceptanceError(error: unknown): string {
 }
 
 export function redactAgentAcceptanceText(input: string): string {
-  return input.replace(/postgres(?:ql)?:\/\/[^\s"']+/giu, "[REDACTED_DATABASE_URL]").replace(/\b(?:pk|sk)_(?:test|live)_[A-Za-z0-9_-]+\b/gu, "[REDACTED_CLERK_KEY]").replace(/\b(?:Bearer|Cookie)\s+[^\s"']+/giu, "$1 [REDACTED]").replace(/\b(?:ticket|token)=[A-Za-z0-9._-]+/giu, "$1=[REDACTED]").replace(/\b(?:DEEPSEEK_API_KEY|AI_TOOL_APPROVAL_SECRET)=[^\s"']+/gu, "$1=[REDACTED]");
+  return input.replace(/postgres(?:ql)?:\/\/[^\s"']+/giu, "[REDACTED_DATABASE_URL]").replace(/\b(?:pk|sk)_(?:test|live)_[A-Za-z0-9_-]+\b/gu, "[REDACTED_CLERK_KEY]").replace(/\b(?:Bearer|Cookie)\s+[^\s"']+/giu, "$1 [REDACTED]").replace(/\b(?:ticket|token)=[A-Za-z0-9._-]+/giu, "$1=[REDACTED]").replace(/\b(?:DEEPSEEK_API_KEY|AI_TOOL_APPROVAL_SECRET|STAGING_VERCEL_AUTOMATION_BYPASS_SECRET)=[^\s"']+/gu, "$1=[REDACTED]");
 }

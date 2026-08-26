@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
-import { waterConservationActivity } from "../../fixtures/water-conservation";
+import { waterConservationTaskBook } from "../../fixtures/water-conservation";
 import { bootstrapClerkClassroom } from "../bootstrap/bootstrap-clerk-classroom";
 import { createDatabaseClient } from "../db/client";
 import { getStudentFeedbackWorkspace } from "../queries/feedback-workspace";
@@ -83,7 +83,10 @@ describeWithDatabase("AI-disabled manual first-phase closed loop", () => {
           draftId: null,
           expectedVersion: null,
           desiredStatus: "READY_FOR_PREVIEW",
-          content: waterConservationActivity,
+          content: {
+            ...waterConservationTaskBook,
+            submissionMode: "once",
+          },
           agentRunId: null,
           idempotencyKey: idempotencyKey("manual_draft"),
         },
@@ -126,7 +129,7 @@ describeWithDatabase("AI-disabled manual first-phase closed loop", () => {
         access: { canWrite: true },
         release: {
           id: published.releaseId,
-          title: waterConservationActivity.title,
+          title: waterConservationTaskBook.title,
           classroomName: "闭环测试班级",
           status: "ACTIVE",
         },
@@ -210,6 +213,8 @@ describeWithDatabase("AI-disabled manual first-phase closed loop", () => {
           expectedSubmissionRevisionNumber: 1,
           expectedFeedbackVersion: 0,
           body: "观察记录清楚。请再说明滴水次数如何支持你的改进建议。",
+          nextStep: "REVISE",
+          supportLevel: "FOUNDATION",
           suggestionAgentRunId: null,
           idempotencyKey: idempotencyKey("manual_feedback_prepare"),
         },

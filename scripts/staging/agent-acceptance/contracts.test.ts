@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   agentAcceptanceNamespace,
+  agentAcceptanceOtherStudentDisplayName,
+  agentAcceptanceOtherTeacherDisplayName,
   agentAcceptanceStudentDisplayName,
   agentAcceptanceTeacherDisplayName,
   evaluateAgentAcceptanceReadiness,
@@ -16,20 +18,29 @@ const marker = "cdas-staging-agent-12345678-1";
 function environment(extra: Record<string, string | undefined> = {}) {
   return {
     STAGING_RUN_MARKER: marker,
-    STAGING_BASE_URL: "https://staging.example.test",
+    STAGING_BASE_URL: "https://cdas-next-agent-linics1.vercel.app",
+    STAGING_VERCEL_PROJECT_NAME: "cdas-next",
+    STAGING_DEPLOYMENT_PROTECTION_REQUIRED: "1",
+    STAGING_VERCEL_AUTOMATION_BYPASS_SECRET: "V".repeat(32),
     AI_PROVIDER_DISABLED: "0",
     STAGING_AI_ACK: "synthetic-data-cost-approved",
     DEEPSEEK_API_KEY: "deepseek-key-012345",
-    AI_MODEL: "deepseek-v4-flash-vision-exp",
+    AI_MODEL: "deepseek-v4-flash",
     AI_TOOL_APPROVAL_SECRET: "a".repeat(32),
     NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_0123456789abcdef",
     CLERK_SECRET_KEY: "sk_test_0123456789abcdef",
     STAGING_TEST_TEACHER_CLERK_ID: "user_Teacher123",
     STAGING_TEST_STUDENT_CLERK_ID: "user_Student123",
+    STAGING_TEST_OTHER_STUDENT_CLERK_ID: "user_OtherStudent123",
+    STAGING_TEST_OTHER_TEACHER_CLERK_ID: "user_OtherTeacher123",
     STAGING_ACCEPTANCE_TEST_TEACHER_NAME:
       agentAcceptanceTeacherDisplayName,
     STAGING_ACCEPTANCE_TEST_STUDENT_NAME:
       agentAcceptanceStudentDisplayName,
+    STAGING_ACCEPTANCE_TEST_OTHER_STUDENT_NAME:
+      agentAcceptanceOtherStudentDisplayName,
+    STAGING_ACCEPTANCE_TEST_OTHER_TEACHER_NAME:
+      agentAcceptanceOtherTeacherDisplayName,
     GITHUB_RUN_ID: "12345678",
     GITHUB_RUN_ATTEMPT: "1",
     CDAS_DEPLOYMENT_ID: "a".repeat(40),
@@ -74,6 +85,11 @@ describe("agent acceptance contracts", () => {
         environment({ STAGING_AGENT_IDENTITIES_RESERVED_ATTESTED: "false" }),
       ).status,
     ).toBe("FAIL");
+    expect(
+      evaluateAgentAcceptanceReadiness(
+        environment({ STAGING_VERCEL_AUTOMATION_BYPASS_SECRET: "short" }),
+      ).status,
+    ).toBe("FAIL");
   });
 
   it("binds secret configuration without serializing it", async () => {
@@ -103,6 +119,12 @@ describe("agent acceptance contracts", () => {
     expect(isAgentGate(go, boundEnvironment)).toBe(true);
     expect(
       isAgentGate(go, { ...boundEnvironment, AI_MODEL: "deepseek-v4-pro" }),
+    ).toBe(false);
+    expect(
+      isAgentGate(go, {
+        ...boundEnvironment,
+        STAGING_VERCEL_AUTOMATION_BYPASS_SECRET: "W".repeat(32),
+      }),
     ).toBe(false);
     expect(JSON.stringify(go)).not.toContain(actual.DEEPSEEK_API_KEY);
   });
@@ -152,6 +174,18 @@ describe("agent acceptance contracts", () => {
     expect(workflow).not.toMatch(/^\s*uses:\s*[^\s]+@(v\d+|main|master)\s*$/gmu);
     expect(workflow).toContain("STAGING_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY");
     expect(workflow).not.toContain("STAGING_CLERK_PUBLISHABLE_KEY");
+    expect(workflow).toContain("STAGING_VERCEL_AUTOMATION_BYPASS_SECRET");
+    expect(workflow).toContain('STAGING_DEPLOYMENT_PROTECTION_REQUIRED: "1"');
+    expect(workflow).toContain(
+      ".venv-staging-agent-acceptance/bin/python -m pip install -r scripts/e2e/requirements.txt",
+    );
+    expect(workflow).toContain(
+      ".venv-staging-agent-acceptance/bin/python -m playwright install --with-deps chromium",
+    );
+    expect(workflow).toContain(
+      'echo "$PWD/.venv-staging-agent-acceptance/bin" >> "$GITHUB_PATH"',
+    );
+    expect(workflow).not.toContain("pnpm exec playwright install");
 
     expect(workflow.indexOf("id: agent-gate")).toBeLessThan(
       workflow.indexOf("id: chromium"),

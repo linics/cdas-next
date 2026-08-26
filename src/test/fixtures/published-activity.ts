@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { ActivityContent } from "../../domain/activity/activity-content";
+import { waterConservationTaskBook } from "../../fixtures/water-conservation";
 import type { PrismaClient } from "../../generated/prisma/client";
 import type { CommandContext } from "../../server/commands/command-context";
 import { decideActionIntent } from "../../server/commands/decide-action-intent";
@@ -10,13 +11,12 @@ import { publishActivityRelease } from "../../server/commands/publish-activity-r
 import { saveActivityDraft } from "../../server/commands/save-activity-draft";
 
 const defaultContent: ActivityContent = {
-  schemaVersion: 1,
+  ...waterConservationTaskBook,
+  submissionMode: "once",
   title: "测试活动",
+  topic: "测试任务",
   summary: "供集成测试发布的活动。",
-  learningObjectives: ["使用证据说明观察结果"],
   taskInstructions: "完成观察并提交一项文字证据。",
-  evidenceRequirements: ["至少包含一项可核验记录"],
-  feedbackCriteria: ["证据与结论一致"],
 };
 
 export type PublishedActivityOptions = {
@@ -32,6 +32,24 @@ function context(actorId: string, now: Date): CommandContext {
   return { actorId, source: "UI", traceId: randomUUID(), clock: () => now };
 }
 
+function writableFixtureContent(content: ActivityContent): ActivityContent {
+  if (content.schemaVersion === 2) return content;
+  return {
+    ...waterConservationTaskBook,
+    submissionMode: "once",
+    title: content.title,
+    topic: content.title,
+    summary: content.summary,
+    objectiveKnowledge: content.learningObjectives[0] ?? waterConservationTaskBook.objectiveKnowledge,
+    objectiveProcess: content.learningObjectives[1] ?? waterConservationTaskBook.objectiveProcess,
+    objectiveEmotion: content.learningObjectives[2] ?? waterConservationTaskBook.objectiveEmotion,
+    learningObjectives: content.learningObjectives,
+    taskInstructions: content.taskInstructions,
+    evidenceRequirements: content.evidenceRequirements,
+    feedbackCriteria: content.feedbackCriteria,
+  };
+}
+
 /** Creates a legally published release; callers may supply an existing ready draft. */
 export async function createPublishedActivity(
   database: PrismaClient,
@@ -43,7 +61,7 @@ export async function createPublishedActivity(
       draftId: null,
       expectedVersion: null,
       desiredStatus: "READY_FOR_PREVIEW",
-      content: options.content ?? defaultContent,
+      content: writableFixtureContent(options.content ?? defaultContent),
       agentRunId: null,
       idempotencyKey: `fixture_draft_${randomUUID()}`,
     }));

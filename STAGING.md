@@ -46,7 +46,7 @@ Environment variables：
 
 这个 `GO` 只表示 `stagingSyntheticDecision: "GO"`。artifact 始终固定 `realStudentDataAllowed: false` 与 `productionDecision: "NO_GO"`；它从不授权真实学生数据或生产发布。任一 FAIL、NOT_RUN、缺失 artifact、未知人工项或解析错误都会让最终 workflow 红灯并得到 `NO_GO`。
 
-当前仓库没有受管 staging URL、外部 PostgreSQL、Clerk test instance 或 GitHub Environment 凭据，因此当前事实结论仍是 `NO_GO`。本地 E2E 不能替代这一门禁，也绝不能把其可清空数据库复用于 staging。构建会从 checkout 的运行时代码、Prisma schema/migrations、构建和类型配置、锁文件及 fingerprint helper 计算 `CDAS_SOURCE_FINGERPRINT`；测试、generated、output、环境文件和 secret 不参与。远端必须在构建期冻结该 fingerprint 与 gate SHA，旧源码不能靠新 ID 通过；proof 也绑定完整 runtime DB URL 的 SHA-256，但不会回显 URL 或 hash。
+开发期受管 staging、外部 PostgreSQL、Clerk test instance 与受保护 GitHub Environment 已建立。基础 readiness 与下述 AI-disabled 合成闭环已有同 run 的远程 PASS 证据；这仍只表示 synthetic staging 可验，不改变固定的 `realStudentDataAllowed: false` 与 `productionDecision: "NO_GO"`。本地 E2E 不能替代这一门禁，也绝不能把其可清空数据库复用于 staging。构建会从 checkout 的运行时代码、Prisma schema/migrations、构建和类型配置、锁文件及 fingerprint helper 计算 `CDAS_SOURCE_FINGERPRINT`；测试、generated、output、环境文件和 secret 不参与。远端必须在构建期冻结该 fingerprint 与 gate SHA，旧源码不能靠新 ID 通过；proof 也绑定完整 runtime DB URL 的 SHA-256，但不会回显 URL 或 hash。
 
 ## 真实身份的合成闭环验收
 
@@ -60,33 +60,53 @@ Environment variables：
 
 浏览器用 runner 进程通过 Clerk backend SDK 签发 60 秒 ticket，ticket 只经 captured pipe 驻内存，不能直接运行 ticket helper、写入 URL、日志、截图或 artifact。教师和学生使用独立浏览器 context；流程验证关闭后一个已打开的学生重交页面经既有 Server Action 被拒绝，刷新后确认只读。随后 `BEGIN READ ONLY` verifier 严格按派生 classroom ID 与 marker 内容审计，最终 evidence 必含 UTC 时间、同 run provenance、检查结果和截图 SHA-256 索引。截图没有浏览器 URL 栏，只允许展示 runner 内建的固定合成显示名、marker 与固定合成活动/证据/反馈文本；禁止环境提供的自由正文、DB URL、Clerk ID/key/ticket、cookie、真实姓名或任何真实学生数据。
 
-当前没有上述受保护 Environment 的实际凭据，故此远端闭环尚未运行，事实状态仍为 `NO_GO`。常见可操作代码是：`STAGING_ACCEPTANCE_PREWRITE_GATE_NOT_GO`（先修基础门禁、即时 health 或配置绑定）、`STAGING_ACCEPTANCE_NAMESPACE_COLLISION`（停止并人工检查同 marker 历史）、`STAGING_ACCEPTANCE_BUSINESS_HISTORY_ALREADY_EXISTS`（保留旧历史并以新 run attempt 重试）、`STAGING_ACCEPTANCE_TICKET_ISSUE_FAILED`（只检查 test Clerk 配置与批准）、`STAGING_ACCEPTANCE_CLOSED_READONLY_FAILED`（停止，不修改远端数据），以及任何 artifact/证据缺失导致的 final `NO_GO`。
+上述受保护 Environment 已由开发期基础设施脚本收敛，AI-disabled 远程闭环已经形成完整 PASS artifact。常见可操作代码仍包括：`STAGING_ACCEPTANCE_PREWRITE_GATE_NOT_GO`（先修基础门禁、即时 health 或配置绑定）、`STAGING_ACCEPTANCE_NAMESPACE_COLLISION`（停止并人工检查同 marker 历史）、`STAGING_ACCEPTANCE_BUSINESS_HISTORY_ALREADY_EXISTS`（保留旧历史并以新 run attempt 重试）、`STAGING_ACCEPTANCE_TICKET_ISSUE_FAILED`（只检查 test Clerk 配置与批准）、`STAGING_ACCEPTANCE_CLOSED_READONLY_FAILED`（停止，不修改远端数据），以及任何 artifact/证据缺失导致的 final `NO_GO`。
 
 ## 首个 Agent 场景的真实模型验收
 
 首个 Agent 场景使用第三个独立且需要人工审批者的 GitHub Environment：`staging-agent-acceptance`，入口是 `protected staging Agent acceptance`。它不继承前两个 Environment，也不把 AI-enabled staging 变成 production。默认输入 `run_real_model=false` 会保留零模型调用并明确得到 `NO_GO`；只有审批者已经确认合成写入、短期 Clerk ticket 与模型费用后，才可手动选择 `run_real_model=true`。
 
-这个 Environment 必须重新配置前述全部基础 secrets，包括 `STAGING_DATABASE_URL`、`STAGING_DIRECT_URL`、`STAGING_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`、`STAGING_CLERK_SECRET_KEY`、`STAGING_TEST_TEACHER_CLERK_ID`、`STAGING_TEST_STUDENT_CLERK_ID` 与 `STAGING_HEALTH_PROOF_SECRET`。另外增加 `STAGING_DEEPSEEK_API_KEY` 和至少 32 bytes 的 `STAGING_AI_TOOL_APPROVAL_SECRET`。这些值只注入确实需要它们的 shell step；checkout、依赖安装、Chromium 安装和 artifact actions 不继承业务 secrets。不得把任何 secret 粘贴到聊天、issue、日志或 artifact。
+这个 Environment 必须重新配置前述全部基础 secrets，包括 `STAGING_DATABASE_URL`、`STAGING_DIRECT_URL`、`STAGING_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`、`STAGING_CLERK_SECRET_KEY`、`STAGING_TEST_TEACHER_CLERK_ID`、`STAGING_TEST_STUDENT_CLERK_ID`、`STAGING_HEALTH_PROOF_SECRET` 与 `STAGING_VERCEL_AUTOMATION_BYPASS_SECRET`。另外增加 `STAGING_DEEPSEEK_API_KEY` 和至少 32 bytes 的 `STAGING_AI_TOOL_APPROVAL_SECRET`。这些值只注入确实需要它们的 shell step；checkout、依赖安装、Chromium 安装和 artifact actions 不继承业务 secrets。不得把任何 secret 粘贴到聊天、issue、日志或 artifact。
 
-Environment variables 必须包含 `STAGING_BASE_URL`、`STAGING_DATABASE_NAME`、`STAGING_AI_MODEL` 和六项基础 attestation。以下五项 Agent attestation 也必须精确为 `true`：
+Environment variables 必须包含精确 Vercel Preview 根地址 `STAGING_BASE_URL`、`STAGING_VERCEL_PROJECT_NAME`、`STAGING_DATABASE_NAME`、`STAGING_AI_MODEL` 和六项基础 attestation。workflow 固定 `STAGING_DEPLOYMENT_PROTECTION_REQUIRED=1`，不能通过 Environment 覆盖。以下五项 Agent attestation 也必须精确为 `true`：
 
 - `STAGING_AGENT_WRITES_ATTESTED`：允许本次唯一 marker 的追加式合成草稿、班级与 Release 写入。
 - `STAGING_AGENT_CLERK_TOKENS_ATTESTED`：允许 runner 为预留 test identity 签发 60 秒 ticket；能力探测 ticket 会立即撤销，浏览器 ticket 只驻内存。
 - `STAGING_AGENT_MODEL_COST_ATTESTED`：允许本次固定合成 prompt 的计费模型请求。
 - `STAGING_AGENT_RETENTION_ATTESTED`：接受本次合成业务历史与 14 天脱敏 artifact 保留；工作流不会清理业务历史。
-- `STAGING_AGENT_IDENTITIES_RESERVED_ATTESTED`：确认这两个 Clerk test user 在运行期间只用于本次验收，不会发生并行交互污染三次 AgentRun 的时间窗。
+- `STAGING_AGENT_IDENTITIES_RESERVED_ATTESTED`：确认这四个 Clerk test user 在运行期间只用于本次验收，不会发生并行交互污染四次 AgentRun 的时间窗。
 
 第六项 `STAGING_AGENT_RUN_MODEL_ATTESTED` 只能由 `run_real_model` dispatch 输入派生，不能用 Environment variable 伪造。显示名仍固定为 `CDAS Staging Synthetic Teacher` 和 `CDAS Staging Synthetic Student`；既有 AppUser 的角色或显示名不匹配时直接 `NO_GO`，工作流不会覆盖或修改 Clerk 用户。
 
-远端 deployment 必须在构建期冻结当前 workflow SHA 的 `CDAS_DEPLOYMENT_ID` 与当前源码指纹，并在同一隔离 staging runtime 注入 pooled `DATABASE_URL`、同一 Clerk test instance、`AI_PROVIDER_DISABLED=0`、与 `STAGING_AI_MODEL` 相同的 `AI_MODEL`、对应 DeepSeek API key、approval secret 和 health proof secret。`/api/health` 的 challenge HMAC 会同时绑定源码、部署、runtime DB URL、Clerk key、AI enabled 状态、DeepSeek API key 指纹、模型与 approval secret 指纹；响应只返回不透明 proof，不返回这些值或指纹。
+远端 deployment 必须在构建期冻结当前 workflow SHA 的 `CDAS_DEPLOYMENT_ID` 与当前源码指纹，并在同一隔离 staging runtime 注入 pooled `DATABASE_URL`、同一 Clerk test instance、`AI_PROVIDER_DISABLED=0`、与 `STAGING_AI_MODEL` 相同的 `AI_MODEL`、对应 DeepSeek API key、approval secret 和 health proof secret。`/api/health` 的 challenge HMAC 会同时绑定源码、部署、runtime DB URL、Clerk key、AI enabled 状态、DeepSeek API key 指纹、模型与 approval secret 指纹；响应只返回不透明 proof，不返回这些值或指纹。Vercel Deployment Protection 必须保持启用，health 与浏览器请求仅向绑定 Preview 的精确 origin 添加 automation bypass；Clerk、DeepSeek、重定向及其他 origin 不得接收该 header。
 
 工作流不会部署应用、执行 migration、创建 Clerk 用户、reset、truncate、delete、cleanup 或结束成员关系。它先在同一 run 重做基础 Go/No-Go，再把 run、attempt、源码、部署、DB、Clerk、AI 配置、固定 identity 和全部 attestation 绑定到 Agent gate。第二个 job 下载并重新校验这份 gate 后，顺序执行 Chromium 安装、Clerk identity 与 ticket capability 探测、紧邻写入前的 health proof、marker 派生班级 bootstrap、第一方浏览器流程、只读 verifier 和最终证据聚合。任一步失败都会阻断后续写入或模型步骤，并由 final 保持 `NO_GO`。
 
-浏览器只用预置的六段合成正文。runner 先打开绑定的 staging base URL，并在任何教师 ticket 存在前检查最终页面的 scheme、host 与有效 port 精确等于该 staging origin；首次登录、进入新建页、助手导航到预览和进入 Release 后都会再次检查，跨 origin redirect 直接失败。通过该检查后才签发 60 秒 ticket，并只经 Playwright 参数通道驻留内存。教师经真实 Clerk session 打开“新建学习活动”，模型调用 `create_activity_draft` 创建 `READY_FOR_PREVIEW` 版本 1；共享的 `/teacher/activities` 客户端 layout 只在内存保留这次官方 AI SDK message session，导航到精确预览后逐段核对正文。教师再明确指定 marker 班级、版本 1 和无截止时间，模型提出 `publish_activity_release`，页面展示签名 approval，教师点击确认后仍由 prepare → UI decide → publish 领域命令发布唯一不可变 Release。刷新或直接打开预览不会恢复对话，也不会绕过手工发布路径。
+浏览器只用预置的合成主题、人工摘要、学生证据与教师反馈。runner 先打开绑定的 staging base URL，并在任何教师 ticket 存在前检查最终页面的 scheme、host 与有效 port 精确等于该 staging origin；首次登录、进入新建页、助手导航到预览和进入 Release 后都会再次检查，跨 origin redirect 直接失败。通过该检查后才签发 60 秒 ticket，并只经 Playwright 参数通道驻留内存。教师经真实 Clerk session 打开“新建学习活动”，模型调用 `create_activity_draft` 创建满足 D-030 原版能力下限的 schema v2 `READY_FOR_PREVIEW` 版本 1；共享的 `/teacher/activities` 客户端 layout 只在内存保留这次官方 AI SDK message session，导航到精确预览后核对基本设置、背景、三维目标、任务链和评价标准。教师随后返回普通编辑页，以固定人工摘要保存 `READY_FOR_PREVIEW` 版本 2，再明确指定 marker 班级、版本 2 和无截止时间；模型提出 `publish_activity_release`，页面展示签名 approval，教师点击确认后仍由 prepare → UI decide → publish 领域命令发布唯一不可变 Release。刷新或直接打开预览不会恢复对话，也不会绕过手工发布路径。
 
-这段正常流程应留下恰好三个同教师、同模型、同浏览器 UTC 时间窗的 `SUCCEEDED` AgentRun：第一个绑定 AGENT 草稿修订，第二个只记录模型提出 approval 且不绑定业务写入，第三个绑定 ActionIntent、prepare/decide/publish audits 与 Release。最终 verifier 在 `BEGIN READ ONLY` 中精确检查该教师与 marker 标题下只有一份草稿、SEALED v1 head 与 AGENT revision、ACTIVE Release 与完整 snapshot、教师本人确认并执行的 null-due ActionIntent、四条来源正确的 audit、三条资源正确的成功幂等记录、唯一班级成员和零学生提交/反馈；同标题的额外未发布草稿或时间窗中的额外 AgentRun 都会失败。final 聚合器还会逐类验证 readiness、gate、identity、即时 health、bootstrap、browser 与 verifier 的精确顶层键、完整且唯一的 PASS check code、共同数据边界，以及四个固定截图键与合法且匹配文件的 SHA-256；任何畸形或部分证据保持 `NO_GO`。
+这段正常流程应留下恰好四个同教师、同模型、同浏览器 UTC 时间窗的 `SUCCEEDED` AgentRun：第一个只记录无业务写入的草稿提案，第二个绑定版本 1 AGENT 草稿修订，版本 2 是不带 AgentRun 的 MANUAL 修订，第三个只记录无业务写入的发布提议，第四个绑定 ActionIntent、prepare/decide/publish audits 与 Release。最终 verifier 在 `BEGIN READ ONLY` 中精确检查该教师与 marker 标题下只有一份草稿、SEALED v2 head、两条不可变修订、CLOSED Release 与完整 snapshot、教师本人确认并执行的 null-due 发布 ActionIntent、主学生正式提交、教师确认反馈、关闭 ActionIntent、陈旧写拒绝、其他学生零提交历史和其他教师零目标操作；同标题的额外草稿或时间窗中的额外 AgentRun 都会失败。final 聚合器还会逐类验证 readiness、gate、identity、即时 health、bootstrap、browser 与 verifier 的精确顶层键、完整且唯一的 PASS check code、共同数据边界，以及八个固定截图键与合法且匹配文件的 SHA-256；任何畸形或部分证据保持 `NO_GO`。
 
-当前仓库仍没有这个 Environment、AI-enabled deployment 或外部凭据，且尚未获准产生真实模型费用，因此该 Agent 远端验收的事实状态是 `NO_GO`。本地 5433 集成测试只证明账本形状与 read-only SQL，不替代真实 Clerk、真实模型、远端 deployment 和人工审批。
+这个 Environment、可临时启用 AI 的受保护 deployment 管理路径与本机忽略凭据已经建立。D-033 真实模型 run `32785815755` 已在提交 `491da4d6beaa1d0de0afa6678505f9f66e145827` 上完成固定合成流程；最终 artifact、只读 verifier、浏览器隔离检查、四次精确 AgentRun、八张截图及其 SHA-256 全部 PASS。该结论只证明 synthetic staging 的 Agent 教学闭环，不改变 artifact 固定的 `realStudentDataAllowed: false` 与 `productionDecision: "NO_GO"`。一键命令收尾时已移除临时模型/审批 secrets，并恢复和核验 AI-disabled Preview；本地下载后的复验也使用同一严格证据合同，不会重新调用模型。
+
+## 当前脱敏验证记录
+
+| 日期 | 提交 | 证据 | 结论 |
+| --- | --- | --- | --- |
+| 2026-08-26 | `89f6dfdab3c12d176352a1d0374f1f4915cef4c5` | [AI-disabled 教师工作台待评价计数完整合成闭环](https://github.com/linics/cdas-next/actions/runs/32966494396) | Hobby Preview、教师工作台当前发布「待评价 2」「待反馈 2」与「待重交 1」、发布页跟进标记与覆盖计数、既有评价列表状态、小组成员共享评价、其他教师/学生资源隔离、关闭后拒写与只读、只读数据库核验及六张截图全部 PASS。`AI_PROVIDER_DISABLED=1`。 |
+| 2026-08-26 | `0bbbc119b7f509ae128ce894a4f309b8a12464f4` | [AI-disabled 教师工作台待反馈/待重交计数完整合成闭环](https://github.com/linics/cdas-next/actions/runs/32963244909) | Hobby Preview、教师工作台当前发布「待反馈 2」与「待重交 1」、发布页跟进标记与覆盖计数、既有评价列表状态、小组成员共享评价、其他教师/学生资源隔离、关闭后拒写与只读、只读数据库核验及六张截图全部 PASS。`AI_PROVIDER_DISABLED=1`。 |
+| 2026-08-26 | `6c76b2b7f6c432c572627a9f38d756184acbc9a5` | [AI-disabled 教师发布页待重交跟进标记完整合成闭环](https://github.com/linics/cdas-next/actions/runs/32943934421) | Hobby Preview、当前正式修订「待重交 1」、覆盖计数「已反馈 1/3」与「已评价 1/3」、既有评价列表状态、小组成员共享评价、其他教师/学生资源隔离、关闭后拒写与只读、只读数据库核验及六张截图全部 PASS。`AI_PROVIDER_DISABLED=1`。 |
+| 2026-08-26 | `8e902a0e233064442041a69fe449292bfd9d1cce` | [AI-disabled 教师发布页反馈/评价覆盖计数完整合成闭环](https://github.com/linics/cdas-next/actions/runs/32937628880) | Hobby Preview、当前正式修订「已反馈 1/3」与「已评价 1/3」、既有评价列表状态、小组成员共享评价、其他教师/学生资源隔离、关闭后拒写与只读、只读数据库核验及六张截图全部 PASS。`AI_PROVIDER_DISABLED=1`。 |
+| 2026-08-26 | `d1c9386fd66fbb08d29415cec4c2989dacbe6a6f` | [AI-disabled 证据绑定量规评价完整合成闭环](https://github.com/linics/cdas-next/actions/runs/32901425620) | Hobby Preview、教师手写确认维度—证据绑定评价与证据不足、教师列表「已评价 v1」、学生列表「已有评价」且不泄露综评、小组成员共享评价、其他教师/学生资源隔离、关闭后拒写与只读、只读数据库核验及六张截图全部 PASS。`AI_PROVIDER_DISABLED=1`。 |
+| 2026-08-25 | `491da4d6beaa1d0de0afa6678505f9f66e145827` | [D-033 真实 DeepSeek 受约束设计助手完整合成闭环](https://github.com/linics/cdas-next/actions/runs/32785815755) | 结构化任务理解、教师确认后创建 schema v2 草稿、人工版本 2、独立签名发布确认、学生提交、教师反馈、学生读取、关闭后拒写与只读、其他学生/教师隔离、四个精确 `SUCCEEDED` AgentRun、13 项只读数据库核验及八张截图全部 PASS。 |
+| 2026-08-25 | `b1a96a28dc789d96707d6e1b7f47317bd2a4d633` | [AI-disabled 双学生小组完整合成闭环](https://github.com/linics/cdas-next/actions/runs/32780071107) | Hobby Preview、18 个迁移与 schema drift、教师建立两人 Release 小组及角色、两名学生接力完成三个共享阶段、Private Blob 附件、共享反馈、关闭后拒写与只读、学生/其他教师资源隔离、8 项只读小组历史核验及六张截图全部 PASS。 |
+| 2026-08-25 | `b4035bba44287c298b4a3e8a1b2b05162a806c8e` | [AI-disabled 三阶段完整合成闭环](https://github.com/linics/cdas-next/actions/runs/32763998574) | Hobby Preview、17 个迁移与 schema drift、三阶段顺序解锁、三个发布内检查点、Private Blob 附件、教师反馈、关闭后拒写与只读、其他学生/教师隔离、只读阶段索引/修订精确计数及六张截图全部 PASS。 |
+| 2026-08-25 | `df1d37a3ea454418b38ef8e9a9b1d336a6b0d1a2` | [schema v2 真实 DeepSeek Agent 完整合成闭环](https://github.com/linics/cdas-next/actions/runs/32755788543) | 原版 CTS 能力下限的结构化任务书、教师人工版本 2、签名发布确认、主学生提交、教师反馈、学生读取、教师关闭、关闭后拒写与只读、其他学生/教师隔离、三个精确 `SUCCEEDED` AgentRun、13 项只读数据库核验及七张截图全部 PASS。 |
+| 2026-08-24 | `2192a2790af6a2eddf63716be47309445a3d41e9` | [真实 DeepSeek Agent 完整合成闭环](https://github.com/linics/cdas-next/actions/runs/32732773297) | 模型草稿、教师人工版本 2、签名发布确认、唯一 Release、主学生非空文本正式提交、教师确认反馈、学生读取、教师确认关闭、关闭后陈旧写拒绝与只读、其他学生/教师资源隔离、三个精确 `SUCCEEDED` AgentRun、只读数据库核验及七张截图全部 PASS。 |
+| 2026-08-24 | `fe8068267e2b6d7257ddff26fb10732719af5a74` | [受保护 AI-disabled 四身份手工闭环](https://github.com/linics/cdas-next/actions/runs/32729693159) | readiness、真实 Clerk 会话、手工草稿/发布、主学生非空文本提交、教师确认反馈、学生读取、教师确认关闭、陈旧写拒绝、关闭后只读、其他学生/教师资源隔离、附件合成路径、只读数据库核验与完整 artifact 全部 PASS。 |
+| 2026-08-24 | `a56586c5a899efa0959de2a3f2f3ac4367f02ba8` | [普通 CI](https://github.com/linics/cdas-next/actions/runs/32730629410) | 生产依赖审计、空库迁移、数据库不变量、数据库命令测试、schema diff、lint、类型、单测与生产构建 PASS。该提交只修复 workflow 完成后 artifact 短暂不可下载造成的一键脚本误报。 |
+| 2026-08-24 | `87bf962baa0ccefa727d0ed175184bd8b9ff72c3` | [早期真实 DeepSeek 合成验收](https://github.com/linics/cdas-next/actions/runs/32727676178) | 最终 `NO_GO`，不得作为完成证据。只读账本确认模型草稿、人工版本 2、签名 approval、三个 `SUCCEEDED` AgentRun 与唯一 Release 已成功；浏览器随后因旧链接契约误报。该问题由 `fe80682` 修复，并已被上方完整 PASS run 取代。 |
+
+以上记录只包含公开提交、GitHub run、机器结论和固定合成数据边界，不记录 URL secret、数据库连接、Clerk ID/key/ticket、Cookie、模型 key 或任何真实用户数据。
 
 ## 迁移、回滚与事故边界
 

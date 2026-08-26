@@ -47,6 +47,8 @@ async function confirmFeedback(options: {
   body: string;
   baseTime: Date;
   prepareMinute: number;
+  nextStep?: "CONTINUE" | "REVISE";
+  supportLevel?: "FOUNDATION" | "STANDARD" | "CHALLENGE";
 }) {
   const prepareTime = minutesAfter(
     options.baseTime,
@@ -61,6 +63,8 @@ async function confirmFeedback(options: {
       expectedSubmissionRevisionNumber: options.revisionNumber,
       expectedFeedbackVersion: options.expectedFeedbackVersion,
       body: options.body,
+      nextStep: options.nextStep ?? "CONTINUE",
+      supportLevel: options.supportLevel ?? "STANDARD",
       suggestionAgentRunId: null,
       idempotencyKey: `prepare_feedback_${randomUUID()}`,
     },
@@ -194,6 +198,8 @@ async function createFeedbackWorkspaceFixture() {
     body: firstFeedbackBody,
     baseTime,
     prepareMinute: 1,
+    nextStep: "REVISE",
+    supportLevel: "FOUNDATION",
   });
   await confirmFeedback({
     teacherId,
@@ -204,6 +210,8 @@ async function createFeedbackWorkspaceFixture() {
     body: editedFeedbackBody,
     baseTime,
     prepareMinute: 4,
+    nextStep: "CONTINUE",
+    supportLevel: "CHALLENGE",
   });
 
   const resubmission = await startSubmissionResubmission(
@@ -245,6 +253,8 @@ async function createFeedbackWorkspaceFixture() {
     body: secondFeedbackBody,
     baseTime,
     prepareMinute: 11,
+    nextStep: "REVISE",
+    supportLevel: "STANDARD",
   });
 
   const unconfirmedIntent = await prepareTeacherFeedbackIntent(
@@ -256,6 +266,8 @@ async function createFeedbackWorkspaceFixture() {
       expectedSubmissionRevisionNumber: 2,
       expectedFeedbackVersion: 1,
       body: unconfirmedFeedbackSecret,
+      nextStep: "REVISE",
+      supportLevel: "FOUNDATION",
       suggestionAgentRunId: null,
       idempotencyKey: `prepare_unconfirmed_${randomUUID()}`,
     },
@@ -336,6 +348,7 @@ describeWithDatabase("feedback workspace queries", () => {
       { submissionId: fixture.submissionId },
     );
 
+    expect(workspace.actor).toEqual({ displayName: "反馈工作台教师" });
     expect(workspace.student).toEqual({
       id: fixture.studentId,
       displayName: "反馈工作台学生",
@@ -372,11 +385,15 @@ describeWithDatabase("feedback workspace queries", () => {
             {
               version: 1,
               body: fixture.firstFeedbackBody,
+              nextStep: "REVISE",
+              supportLevel: "FOUNDATION",
               source: "MANUAL",
             },
             {
               version: 2,
               body: fixture.editedFeedbackBody,
+              nextStep: "CONTINUE",
+              supportLevel: "CHALLENGE",
               source: "MANUAL",
             },
           ],
@@ -399,6 +416,8 @@ describeWithDatabase("feedback workspace queries", () => {
             {
               version: 1,
               body: fixture.secondFeedbackBody,
+              nextStep: "REVISE",
+              supportLevel: "STANDARD",
               source: "MANUAL",
             },
           ],

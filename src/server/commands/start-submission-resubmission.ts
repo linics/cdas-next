@@ -2,6 +2,11 @@ import { createHash } from "node:crypto";
 import canonicalize from "canonicalize";
 import { z } from "zod";
 import {
+  phaseIndexSchema,
+  resolveSubmissionExecutionScope,
+  SubmissionExecutionError,
+} from "../../domain/submission/sequential-execution";
+import {
   Prisma,
   type PrismaClient,
 } from "../../generated/prisma/client";
@@ -10,10 +15,15 @@ import {
   type ResolvedCommandContext,
   resolveCommandContext,
 } from "./command-context";
+import {
+  resolveSubmissionAudience,
+  submissionAudiencePhaseWhere,
+} from "../submissions/submission-audience";
 
 const commandInputSchema = z
   .object({
     releaseId: z.uuid(),
+    phaseIndex: phaseIndexSchema.default(0),
     expectedLatestRevisionNumber: z.int().positive(),
     idempotencyKey: z.string().trim().min(8).max(200),
   })
@@ -40,6 +50,7 @@ export class StartSubmissionResubmissionError extends Error {
       | "FORBIDDEN"
       | "NOT_FOUND"
       | "RELEASE_NOT_ACTIVE"
+      | "INVALID_PHASE"
       | "NO_SUBMITTED_REVISION"
       | "STALE_REVISION"
       | "IDEMPOTENCY_MISMATCH"
@@ -132,6 +143,8 @@ async function runTransaction(
           select: {
             id: true,
             status: true,
+            executionVersion: true,
+            snapshot: { select: { content: true } },
             classroom: {
               select: {
                 memberships: {
@@ -162,12 +175,34 @@ async function runTransaction(
         throw new StartSubmissionResubmissionError("RELEASE_NOT_ACTIVE");
       }
 
-      const submission = await transaction.submission.findUnique({
+      if (!release.snapshot) {
+        throw new StartSubmissionResubmissionError("NOT_FOUND");
+      }
+      const audience = await resolveSubmissionAudience(
+        transaction,
+        input.releaseId,
+        context.actorId,
+      );
+      try {
+        resolveSubmissionExecutionScope(
+          release.executionVersion,
+          release.snapshot.content,
+          input.phaseIndex,
+        );
+      } catch (error) {
+        if (error instanceof SubmissionExecutionError) {
+          throw new StartSubmissionResubmissionError("INVALID_PHASE");
+        }
+        throw error;
+      }
+
+      const submission = await transaction.submission.findFirst({
         where: {
-          releaseId_studentId: {
-            releaseId: input.releaseId,
-            studentId: context.actorId,
-          },
+          ...submissionAudiencePhaseWhere(
+            input.releaseId,
+            input.phaseIndex,
+            audience,
+          ),
         },
         include: { workingCopy: true },
       });
@@ -208,6 +243,12 @@ async function runTransaction(
                 revisionNumber: submission.latestRevisionNumber,
               },
             },
+            include: {
+              attachments: {
+                orderBy: { position: "asc" },
+                select: { attachmentId: true, position: true },
+              },
+            },
           });
 
         if (!currentRevision) {
@@ -217,8 +258,11 @@ async function runTransaction(
         const touchedSubmission = await transaction.submission.updateMany({
           where: {
             id: submission.id,
-            releaseId: input.releaseId,
-            studentId: context.actorId,
+            ...submissionAudiencePhaseWhere(
+              input.releaseId,
+              input.phaseIndex,
+              audience,
+            ),
             latestRevisionNumber: input.expectedLatestRevisionNumber,
           },
           data: { updatedAt: now },
@@ -233,10 +277,27 @@ async function runTransaction(
             submissionId: submission.id,
             baseRevisionNumber: submission.latestRevisionNumber,
             textEvidence: currentRevision.textEvidence,
+            completedEvidenceIndexes:
+              currentRevision.completedEvidenceIndexes,
             createdAt: now,
             updatedAt: now,
           },
         });
+
+        if (currentRevision.attachments.length > 0) {
+          const copiedAttachments =
+            await transaction.submissionWorkingCopyAttachment.createMany({
+              data: currentRevision.attachments.map((entry) => ({
+                workingCopyId: created.id,
+                attachmentId: entry.attachmentId,
+                position: entry.position,
+                addedAt: now,
+              })),
+            });
+          if (copiedAttachments.count !== currentRevision.attachments.length) {
+            throw new StartSubmissionResubmissionError("CONCURRENT_WRITE");
+          }
+        }
 
         workingCopyId = created.id;
         workingVersion = created.version;
@@ -299,6 +360,7 @@ export async function startSubmissionResubmission(
   const context = resolveCommandContext(commandContext, ["UI"]);
   const requestHash = hashValue({
     releaseId: input.releaseId,
+    phaseIndex: input.phaseIndex,
     expectedLatestRevisionNumber: input.expectedLatestRevisionNumber,
   });
 

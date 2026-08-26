@@ -2,12 +2,19 @@ import "server-only";
 
 import { z } from "zod";
 import { activityContentSchema } from "../../domain/activity/activity-content";
+import { teacherEvaluationCitationSchema } from "../../domain/evaluation/teacher-evaluation-intent";
+import { teacherEvaluationLevels } from "../../domain/evaluation/teacher-evaluation-policy";
+import {
+  teacherFeedbackNextSteps,
+  teacherFeedbackSupportLevels,
+} from "../../domain/feedback/teacher-feedback-policy";
 import { hasMeaningfulTextEvidence } from "../../domain/submission/text-evidence";
 import type { PrismaClient } from "../../generated/prisma/client";
 import {
   type CommandContext,
   resolveCommandContext,
 } from "../commands/command-context";
+import { isSubmissionAudienceMemberWhere } from "../submissions/submission-audience";
 
 const queryInputSchema = z
   .object({
@@ -18,9 +25,20 @@ const queryInputSchema = z
 const isoDateSchema = z.iso.datetime({ offset: true });
 const releaseStatusSchema = z.enum(["ACTIVE", "CLOSED", "ARCHIVED"]);
 const feedbackSourceSchema = z.enum(["MANUAL", "AI_ASSISTED"]);
+const feedbackNextStepSchema = z.enum(teacherFeedbackNextSteps).nullable();
+const feedbackSupportLevelSchema = z
+  .enum(teacherFeedbackSupportLevels)
+  .nullable();
 const visibleTextSchema = z
   .string()
   .refine(hasMeaningfulTextEvidence, "Text must contain visible content");
+const formalAttachmentSchema = z.strictObject({
+  id: z.uuid(),
+  kind: z.enum(["IMAGE", "PDF", "WORD"]),
+  filename: visibleTextSchema,
+  mediaType: visibleTextSchema,
+  byteSize: z.int().positive(),
+});
 
 const releaseSchema = z
   .object({
@@ -49,10 +67,83 @@ const confirmedFeedbackRevisionSchema = z
     id: z.uuid(),
     version: z.int().positive(),
     body: visibleTextSchema,
+    nextStep: feedbackNextStepSchema,
+    supportLevel: feedbackSupportLevelSchema,
+    source: feedbackSourceSchema,
+    confirmedAt: isoDateSchema,
+  })
+  .strict()
+  .superRefine((revision, context) => {
+    if ((revision.nextStep === null) !== (revision.supportLevel === null)) {
+      context.addIssue({
+        code: "custom",
+        message: "Legacy feedback fields must both be null or both be present",
+      });
+    }
+  });
+
+const confirmedEvaluationOutcomeSchema = z
+  .discriminatedUnion("status", [
+    z
+      .object({
+        dimensionIndex: z.int().min(1).max(8),
+        dimensionName: visibleTextSchema.max(100),
+        status: z.literal("LEVEL"),
+        level: z.enum(teacherEvaluationLevels),
+        citations: z.array(teacherEvaluationCitationSchema).min(1).max(5),
+      })
+      .strict(),
+    z
+      .object({
+        dimensionIndex: z.int().min(1).max(8),
+        dimensionName: visibleTextSchema.max(100),
+        status: z.literal("INSUFFICIENT_EVIDENCE"),
+        citations: z.array(teacherEvaluationCitationSchema).max(0),
+      })
+      .strict(),
+  ]);
+
+const confirmedEvaluationRevisionSchema = z
+  .object({
+    id: z.uuid(),
+    version: z.int().positive(),
+    summary: visibleTextSchema,
+    outcomes: z.array(confirmedEvaluationOutcomeSchema).min(4).max(8),
     source: feedbackSourceSchema,
     confirmedAt: isoDateSchema,
   })
   .strict();
+
+const confirmedEvaluationSchema = z
+  .object({
+    id: z.uuid(),
+    currentVersion: z.int().positive(),
+    teacher: z
+      .object({
+        id: z.uuid(),
+        displayName: visibleTextSchema,
+      })
+      .strict(),
+    revisions: z.array(confirmedEvaluationRevisionSchema).min(1),
+  })
+  .strict()
+  .superRefine((evaluation, context) => {
+    if (evaluation.revisions.length !== evaluation.currentVersion) {
+      context.addIssue({
+        code: "custom",
+        message: "Evaluation history must match its current version",
+      });
+    }
+    evaluation.revisions.forEach((revision, index) => {
+      if (revision.version !== index + 1) {
+        context.addIssue({
+          code: "custom",
+          message: "Evaluation revision versions must be contiguous",
+          path: ["revisions", index, "version"],
+        });
+      }
+    });
+  });
 
 const confirmedFeedbackSchema = z
   .object({
@@ -89,16 +180,33 @@ const formalSubmissionRevisionSchema = z
   .object({
     id: z.uuid(),
     revisionNumber: z.int().positive(),
-    textEvidence: visibleTextSchema,
+    textEvidence: z.string(),
+    completedEvidenceIndexes: z.array(z.int().positive()).max(4),
     isLate: z.boolean(),
     submittedAt: isoDateSchema,
+    attachments: z.array(formalAttachmentSchema).max(5),
     feedback: confirmedFeedbackSchema.nullable(),
+    evaluation: confirmedEvaluationSchema.nullable(),
   })
-  .strict();
+  .strict()
+  .superRefine((revision, context) => {
+    if (
+      !hasMeaningfulTextEvidence(revision.textEvidence) &&
+      revision.completedEvidenceIndexes.length === 0 &&
+      revision.attachments.length === 0
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "Formal revision must contain evidence",
+      });
+    }
+  });
 
 const submissionHistorySchema = z
   .object({
     id: z.uuid(),
+    phaseIndex: z.int().nonnegative(),
+    phaseName: visibleTextSchema.nullable(),
     latestRevisionNumber: z.int().nonnegative(),
     release: releaseSchema,
     revisions: z.array(formalSubmissionRevisionSchema),
@@ -124,12 +232,29 @@ const submissionHistorySchema = z
 
 export const teacherFeedbackWorkspaceSchema = z
   .object({
+    actor: z
+      .object({
+        displayName: visibleTextSchema,
+      })
+      .strict(),
     student: z
       .object({
         id: z.uuid(),
         displayName: visibleTextSchema,
       })
       .strict(),
+    group: z
+      .object({
+        id: z.uuid(),
+        name: visibleTextSchema,
+        members: z.array(
+          z.strictObject({
+            student: z.strictObject({ id: z.uuid(), displayName: visibleTextSchema }),
+            roleLabel: visibleTextSchema.nullable(),
+          }),
+        ),
+      })
+      .nullable(),
     submission: submissionHistorySchema,
   })
   .strict();
@@ -157,6 +282,7 @@ export class FeedbackWorkspaceQueryError extends Error {
 
 const safeSubmissionSelect = {
   id: true,
+  phaseIndex: true,
   latestRevisionNumber: true,
   release: {
     select: {
@@ -185,8 +311,24 @@ const safeSubmissionSelect = {
       id: true,
       revisionNumber: true,
       textEvidence: true,
+      completedEvidenceIndexes: true,
       isLate: true,
       submittedAt: true,
+      attachments: {
+        orderBy: { position: "asc" as const },
+        select: {
+          attachment: {
+            select: {
+              id: true,
+              kind: true,
+              originalFilename: true,
+              mediaType: true,
+              byteSize: true,
+              status: true,
+            },
+          },
+        },
+      },
       feedback: {
         select: {
           id: true,
@@ -203,6 +345,31 @@ const safeSubmissionSelect = {
               id: true,
               version: true,
               body: true,
+              nextStep: true,
+              supportLevel: true,
+              source: true,
+              confirmedAt: true,
+            },
+          },
+        },
+      },
+      evaluation: {
+        select: {
+          id: true,
+          version: true,
+          teacher: {
+            select: {
+              id: true,
+              displayName: true,
+            },
+          },
+          revisions: {
+            orderBy: { version: "asc" as const },
+            select: {
+              id: true,
+              version: true,
+              summary: true,
+              outcomes: true,
               source: true,
               confirmedAt: true,
             },
@@ -216,6 +383,7 @@ const safeSubmissionSelect = {
 function mapSubmissionHistory(
   submission: {
     id: string;
+    phaseIndex: number;
     latestRevisionNumber: number;
     release: {
       id: string;
@@ -233,8 +401,19 @@ function mapSubmissionHistory(
       id: string;
       revisionNumber: number;
       textEvidence: string;
+      completedEvidenceIndexes: number[];
       isLate: boolean;
       submittedAt: Date;
+      attachments: Array<{
+        attachment: {
+          id: string;
+          kind: "IMAGE" | "PDF" | "WORD";
+          originalFilename: string;
+          mediaType: string;
+          byteSize: number;
+          status: "UPLOAD_PENDING" | "SCAN_PENDING" | "READY" | "REJECTED";
+        };
+      }>;
       feedback: {
         id: string;
         version: number;
@@ -243,6 +422,21 @@ function mapSubmissionHistory(
           id: string;
           version: number;
           body: string;
+          nextStep: "CONTINUE" | "REVISE" | null;
+          supportLevel: "FOUNDATION" | "STANDARD" | "CHALLENGE" | null;
+          source: "MANUAL" | "AI_ASSISTED";
+          confirmedAt: Date;
+        }>;
+      } | null;
+      evaluation: {
+        id: string;
+        version: number;
+        teacher: { id: string; displayName: string };
+        revisions: Array<{
+          id: string;
+          version: number;
+          summary: string;
+          outcomes: unknown;
           source: "MANUAL" | "AI_ASSISTED";
           confirmedAt: Date;
         }>;
@@ -254,8 +448,19 @@ function mapSubmissionHistory(
     throw new FeedbackWorkspaceQueryError("NOT_FOUND");
   }
 
+  const content = activityContentSchema.parse(
+    submission.release.snapshot.content,
+  );
+
   return {
     id: submission.id,
+    phaseIndex: submission.phaseIndex,
+    phaseName:
+      submission.phaseIndex === 0
+        ? null
+        : content.schemaVersion === 2
+          ? (content.phases[submission.phaseIndex - 1]?.name ?? null)
+          : null,
     latestRevisionNumber: submission.latestRevisionNumber,
     release: {
       id: submission.release.id,
@@ -267,17 +472,30 @@ function mapSubmissionHistory(
         sourceDraftVersion:
           submission.release.snapshot.sourceDraftVersion,
         contentHash: submission.release.snapshot.contentHash,
-        content: activityContentSchema.parse(
-          submission.release.snapshot.content,
-        ),
+        content,
       },
     },
     revisions: submission.revisions.map((revision) => ({
       id: revision.id,
       revisionNumber: revision.revisionNumber,
       textEvidence: revision.textEvidence,
+      completedEvidenceIndexes: revision.completedEvidenceIndexes,
       isLate: revision.isLate,
       submittedAt: revision.submittedAt.toISOString(),
+      attachments: revision.attachments.map(({ attachment }) => {
+        if (attachment.status !== "READY") {
+          throw new Error(
+            "Formal revision references a non-ready attachment",
+          );
+        }
+        return {
+          id: attachment.id,
+          kind: attachment.kind,
+          filename: attachment.originalFilename,
+          mediaType: attachment.mediaType,
+          byteSize: attachment.byteSize,
+        };
+      }),
       feedback: revision.feedback
           ? {
             id: revision.feedback.id,
@@ -288,9 +506,32 @@ function mapSubmissionHistory(
                 id: feedbackRevision.id,
                 version: feedbackRevision.version,
                 body: feedbackRevision.body,
+                nextStep: feedbackRevision.nextStep,
+                supportLevel: feedbackRevision.supportLevel,
                 source: feedbackRevision.source,
                 confirmedAt:
                   feedbackRevision.confirmedAt.toISOString(),
+              }),
+            ),
+          }
+        : null,
+      evaluation: revision.evaluation
+        ? {
+            id: revision.evaluation.id,
+            currentVersion: revision.evaluation.version,
+            teacher: revision.evaluation.teacher,
+            revisions: revision.evaluation.revisions.map(
+              (evaluationRevision) => ({
+                id: evaluationRevision.id,
+                version: evaluationRevision.version,
+                summary: evaluationRevision.summary,
+                outcomes: z
+                  .array(confirmedEvaluationOutcomeSchema)
+                  .min(4)
+                  .max(8)
+                  .parse(evaluationRevision.outcomes),
+                source: evaluationRevision.source,
+                confirmedAt: evaluationRevision.confirmedAt.toISOString(),
               }),
             ),
           }
@@ -310,7 +551,7 @@ export async function getTeacherFeedbackWorkspace(
   const [actor, submission] = await Promise.all([
     database.appUser.findFirst({
       where: { id: context.actorId, role: "TEACHER" },
-      select: { id: true },
+      select: { id: true, displayName: true },
     }),
     database.submission.findFirst({
       where: {
@@ -329,6 +570,18 @@ export async function getTeacherFeedbackWorkspace(
             displayName: true,
           },
         },
+        group: {
+          select: {
+            id: true,
+            name: true,
+            members: {
+              select: {
+                roleLabel: true,
+                student: { select: { id: true, displayName: true } },
+              },
+            },
+          },
+        },
       },
     }),
   ]);
@@ -338,7 +591,12 @@ export async function getTeacherFeedbackWorkspace(
   }
 
   return teacherFeedbackWorkspaceSchema.parse({
-    student: submission.student,
+    actor: { displayName: actor.displayName },
+    student: submission.student ?? {
+      id: submission.group?.id ?? submission.id,
+      displayName: submission.group?.name ?? "小组提交",
+    },
+    group: submission.group,
     submission: mapSubmissionHistory(submission),
   });
 }
@@ -359,7 +617,7 @@ export async function getStudentFeedbackWorkspace(
     database.submission.findFirst({
       where: {
         id: input.submissionId,
-        studentId: context.actorId,
+        ...isSubmissionAudienceMemberWhere(context.actorId),
       },
       select: safeSubmissionSelect,
     }),

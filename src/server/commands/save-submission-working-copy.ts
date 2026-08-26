@@ -3,6 +3,12 @@ import canonicalize from "canonicalize";
 import { z } from "zod";
 import { workingTextEvidenceSchema } from "../../domain/submission/text-evidence";
 import {
+  completedEvidenceIndexesSchema,
+  phaseIndexSchema,
+  resolveSubmissionExecutionScope,
+  SubmissionExecutionError,
+} from "../../domain/submission/sequential-execution";
+import {
   Prisma,
   type PrismaClient,
 } from "../../generated/prisma/client";
@@ -11,13 +17,21 @@ import {
   type ResolvedCommandContext,
   resolveCommandContext,
 } from "./command-context";
+import {
+  resolveSubmissionAudience,
+  submissionAudienceData,
+  submissionAudiencePhaseWhere,
+  submissionAudienceWhere,
+} from "../submissions/submission-audience";
 
 const commandInputSchema = z
   .object({
     releaseId: z.uuid(),
+    phaseIndex: phaseIndexSchema.default(0),
     expectedWorkingCopyId: z.uuid().nullable(),
     expectedWorkingVersion: z.int().positive().nullable(),
     textEvidence: workingTextEvidenceSchema,
+    completedEvidenceIndexes: completedEvidenceIndexesSchema.default([]),
     idempotencyKey: z.string().trim().min(8).max(200),
   })
   .strict()
@@ -56,6 +70,9 @@ export class SaveSubmissionWorkingCopyError extends Error {
       | "FORBIDDEN"
       | "NOT_FOUND"
       | "RELEASE_NOT_ACTIVE"
+      | "INVALID_PHASE"
+      | "PHASE_LOCKED"
+      | "INVALID_CHECKPOINTS"
       | "STALE_WORKING_COPY"
       | "RESUBMISSION_NOT_STARTED"
       | "IDEMPOTENCY_MISMATCH"
@@ -148,6 +165,8 @@ async function runTransaction(
           select: {
             id: true,
             status: true,
+            executionVersion: true,
+            snapshot: { select: { content: true } },
             classroom: {
               select: {
                 memberships: {
@@ -178,12 +197,67 @@ async function runTransaction(
         throw new SaveSubmissionWorkingCopyError("RELEASE_NOT_ACTIVE");
       }
 
-      const submission = await transaction.submission.findUnique({
-        where: {
-          releaseId_studentId: {
-            releaseId: input.releaseId,
-            studentId: context.actorId,
+      if (!release.snapshot) {
+        throw new SaveSubmissionWorkingCopyError("NOT_FOUND");
+      }
+      const audience = await resolveSubmissionAudience(
+        transaction,
+        input.releaseId,
+        context.actorId,
+      );
+      try {
+        resolveSubmissionExecutionScope(
+          release.executionVersion,
+          release.snapshot.content,
+          input.phaseIndex,
+          input.completedEvidenceIndexes,
+        );
+      } catch (error) {
+        if (error instanceof SubmissionExecutionError) {
+          throw new SaveSubmissionWorkingCopyError(error.code);
+        }
+        throw error;
+      }
+
+      if (release.executionVersion === 1 && input.phaseIndex > 1) {
+        const prerequisite = await transaction.submission.findFirst({
+          where: {
+            ...submissionAudiencePhaseWhere(
+              input.releaseId,
+              input.phaseIndex - 1,
+              audience,
+            ),
           },
+          select: { latestRevisionNumber: true },
+        });
+        if (!prerequisite || prerequisite.latestRevisionNumber === 0) {
+          throw new SaveSubmissionWorkingCopyError("PHASE_LOCKED");
+        }
+      }
+
+      if (release.executionVersion === 1 && input.phaseIndex === 0) {
+        const content = release.snapshot.content as {
+          phases?: unknown[];
+        };
+        const completedPhases = await transaction.submission.count({
+          where: {
+            ...submissionAudienceWhere(input.releaseId, audience),
+            phaseIndex: { gt: 0 },
+            latestRevisionNumber: { gt: 0 },
+          },
+        });
+        if (completedPhases !== content.phases?.length) {
+          throw new SaveSubmissionWorkingCopyError("PHASE_LOCKED");
+        }
+      }
+
+      const submission = await transaction.submission.findFirst({
+        where: {
+          ...submissionAudiencePhaseWhere(
+            input.releaseId,
+            input.phaseIndex,
+            audience,
+          ),
         },
         include: { workingCopy: true },
       });
@@ -205,12 +279,14 @@ async function runTransaction(
         const created = await transaction.submission.create({
           data: {
             releaseId: input.releaseId,
-            studentId: context.actorId,
+            ...submissionAudienceData(audience),
+            phaseIndex: input.phaseIndex,
             createdAt: now,
             updatedAt: now,
             workingCopy: {
               create: {
                 textEvidence: input.textEvidence,
+                completedEvidenceIndexes: input.completedEvidenceIndexes,
                 createdAt: now,
                 updatedAt: now,
               },
@@ -259,6 +335,7 @@ async function runTransaction(
             },
             data: {
               textEvidence: input.textEvidence,
+              completedEvidenceIndexes: input.completedEvidenceIndexes,
               version: nextVersion,
               updatedAt: now,
             },
@@ -266,8 +343,11 @@ async function runTransaction(
           transaction.submission.updateMany({
             where: {
               id: submission.id,
-              releaseId: input.releaseId,
-              studentId: context.actorId,
+              ...submissionAudiencePhaseWhere(
+                input.releaseId,
+                input.phaseIndex,
+                audience,
+              ),
               latestRevisionNumber: workingCopy.baseRevisionNumber,
             },
             data: { updatedAt: now },
@@ -344,9 +424,11 @@ export async function saveSubmissionWorkingCopy(
   const context = resolveCommandContext(commandContext, ["UI"]);
   const requestHash = hashValue({
     releaseId: input.releaseId,
+    phaseIndex: input.phaseIndex,
     expectedWorkingCopyId: input.expectedWorkingCopyId,
     expectedWorkingVersion: input.expectedWorkingVersion,
     textEvidence: input.textEvidence,
+    completedEvidenceIndexes: input.completedEvidenceIndexes,
   });
 
   for (let attempt = 1; attempt <= 3; attempt += 1) {

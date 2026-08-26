@@ -80,8 +80,27 @@ vi.mock("./feedback-composer", () => ({
     />
   ),
 }));
+vi.mock("./evaluation-composer", () => ({
+  EvaluationComposer: ({
+    submissionRevisionNumber,
+    expectedEvaluationVersion,
+    initialSummary,
+  }: {
+    submissionRevisionNumber: number;
+    expectedEvaluationVersion: number;
+    initialSummary: string;
+  }) => (
+    <div
+      data-evaluation-composer="true"
+      data-revision={submissionRevisionNumber}
+      data-evaluation-version={expectedEvaluationVersion}
+      data-initial-summary={initialSummary}
+    />
+  ),
+}));
 
 import { AuthenticationError } from "../../../../server/auth/current-actor";
+import { waterConservationTaskBook } from "../../../../fixtures/water-conservation";
 import { FeedbackWorkspaceQueryError } from "../../../../server/queries/feedback-workspace";
 import TeacherSubmissionPage from "./page";
 
@@ -95,12 +114,16 @@ const trustedContext = {
 const secretSubmissionBody = "学生正式提交的私密证据";
 const currentFeedbackBody = "当前已确认的教师反馈";
 const workspace = {
+  actor: { displayName: "林老师" },
+  group: null,
   student: {
     id: "30000000-0000-4000-8000-000000000003",
     displayName: "陈同学",
   },
   submission: {
     id: submissionId,
+    phaseIndex: 0,
+    phaseName: null,
     latestRevisionNumber: 1,
     release: {
       id: "40000000-0000-4000-8000-000000000004",
@@ -130,8 +153,10 @@ const workspace = {
         id: "60000000-0000-4000-8000-000000000006",
         revisionNumber: 1,
         textEvidence: secretSubmissionBody,
+        completedEvidenceIndexes: [],
         isLate: false,
         submittedAt: "2026-08-18T11:00:00.000Z",
+        attachments: [],
         feedback: {
           id: "70000000-0000-4000-8000-000000000007",
           currentVersion: 1,
@@ -144,11 +169,14 @@ const workspace = {
               id: "80000000-0000-4000-8000-000000000008",
               version: 1,
               body: currentFeedbackBody,
+              nextStep: "CONTINUE",
+              supportLevel: "STANDARD",
               source: "MANUAL",
               confirmedAt: "2026-08-18T11:30:00.000Z",
             },
           ],
         },
+        evaluation: null,
       },
     ],
   },
@@ -206,12 +234,143 @@ describe("teacher feedback page access boundary", () => {
       { submissionId },
     );
     expect(markup).toContain("陈同学");
+    expect(markup).toContain("当前账号：林老师 · 教师");
+    expect(markup).toContain("退出登录");
     expect(markup).toContain(secretSubmissionBody);
     expect(markup).toContain(currentFeedbackBody);
+    expect(markup).toContain("继续后续阶段");
+    expect(markup).toContain("标准任务");
     expect(markup).toContain('data-feedback-composer="true"');
     expect(markup).toContain('data-revision="1"');
     expect(markup).toContain('data-feedback-version="1"');
     expect(markup).toContain(`data-initial-body="${currentFeedbackBody}"`);
+    expect(markup).toContain("这份发布快照是 schema v1，没有四档量规");
+    expect(markup).not.toContain("data-evaluation-composer");
+  });
+
+  it("opens a separate evaluation composer for a schema v2 snapshot", async () => {
+    mocks.getTeacherFeedbackWorkspace.mockResolvedValue({
+      ...workspace,
+      submission: {
+        ...workspace.submission,
+        phaseIndex: 3,
+        phaseName: "建议与公开表达",
+        release: {
+          ...workspace.submission.release,
+          snapshot: {
+            ...workspace.submission.release.snapshot,
+            content: waterConservationTaskBook,
+          },
+        },
+        revisions: [
+          {
+            ...workspace.submission.revisions[0],
+            completedEvidenceIndexes: [1],
+            attachments: [
+              {
+                id: "90000000-0000-4000-8000-000000000009",
+                kind: "IMAGE",
+                filename: "evidence.png",
+                mediaType: "image/png",
+                byteSize: 128,
+              },
+            ],
+            evaluation: {
+              id: "a0000000-0000-4000-8000-00000000000a",
+              currentVersion: 1,
+              teacher: {
+                id: trustedContext.actorId,
+                displayName: "林老师",
+              },
+              revisions: [
+                {
+                  id: "b0000000-0000-4000-8000-00000000000b",
+                  version: 1,
+                  summary: "按冻结量规给出综评。",
+                  outcomes: [
+                    {
+                      dimensionIndex: 1,
+                      dimensionName: "问题意识",
+                      status: "LEVEL",
+                      level: "excellent",
+                      citations: [{ kind: "text" }],
+                    },
+                    {
+                      dimensionIndex: 2,
+                      dimensionName: "证据质量",
+                      status: "INSUFFICIENT_EVIDENCE",
+                      citations: [],
+                    },
+                    {
+                      dimensionIndex: 3,
+                      dimensionName: "跨学科连接",
+                      status: "LEVEL",
+                      level: "good",
+                      citations: [
+                        {
+                          kind: "attachment",
+                          attachmentId: "90000000-0000-4000-8000-000000000009",
+                        },
+                      ],
+                    },
+                    {
+                      dimensionIndex: 4,
+                      dimensionName: "方案表达",
+                      status: "LEVEL",
+                      level: "pass",
+                      citations: [{ kind: "checkpoint", evidenceIndex: 1 }],
+                    },
+                  ],
+                  source: "MANUAL",
+                  confirmedAt: "2026-08-18T11:40:00.000Z",
+                },
+              ],
+            },
+          },
+        ],
+      },
+    });
+
+    const markup = await renderPage();
+
+    expect(markup).toContain("data-evaluation-composer");
+    expect(markup).toContain('data-evaluation-version="1"');
+    expect(markup).toContain("按冻结量规给出综评。");
+    expect(markup).toContain("证据不足");
+    expect(markup).toContain("优秀");
+    expect(markup).not.toContain("这份发布快照是 schema v1");
+  });
+
+  it("labels shared group feedback with every member and role", async () => {
+    mocks.getTeacherFeedbackWorkspace.mockResolvedValue({
+      ...workspace,
+      group: {
+        id: "91000000-0000-4000-8000-000000000001",
+        name: "校园调查组",
+        members: [
+          {
+            student: workspace.student,
+            roleLabel: "记录",
+          },
+          {
+            student: {
+              id: "92000000-0000-4000-8000-000000000002",
+              displayName: "周同学",
+            },
+            roleLabel: "汇报",
+          },
+        ],
+      },
+    });
+
+    const markup = await renderPage();
+
+    expect(markup).toContain("校园调查组");
+    expect(markup).toContain("陈同学（记录）");
+    expect(markup).toContain("周同学（汇报）");
+    expect(markup).toContain("反馈绑定这份共享正式修订，并对全组成员可见");
+    expect(markup).toContain("继续后续阶段");
+    expect(markup).toContain("标准任务");
   });
 
   it("returns not found for a well-hidden unauthorized submission", async () => {

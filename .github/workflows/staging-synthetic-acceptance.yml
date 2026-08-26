@@ -17,6 +17,7 @@ jobs:
     timeout-minutes: 30
     env:
       STAGING_RUN_MARKER: cdas-staging-${{ github.run_id }}-${{ github.run_attempt }}
+      STAGING_DEPLOYMENT_PROTECTION_REQUIRED: "1"
       STAGING_DATA_ACK: synthetic-data-only-approved
       STAGING_SYNTHETIC_ONLY_ATTESTED: ${{ vars.STAGING_SYNTHETIC_ONLY_ATTESTED }}
       STAGING_CLERK_INSTANCE_ATTESTED: ${{ vars.STAGING_CLERK_INSTANCE_ATTESTED }}
@@ -29,6 +30,8 @@ jobs:
       STAGING_ACCEPTANCE_RETENTION_ATTESTED: ${{ vars.STAGING_ACCEPTANCE_RETENTION_ATTESTED }}
       STAGING_ACCEPTANCE_TEST_TEACHER_NAME: CDAS Staging Synthetic Teacher
       STAGING_ACCEPTANCE_TEST_STUDENT_NAME: CDAS Staging Synthetic Student
+      STAGING_ACCEPTANCE_TEST_OTHER_STUDENT_NAME: CDAS Staging Synthetic Other Student
+      STAGING_ACCEPTANCE_TEST_OTHER_TEACHER_NAME: CDAS Staging Synthetic Other Teacher
       CDAS_DEPLOYMENT_ID: ${{ github.sha }}
     steps:
       - name: Check out repository
@@ -43,14 +46,18 @@ jobs:
       - name: Install exact application dependencies
         run: pnpm install --frozen-lockfile
       - name: Bind source fingerprint to this checkout
-        run: echo "CDAS_SOURCE_FINGERPRINT=$(pnpm exec tsx -e \"import { createSourceFingerprint } from './scripts/staging/source-fingerprint.ts'; console.log(createSourceFingerprint())\")" >> "$GITHUB_ENV"
+        run: |
+          source_fingerprint="$(pnpm exec tsx -e 'import { createSourceFingerprint } from "./scripts/staging/source-fingerprint.ts"; console.log(createSourceFingerprint())')"
+          [[ "$source_fingerprint" =~ ^[a-f0-9]{64}$ ]]
+          printf 'CDAS_SOURCE_FINGERPRINT=%s\n' "$source_fingerprint" >> "$GITHUB_ENV"
       - name: Validate protected staging configuration
         id: preflight
         continue-on-error: true
         env:
           NODE_ENV: production
           AI_PROVIDER_DISABLED: "1"
-          STAGING_BASE_URL: ${{ vars.STAGING_BASE_URL }}
+          STAGING_BASE_URL: ${{ secrets.STAGING_BASE_URL }}
+          STAGING_VERCEL_PROJECT_NAME: ${{ vars.STAGING_VERCEL_PROJECT_NAME }}
           STAGING_DATABASE_NAME: ${{ vars.STAGING_DATABASE_NAME }}
           DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
           DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
@@ -91,11 +98,13 @@ jobs:
         continue-on-error: true
         env:
           AI_PROVIDER_DISABLED: "1"
-          STAGING_BASE_URL: ${{ vars.STAGING_BASE_URL }}
+          STAGING_BASE_URL: ${{ secrets.STAGING_BASE_URL }}
+          STAGING_VERCEL_PROJECT_NAME: ${{ vars.STAGING_VERCEL_PROJECT_NAME }}
           DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.STAGING_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
           CLERK_SECRET_KEY: ${{ secrets.STAGING_CLERK_SECRET_KEY }}
           STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
+          STAGING_VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.STAGING_VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: pnpm staging:verify-application
       - name: Aggregate staging Go/No-Go evidence
         id: aggregate
@@ -110,15 +119,19 @@ jobs:
         continue-on-error: true
         env:
           AI_PROVIDER_DISABLED: "1"
-          STAGING_BASE_URL: ${{ vars.STAGING_BASE_URL }}
+          STAGING_BASE_URL: ${{ secrets.STAGING_BASE_URL }}
+          STAGING_VERCEL_PROJECT_NAME: ${{ vars.STAGING_VERCEL_PROJECT_NAME }}
           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.STAGING_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
           CLERK_SECRET_KEY: ${{ secrets.STAGING_CLERK_SECRET_KEY }}
           STAGING_TEST_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_TEACHER_CLERK_ID }}
           STAGING_TEST_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_STUDENT_CLERK_ID }}
+          STAGING_TEST_OTHER_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_STUDENT_CLERK_ID }}
+          STAGING_TEST_OTHER_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_TEACHER_CLERK_ID }}
           DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
           DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
           STAGING_DATABASE_NAME: ${{ vars.STAGING_DATABASE_NAME }}
           STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
+          STAGING_VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.STAGING_VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: pnpm staging:acceptance:gate
       - name: Preserve sanitized staging readiness evidence
         if: always()
@@ -136,7 +149,9 @@ jobs:
       - name: Enforce same-run acceptance gate
         if: always()
         env:
-          STAGING_BASE_URL: ${{ vars.STAGING_BASE_URL }}
+          AI_PROVIDER_DISABLED: "1"
+          STAGING_BASE_URL: ${{ secrets.STAGING_BASE_URL }}
+          STAGING_VERCEL_PROJECT_NAME: ${{ vars.STAGING_VERCEL_PROJECT_NAME }}
           DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
           DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
           STAGING_DATABASE_NAME: ${{ vars.STAGING_DATABASE_NAME }}
@@ -144,7 +159,10 @@ jobs:
           CLERK_SECRET_KEY: ${{ secrets.STAGING_CLERK_SECRET_KEY }}
           STAGING_TEST_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_TEACHER_CLERK_ID }}
           STAGING_TEST_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_STUDENT_CLERK_ID }}
+          STAGING_TEST_OTHER_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_STUDENT_CLERK_ID }}
+          STAGING_TEST_OTHER_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_TEACHER_CLERK_ID }}
           STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
+          STAGING_VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.STAGING_VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: pnpm staging:acceptance:assert-gate
 
   acceptance:
@@ -155,6 +173,7 @@ jobs:
     timeout-minutes: 30
     env:
       STAGING_RUN_MARKER: cdas-staging-${{ github.run_id }}-${{ github.run_attempt }}
+      STAGING_DEPLOYMENT_PROTECTION_REQUIRED: "1"
       CDAS_DEPLOYMENT_ID: ${{ github.sha }}
       AI_PROVIDER_DISABLED: "1"
       STAGING_ACCEPTANCE_WRITES_ATTESTED: ${{ vars.STAGING_ACCEPTANCE_WRITES_ATTESTED }}
@@ -162,6 +181,8 @@ jobs:
       STAGING_ACCEPTANCE_RETENTION_ATTESTED: ${{ vars.STAGING_ACCEPTANCE_RETENTION_ATTESTED }}
       STAGING_ACCEPTANCE_TEST_TEACHER_NAME: CDAS Staging Synthetic Teacher
       STAGING_ACCEPTANCE_TEST_STUDENT_NAME: CDAS Staging Synthetic Student
+      STAGING_ACCEPTANCE_TEST_OTHER_STUDENT_NAME: CDAS Staging Synthetic Other Student
+      STAGING_ACCEPTANCE_TEST_OTHER_TEACHER_NAME: CDAS Staging Synthetic Other Teacher
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -175,7 +196,10 @@ jobs:
       - name: Install exact application dependencies
         run: pnpm install --frozen-lockfile
       - name: Bind source fingerprint to this checkout
-        run: echo "CDAS_SOURCE_FINGERPRINT=$(pnpm exec tsx -e \"import { createSourceFingerprint } from './scripts/staging/source-fingerprint.ts'; console.log(createSourceFingerprint())\")" >> "$GITHUB_ENV"
+        run: |
+          source_fingerprint="$(pnpm exec tsx -e 'import { createSourceFingerprint } from "./scripts/staging/source-fingerprint.ts"; console.log(createSourceFingerprint())')"
+          [[ "$source_fingerprint" =~ ^[a-f0-9]{64}$ ]]
+          printf 'CDAS_SOURCE_FINGERPRINT=%s\n' "$source_fingerprint" >> "$GITHUB_ENV"
       - name: Download same-run staging Go evidence
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
@@ -185,15 +209,19 @@ jobs:
         id: gate
         continue-on-error: true
         env:
-          STAGING_BASE_URL: ${{ vars.STAGING_BASE_URL }}
+          STAGING_BASE_URL: ${{ secrets.STAGING_BASE_URL }}
+          STAGING_VERCEL_PROJECT_NAME: ${{ vars.STAGING_VERCEL_PROJECT_NAME }}
           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.STAGING_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
           CLERK_SECRET_KEY: ${{ secrets.STAGING_CLERK_SECRET_KEY }}
           STAGING_TEST_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_TEACHER_CLERK_ID }}
           STAGING_TEST_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_STUDENT_CLERK_ID }}
+          STAGING_TEST_OTHER_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_STUDENT_CLERK_ID }}
+          STAGING_TEST_OTHER_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_TEACHER_CLERK_ID }}
           STAGING_DATABASE_NAME: ${{ vars.STAGING_DATABASE_NAME }}
           STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
           DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
           DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
+          STAGING_VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.STAGING_VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: pnpm staging:acceptance:assert-gate
       - name: Install Chromium before the immediate pre-write checks
         id: chromium
@@ -203,12 +231,13 @@ jobs:
           .venv-staging-acceptance/bin/python -m pip install -r scripts/e2e/requirements.txt
           .venv-staging-acceptance/bin/python -m playwright install --with-deps chromium
           echo "$PWD/.venv-staging-acceptance/bin" >> "$GITHUB_PATH"
-      - name: Verify both Clerk identities and ticket capability before database writes
+      - name: Verify all four Clerk identities and ticket capability before database writes
         id: identity
         if: ${{ steps.chromium.outcome == 'success' }}
         continue-on-error: true
         env:
-          STAGING_BASE_URL: ${{ vars.STAGING_BASE_URL }}
+          STAGING_BASE_URL: ${{ secrets.STAGING_BASE_URL }}
+          STAGING_VERCEL_PROJECT_NAME: ${{ vars.STAGING_VERCEL_PROJECT_NAME }}
           DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
           DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
           STAGING_DATABASE_NAME: ${{ vars.STAGING_DATABASE_NAME }}
@@ -216,6 +245,8 @@ jobs:
           CLERK_SECRET_KEY: ${{ secrets.STAGING_CLERK_SECRET_KEY }}
           STAGING_TEST_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_TEACHER_CLERK_ID }}
           STAGING_TEST_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_STUDENT_CLERK_ID }}
+          STAGING_TEST_OTHER_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_STUDENT_CLERK_ID }}
+          STAGING_TEST_OTHER_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_TEACHER_CLERK_ID }}
           STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
         run: pnpm staging:acceptance:verify-identities
       - name: Reverify the current remote deployment immediately after identity checks and before writes
@@ -223,11 +254,13 @@ jobs:
         if: ${{ steps.identity.outcome == 'success' }}
         continue-on-error: true
         env:
-          STAGING_BASE_URL: ${{ vars.STAGING_BASE_URL }}
+          STAGING_BASE_URL: ${{ secrets.STAGING_BASE_URL }}
+          STAGING_VERCEL_PROJECT_NAME: ${{ vars.STAGING_VERCEL_PROJECT_NAME }}
           DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.STAGING_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
           CLERK_SECRET_KEY: ${{ secrets.STAGING_CLERK_SECRET_KEY }}
           STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
+          STAGING_VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.STAGING_VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: pnpm staging:verify-application
       - name: Record the final deployment proof before database writes
         id: immediate-evidence
@@ -241,22 +274,26 @@ jobs:
         if: ${{ steps.immediate-evidence.outcome == 'success' }}
         continue-on-error: true
         env:
-          STAGING_BASE_URL: ${{ vars.STAGING_BASE_URL }}
+          STAGING_BASE_URL: ${{ secrets.STAGING_BASE_URL }}
+          STAGING_VERCEL_PROJECT_NAME: ${{ vars.STAGING_VERCEL_PROJECT_NAME }}
           DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.STAGING_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
           CLERK_SECRET_KEY: ${{ secrets.STAGING_CLERK_SECRET_KEY }}
           STAGING_TEST_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_TEACHER_CLERK_ID }}
           STAGING_TEST_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_STUDENT_CLERK_ID }}
+          STAGING_TEST_OTHER_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_STUDENT_CLERK_ID }}
+          STAGING_TEST_OTHER_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_TEACHER_CLERK_ID }}
           DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
           STAGING_DATABASE_NAME: ${{ vars.STAGING_DATABASE_NAME }}
           STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
         run: pnpm staging:acceptance:bootstrap
-      - name: Run real browser synthetic teacher-student manual loop
+      - name: Run real browser synthetic manual loop with unrelated teacher isolation
         id: browser
         if: ${{ steps.bootstrap.outcome == 'success' }}
         continue-on-error: true
         env:
-          STAGING_BASE_URL: ${{ vars.STAGING_BASE_URL }}
+          STAGING_BASE_URL: ${{ secrets.STAGING_BASE_URL }}
+          STAGING_VERCEL_PROJECT_NAME: ${{ vars.STAGING_VERCEL_PROJECT_NAME }}
           DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
           DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
           STAGING_DATABASE_NAME: ${{ vars.STAGING_DATABASE_NAME }}
@@ -264,7 +301,10 @@ jobs:
           CLERK_SECRET_KEY: ${{ secrets.STAGING_CLERK_SECRET_KEY }}
           STAGING_TEST_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_TEACHER_CLERK_ID }}
           STAGING_TEST_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_STUDENT_CLERK_ID }}
+          STAGING_TEST_OTHER_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_STUDENT_CLERK_ID }}
+          STAGING_TEST_OTHER_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_TEACHER_CLERK_ID }}
           STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
+          STAGING_VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.STAGING_VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: pnpm staging:acceptance:browser
       - name: Verify only the synthetic namespace in a read-only transaction
         id: verify
@@ -273,12 +313,15 @@ jobs:
         env:
           DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
           DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
-          STAGING_BASE_URL: ${{ vars.STAGING_BASE_URL }}
+          STAGING_BASE_URL: ${{ secrets.STAGING_BASE_URL }}
+          STAGING_VERCEL_PROJECT_NAME: ${{ vars.STAGING_VERCEL_PROJECT_NAME }}
           STAGING_DATABASE_NAME: ${{ vars.STAGING_DATABASE_NAME }}
           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.STAGING_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
           CLERK_SECRET_KEY: ${{ secrets.STAGING_CLERK_SECRET_KEY }}
           STAGING_TEST_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_TEACHER_CLERK_ID }}
           STAGING_TEST_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_STUDENT_CLERK_ID }}
+          STAGING_TEST_OTHER_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_STUDENT_CLERK_ID }}
+          STAGING_TEST_OTHER_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_TEACHER_CLERK_ID }}
           STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
         run: pnpm staging:acceptance:verify
       - name: Aggregate and assert complete synthetic acceptance evidence
@@ -286,7 +329,8 @@ jobs:
         if: always()
         continue-on-error: true
         env:
-          STAGING_BASE_URL: ${{ vars.STAGING_BASE_URL }}
+          STAGING_BASE_URL: ${{ secrets.STAGING_BASE_URL }}
+          STAGING_VERCEL_PROJECT_NAME: ${{ vars.STAGING_VERCEL_PROJECT_NAME }}
           DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
           DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
           STAGING_DATABASE_NAME: ${{ vars.STAGING_DATABASE_NAME }}
@@ -294,7 +338,10 @@ jobs:
           CLERK_SECRET_KEY: ${{ secrets.STAGING_CLERK_SECRET_KEY }}
           STAGING_TEST_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_TEACHER_CLERK_ID }}
           STAGING_TEST_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_STUDENT_CLERK_ID }}
+          STAGING_TEST_OTHER_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_STUDENT_CLERK_ID }}
+          STAGING_TEST_OTHER_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_TEACHER_CLERK_ID }}
           STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
+          STAGING_VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.STAGING_VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: pnpm staging:acceptance:assert-final
       - name: Preserve redacted synthetic acceptance evidence
         if: always()

@@ -5,6 +5,10 @@ import {
   TEACHER_FEEDBACK_INTENT_TTL_MS,
 } from "../../domain/feedback/teacher-feedback-intent";
 import {
+  teacherFeedbackNextSteps,
+  teacherFeedbackSupportLevels,
+} from "../../domain/feedback/teacher-feedback-policy";
+import {
   Prisma,
   type PrismaClient,
 } from "../../generated/prisma/client";
@@ -21,6 +25,8 @@ const commandInputSchema = z
     expectedSubmissionRevisionNumber: z.int().positive(),
     expectedFeedbackVersion: z.int().nonnegative(),
     body: z.string(),
+    nextStep: z.enum(teacherFeedbackNextSteps),
+    supportLevel: z.enum(teacherFeedbackSupportLevels),
     suggestionAgentRunId: z.uuid().nullable().default(null),
     idempotencyKey: z.string().trim().min(8).max(200),
   })
@@ -299,6 +305,8 @@ export async function prepareTeacherFeedbackIntent(
       input.expectedSubmissionRevisionNumber,
     expectedFeedbackVersion: input.expectedFeedbackVersion,
     body: input.body,
+    nextStep: input.nextStep,
+    supportLevel: input.supportLevel,
     suggestionAgentRunId: input.suggestionAgentRunId,
   });
   const requestHash = hashTeacherFeedbackPayload(payload);

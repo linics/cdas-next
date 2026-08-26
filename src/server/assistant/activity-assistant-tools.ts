@@ -3,7 +3,7 @@ import "server-only";
 import { createHash } from "node:crypto";
 import { tool } from "ai";
 import { z } from "zod";
-import { activityContentSchema } from "../../domain/activity/activity-content";
+import { activityContentV2Schema } from "../../domain/activity/activity-content";
 import { publishDueAtSchema } from "../../domain/activity/prepare-publish-intent";
 import type { PrismaClient } from "../../generated/prisma/client";
 import {
@@ -32,6 +32,90 @@ export const publishActivityToolInputSchema = z
     dueAt: publishDueAtSchema.nullable(),
   })
   .strict();
+
+const proposalText = z.string().trim().min(1).max(600);
+
+const taskUnderstandingSummarySchema = z
+  .object({
+    realWorldContext: proposalText,
+    studentAction: proposalText,
+    intendedOutcome: proposalText,
+    evidenceAndAssessment: proposalText,
+  })
+  .strict();
+
+const integratedDisciplineContributionSchema = z
+  .object({
+    disciplineCode: z.string().trim().min(1).max(40),
+    necessaryContribution: proposalText,
+  })
+  .strict();
+
+const alignmentChainSchema = z
+  .object({
+    objectiveKind: z.enum(["knowledge", "process", "emotion"]),
+    objective: proposalText,
+    task: proposalText,
+    evidence: proposalText,
+    assessment: proposalText,
+  })
+  .strict();
+
+/**
+ * The L1 design proposal is intentionally a narrow, one-shot artifact. It is
+ * not stored as a separate business entity: the teacher either approves this
+ * exact input and creates its editable v2 draft, or rejects it without a
+ * write. The content remains the sole persisted task book.
+ */
+export const activityDraftProposalSchema = z
+  .object({
+    taskUnderstandingSummary: taskUnderstandingSummarySchema,
+    teacherRequirements: z.array(proposalText).min(1).max(12),
+    assumptions: z.array(proposalText).max(8),
+    integratedDisciplineContributions: z
+      .array(integratedDisciplineContributionSchema)
+      .min(1)
+      .max(14),
+    alignmentChains: z.array(alignmentChainSchema).length(3),
+    content: activityContentV2Schema,
+  })
+  .strict()
+  .superRefine((proposal, context) => {
+    const expectedDisciplines = new Set(proposal.content.integratedDisciplineCodes);
+    const suppliedDisciplines = proposal.integratedDisciplineContributions.map(
+      (item) => item.disciplineCode,
+    );
+    const suppliedSet = new Set(suppliedDisciplines);
+    if (
+      suppliedSet.size !== suppliedDisciplines.length ||
+      suppliedSet.size !== expectedDisciplines.size ||
+      [...expectedDisciplines].some((code) => !suppliedSet.has(code))
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["integratedDisciplineContributions"],
+        message:
+          "Integrated discipline contributions must cover each integrated discipline exactly once",
+      });
+    }
+
+    const kinds = proposal.alignmentChains.map((chain) => chain.objectiveKind);
+    if (
+      new Set(kinds).size !== 3 ||
+      !["knowledge", "process", "emotion"].every((kind) =>
+        kinds.includes(kind as (typeof kinds)[number]),
+      )
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["alignmentChains"],
+        message:
+          "Alignment chains must contain knowledge, process, and emotion exactly once",
+      });
+    }
+  });
+
+export type ActivityDraftProposal = z.infer<typeof activityDraftProposalSchema>;
 
 export const createdDraftToolOutputSchema = z
   .object({
@@ -62,7 +146,7 @@ export const publishActivityToolOutputSchema = z
  */
 export const activityAssistantMessageValidationTools = {
   create_activity_draft: tool({
-    inputSchema: activityContentSchema,
+    inputSchema: activityDraftProposalSchema,
     outputSchema: createdDraftToolOutputSchema,
     strict: true,
   }),
@@ -130,11 +214,11 @@ export function createActivityAssistantTools({
   return {
     create_activity_draft: tool({
       description:
-        "把教師已經說明清楚的活動內容儲存成可預覽、可繼續編輯的活動草稿。必須完整提供六段內容，不能臆造缺失事實。",
-      inputSchema: activityContentSchema,
+        "把教師已經說明清楚的完整跨學科任務書儲存成可預覽、可繼續編輯的活動草稿。必須包含基本設定、三維目標、三至四個連續階段、類型化證據及四檔量規，不能臆造缺失事實。",
+      inputSchema: activityDraftProposalSchema,
       outputSchema: createdDraftToolOutputSchema,
       strict: true,
-      execute: async (content, { toolCallId }) => {
+      execute: async (proposal, { toolCallId }) => {
         if (createToolCallId !== null && createToolCallId !== toolCallId) {
           onToolFailure("DRAFT_MULTIPLE_CREATE_ATTEMPTS");
           throw new Error("ACTIVITY_DRAFT_MULTIPLE_CREATE_ATTEMPTS");
@@ -145,7 +229,7 @@ export function createActivityAssistantTools({
             draftId: null,
             expectedVersion: null,
             desiredStatus: "READY_FOR_PREVIEW",
-            content,
+            content: proposal.content,
             agentRunId,
             idempotencyKey: idempotencyKey("draft", toolCallId),
           });

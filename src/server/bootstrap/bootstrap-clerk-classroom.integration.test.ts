@@ -3,6 +3,8 @@ import { afterAll, describe, expect, it } from "vitest";
 import { createDatabaseClient } from "../db/client";
 import {
   bootstrapClerkClassroom,
+  bootstrapAdditionalClerkClassroomStudent,
+  bootstrapStandaloneClerkTeacher,
   BootstrapClerkClassroomError,
   type BootstrapClerkClassroomInput,
 } from "./bootstrap-clerk-classroom";
@@ -267,5 +269,147 @@ describeWithDatabase("Clerk classroom bootstrap", () => {
         },
       }),
     ).resolves.toBe(2);
+  });
+
+  it("fills one operator roster key but never replaces an assigned key", async () => {
+    const input = bootstrapInput();
+    const first = await bootstrapClerkClassroom(database!, input, () => firstRunAt);
+    await bootstrapClerkClassroom(
+      database!,
+      { ...input, studentRosterKey: "STUDENT8A01" },
+      () => new Date("2026-08-18T12:01:00.000Z"),
+    );
+    await expect(
+      database!.appUser.findUniqueOrThrow({
+        where: { id: first.student.id },
+        select: { rosterKey: true },
+      }),
+    ).resolves.toEqual({ rosterKey: "STUDENT8A01" });
+    await expect(
+      bootstrapClerkClassroom(
+        database!,
+        { ...input, studentRosterKey: "STUDENT8A02" },
+        () => new Date("2026-08-18T12:02:00.000Z"),
+      ),
+    ).rejects.toEqual(
+      new BootstrapClerkClassroomError("ROSTER_KEY_CONFLICT", "student"),
+    );
+  });
+
+  it("adds an additional student without changing the primary mapping or history", async () => {
+    const input = bootstrapInput();
+    const primary = await bootstrapClerkClassroom(database!, input, () => firstRunAt);
+    const otherSubject = `user_other${randomUUID().replaceAll("-", "")}`;
+    const result = await bootstrapAdditionalClerkClassroomStudent(database!, {
+      teacherAuthSubject: input.teacherAuthSubject,
+      classroomId: input.classroomId,
+      classroomName: input.classroomName,
+      additionalStudentAuthSubject: otherSubject,
+      additionalStudentDisplayName: "Other Student",
+    }, () => firstRunAt);
+    expect(result.additionalStudent.status).toBe("CREATED");
+    await expect(database!.classroomMembership.count({ where: { classroomId: input.classroomId } })).resolves.toBe(2);
+    await expect(database!.classroomMembership.count({ where: { id: primary.membership.id } })).resolves.toBe(1);
+  });
+
+  it("creates an unrelated teacher without granting classroom access", async () => {
+    const input = bootstrapInput();
+    await bootstrapClerkClassroom(database!, input, () => firstRunAt);
+    const teacherInput = {
+      teacherAuthSubject: `user_otherteacher${randomUUID().replaceAll("-", "")}`,
+      teacherDisplayName: "Other Teacher",
+    };
+    const first = await bootstrapStandaloneClerkTeacher(
+      database!,
+      teacherInput,
+      () => firstRunAt,
+    );
+    const repeated = await bootstrapStandaloneClerkTeacher(
+      database!,
+      teacherInput,
+      () => new Date("2026-08-18T13:00:00.000Z"),
+    );
+    expect(first.teacher.status).toBe("CREATED");
+    expect(repeated).toEqual({
+      teacher: { id: first.teacher.id, status: "EXISTING" },
+    });
+    await expect(database!.classroom.count({
+      where: { managerId: first.teacher.id },
+    })).resolves.toBe(0);
+    await expect(database!.classroomMembership.count({
+      where: { studentId: first.teacher.id },
+    })).resolves.toBe(0);
+  });
+
+  it("is concurrent-idempotent and fails closed for additional-student conflicts", async () => {
+    const input = bootstrapInput();
+    await bootstrapClerkClassroom(database!, input, () => firstRunAt);
+    const otherSubject = `user_other${randomUUID().replaceAll("-", "")}`;
+    const additional = {
+      teacherAuthSubject: input.teacherAuthSubject,
+      classroomId: input.classroomId,
+      classroomName: input.classroomName,
+      additionalStudentAuthSubject: otherSubject,
+      additionalStudentDisplayName: "Other Student",
+    };
+    const [left, right] = await Promise.all([
+      bootstrapAdditionalClerkClassroomStudent(database!, additional, () => firstRunAt),
+      bootstrapAdditionalClerkClassroomStudent(database!, additional, () => firstRunAt),
+    ]);
+    expect([left.membership.status, right.membership.status].sort()).toEqual(["CREATED", "EXISTING"]);
+    await expect(bootstrapAdditionalClerkClassroomStudent(database!, { ...additional, additionalStudentDisplayName: "Changed" }, () => firstRunAt)).rejects.toEqual(new BootstrapClerkClassroomError("USER_PROFILE_CONFLICT", "student"));
+    await expect(bootstrapAdditionalClerkClassroomStudent(database!, { ...additional, classroomName: "Changed" }, () => firstRunAt)).rejects.toEqual(new BootstrapClerkClassroomError("CLASSROOM_NAME_CONFLICT", "classroom"));
+  });
+
+  it("fails closed for additional-student role, manager, and future-interval conflicts", async () => {
+    const input = bootstrapInput();
+    const primary = await bootstrapClerkClassroom(database!, input, () => firstRunAt);
+    const roleSubject = `user_otherrole${randomUUID().replaceAll("-", "")}`;
+    await database!.appUser.create({
+      data: { authSubject: roleSubject, displayName: "Other", role: "TEACHER" },
+    });
+    const base = {
+      teacherAuthSubject: input.teacherAuthSubject,
+      classroomId: input.classroomId,
+      classroomName: input.classroomName,
+      additionalStudentDisplayName: "Other Student",
+    };
+    await expect(
+      bootstrapAdditionalClerkClassroomStudent(database!, {
+        ...base,
+        additionalStudentAuthSubject: roleSubject,
+      }, () => firstRunAt),
+    ).rejects.toEqual(new BootstrapClerkClassroomError("USER_ROLE_CONFLICT", "student"));
+
+    const foreign = await database!.appUser.create({
+      data: { authSubject: `user_othermanager${randomUUID().replaceAll("-", "")}`, displayName: "Foreign", role: "TEACHER" },
+    });
+    const foreignClassroomId = randomUUID();
+    await database!.classroom.create({
+      data: { id: foreignClassroomId, name: input.classroomName, managerId: foreign.id },
+    });
+    await expect(
+      bootstrapAdditionalClerkClassroomStudent(database!, {
+        ...base,
+        classroomId: foreignClassroomId,
+        additionalStudentAuthSubject: `user_othermanagerstudent${randomUUID().replaceAll("-", "")}`,
+      }, () => firstRunAt),
+    ).rejects.toEqual(new BootstrapClerkClassroomError("CLASSROOM_MANAGER_CONFLICT", "classroom"));
+
+    const futureSubject = `user_otherfuture${randomUUID().replaceAll("-", "")}`;
+    const futureStudent = await database!.appUser.create({
+      data: { authSubject: futureSubject, displayName: "Future", role: "STUDENT" },
+    });
+    await database!.classroomMembership.create({
+      data: { classroomId: input.classroomId, studentId: futureStudent.id, joinedAt: new Date("2026-08-18T13:00:00.000Z") },
+    });
+    await expect(
+      bootstrapAdditionalClerkClassroomStudent(database!, {
+        ...base,
+        additionalStudentAuthSubject: futureSubject,
+        additionalStudentDisplayName: "Future",
+      }, () => firstRunAt),
+    ).rejects.toEqual(new BootstrapClerkClassroomError("MEMBERSHIP_INTERVAL_CONFLICT", "membership"));
+    await expect(database!.classroomMembership.count({ where: { id: primary.membership.id } })).resolves.toBe(1);
   });
 });

@@ -56,6 +56,7 @@ export class SaveActivityDraftError extends Error {
       | "NOT_FOUND"
       | "STALE_VERSION"
       | "DRAFT_SEALED"
+      | "LEGACY_SCHEMA_READ_ONLY"
       | "INVALID_AGENT_RUN"
       | "IDEMPOTENCY_MISMATCH"
       | "CONCURRENT_WRITE",
@@ -77,6 +78,8 @@ function hashValue(value: unknown): string {
 
 function contentColumns(content: ActivityContent) {
   return {
+    schemaVersion: content.schemaVersion,
+    taskBook: content.schemaVersion === 2 ? content : Prisma.DbNull,
     title: content.title,
     summary: content.summary,
     learningObjectives: content.learningObjectives,
@@ -187,6 +190,13 @@ async function runTransaction(
         ))
       ) {
         throw new SaveActivityDraftError("INVALID_AGENT_RUN");
+      }
+
+      // v1 remains a permanent read format and old idempotent successes above
+      // remain replayable, but no new business write may extend the legacy
+      // six-field shape after D-030.
+      if (input.content.schemaVersion === 1) {
+        throw new SaveActivityDraftError("LEGACY_SCHEMA_READ_ONLY");
       }
 
       let version: number;

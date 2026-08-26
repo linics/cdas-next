@@ -10,6 +10,7 @@ import {
   publishRequestSchema,
 } from "../../domain/activity/prepare-publish-intent";
 import type { PrismaClient } from "../../generated/prisma/client";
+import { reviewFollowUp } from "../../domain/feedback/review-follow-up";
 import {
   type CommandContext,
   resolveCommandContext,
@@ -92,6 +93,13 @@ export const teacherDashboardSchema = z
           publishedAt: isoDateSchema,
           dueAt: isoDateSchema.nullable(),
           canViewSubmissions: z.boolean(),
+          attention: z
+            .strictObject({
+              pendingFeedbackCount: z.int().nonnegative(),
+              pendingEvaluationCount: z.int().nonnegative(),
+              awaitingResubmissionCount: z.int().nonnegative(),
+            })
+            .nullable(),
         })
         .strict(),
     ),
@@ -139,13 +147,18 @@ export type TeacherPublishConfirmation = z.infer<
 >;
 
 export class TeacherActivityQueryError extends Error {
-  constructor(public readonly code: "NOT_FOUND") {
+  constructor(
+    public readonly code: "NOT_FOUND" | "WRONG_ROLE",
+    public readonly actorName?: string,
+  ) {
     super(code);
     this.name = "TeacherActivityQueryError";
   }
 }
 
 function contentFromColumns(value: {
+  schemaVersion: number;
+  taskBook: unknown;
   title: string;
   summary: string;
   learningObjectives: string[];
@@ -153,6 +166,9 @@ function contentFromColumns(value: {
   evidenceRequirements: string[];
   feedbackCriteria: string[];
 }): ActivityContent {
+  if (value.schemaVersion === 2) {
+    return activityContentSchema.parse(value.taskBook);
+  }
   return activityContentSchema.parse({
     schemaVersion: 1,
     title: value.title,
@@ -174,16 +190,95 @@ function isCurrentMembership(
   );
 }
 
+function releaseAttention(
+  releaseId: string,
+  rubricAvailable: boolean,
+  submissions: ReadonlyArray<{
+    latestRevisionNumber: number;
+    workingCopy: { id: string } | null;
+    revisions: ReadonlyArray<{
+      revisionNumber: number;
+      feedback: {
+        version: number;
+        revisions: ReadonlyArray<{
+          version: number;
+          nextStep: "CONTINUE" | "REVISE" | null;
+        }>;
+      } | null;
+      evaluation: { id: string } | null;
+    }>;
+  }>,
+): {
+  pendingFeedbackCount: number;
+  pendingEvaluationCount: number;
+  awaitingResubmissionCount: number;
+} {
+  const current = submissions.filter(
+    (submission) => submission.latestRevisionNumber > 0,
+  );
+  let pendingFeedbackCount = 0;
+  let pendingEvaluationCount = 0;
+  let awaitingResubmissionCount = 0;
+  for (const submission of current) {
+    const revision = submission.revisions[0];
+    if (
+      !revision ||
+      revision.revisionNumber !== submission.latestRevisionNumber
+    ) {
+      throw new Error(
+        `Release ${releaseId} has a submission without an exact current formal revision`,
+      );
+    }
+    const currentFeedback = revision.feedback;
+    const currentFeedbackRevision = currentFeedback?.revisions[0];
+    if (
+      currentFeedback &&
+      (!currentFeedbackRevision ||
+        currentFeedbackRevision.version !== currentFeedback.version)
+    ) {
+      throw new Error(
+        `Release ${releaseId} has a submission without an exact current feedback revision`,
+      );
+    }
+    if (!currentFeedback) {
+      pendingFeedbackCount += 1;
+    }
+    if (rubricAvailable && !revision.evaluation) {
+      pendingEvaluationCount += 1;
+    }
+    if (
+      reviewFollowUp({
+        nextStep: currentFeedbackRevision?.nextStep,
+        hasWorkingCopy: submission.workingCopy !== null,
+      }) === "AWAITING_RESUBMISSION"
+    ) {
+      awaitingResubmissionCount += 1;
+    }
+  }
+  return {
+    pendingFeedbackCount,
+    pendingEvaluationCount,
+    awaitingResubmissionCount,
+  };
+}
+
 async function requireTeacher(
   database: PrismaClient,
   actorId: string,
+  wrongRoleCode: "NOT_FOUND" | "WRONG_ROLE" = "NOT_FOUND",
 ): Promise<TeacherIdentity> {
   const actor = await database.appUser.findUnique({
     where: { id: actorId },
     select: { role: true, displayName: true },
   });
-  if (!actor || actor.role !== "TEACHER") {
+  if (!actor) {
     throw new TeacherActivityQueryError("NOT_FOUND");
+  }
+  if (actor.role !== "TEACHER") {
+    throw new TeacherActivityQueryError(
+      wrongRoleCode,
+      wrongRoleCode === "WRONG_ROLE" ? actor.displayName : undefined,
+    );
   }
   return teacherIdentitySchema.parse({ displayName: actor.displayName });
 }
@@ -205,12 +300,18 @@ export async function getTeacherActivityDashboard(
 ): Promise<TeacherActivityDashboard> {
   emptyInputSchema.parse(rawInput);
   const context = resolveCommandContext(commandContext, ["UI"]);
-  const [actor, drafts, releases, classrooms] = await Promise.all([
-    requireTeacher(database, context.actorId),
+  const actor = await requireTeacher(
+    database,
+    context.actorId,
+    "WRONG_ROLE",
+  );
+  const [drafts, releases, classrooms] = await Promise.all([
     database.activityDraft.findMany({
       where: { ownerId: context.actorId },
       orderBy: [{ updatedAt: "desc" }, { id: "asc" }],
       select: {
+        schemaVersion: true,
+        taskBook: true,
         id: true,
         title: true,
         status: true,
@@ -229,6 +330,30 @@ export async function getTeacherActivityDashboard(
         dueAt: true,
         classroom: { select: { name: true, managerId: true } },
         snapshot: { select: { content: true } },
+        submissions: {
+          select: {
+            latestRevisionNumber: true,
+            workingCopy: { select: { id: true } },
+            revisions: {
+              orderBy: { revisionNumber: "desc" },
+              take: 1,
+              select: {
+                revisionNumber: true,
+                feedback: {
+                  select: {
+                    version: true,
+                    revisions: {
+                      orderBy: { version: "desc" },
+                      take: 1,
+                      select: { version: true, nextStep: true },
+                    },
+                  },
+                },
+                evaluation: { select: { id: true } },
+              },
+            },
+          },
+        },
       },
     }),
     database.classroom.findMany({
@@ -257,6 +382,8 @@ export async function getTeacherActivityDashboard(
         throw new Error(`Release ${release.id} has no immutable snapshot`);
       }
       const content = activityContentSchema.parse(release.snapshot.content);
+      const canViewSubmissions =
+        release.classroom.managerId === context.actorId;
       return {
         id: release.id,
         title: content.title,
@@ -264,8 +391,14 @@ export async function getTeacherActivityDashboard(
         status: release.status,
         publishedAt: release.publishedAt.toISOString(),
         dueAt: release.dueAt?.toISOString() ?? null,
-        canViewSubmissions:
-          release.classroom.managerId === context.actorId,
+        canViewSubmissions,
+        attention: canViewSubmissions
+          ? releaseAttention(
+              release.id,
+              content.schemaVersion === 2,
+              release.submissions,
+            )
+          : null,
       };
     }),
     classrooms: classrooms.map((classroom) => ({
@@ -301,6 +434,8 @@ export async function getTeacherActivityDraft(
           orderBy: { version: "desc" },
           take: 1,
           select: {
+            schemaVersion: true,
+            taskBook: true,
             id: true,
             version: true,
             source: true,
@@ -435,6 +570,8 @@ export async function getTeacherPublishConfirmation(
         },
       },
       select: {
+        schemaVersion: true,
+        taskBook: true,
         title: true,
         summary: true,
         learningObjectives: true,

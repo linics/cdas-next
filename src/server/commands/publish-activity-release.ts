@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import canonicalize from "canonicalize";
 import { z } from "zod";
 import { createActivitySnapshot } from "../../domain/activity/activity-snapshot";
+import { executionVersionForContent } from "../../domain/submission/sequential-execution";
 import {
   preparePublishIntent,
   publishRequestSchema,
@@ -227,15 +228,19 @@ async function runTransaction(
         throw new PublishActivityReleaseError("INTENT_TAMPERED");
       }
 
-      const snapshot = createActivitySnapshot({
-        schemaVersion: 1,
-        title: revision.title,
-        summary: revision.summary,
-        learningObjectives: revision.learningObjectives,
-        taskInstructions: revision.taskInstructions,
-        evidenceRequirements: revision.evidenceRequirements,
-        feedbackCriteria: revision.feedbackCriteria,
-      });
+      const snapshot = createActivitySnapshot(
+        revision.schemaVersion === 2
+          ? revision.taskBook
+          : {
+              schemaVersion: 1,
+              title: revision.title,
+              summary: revision.summary,
+              learningObjectives: revision.learningObjectives,
+              taskInstructions: revision.taskInstructions,
+              evidenceRequirements: revision.evidenceRequirements,
+              feedbackCriteria: revision.feedbackCriteria,
+            },
+      );
 
       const consumedIntent = await transaction.actionIntent.updateMany({
         where: {
@@ -269,6 +274,7 @@ async function runTransaction(
           publisherId: context.actorId,
           classroomId: classroom.id,
           actionIntentId: intent.id,
+          executionVersion: executionVersionForContent(snapshot.content),
           publishedAt: now,
           dueAt: payload.dueAt ? new Date(payload.dueAt) : null,
           snapshot: {

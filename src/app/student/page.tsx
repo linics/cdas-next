@@ -1,11 +1,15 @@
 import { SignInButton, SignOutButton } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { ZodError } from "zod";
 import { LocalizedDateTime } from "../_components/localized-date-time";
 import { EmptyState, StatusBadge } from "../_components/ui";
-import { WorkspaceShell } from "../_components/workspace-shell";
+import {
+  WorkspaceRoleGate,
+  WorkspaceShell,
+} from "../_components/workspace-shell";
 import { AuthenticationError } from "../../server/auth/current-actor";
 import { createUiCommandContext } from "../../server/commands/create-ui-command-context";
 import { getDatabaseClient } from "../../server/db/client";
@@ -18,7 +22,7 @@ import styles from "./student-dashboard.module.css";
 
 export const metadata: Metadata = {
   title: "我的学习活动 | CDAS Next",
-  description: "查看可见活动、提交状态与教师反馈",
+  description: "查看可见活动、提交状态、教师反馈与量规评价",
 };
 
 function AccessUnavailable({
@@ -76,7 +80,7 @@ function AccessUnavailable({
 }
 
 type StudentRelease = StudentReleaseList["releases"][number];
-type ReleaseGroupKey = "pending" | "submitted" | "feedback" | "history";
+type ReleaseGroupKey = "pending" | "submitted" | "feedback" | "resubmit" | "evaluation" | "history";
 
 const groupDetails = {
   pending: {
@@ -94,8 +98,18 @@ const groupDetails = {
     title: "已有反馈",
     detail: "当前正式修订已有教师反馈，可进入活动查看。",
   },
-  history: {
+  resubmit: {
     number: "04",
+    title: "待重交",
+    detail: "教师要求按反馈修改并重交，当前还没有新的工作草稿。",
+  },
+  evaluation: {
+    number: "05",
+    title: "已有评价",
+    detail: "当前正式修订已有教师确认的量规评价。",
+  },
+  history: {
+    number: "06",
     title: "历史与关闭",
     detail: "保留读取权限，但当前不能继续保存或提交。",
   },
@@ -108,8 +122,14 @@ function groupRelease(release: StudentRelease): ReleaseGroupKey {
   if (!release.access.canWrite) {
     return "history";
   }
+  if (release.submission.followUp === "AWAITING_RESUBMISSION") {
+    return "resubmit";
+  }
   if (release.submission.hasWorkingCopy) {
     return "pending";
+  }
+  if (release.submission.hasCurrentEvaluation) {
+    return "evaluation";
   }
   if (release.submission.hasCurrentFeedback) {
     return "feedback";
@@ -130,10 +150,19 @@ function releaseStatusLabel(release: StudentRelease): string {
   if (!release.access.canWrite) {
     return "历史唯读";
   }
+  if (release.submission.followUp === "AWAITING_RESUBMISSION") {
+    return "待重交";
+  }
+  if (release.submission.followUp === "RESUBMISSION_IN_PROGRESS") {
+    return "重交中";
+  }
   if (release.submission.hasWorkingCopy) {
     return release.submission.latestRevisionNumber > 0
       ? "重交草稿"
       : "草稿未提交";
+  }
+  if (release.submission.hasCurrentEvaluation) {
+    return "已有评价";
   }
   if (release.submission.hasCurrentFeedback) {
     return "已有反馈";
@@ -148,7 +177,13 @@ function releaseStatusTone(release: StudentRelease): "neutral" | "warning" | "su
   if (!release.access.canWrite) {
     return "neutral";
   }
-  if (release.submission.hasCurrentFeedback) {
+  if (release.submission.followUp === "AWAITING_RESUBMISSION") {
+    return "warning";
+  }
+  if (
+    release.submission.hasCurrentEvaluation ||
+    release.submission.hasCurrentFeedback
+  ) {
     return "success";
   }
   if (
@@ -177,7 +212,10 @@ function ReleaseRow({
       ? `正式修订 ${release.submission.latestRevisionNumber} 版`
       : "尚无正式修订",
     release.submission.hasWorkingCopy ? "有未提交草稿" : null,
+    release.submission.followUp === "AWAITING_RESUBMISSION" ? "待重交" : null,
+    release.submission.followUp === "RESUBMISSION_IN_PROGRESS" ? "重交中" : null,
     release.submission.hasCurrentFeedback ? "当前版已有反馈" : null,
+    release.submission.hasCurrentEvaluation ? "当前版已有量规评价" : null,
   ].filter((part): part is string => part !== null);
 
   return (
@@ -253,6 +291,7 @@ function ReleaseGroup({
 }
 
 export default async function StudentDashboardPage() {
+  await connection();
   let context;
   let releaseList: StudentReleaseList;
 
@@ -265,8 +304,20 @@ export default async function StudentDashboardPage() {
       return <AccessUnavailable code={error.code} />;
     }
     if (
-      error instanceof StudentReleaseListQueryError ||
-      error instanceof ZodError
+      error instanceof StudentReleaseListQueryError &&
+      error.code === "WRONG_ROLE" &&
+      error.actorName
+    ) {
+      return (
+        <WorkspaceRoleGate
+          actorName={error.actorName}
+          currentAudience="教师"
+          requestedAudience="学生"
+        />
+      );
+    }
+    if (
+      error instanceof StudentReleaseListQueryError || error instanceof ZodError
     ) {
       notFound();
     }
@@ -278,6 +329,8 @@ export default async function StudentDashboardPage() {
     pending: [] as StudentRelease[],
     submitted: [] as StudentRelease[],
     feedback: [] as StudentRelease[],
+    resubmit: [] as StudentRelease[],
+    evaluation: [] as StudentRelease[],
     history: [] as StudentRelease[],
   };
   for (const release of releaseList.releases) {
@@ -288,7 +341,10 @@ export default async function StudentDashboardPage() {
   ).length;
 
   return (
-    <WorkspaceShell audience="学生">
+    <WorkspaceShell
+      audience="学生"
+      actorName={releaseList.actor.displayName}
+    >
       <div className={styles.dashboardMain}>
         <header className={styles.dashboardHeader}>
           <div>
@@ -308,6 +364,14 @@ export default async function StudentDashboardPage() {
             <div>
               <dt>已有反馈</dt>
               <dd>{grouped.feedback.length}</dd>
+            </div>
+            <div>
+              <dt>待重交</dt>
+              <dd>{grouped.resubmit.length}</dd>
+            </div>
+            <div>
+              <dt>已有评价</dt>
+              <dd>{grouped.evaluation.length}</dd>
             </div>
           </dl>
         </header>

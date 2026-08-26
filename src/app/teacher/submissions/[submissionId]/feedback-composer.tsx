@@ -5,6 +5,12 @@ import { useRouter } from "next/navigation";
 import { LocalizedDateTime } from "../../../_components/localized-date-time";
 import { ConfirmDialog, InlineAlert } from "../../../_components/ui";
 import { TEACHER_FEEDBACK_BODY_MAX_LENGTH } from "../../../../domain/feedback/teacher-feedback-policy";
+import {
+  teacherFeedbackNextStepLabels,
+  teacherFeedbackSupportLevelLabels,
+  type TeacherFeedbackNextStep,
+  type TeacherFeedbackSupportLevel,
+} from "../../../../domain/feedback/teacher-feedback-policy";
 import { hasMeaningfulTextEvidence } from "../../../../domain/submission/text-evidence";
 import {
   decideTeacherFeedbackAction,
@@ -99,7 +105,7 @@ function ConfirmationPanel({
       <ConfirmDialog
         open={isConfirmDialogOpen}
         title="确认并保存最终反馈"
-        detail={<div className={styles.dialogDetail}><p>将对第 {confirmation.submissionRevisionNumber} 版正式提交创建反馈版本 {confirmation.expectedFeedbackVersion + 1}。</p><div className={styles.confirmationBody}>{confirmation.body}</div><p>确认有效至 <LocalizedDateTime dateTime={confirmation.expiresAt} includeSeconds />。</p><p>参数摘要：<code>{confirmation.payloadHash}</code></p></div>}
+        detail={<div className={styles.dialogDetail}><p>将对第 {confirmation.submissionRevisionNumber} 版正式提交创建反馈版本 {confirmation.expectedFeedbackVersion + 1}。</p><dl className={styles.structuredFeedbackDetails}><div><dt>形成性下一步</dt><dd>{teacherFeedbackNextStepLabels[confirmation.nextStep]}</dd></div><div><dt>支架层级</dt><dd>{teacherFeedbackSupportLevelLabels[confirmation.supportLevel]}</dd></div></dl><div className={styles.confirmationBody}>{confirmation.body}</div><p>确认有效至 <LocalizedDateTime dateTime={confirmation.expiresAt} includeSeconds />。</p><p>参数摘要：<code>{confirmation.payloadHash}</code></p></div>}
         confirmLabel="确认并保存最终反馈"
         pending={pending}
         disabled={blocked}
@@ -125,6 +131,12 @@ export function FeedbackComposer({
 }: FeedbackComposerProps) {
   const router = useRouter();
   const [draftBody, setDraftBody] = useState(initialBody);
+  const [draftNextStep, setDraftNextStep] = useState<
+    TeacherFeedbackNextStep | ""
+  >("");
+  const [draftSupportLevel, setDraftSupportLevel] = useState<
+    TeacherFeedbackSupportLevel | ""
+  >("");
   const [prepareState, prepareAction, preparePending] = useActionState(
     prepareTeacherFeedbackAction,
     initialFeedbackActionState,
@@ -247,6 +259,48 @@ export function FeedbackComposer({
           </span>
         </div>
 
+        <fieldset className={styles.structuredFeedbackFields}>
+          <legend>形成性下一步与支架</legend>
+          <p>
+            这两个选择会与本次反馈正文一起冻结；它们只提供行动建议，不改变活动阶段或共同任务。
+          </p>
+          <label htmlFor="teacher-feedback-next-step">形成性下一步</label>
+          <select
+            id="teacher-feedback-next-step"
+            name="nextStep"
+            value={draftNextStep}
+            onChange={(event) =>
+              setDraftNextStep(
+                event.target.value as TeacherFeedbackNextStep | "",
+              )
+            }
+            disabled={anyPending}
+            required
+          >
+            <option value="" disabled>请选择下一步</option>
+            <option value="CONTINUE">继续后续阶段</option>
+            <option value="REVISE">按反馈修改并重交</option>
+          </select>
+          <label htmlFor="teacher-feedback-support-level">支架层级</label>
+          <select
+            id="teacher-feedback-support-level"
+            name="supportLevel"
+            value={draftSupportLevel}
+            onChange={(event) =>
+              setDraftSupportLevel(
+                event.target.value as TeacherFeedbackSupportLevel | "",
+              )
+            }
+            disabled={anyPending}
+            required
+          >
+            <option value="" disabled>请选择支架层级</option>
+            <option value="FOUNDATION">基础支持</option>
+            <option value="STANDARD">标准任务</option>
+            <option value="CHALLENGE">挑战拓展</option>
+          </select>
+        </fieldset>
+
         <div className={styles.prepareRow}>
           <p>
             {expectedFeedbackVersion > 0
@@ -257,7 +311,11 @@ export function FeedbackComposer({
             className={styles.prepareButton}
             type="submit"
             disabled={
-              anyPending || bodyOverLimit || !bodyHasVisibleText
+              anyPending ||
+              bodyOverLimit ||
+              !bodyHasVisibleText ||
+              !draftNextStep ||
+              !draftSupportLevel
             }
           >
             {preparePending ? "正在准备…" : "准备确认"}

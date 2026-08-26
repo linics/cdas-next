@@ -470,7 +470,7 @@ describeWithDatabase("publishActivityRelease database command", () => {
           },
         });
       }),
-    ).rejects.toThrow(/requires an intent, sealed draft, and snapshot/);
+    ).rejects.toThrow(/requires (an intent, sealed draft, and snapshot|its immutable source facts)/);
 
     const otherDraftId = randomUUID();
     await database!.activityDraft.create({

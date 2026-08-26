@@ -233,6 +233,8 @@ async function createReleaseListFixture() {
       expectedSubmissionRevisionNumber: 1,
       expectedFeedbackVersion: 0,
       body: "教师反馈秘密正文",
+      nextStep: "REVISE",
+      supportLevel: "STANDARD",
       suggestionAgentRunId: null,
       idempotencyKey: `prepare_feedback_${randomUUID()}`,
     },
@@ -279,6 +281,8 @@ describeWithDatabase("student release list query", () => {
       {},
     );
 
+    expect(result.actor).toEqual({ displayName: "发布列表学生" });
+
     expect(result.releases.map((release) => release.id)).toEqual([
       fixture.feedbackReleaseId,
       fixture.draftReleaseId,
@@ -297,6 +301,8 @@ describeWithDatabase("student release list query", () => {
         latestRevisionNumber: 0,
         hasWorkingCopy: false,
         hasCurrentFeedback: false,
+        hasCurrentEvaluation: false,
+        followUp: null,
       },
     });
     expect(
@@ -307,6 +313,8 @@ describeWithDatabase("student release list query", () => {
       latestRevisionNumber: 0,
       hasWorkingCopy: true,
       hasCurrentFeedback: false,
+      hasCurrentEvaluation: false,
+      followUp: null,
     });
     expect(
       result.releases.find(
@@ -316,6 +324,8 @@ describeWithDatabase("student release list query", () => {
       latestRevisionNumber: 1,
       hasWorkingCopy: false,
       hasCurrentFeedback: true,
+      hasCurrentEvaluation: false,
+      followUp: "AWAITING_RESUBMISSION",
     });
     expect(
       result.releases.find(
@@ -335,6 +345,7 @@ describeWithDatabase("student release list query", () => {
     expect(serialized).not.toContain("未提交草稿秘密正文");
     expect(serialized).not.toContain("正式修订秘密正文");
     expect(serialized).not.toContain("教师反馈秘密正文");
+    expect(serialized).not.toContain("REVISE");
     expect(serialized).not.toContain("其他班级秘密活动");
     expect(serialized).not.toContain(fixture.beforeMembershipReleaseId);
     expect(serialized).not.toContain(fixture.unrelatedReleaseId);
@@ -349,7 +360,10 @@ describeWithDatabase("student release list query", () => {
         commandContext(fixture.otherStudentId, fixture.now),
         {},
       ),
-    ).resolves.toEqual({ releases: [] });
+    ).resolves.toEqual({
+      actor: { displayName: "无班级学生" },
+      releases: [],
+    });
   });
 
   it("does not expose the student list to a teacher", async () => {
@@ -361,6 +375,8 @@ describeWithDatabase("student release list query", () => {
         commandContext(fixture.teacherId, fixture.now),
         {},
       ),
-    ).rejects.toEqual(new StudentReleaseListQueryError("NOT_FOUND"));
+    ).rejects.toEqual(
+      new StudentReleaseListQueryError("WRONG_ROLE", "发布列表教师"),
+    );
   });
 });

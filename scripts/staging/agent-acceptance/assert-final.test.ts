@@ -10,14 +10,34 @@ import { agentVerificationCodes } from "./verify";
 
 const marker = "cdas-staging-agent-12345678-1";
 const screenshotNames = [
-  "01-ready.png",
-  "02-approval.png",
-  "03-published.png",
-  "04-release.png",
+  "01-draft-proposal.png",
+  "02-draft-preview.png",
+  "03-publish-approval.png",
+  "04-published.png",
+  "05-student-submitted.png",
+  "06-teacher-feedback.png",
+  "07-teacher-closed.png",
+  "08-student-closed-readonly.png",
+] as const;
+const browserCodes = [
+  "VERCEL_PROTECTION_BYPASS_SCOPED",
+  "STUDENT_TEACHER_RESOURCE_HIDDEN",
+  "OTHER_TEACHER_RELEASE_404",
+  "OTHER_TEACHER_SUBMISSION_404",
+  "OTHER_STUDENT_RELEASE_VISIBLE",
+  "OTHER_STUDENT_SUBMISSION_CONTENT_HIDDEN",
+  "OTHER_STUDENT_SUBMISSION_404",
+  "STUDENT_FEEDBACK_VISIBLE",
+  "STRUCTURED_FORMATIVE_FEEDBACK_VISIBLE",
+  "STALE_STUDENT_WRITE_REJECTED_AFTER_CLOSE",
+  "CLOSED_STUDENT_READONLY",
+  "TEACHER_STUDENT_RESOURCE_HIDDEN",
 ] as const;
 const readinessCodes = [
   "AGENT_MARKER",
-  "AGENT_PUBLIC_HTTPS",
+  "AGENT_VERCEL_PREVIEW",
+  "AGENT_DEPLOYMENT_PROTECTION",
+  "AGENT_VERCEL_BYPASS",
   "AGENT_AI_ENABLED",
   "AGENT_AI_ACK",
   "AGENT_DEEPSEEK_KEY",
@@ -38,8 +58,12 @@ const gateCodes = [
 const identityCodes = [
   "TEACHER_IDENTITY_EXISTS",
   "STUDENT_IDENTITY_EXISTS",
+  "OTHER_STUDENT_IDENTITY_EXISTS",
+  "OTHER_TEACHER_IDENTITY_EXISTS",
   "TEACHER_TICKET_REVOKED",
   "STUDENT_TICKET_REVOKED",
+  "OTHER_STUDENT_TICKET_REVOKED",
+  "OTHER_TEACHER_TICKET_REVOKED",
 ];
 
 function checks(codes: readonly string[]) {
@@ -94,8 +118,11 @@ function exactEvidence(): AgentAcceptanceEvidenceSet {
       resources: {
         teacher: "CREATED",
         student: "CREATED",
+        otherStudent: "CREATED",
+        otherTeacher: "CREATED",
         classroom: "CREATED",
         membership: "CREATED",
+        otherMembership: "CREATED",
       },
       ...boundary(),
     },
@@ -104,7 +131,10 @@ function exactEvidence(): AgentAcceptanceEvidenceSet {
       status: "PASS",
       startedAt: "2026-08-23T05:00:00.000Z",
       completedAt: "2026-08-23T05:01:00.000Z",
-      checks: checks(screenshotNames.map((_, index) => `SCREENSHOT_${index + 1}`)),
+      checks: checks([
+        ...browserCodes,
+        ...screenshotNames.map((_, index) => `SCREENSHOT_${index + 1}`),
+      ]),
       screenshots: Object.fromEntries(
         screenshotNames.map((name, index) => [
           name,
@@ -178,7 +208,7 @@ describe("Agent acceptance final evidence", () => {
       Record<string, unknown>
     >;
     delete (missing.browser.screenshots as Record<string, unknown>)[
-      "04-release.png"
+      "08-student-closed-readonly.png"
     ];
     expect(evaluateAgentAcceptanceEvidence(missing, marker).browser).toBe(false);
 
@@ -187,7 +217,7 @@ describe("Agent acceptance final evidence", () => {
       Record<string, unknown>
     >;
     (malformed.browser.screenshots as Record<string, unknown>)[
-      "01-ready.png"
+      "01-draft-proposal.png"
     ] = "not-a-sha256";
     expect(evaluateAgentAcceptanceEvidence(malformed, marker).browser).toBe(
       false,

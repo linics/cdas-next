@@ -5,7 +5,7 @@ import { assertBrowserPrerequisites } from "./prerequisites";
 import { issueAcceptanceTicket, type AcceptanceTicketRole } from "./ticket";
 
 function roleFromArguments(args: readonly string[]): AcceptanceTicketRole {
-  if (args.length !== 1 || (args[0] !== "TEACHER" && args[0] !== "STUDENT")) throw new Error("STAGING_ACCEPTANCE_TICKET_ROLE_INVALID");
+  if (args.length !== 1 || (args[0] !== "TEACHER" && args[0] !== "STUDENT" && args[0] !== "OTHER_STUDENT" && args[0] !== "OTHER_TEACHER")) throw new Error("STAGING_ACCEPTANCE_TICKET_ROLE_INVALID");
   return args[0];
 }
 

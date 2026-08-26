@@ -35,9 +35,16 @@ function check(code: string, condition: boolean): StagingCheck {
 
 export const requiredHistoryProtectionFunctions = [
   "assert_activity_release_integrity",
+  "assert_activity_release_integrity_v1",
   "assert_close_release_integrity",
+  "assert_submission_evidence_indexes",
+  "assert_submission_phase_scope",
+  "assert_submission_subject",
+  "assert_teacher_evaluation_outcomes",
+  "assert_teacher_evaluation_target_current",
   "assert_teacher_feedback_target_current",
   "cdas_activity_content_v1_canonical",
+  "cdas_activity_task_book_v2_is_valid",
   "cdas_close_release_payload_canonical",
   "cdas_publish_due_at_is_valid",
   "cdas_publish_payload_canonical",
@@ -51,16 +58,26 @@ export const requiredHistoryProtectionFunctions = [
   "enforce_classroom_membership_history",
   "enforce_close_release_integrity",
   "enforce_new_publish_due_at_contract",
+  "enforce_release_group_lifecycle",
+  "enforce_release_group_membership",
   "enforce_sealed_activity_draft",
   "enforce_submission_container_lifecycle",
+  "enforce_submission_evidence_indexes",
+  "enforce_submission_attachment_lifecycle",
+  "enforce_submission_revision_attachment",
+  "enforce_submission_working_copy_attachment",
   "enforce_submission_working_copy_lifecycle",
+  "enforce_teacher_evaluation_container_lifecycle",
+  "enforce_teacher_evaluation_revision_contract",
   "enforce_teacher_feedback_container_lifecycle",
   "enforce_teacher_feedback_revision_contract",
   "reject_immutable_row_mutation",
   "require_activity_draft_revision_consistency",
   "require_agent_draft_revision_success",
   "require_submission_revision_consistency",
+  "require_submission_revision_evidence",
   "require_submission_revision_working_copy",
+  "require_teacher_evaluation_revision_consistency",
   "require_teacher_feedback_revision_consistency",
 ] as const;
 
@@ -85,14 +102,29 @@ export const requiredHistoryProtectionTriggers = [
   "close_action_intents_require_release",
   "idempotency_records_append_only",
   "publish_action_intents_require_release",
+  "release_group_members_guard",
+  "release_groups_lifecycle_guard",
   "sealed_activity_drafts_require_release",
   "submission_revisions_append_only",
+  "submission_revisions_evidence_indexes_guard",
+  "submission_revisions_require_evidence",
   "submission_revisions_require_working_copy",
   "submission_revisions_sequence_consistency",
+  "submission_attachments_lifecycle_guard",
+  "submission_revision_attachments_append_only",
+  "submission_revision_attachments_contract_guard",
+  "submission_revision_attachments_require_evidence",
   "submission_working_copies_lifecycle_guard",
+  "submission_working_copies_evidence_indexes_guard",
   "submission_working_copies_revision_consistency",
+  "submission_working_copy_attachments_ownership_guard",
   "submissions_container_lifecycle_guard",
   "submissions_revision_consistency",
+  "teacher_evaluation_container_lifecycle_guard",
+  "teacher_evaluation_revision_consistency",
+  "teacher_evaluation_revisions_append_only",
+  "teacher_evaluation_revisions_contract_guard",
+  "teacher_evaluation_revisions_sequence_consistency",
   "teacher_feedback_container_lifecycle_guard",
   "teacher_feedback_revision_consistency",
   "teacher_feedback_revisions_append_only",
@@ -106,15 +138,39 @@ export const requiredHistoryProtectionConstraints = [
   "action_intents_status_timestamps",
   "activity_draft_revisions_agent_run_id_fkey",
   "activity_draft_revisions_source_provenance",
+  "activity_draft_revisions_task_book_version",
+  "activity_drafts_task_book_version",
   "activity_release_snapshots_release_id_source_draft_id_fkey",
   "activity_releases_action_intent_id_fkey",
   "activity_releases_close_action_intent_id_fkey",
   "activity_releases_lifecycle",
+  "activity_releases_execution_version_supported",
   "agent_runs_terminal_shape",
   "classroom_memberships_no_overlapping_intervals",
-  "submission_revisions_text_contract",
+  "release_group_members_group_id_fkey",
+  "release_group_members_role_label_nonblank",
+  "release_group_members_student_id_fkey",
+  "release_groups_name_nonblank",
+  "release_groups_release_id_fkey",
+  "submission_revisions_text_length",
+  "submissions_exactly_one_subject",
+  "submissions_group_id_fkey",
+  "submissions_phase_index_nonnegative",
+  "submission_attachments_contract",
+  "submission_attachments_student_id_fkey",
+  "submission_attachments_submission_id_fkey",
+  "submission_revision_attachments_attachment_id_fkey",
+  "submission_revision_attachments_position",
+  "submission_revision_attachments_submission_revision_id_fkey",
+  "submission_working_copy_attachments_attachment_id_fkey",
+  "submission_working_copy_attachments_position",
+  "submission_working_copy_attachments_working_copy_id_fkey",
+  "teacher_evaluation_revisions_action_intent_id_fkey",
+  "teacher_evaluation_revisions_outcomes_is_array",
+  "teacher_evaluation_revisions_source_provenance",
   "teacher_feedback_revisions_action_intent_id_fkey",
   "teacher_feedback_revisions_source_provenance",
+  "teacher_feedback_revisions_structured_fields_together",
 ] as const;
 
 export function evaluateDatabaseInspection(
@@ -123,16 +179,39 @@ export function evaluateDatabaseInspection(
   expectedMigrationNames: readonly string[],
 ): DatabaseVerificationResult {
   const actualNames = inspection.migrations.map((migration) => migration.migrationName);
-  const actualNameSet = new Set(actualNames);
   const expectedNameSet = new Set(expectedMigrationNames);
-  const hasDuplicateNames = actualNameSet.size !== actualNames.length;
   const unknownMigrations = actualNames.some((name) => !expectedNameSet.has(name));
-  const pendingMigrations = expectedMigrationNames.some(
-    (name) => !actualNameSet.has(name),
+  const successfulMigrationCounts = new Map(
+    expectedMigrationNames.map((name) => [
+      name,
+      inspection.migrations.filter(
+        (migration) =>
+          migration.migrationName === name &&
+          migration.finished &&
+          !migration.rolledBack &&
+          !migration.hasLogs,
+      ).length,
+    ]),
   );
-  const failedMigration = inspection.migrations.some(
-    (migration) =>
-      !migration.finished || migration.rolledBack || migration.hasLogs,
+  const pendingOrDuplicateSuccessfulMigration = expectedMigrationNames.some(
+    (name) => successfulMigrationCounts.get(name) !== 1,
+  );
+  // `prisma migrate resolve --rolled-back` intentionally retains a failed
+  // attempt before a later successful retry. That append-only recovery history
+  // is healthy only when the same known migration has exactly one clean success.
+  const failedMigration =
+    pendingOrDuplicateSuccessfulMigration ||
+    inspection.migrations.some((migration) => {
+      const successful =
+        migration.finished && !migration.rolledBack && !migration.hasLogs;
+      const resolvedHistoricalAttempt =
+        migration.rolledBack &&
+        !migration.finished &&
+        successfulMigrationCounts.get(migration.migrationName) === 1;
+      return !successful && !resolvedHistoricalAttempt;
+    });
+  const pendingMigrations = expectedMigrationNames.some(
+    (name) => successfulMigrationCounts.get(name) !== 1,
   );
   const expectedHistoryKeys = Object.keys(historyProtectionDefinitionManifest);
   const exactHistoryObjectSet =
@@ -149,7 +228,7 @@ export function evaluateDatabaseInspection(
     check("POSTGRESQL_17_OR_NEWER", inspection.serverVersionNumber >= 170000),
     check("PRISMA_MIGRATIONS_TABLE_PRESENT", inspection.migrationsTablePresent),
     check("PRISMA_MIGRATIONS_NO_FAILED_ROWS", !failedMigration),
-    check("PRISMA_MIGRATIONS_NO_UNKNOWN", !unknownMigrations && !hasDuplicateNames),
+    check("PRISMA_MIGRATIONS_NO_UNKNOWN", !unknownMigrations),
     check("PRISMA_MIGRATIONS_NO_PENDING", !pendingMigrations),
     check("HISTORY_PROTECTION_OBJECTS_PRESENT", exactHistoryObjectSet),
     check("HISTORY_PROTECTION_DEFINITIONS_MATCH", exactHistoryHashSet),

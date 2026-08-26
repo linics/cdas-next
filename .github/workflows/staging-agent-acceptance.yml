@@ -39,7 +39,11 @@ jobs:
       STAGING_AGENT_IDENTITIES_RESERVED_ATTESTED: ${{ vars.STAGING_AGENT_IDENTITIES_RESERVED_ATTESTED }}
       STAGING_ACCEPTANCE_TEST_TEACHER_NAME: CDAS Staging Synthetic Teacher
       STAGING_ACCEPTANCE_TEST_STUDENT_NAME: CDAS Staging Synthetic Student
+      STAGING_ACCEPTANCE_TEST_OTHER_STUDENT_NAME: CDAS Staging Synthetic Other Student
+      STAGING_ACCEPTANCE_TEST_OTHER_TEACHER_NAME: CDAS Staging Synthetic Other Teacher
       STAGING_BASE_URL: ${{ vars.STAGING_BASE_URL }}
+      STAGING_VERCEL_PROJECT_NAME: ${{ vars.STAGING_VERCEL_PROJECT_NAME }}
+      STAGING_DEPLOYMENT_PROTECTION_REQUIRED: "1"
       STAGING_DATABASE_NAME: ${{ vars.STAGING_DATABASE_NAME }}
       CDAS_DEPLOYMENT_ID: ${{ github.sha }}
       AI_PROVIDER_DISABLED: "0"
@@ -60,7 +64,10 @@ jobs:
       - name: Install exact application dependencies
         run: pnpm install --frozen-lockfile
       - name: Bind source fingerprint to this checkout
-        run: echo "CDAS_SOURCE_FINGERPRINT=$(pnpm exec tsx -e \"import { createSourceFingerprint } from './scripts/staging/source-fingerprint.ts'; console.log(createSourceFingerprint())\")" >> "$GITHUB_ENV"
+        run: |
+          source_fingerprint="$(pnpm exec tsx -e 'import { createSourceFingerprint } from "./scripts/staging/source-fingerprint.ts"; console.log(createSourceFingerprint())')"
+          [[ "$source_fingerprint" =~ ^[a-f0-9]{64}$ ]]
+          printf 'CDAS_SOURCE_FINGERPRINT=%s\n' "$source_fingerprint" >> "$GITHUB_ENV"
       - name: Validate protected Agent staging configuration
         id: preflight
         continue-on-error: true
@@ -71,9 +78,12 @@ jobs:
           CLERK_SECRET_KEY: ${{ secrets.STAGING_CLERK_SECRET_KEY }}
           STAGING_TEST_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_TEACHER_CLERK_ID }}
           STAGING_TEST_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_STUDENT_CLERK_ID }}
+          STAGING_TEST_OTHER_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_STUDENT_CLERK_ID }}
+          STAGING_TEST_OTHER_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_TEACHER_CLERK_ID }}
           DEEPSEEK_API_KEY: ${{ secrets.STAGING_DEEPSEEK_API_KEY }}
           AI_TOOL_APPROVAL_SECRET: ${{ secrets.STAGING_AI_TOOL_APPROVAL_SECRET }}
           STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
+          STAGING_VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.STAGING_VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: pnpm staging:preflight
       - name: Build production application with exact staging configuration
         id: build
@@ -110,6 +120,7 @@ jobs:
           DEEPSEEK_API_KEY: ${{ secrets.STAGING_DEEPSEEK_API_KEY }}
           AI_TOOL_APPROVAL_SECRET: ${{ secrets.STAGING_AI_TOOL_APPROVAL_SECRET }}
           STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
+          STAGING_VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.STAGING_VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: pnpm staging:verify-application
       - name: Aggregate same-run staging Go/No-Go evidence
         id: aggregate
@@ -129,9 +140,12 @@ jobs:
           CLERK_SECRET_KEY: ${{ secrets.STAGING_CLERK_SECRET_KEY }}
           STAGING_TEST_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_TEACHER_CLERK_ID }}
           STAGING_TEST_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_STUDENT_CLERK_ID }}
+          STAGING_TEST_OTHER_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_STUDENT_CLERK_ID }}
+          STAGING_TEST_OTHER_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_TEACHER_CLERK_ID }}
           DEEPSEEK_API_KEY: ${{ secrets.STAGING_DEEPSEEK_API_KEY }}
           AI_TOOL_APPROVAL_SECRET: ${{ secrets.STAGING_AI_TOOL_APPROVAL_SECRET }}
           STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
+          STAGING_VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.STAGING_VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: pnpm staging:agent:gate
       - name: Preserve sanitized same-run gate evidence
         if: always()
@@ -155,9 +169,12 @@ jobs:
           CLERK_SECRET_KEY: ${{ secrets.STAGING_CLERK_SECRET_KEY }}
           STAGING_TEST_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_TEACHER_CLERK_ID }}
           STAGING_TEST_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_STUDENT_CLERK_ID }}
+          STAGING_TEST_OTHER_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_STUDENT_CLERK_ID }}
+          STAGING_TEST_OTHER_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_TEACHER_CLERK_ID }}
           DEEPSEEK_API_KEY: ${{ secrets.STAGING_DEEPSEEK_API_KEY }}
           AI_TOOL_APPROVAL_SECRET: ${{ secrets.STAGING_AI_TOOL_APPROVAL_SECRET }}
           STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
+          STAGING_VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.STAGING_VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: pnpm staging:agent:assert-gate
 
   acceptance:
@@ -184,7 +201,11 @@ jobs:
       STAGING_AGENT_IDENTITIES_RESERVED_ATTESTED: ${{ vars.STAGING_AGENT_IDENTITIES_RESERVED_ATTESTED }}
       STAGING_ACCEPTANCE_TEST_TEACHER_NAME: CDAS Staging Synthetic Teacher
       STAGING_ACCEPTANCE_TEST_STUDENT_NAME: CDAS Staging Synthetic Student
+      STAGING_ACCEPTANCE_TEST_OTHER_STUDENT_NAME: CDAS Staging Synthetic Other Student
+      STAGING_ACCEPTANCE_TEST_OTHER_TEACHER_NAME: CDAS Staging Synthetic Other Teacher
       STAGING_BASE_URL: ${{ vars.STAGING_BASE_URL }}
+      STAGING_VERCEL_PROJECT_NAME: ${{ vars.STAGING_VERCEL_PROJECT_NAME }}
+      STAGING_DEPLOYMENT_PROTECTION_REQUIRED: "1"
       STAGING_DATABASE_NAME: ${{ vars.STAGING_DATABASE_NAME }}
       CDAS_DEPLOYMENT_ID: ${{ github.sha }}
       AI_PROVIDER_DISABLED: "0"
@@ -210,7 +231,10 @@ jobs:
       - name: Install exact application dependencies
         run: pnpm install --frozen-lockfile
       - name: Bind source fingerprint to this checkout
-        run: echo "CDAS_SOURCE_FINGERPRINT=$(pnpm exec tsx -e \"import { createSourceFingerprint } from './scripts/staging/source-fingerprint.ts'; console.log(createSourceFingerprint())\")" >> "$GITHUB_ENV"
+        run: |
+          source_fingerprint="$(pnpm exec tsx -e 'import { createSourceFingerprint } from "./scripts/staging/source-fingerprint.ts"; console.log(createSourceFingerprint())')"
+          [[ "$source_fingerprint" =~ ^[a-f0-9]{64}$ ]]
+          printf 'CDAS_SOURCE_FINGERPRINT=%s\n' "$source_fingerprint" >> "$GITHUB_ENV"
       - name: Assert downloaded evidence before any external write or model call
         id: gate
         continue-on-error: true
@@ -221,15 +245,22 @@ jobs:
           CLERK_SECRET_KEY: ${{ secrets.STAGING_CLERK_SECRET_KEY }}
           STAGING_TEST_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_TEACHER_CLERK_ID }}
           STAGING_TEST_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_STUDENT_CLERK_ID }}
+          STAGING_TEST_OTHER_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_STUDENT_CLERK_ID }}
+          STAGING_TEST_OTHER_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_TEACHER_CLERK_ID }}
           DEEPSEEK_API_KEY: ${{ secrets.STAGING_DEEPSEEK_API_KEY }}
           AI_TOOL_APPROVAL_SECRET: ${{ secrets.STAGING_AI_TOOL_APPROVAL_SECRET }}
           STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
+          STAGING_VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.STAGING_VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: pnpm staging:agent:assert-gate
       - name: Install Chromium after the protected gate
         id: chromium
         if: ${{ inputs.run_real_model && needs.gate.result == 'success' && steps.gate.outcome == 'success' }}
         continue-on-error: true
-        run: pnpm exec playwright install --with-deps chromium
+        run: |
+          python3 -m venv .venv-staging-agent-acceptance
+          .venv-staging-agent-acceptance/bin/python -m pip install -r scripts/e2e/requirements.txt
+          .venv-staging-agent-acceptance/bin/python -m playwright install --with-deps chromium
+          echo "$PWD/.venv-staging-agent-acceptance/bin" >> "$GITHUB_PATH"
       - name: Verify reserved Clerk identities and revoke capability probes
         id: identity
         if: ${{ steps.chromium.outcome == 'success' }}
@@ -241,9 +272,12 @@ jobs:
           CLERK_SECRET_KEY: ${{ secrets.STAGING_CLERK_SECRET_KEY }}
           STAGING_TEST_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_TEACHER_CLERK_ID }}
           STAGING_TEST_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_STUDENT_CLERK_ID }}
+          STAGING_TEST_OTHER_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_STUDENT_CLERK_ID }}
+          STAGING_TEST_OTHER_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_TEACHER_CLERK_ID }}
           DEEPSEEK_API_KEY: ${{ secrets.STAGING_DEEPSEEK_API_KEY }}
           AI_TOOL_APPROVAL_SECRET: ${{ secrets.STAGING_AI_TOOL_APPROVAL_SECRET }}
           STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
+          STAGING_VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.STAGING_VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: pnpm staging:agent:verify-identities
       - name: Rebind remote health immediately before database writes
         id: immediate-health
@@ -256,9 +290,12 @@ jobs:
           CLERK_SECRET_KEY: ${{ secrets.STAGING_CLERK_SECRET_KEY }}
           STAGING_TEST_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_TEACHER_CLERK_ID }}
           STAGING_TEST_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_STUDENT_CLERK_ID }}
+          STAGING_TEST_OTHER_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_STUDENT_CLERK_ID }}
+          STAGING_TEST_OTHER_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_TEACHER_CLERK_ID }}
           DEEPSEEK_API_KEY: ${{ secrets.STAGING_DEEPSEEK_API_KEY }}
           AI_TOOL_APPROVAL_SECRET: ${{ secrets.STAGING_AI_TOOL_APPROVAL_SECRET }}
           STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
+          STAGING_VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.STAGING_VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: pnpm staging:verify-application && STAGING_IMMEDIATE_HEALTH_OUTCOME=success pnpm staging:agent:record-immediate-health
       - name: Append the marker-derived synthetic classroom namespace
         id: bootstrap
@@ -271,9 +308,12 @@ jobs:
           CLERK_SECRET_KEY: ${{ secrets.STAGING_CLERK_SECRET_KEY }}
           STAGING_TEST_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_TEACHER_CLERK_ID }}
           STAGING_TEST_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_STUDENT_CLERK_ID }}
+          STAGING_TEST_OTHER_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_STUDENT_CLERK_ID }}
+          STAGING_TEST_OTHER_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_TEACHER_CLERK_ID }}
           DEEPSEEK_API_KEY: ${{ secrets.STAGING_DEEPSEEK_API_KEY }}
           AI_TOOL_APPROVAL_SECRET: ${{ secrets.STAGING_AI_TOOL_APPROVAL_SECRET }}
           STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
+          STAGING_VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.STAGING_VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: pnpm staging:agent:bootstrap
       - name: Complete the first-party Agent browser flow
         id: browser
@@ -286,9 +326,12 @@ jobs:
           CLERK_SECRET_KEY: ${{ secrets.STAGING_CLERK_SECRET_KEY }}
           STAGING_TEST_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_TEACHER_CLERK_ID }}
           STAGING_TEST_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_STUDENT_CLERK_ID }}
+          STAGING_TEST_OTHER_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_STUDENT_CLERK_ID }}
+          STAGING_TEST_OTHER_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_TEACHER_CLERK_ID }}
           DEEPSEEK_API_KEY: ${{ secrets.STAGING_DEEPSEEK_API_KEY }}
           AI_TOOL_APPROVAL_SECRET: ${{ secrets.STAGING_AI_TOOL_APPROVAL_SECRET }}
           STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
+          STAGING_VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.STAGING_VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: pnpm staging:agent:browser
       - name: Verify append-only provenance in a read-only transaction
         id: verify
@@ -301,9 +344,12 @@ jobs:
           CLERK_SECRET_KEY: ${{ secrets.STAGING_CLERK_SECRET_KEY }}
           STAGING_TEST_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_TEACHER_CLERK_ID }}
           STAGING_TEST_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_STUDENT_CLERK_ID }}
+          STAGING_TEST_OTHER_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_STUDENT_CLERK_ID }}
+          STAGING_TEST_OTHER_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_TEACHER_CLERK_ID }}
           DEEPSEEK_API_KEY: ${{ secrets.STAGING_DEEPSEEK_API_KEY }}
           AI_TOOL_APPROVAL_SECRET: ${{ secrets.STAGING_AI_TOOL_APPROVAL_SECRET }}
           STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
+          STAGING_VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.STAGING_VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: pnpm staging:agent:verify
       - name: Enforce complete sanitized evidence
         if: always()

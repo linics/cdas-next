@@ -37,6 +37,7 @@ vi.mock("next/link", () => ({
 }));
 vi.mock("next/navigation", () => ({
   notFound: mocks.notFound,
+  useRouter: () => ({ refresh: vi.fn() }),
   usePathname: () => `/teacher/releases/${releaseId}/submissions`,
 }));
 vi.mock("../../../../../server/db/client", () => ({
@@ -86,12 +87,18 @@ const workspace = {
     status: "ACTIVE",
     publishedAt: "2026-08-18T10:00:00.000Z",
     dueAt: "2026-08-20T12:00:00.000Z",
-    publisherAuthSubject: "clerk_auth_subject",
+    executionVersion: 0,
+    submissionMode: "once",
+    phaseCount: 0,
+    rubricAvailable: false,
   },
   submissions: [
     {
       submissionId,
+      phaseIndex: 0,
+      phaseName: null,
       student: { id: studentId, displayName: "陈同学" },
+      group: null,
       workingCopy: { textEvidence: "学生工作副本正文" },
       currentRevision: {
         id: "50000000-0000-4000-8000-000000000005",
@@ -103,9 +110,28 @@ const workspace = {
           currentVersion: 3,
           body: "教师正式反馈正文",
         },
+        evaluation: null,
+        followUp: null,
       },
     },
   ],
+  progress: [
+    {
+      student: { id: studentId, displayName: "陈同学" },
+      group: null,
+      started: true,
+      completedPhaseCount: 0,
+      totalPhaseCount: 0,
+      currentPhaseIndex: 0,
+      complete: true,
+      awaitingFormalRevision: false,
+    },
+  ],
+  reviewCoverage: {
+    currentRevisionCount: 1,
+    feedbackCount: 1,
+    evaluationCount: 0,
+  },
 };
 
 async function renderPage(): Promise<string> {
@@ -133,6 +159,7 @@ describe("teacher release submissions page boundary", () => {
     expect(markup).toContain("教师工作台当前没有开放");
     expect(markup).not.toContain("校园水表观察");
     expect(markup).not.toContain("陈同学");
+    expect(markup).not.toContain("导出评阅名册");
     expect(markup).not.toContain("准备关闭活动");
     expect(mocks.getDatabaseClient).not.toHaveBeenCalled();
     expect(mocks.getTeacherReleaseSubmissions).not.toHaveBeenCalled();
@@ -149,6 +176,7 @@ describe("teacher release submissions page boundary", () => {
     expect(markup).toContain("退出当前账号");
     expect(markup).not.toContain("准备关闭活动");
     expect(markup).not.toContain("确认并关闭活动");
+    expect(markup).not.toContain("导出评阅名册");
     expect(mocks.getDatabaseClient).not.toHaveBeenCalled();
     expect(mocks.getTeacherReleaseSubmissions).not.toHaveBeenCalled();
   });
@@ -166,13 +194,185 @@ describe("teacher release submissions page boundary", () => {
     expect(markup).toContain("陈同学");
     expect(markup).toContain("正式修订 2");
     expect(markup).toContain("已反馈 v3");
+    expect(markup).toContain("已反馈 1/1");
+    expect(markup).toContain("无量规");
+    expect(markup).toContain("查看反馈与评价");
+    expect(markup).toContain(
+      `href="/teacher/releases/${releaseId}/submissions/export"`,
+    );
+    expect(markup).toContain("导出评阅名册");
+    expect(markup).not.toContain("待评价");
+    expect(markup).not.toContain("已评价");
     expect(markup).toContain("迟交");
     expect(markup).not.toContain("学生工作副本正文");
+    expect(markup).not.toContain("待重交");
+    expect(markup).not.toContain("重交中");
+    expect(markup).not.toContain("尚未正式提交");
     expect(markup).not.toContain("学生正式提交正文");
     expect(markup).not.toContain("教师正式反馈正文");
     expect(markup).not.toContain("clerk_auth_subject");
     expect(markup).toContain("准备关闭活动");
     expect(markup).not.toContain("确认并关闭活动");
+  });
+
+  it("shows pending or confirmed evaluation status only for schema v2 releases", async () => {
+    mocks.getTeacherReleaseSubmissions.mockResolvedValue({
+      ...workspace,
+      release: { ...workspace.release, rubricAvailable: true },
+      submissions: [
+        {
+          ...workspace.submissions[0],
+          currentRevision: {
+            ...workspace.submissions[0]!.currentRevision,
+            evaluation: null,
+          },
+        },
+      ],
+      reviewCoverage: {
+        currentRevisionCount: 1,
+        feedbackCount: 1,
+        evaluationCount: 0,
+      },
+    });
+
+    expect(await renderPage()).toContain("待评价");
+    expect(await renderPage()).toContain("已评价 0/1");
+    expect(await renderPage()).not.toContain("无量规");
+
+    mocks.getTeacherReleaseSubmissions.mockResolvedValue({
+      ...workspace,
+      release: { ...workspace.release, rubricAvailable: true },
+      submissions: [
+        {
+          ...workspace.submissions[0],
+          currentRevision: {
+            ...workspace.submissions[0]!.currentRevision,
+            evaluation: { currentVersion: 1, summary: "不应出现在列表" },
+          },
+        },
+      ],
+      reviewCoverage: {
+        currentRevisionCount: 1,
+        feedbackCount: 1,
+        evaluationCount: 1,
+      },
+    });
+
+    const confirmed = await renderPage();
+    expect(confirmed).toContain("已评价 v1");
+    expect(confirmed).toContain("已评价 1/1");
+    expect(confirmed).not.toContain("不应出现在列表");
+    expect(confirmed).not.toContain("待评价");
+    expect(confirmed).not.toContain("已评价 0/1");
+  });
+
+  it("renders one shared group progress row with member roles", async () => {
+    const group = {
+      id: "91000000-0000-4000-8000-000000000001",
+      name: "校园调查组",
+      members: [
+        {
+          student: { id: studentId, displayName: "陈同学" },
+          roleLabel: "记录",
+        },
+        {
+          student: {
+            id: "92000000-0000-4000-8000-000000000002",
+            displayName: "周同学",
+          },
+          roleLabel: "汇报",
+        },
+      ],
+    };
+    mocks.getTeacherReleaseSubmissions.mockResolvedValue({
+      ...workspace,
+      release: {
+        ...workspace.release,
+        executionVersion: 1,
+        submissionMode: "phased",
+        phaseCount: 3,
+      },
+      submissions: [{ ...workspace.submissions[0], group }],
+      progress: [
+        {
+          student: { id: group.id, displayName: group.name },
+          group,
+          started: true,
+          completedPhaseCount: 1,
+          totalPhaseCount: 3,
+          currentPhaseIndex: 2,
+          complete: false,
+          awaitingFormalRevision: false,
+        },
+      ],
+    });
+
+    const markup = await renderPage();
+
+    expect(markup).toContain("共享提交分组");
+    expect(markup).toContain("校园调查组");
+    expect(markup).toContain("陈同学（记录）");
+    expect(markup).toContain("周同学（汇报）");
+    expect(markup).toContain("已有提交 · 已锁定");
+    expect(markup).toContain("当前第 2 阶段");
+    expect(markup).not.toContain("尚未正式提交");
+  });
+
+  it("renders follow-up flags without leaking working-copy or evaluation bodies", async () => {
+    mocks.getTeacherReleaseSubmissions.mockResolvedValue({
+      ...workspace,
+      release: {
+        ...workspace.release,
+        executionVersion: 1,
+        submissionMode: "phased",
+        phaseCount: 3,
+      },
+      submissions: [
+        {
+          ...workspace.submissions[0],
+          currentRevision: {
+            ...workspace.submissions[0]!.currentRevision,
+            followUp: "AWAITING_RESUBMISSION",
+          },
+        },
+      ],
+      progress: [
+        {
+          ...workspace.progress[0]!,
+          complete: false,
+          started: true,
+          currentPhaseIndex: 2,
+          completedPhaseCount: 1,
+          totalPhaseCount: 3,
+          awaitingFormalRevision: true,
+        },
+      ],
+    });
+
+    const awaiting = await renderPage();
+    expect(awaiting).toContain("待重交 1");
+    expect(awaiting).toContain(" · 待重交");
+    expect(awaiting).toContain("尚未正式提交");
+    expect(awaiting).not.toContain("重交中");
+    expect(awaiting).not.toContain("学生工作副本正文");
+    expect(awaiting).not.toContain("教师正式反馈正文");
+
+    mocks.getTeacherReleaseSubmissions.mockResolvedValue({
+      ...workspace,
+      submissions: [
+        {
+          ...workspace.submissions[0],
+          currentRevision: {
+            ...workspace.submissions[0]!.currentRevision,
+            followUp: "RESUBMISSION_IN_PROGRESS",
+          },
+        },
+      ],
+    });
+
+    const inProgress = await renderPage();
+    expect(inProgress).toContain("重交中");
+    expect(inProgress).not.toContain("待重交");
   });
 
   it("does not render a close write entrypoint for a closed release", async () => {

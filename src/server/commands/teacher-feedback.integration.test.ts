@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
 import { createPublishedActivity } from "../../test/fixtures/published-activity";
+import { hashTeacherFeedbackBody } from "../../domain/feedback/teacher-feedback-intent";
 import { createDatabaseClient } from "../db/client";
 import type { CommandContext, CommandSource } from "./command-context";
 import { decideActionIntent } from "./decide-action-intent";
@@ -128,6 +129,8 @@ async function prepareAndConfirm(
     body?: string;
     expectedFeedbackVersion?: number;
     prepareMinute?: number;
+    nextStep?: "CONTINUE" | "REVISE";
+    supportLevel?: "FOUNDATION" | "STANDARD" | "CHALLENGE";
   },
 ) {
   const prepareTime = minutesAfter(
@@ -140,6 +143,8 @@ async function prepareAndConfirm(
     expectedSubmissionRevisionNumber: 1,
     expectedFeedbackVersion: options?.expectedFeedbackVersion ?? 0,
     body: options?.body ?? "证据清楚，请再说明测量时间。",
+    nextStep: options?.nextStep ?? "CONTINUE",
+    supportLevel: options?.supportLevel ?? "STANDARD",
     suggestionAgentRunId: null,
     idempotencyKey: `prepare_feedback_${randomUUID()}`,
   };
@@ -172,6 +177,8 @@ describeWithDatabase("teacher feedback commands", () => {
       expectedSubmissionRevisionNumber: 1,
       expectedFeedbackVersion: 0,
       body: "  第一版反馈。\r\n请补充测量时间。  ",
+      nextStep: "REVISE" as const,
+      supportLevel: "FOUNDATION" as const,
       suggestionAgentRunId: null,
       idempotencyKey: `prepare_feedback_${randomUUID()}`,
     };
@@ -206,6 +213,8 @@ describeWithDatabase("teacher feedback commands", () => {
       body: "第二版反馈：证据完整，结论可以更具体。",
       expectedFeedbackVersion: 1,
       prepareMinute: 4,
+      nextStep: "CONTINUE",
+      supportLevel: "CHALLENGE",
     });
     const second = await saveTeacherFeedback(
       database!,
@@ -227,6 +236,15 @@ describeWithDatabase("teacher feedback commands", () => {
       "  第一版反馈。\n请补充测量时间。  ",
       "第二版反馈：证据完整，结论可以更具体。",
     ]);
+    expect(
+      feedback.revisions.map((revision) => ({
+        nextStep: revision.nextStep,
+        supportLevel: revision.supportLevel,
+      })),
+    ).toEqual([
+      { nextStep: "REVISE", supportLevel: "FOUNDATION" },
+      { nextStep: "CONTINUE", supportLevel: "CHALLENGE" },
+    ]);
     expect(feedback.revisions.every((revision) => revision.source === "MANUAL"))
       .toBe(true);
 
@@ -246,6 +264,8 @@ describeWithDatabase("teacher feedback commands", () => {
       expectedSubmissionRevisionNumber: 1,
       expectedFeedbackVersion: 0,
       body: "其他教师无权保存。",
+      nextStep: "CONTINUE" as const,
+      supportLevel: "STANDARD" as const,
       suggestionAgentRunId: null,
       idempotencyKey: `prepare_feedback_${randomUUID()}`,
     };
@@ -403,6 +423,53 @@ describeWithDatabase("teacher feedback commands", () => {
         },
       ),
     ).rejects.toEqual(new SaveTeacherFeedbackError("INTENT_TAMPERED"));
+    expect(
+      await database!.teacherFeedback.count({
+        where: { submissionRevisionId: fixture.submissionRevisionId },
+      }),
+    ).toBe(0);
+  });
+
+  it("rejects a direct revision whose structured fields differ from its v2 payload", async () => {
+    const fixture = await createFeedbackFixture();
+    const prepared = await prepareAndConfirm(fixture, {
+      body: "数据库必须冻结确认过的结构化建议。",
+      nextStep: "REVISE",
+      supportLevel: "FOUNDATION",
+    });
+    const executedAt = minutesAfter(fixture.baseTime, 3);
+
+    await database!.actionIntent.update({
+      where: { id: prepared.actionIntentId },
+      data: { status: "EXECUTED", executedAt },
+    });
+
+    await expect(
+      database!.teacherFeedback.create({
+        data: {
+          submissionRevisionId: fixture.submissionRevisionId,
+          teacherId: fixture.teacherId,
+          version: 1,
+          createdAt: executedAt,
+          updatedAt: executedAt,
+          revisions: {
+            create: {
+              version: 1,
+              body: "数据库必须冻结确认过的结构化建议。",
+              bodyHash: hashTeacherFeedbackBody(
+                "数据库必须冻结确认过的结构化建议。",
+              ),
+              nextStep: "CONTINUE",
+              supportLevel: "FOUNDATION",
+              source: "MANUAL",
+              confirmedById: fixture.teacherId,
+              actionIntentId: prepared.actionIntentId,
+              confirmedAt: executedAt,
+            },
+          },
+        },
+      }),
+    ).rejects.toThrow(/differs from its confirmed payload/);
     expect(
       await database!.teacherFeedback.count({
         where: { submissionRevisionId: fixture.submissionRevisionId },

@@ -13,6 +13,7 @@ const runOptionsSchema = z
     teacherName: z.string(),
     studentSubject: z.string(),
     studentName: z.string(),
+    studentRosterKey: z.string().optional(),
     classroomId: z.string(),
     classroomName: z.string(),
     confirmDatabase: z.string().trim().min(1).max(200),
@@ -59,13 +60,15 @@ export const bootstrapClerkCliHelp = `Usage:
     --teacher-name "Teacher name" \\
     --student-subject user_... \\
     --student-name "Student name" \\
+    --student-roster-key <operator-managed-roster-key> \\
     --classroom-id <uuid> \\
     --classroom-name "Classroom name" \\
     --confirm-database <database-name>
 
 The two Clerk users must already exist. This command never calls Clerk and
-never changes an existing role, display name, classroom manager, or classroom
-name. It reads DATABASE_URL only; --confirm-database must match its database.
+never changes an existing role, display name, classroom manager, classroom
+name, or assigned roster key. It may fill a previously empty student roster
+key. It reads DATABASE_URL only; --confirm-database must match its database.
 `;
 
 export function parseBootstrapClerkCliArguments(
@@ -82,6 +85,7 @@ export function parseBootstrapClerkCliArguments(
       "teacher-name": { type: "string" },
       "student-subject": { type: "string" },
       "student-name": { type: "string" },
+      "student-roster-key": { type: "string" },
       "classroom-id": { type: "string" },
       "classroom-name": { type: "string" },
       "confirm-database": { type: "string" },
@@ -97,6 +101,9 @@ export function parseBootstrapClerkCliArguments(
     teacherName: values["teacher-name"],
     studentSubject: values["student-subject"],
     studentName: values["student-name"],
+    ...(values["student-roster-key"]
+      ? { studentRosterKey: values["student-roster-key"] }
+      : {}),
     classroomId: values["classroom-id"],
     classroomName: values["classroom-name"],
     confirmDatabase: values["confirm-database"],
@@ -106,6 +113,9 @@ export function parseBootstrapClerkCliArguments(
     teacherDisplayName: options.teacherName,
     studentAuthSubject: options.studentSubject,
     studentDisplayName: options.studentName,
+    ...(options.studentRosterKey
+      ? { studentRosterKey: options.studentRosterKey }
+      : {}),
     classroomId: options.classroomId,
     classroomName: options.classroomName,
   });

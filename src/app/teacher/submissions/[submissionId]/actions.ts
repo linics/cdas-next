@@ -7,6 +7,10 @@ import {
   createTeacherFeedbackPayload,
   hashTeacherFeedbackPayload,
 } from "../../../../domain/feedback/teacher-feedback-intent";
+import {
+  teacherFeedbackNextSteps,
+  teacherFeedbackSupportLevels,
+} from "../../../../domain/feedback/teacher-feedback-policy";
 import { AuthenticationError } from "../../../../server/auth/current-actor";
 import { createUiCommandContext } from "../../../../server/commands/create-ui-command-context";
 import {
@@ -50,6 +54,8 @@ const prepareFormSchema = z
     submissionRevisionNumber: positiveFormIntegerSchema,
     expectedFeedbackVersion: nonnegativeFormIntegerSchema,
     body: z.string(),
+    nextStep: z.enum(teacherFeedbackNextSteps),
+    supportLevel: z.enum(teacherFeedbackSupportLevels),
     idempotencyKey: idempotencyKeySchema,
   })
   .strict();
@@ -75,6 +81,8 @@ const prepareFormFields = new Set([
   "submissionRevisionNumber",
   "expectedFeedbackVersion",
   "body",
+  "nextStep",
+  "supportLevel",
   "idempotencyKey",
 ]);
 const confirmationFormFields = new Set([
@@ -270,6 +278,8 @@ export async function prepareTeacherFeedbackAction(
       ),
       expectedFeedbackVersion: formData.get("expectedFeedbackVersion"),
       body: formData.get("body"),
+      nextStep: formData.get("nextStep"),
+      supportLevel: formData.get("supportLevel"),
       idempotencyKey: formData.get("idempotencyKey"),
     });
     payload = createTeacherFeedbackPayload({
@@ -278,6 +288,8 @@ export async function prepareTeacherFeedbackAction(
       expectedSubmissionRevisionNumber: input.submissionRevisionNumber,
       expectedFeedbackVersion: input.expectedFeedbackVersion,
       body: input.body,
+      nextStep: input.nextStep,
+      supportLevel: input.supportLevel,
       suggestionAgentRunId: null,
     });
   } catch (error) {
@@ -297,6 +309,8 @@ export async function prepareTeacherFeedbackAction(
           payload.expectedSubmissionRevisionNumber,
         expectedFeedbackVersion: payload.expectedFeedbackVersion,
         body: payload.body,
+        nextStep: payload.nextStep,
+        supportLevel: payload.supportLevel,
         suggestionAgentRunId: null,
         idempotencyKey: input.idempotencyKey,
       },
@@ -323,6 +337,8 @@ export async function prepareTeacherFeedbackAction(
           payload.expectedSubmissionRevisionNumber,
         expectedFeedbackVersion: prepared.expectedFeedbackVersion,
         body: payload.body,
+        nextStep: payload.nextStep,
+        supportLevel: payload.supportLevel,
         payloadHash: prepared.payloadHash,
         expiresAt: prepared.expiresAt,
         saveIdempotencyKey: createIdempotencyKey("save"),
@@ -419,6 +435,8 @@ export async function decideTeacherFeedbackAction(
       idempotencyKey: input.idempotencyKey,
     });
     revalidatePath("/teacher/submissions/[submissionId]", "page");
+    revalidatePath(`/student/releases/${saved.releaseId}`, "page");
+    revalidatePath("/student", "layout");
     return actionState({
       operation: "confirm",
       status: "saved",

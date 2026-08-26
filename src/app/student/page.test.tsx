@@ -39,6 +39,9 @@ vi.mock("next/navigation", () => ({
   notFound: mocks.notFound,
   usePathname: () => "/student",
 }));
+vi.mock("next/server", () => ({
+  connection: async () => undefined,
+}));
 vi.mock("../../server/db/client", () => ({
   getDatabaseClient: mocks.getDatabaseClient,
 }));
@@ -55,7 +58,10 @@ vi.mock("../../server/auth/current-actor", () => ({
 }));
 vi.mock("../../server/queries/student-releases", () => ({
   StudentReleaseListQueryError: class StudentReleaseListQueryError extends Error {
-    constructor(public readonly code: string) {
+    constructor(
+      public readonly code: string,
+      public readonly actorName?: string,
+    ) {
       super(code);
       this.name = "StudentReleaseListQueryError";
     }
@@ -74,8 +80,11 @@ const trustedContext = {
 };
 const pendingReleaseId = "10000000-0000-4000-8000-000000000001";
 const feedbackReleaseId = "20000000-0000-4000-8000-000000000002";
+const resubmitReleaseId = "50000000-0000-4000-8000-000000000005";
+const evaluationReleaseId = "40000000-0000-4000-8000-000000000004";
 const historyReleaseId = "30000000-0000-4000-8000-000000000003";
 const releaseList = {
+  actor: { displayName: "测试学生" },
   releases: [
     {
       id: pendingReleaseId,
@@ -91,6 +100,8 @@ const releaseList = {
         latestRevisionNumber: 0,
         hasWorkingCopy: true,
         hasCurrentFeedback: false,
+        hasCurrentEvaluation: false,
+        followUp: null,
       },
     },
     {
@@ -107,6 +118,44 @@ const releaseList = {
         latestRevisionNumber: 1,
         hasWorkingCopy: false,
         hasCurrentFeedback: true,
+        hasCurrentEvaluation: false,
+        followUp: null,
+      },
+    },
+    {
+      id: resubmitReleaseId,
+      status: "ACTIVE",
+      publishedAt: "2026-08-18T08:45:00.000Z",
+      dueAt: null,
+      access: { canWrite: true },
+      snapshot: {
+        title: "待重交活动",
+        summary: "按反馈修改后重交",
+      },
+      submission: {
+        latestRevisionNumber: 1,
+        hasWorkingCopy: false,
+        hasCurrentFeedback: true,
+        hasCurrentEvaluation: true,
+        followUp: "AWAITING_RESUBMISSION",
+      },
+    },
+    {
+      id: evaluationReleaseId,
+      status: "ACTIVE",
+      publishedAt: "2026-08-18T08:30:00.000Z",
+      dueAt: null,
+      access: { canWrite: true },
+      snapshot: {
+        title: "已有评价活动",
+        summary: "查看教师量规评价",
+      },
+      submission: {
+        latestRevisionNumber: 1,
+        hasWorkingCopy: false,
+        hasCurrentFeedback: true,
+        hasCurrentEvaluation: true,
+        followUp: null,
       },
     },
     {
@@ -123,6 +172,8 @@ const releaseList = {
         latestRevisionNumber: 1,
         hasWorkingCopy: false,
         hasCurrentFeedback: false,
+        hasCurrentEvaluation: false,
+        followUp: null,
       },
     },
   ],
@@ -182,14 +233,23 @@ describe("student dashboard page", () => {
 
     expect(markup).toContain("待提交");
     expect(markup).toContain("已有反馈");
+    expect(markup).toContain("待重交");
+    expect(markup).toContain("已有评价");
+    expect(markup).toContain("当前版已有量规评价");
     expect(markup).toContain("历史与关闭");
     expect(markup).toContain("仍可迟交");
     expect(markup).toContain(`/student/releases/${pendingReleaseId}`);
     expect(markup).toContain(`/student/releases/${feedbackReleaseId}`);
+    expect(markup).toContain(`/student/releases/${resubmitReleaseId}`);
+    expect(markup).toContain(`/student/releases/${evaluationReleaseId}`);
     expect(markup).toContain(`/student/releases/${historyReleaseId}`);
+    expect(markup).not.toContain("优秀");
+    expect(markup).not.toContain("问题意识");
     expect(markup).not.toContain("创建活动");
     expect(markup).not.toContain("打开导航");
-    expect(markup).not.toContain("<button");
+    expect(markup).toContain("当前账号：测试学生 · 学生");
+    expect(markup).toContain("退出登录");
+    expect(markup).toContain('data-clerk-sign-out="true"');
     expect(mocks.listStudentReleases).toHaveBeenCalledWith(
       mocks.database,
       trustedContext,
@@ -198,12 +258,32 @@ describe("student dashboard page", () => {
   });
 
   it("renders a truthful empty state without a fake action", async () => {
-    mocks.listStudentReleases.mockResolvedValue({ releases: [] });
+    mocks.listStudentReleases.mockResolvedValue({
+      actor: { displayName: "测试学生" },
+      releases: [],
+    });
 
     const markup = await renderPage();
 
     expect(markup).toContain("还没有对你开放的学习活动");
     expect(markup).not.toContain("创建活动");
     expect(markup).not.toContain("提交活动");
+  });
+
+  it("guides a teacher back without rendering student resources", async () => {
+    const { StudentReleaseListQueryError } = await import(
+      "../../server/queries/student-releases"
+    );
+    mocks.listStudentReleases.mockRejectedValue(
+      new StudentReleaseListQueryError("WRONG_ROLE", "林老师"),
+    );
+
+    const markup = await renderPage();
+
+    expect(markup).toContain("当前登录的是教师账号");
+    expect(markup).toContain('href="/teacher"');
+    expect(markup).toContain("当前账号：林老师 · 教师");
+    expect(markup).toContain("退出登录");
+    expect(markup).not.toContain("待提交活动");
   });
 });
