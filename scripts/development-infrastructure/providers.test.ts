@@ -229,6 +229,26 @@ describe("provider fail-closed contracts", () => {
     const project = { name: "cdas-next", link: { type: "github", repoId: 1 }, buildCommand: null, ssoProtection: { deploymentType: "preview" }, targets: { production: { plan: "hobby" }, preview: { plan: "pro" } } };
     await expect(new VercelApiProvider("t", "cdas-next", undefined, queuedFetch([response(project)], [])).assertProject({ owner: "o", name: "r", branch: "codex/x", sha: "a".repeat(40), repositoryId: 1 })).rejects.toThrow("DEVELOPMENT_INFRA_VERCEL_PLAN_NOT_HOBBY");
   });
+  it("retries a Vercel network failure once and does not retry HTTP errors", async () => {
+    const project = { name: "cdas-next", link: { type: "github", repoId: 1 }, buildCommand: null, ssoProtection: { deploymentType: "preview" }, targets: hobbyTargets };
+    const waits: number[] = [];
+    let attempts = 0;
+    const retrying: typeof fetch = (async (input, init) => {
+      attempts += 1;
+      if (attempts === 1) throw new Error("timeout");
+      return queuedFetch([response(project)], [])(input, init);
+    }) as typeof fetch;
+    await new VercelApiProvider("t", "cdas-next", undefined, retrying, async (milliseconds) => { waits.push(milliseconds); }).assertProject({ owner: "o", name: "r", branch: "codex/x", sha: "a".repeat(40), repositoryId: 1 });
+    expect(attempts).toBe(2);
+    expect(waits).toEqual([2_000]);
+    let failures = 0;
+    const alwaysFail: typeof fetch = (async () => { failures += 1; throw new Error("timeout"); }) as typeof fetch;
+    await expect(new VercelApiProvider("t", "cdas-next", undefined, alwaysFail, async () => undefined).assertProject({ owner: "o", name: "r", branch: "codex/x", sha: "a".repeat(40), repositoryId: 1 })).rejects.toThrow("DEVELOPMENT_INFRA_PROVIDER_NETWORK_FAILED");
+    expect(failures).toBe(2);
+    const requests: Request[] = [];
+    await expect(new VercelApiProvider("t", "cdas-next", undefined, queuedFetch([response({}, 401)], requests), async () => { throw new Error("should not sleep"); }).assertProject({ owner: "o", name: "r", branch: "codex/x", sha: "a".repeat(40), repositoryId: 1 })).rejects.toThrow("DEVELOPMENT_INFRA_PROVIDER_REQUEST_401");
+    expect(requests).toHaveLength(1);
+  });
   it("requires one Preview OIDC Blob connection and rejects a long-lived Blob token", async () => {
     const project = { name: "cdas-next", link: { type: "github", repoId: 1 }, buildCommand: null, ssoProtection: { deploymentType: "preview" }, targets: hobbyTargets };
     const oidcEnvironment = { envs: [

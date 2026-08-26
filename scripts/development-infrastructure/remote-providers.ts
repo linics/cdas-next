@@ -7,21 +7,33 @@ type Fetcher = typeof fetch;
 function object(value: unknown): Record<string, unknown> { if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("DEVELOPMENT_INFRA_PROVIDER_SCHEMA_INVALID"); return value as Record<string, unknown>; }
 function string(value: unknown): string { if (typeof value !== "string" || !value) throw new Error("DEVELOPMENT_INFRA_PROVIDER_SCHEMA_INVALID"); return value; }
 function isSinglePreviewTarget(value: unknown): boolean { return value === "preview" || (Array.isArray(value) && value.length === 1 && value[0] === "preview"); }
-async function api(fetcher: Fetcher, url: string, token: string, method = "GET", body?: unknown): Promise<unknown> {
-  if (new URL(url).origin !== "https://api.vercel.com") throw new Error("DEVELOPMENT_INFRA_PROVIDER_ORIGIN_UNSAFE");
-  let response: Response;
-  try { response = await fetcher(url, { method, headers: { authorization: `Bearer ${token}`, "content-type": "application/json" }, redirect: "error", signal: AbortSignal.timeout(30_000), ...(body === undefined ? {} : { body: JSON.stringify(body) }) }); } catch { throw new Error("DEVELOPMENT_INFRA_PROVIDER_NETWORK_FAILED"); }
-  if (!response.ok) throw new Error(`DEVELOPMENT_INFRA_PROVIDER_REQUEST_${response.status}`);
-  return response.status === 204 ? {} : response.json().catch(() => { throw new Error("DEVELOPMENT_INFRA_PROVIDER_SCHEMA_INVALID"); });
-}
-
 export class VercelApiProvider implements VercelProvider {
   private branch = "";
   private protectionBypass: unknown;
   constructor(private readonly token: string, private readonly projectName: string, private readonly teamId: string | undefined, private readonly fetcher: Fetcher = fetch, private readonly sleep: (milliseconds: number) => Promise<void> = async (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds))) {}
   private endpoint(path: string): string { return `https://api.vercel.com${path}${this.teamId ? `${path.includes("?") ? "&" : "?"}teamId=${encodeURIComponent(this.teamId)}` : ""}`; }
+  private async request(url: string, method = "GET", body?: unknown): Promise<unknown> {
+    if (new URL(url).origin !== "https://api.vercel.com") throw new Error("DEVELOPMENT_INFRA_PROVIDER_ORIGIN_UNSAFE");
+    const run = async (): Promise<unknown> => {
+      let response: Response;
+      try {
+        response = await this.fetcher(url, { method, headers: { authorization: `Bearer ${this.token}`, "content-type": "application/json" }, redirect: "error", signal: AbortSignal.timeout(60_000), ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
+      } catch {
+        throw new Error("DEVELOPMENT_INFRA_PROVIDER_NETWORK_FAILED");
+      }
+      if (!response.ok) throw new Error(`DEVELOPMENT_INFRA_PROVIDER_REQUEST_${response.status}`);
+      return response.status === 204 ? {} : response.json().catch(() => { throw new Error("DEVELOPMENT_INFRA_PROVIDER_SCHEMA_INVALID"); });
+    };
+    try {
+      return await run();
+    } catch (error) {
+      if (!(error instanceof Error) || error.message !== "DEVELOPMENT_INFRA_PROVIDER_NETWORK_FAILED") throw error;
+      await this.sleep(2_000);
+      return run();
+    }
+  }
   async assertProject(repository: RepositoryTarget): Promise<void> {
-    const project = object(await api(this.fetcher, this.endpoint(`/v9/projects/${encodeURIComponent(this.projectName)}`), this.token));
+    const project = object(await this.request(this.endpoint(`/v9/projects/${encodeURIComponent(this.projectName)}`)));
     const link = object(project.link);
     const normalizedRepoId = typeof link.repoId === "number" ? link.repoId : Number(link.repoId);
     if (project.name !== this.projectName || link.type !== "github" || !Number.isSafeInteger(normalizedRepoId) || normalizedRepoId !== repository.repositoryId || (typeof link.org === "string" && link.org !== repository.owner) || (typeof link.repo === "string" && link.repo !== repository.name)) throw new Error("DEVELOPMENT_INFRA_VERCEL_PROJECT_LINK_UNSAFE");
@@ -39,7 +51,7 @@ export class VercelApiProvider implements VercelProvider {
   }
   async assertPrivateBlobConnection(): Promise<void> {
     if (!this.branch) throw new Error("DEVELOPMENT_INFRA_VERCEL_PROJECT_NOT_ASSERTED");
-    const listed = object(await api(this.fetcher, this.endpoint(`/v10/projects/${encodeURIComponent(this.projectName)}/env`), this.token));
+    const listed = object(await this.request(this.endpoint(`/v10/projects/${encodeURIComponent(this.projectName)}/env`)));
     const existing = Array.isArray(listed.envs) ? listed.envs.map(object) : (() => { throw new Error("DEVELOPMENT_INFRA_PROVIDER_SCHEMA_INVALID"); })();
     if (existing.some((entry) => entry.key === "BLOB_READ_WRITE_TOKEN")) throw new Error("DEVELOPMENT_INFRA_VERCEL_BLOB_LONG_LIVED_TOKEN_UNSAFE");
     for (const key of ["BLOB_STORE_ID", "BLOB_WEBHOOK_PUBLIC_KEY"] as const) {
@@ -48,14 +60,14 @@ export class VercelApiProvider implements VercelProvider {
     }
   }
   async ensurePreviewEnvironment(values: Readonly<Record<string, string>>): Promise<void> {
-    const listed = object(await api(this.fetcher, this.endpoint(`/v10/projects/${encodeURIComponent(this.projectName)}/env`), this.token));
+    const listed = object(await this.request(this.endpoint(`/v10/projects/${encodeURIComponent(this.projectName)}/env`)));
     const existing = Array.isArray(listed.envs) ? listed.envs.map(object) : (() => { throw new Error("DEVELOPMENT_INFRA_PROVIDER_SCHEMA_INVALID"); })();
     for (const [key, value] of Object.entries(values)) {
       const match = existing.filter((entry) => entry.key === key && isSinglePreviewTarget(entry.target) && entry.gitBranch === this.branch);
       if (match.length > 1) throw new Error("DEVELOPMENT_INFRA_VERCEL_ENV_AMBIGUOUS");
       if (!this.branch) throw new Error("DEVELOPMENT_INFRA_VERCEL_PROJECT_NOT_ASSERTED");
       const body = { key, value, type: "encrypted", target: ["preview"], gitBranch: this.branch };
-      const response = object(match[0] ? await api(this.fetcher, this.endpoint(`/v9/projects/${encodeURIComponent(this.projectName)}/env/${encodeURIComponent(string(match[0].id))}`), this.token, "PATCH", body) : await api(this.fetcher, this.endpoint(`/v10/projects/${encodeURIComponent(this.projectName)}/env`), this.token, "POST", body));
+      const response = object(match[0] ? await this.request(this.endpoint(`/v9/projects/${encodeURIComponent(this.projectName)}/env/${encodeURIComponent(string(match[0].id))}`), "PATCH", body) : await this.request(this.endpoint(`/v10/projects/${encodeURIComponent(this.projectName)}/env`), "POST", body));
       const configured = match[0] ? response : object(response.created);
       if ((!match[0] && (!Array.isArray(response.failed) || response.failed.length !== 0)) || configured.key !== key || configured.type !== "encrypted" || configured.gitBranch !== this.branch || !isSinglePreviewTarget(configured.target)) throw new Error("DEVELOPMENT_INFRA_VERCEL_ENV_RESPONSE_UNSAFE");
     }
@@ -64,7 +76,7 @@ export class VercelApiProvider implements VercelProvider {
     if (!this.branch) throw new Error("DEVELOPMENT_INFRA_VERCEL_PROJECT_NOT_ASSERTED");
     const paidKeys = new Set(["DEEPSEEK_API_KEY", "AI_TOOL_APPROVAL_SECRET"]);
     const list = async () => {
-      const value = object(await api(this.fetcher, this.endpoint(`/v10/projects/${encodeURIComponent(this.projectName)}/env`), this.token));
+      const value = object(await this.request(this.endpoint(`/v10/projects/${encodeURIComponent(this.projectName)}/env`)));
       if (!Array.isArray(value.envs)) throw new Error("DEVELOPMENT_INFRA_PROVIDER_SCHEMA_INVALID");
       return value.envs.map(object);
     };
@@ -73,7 +85,7 @@ export class VercelApiProvider implements VercelProvider {
       if (matches.filter((entry) => entry.key === key).length > 1) throw new Error("DEVELOPMENT_INFRA_VERCEL_ENV_AMBIGUOUS");
     }
     for (const entry of matches) {
-      await api(this.fetcher, this.endpoint(`/v9/projects/${encodeURIComponent(this.projectName)}/env/${encodeURIComponent(string(entry.id))}`), this.token, "DELETE");
+      await this.request(this.endpoint(`/v9/projects/${encodeURIComponent(this.projectName)}/env/${encodeURIComponent(string(entry.id))}`), "DELETE");
     }
     const remaining = (await list()).filter((entry) => paidKeys.has(String(entry.key)) && entry.gitBranch === this.branch && isSinglePreviewTarget(entry.target));
     if (remaining.length !== 0) throw new Error("DEVELOPMENT_INFRA_VERCEL_PAID_ENV_NOT_REMOVED");
@@ -82,18 +94,18 @@ export class VercelApiProvider implements VercelProvider {
     if (!/^[A-Za-z0-9]{32}$/u.test(secret)) throw new Error("DEVELOPMENT_INFRA_VERCEL_BYPASS_INVALID");
     const contains = (value: unknown): boolean => Boolean(value && typeof value === "object" && !Array.isArray(value) && Object.prototype.hasOwnProperty.call(value, secret));
     if (contains(this.protectionBypass)) return;
-    try { const result = object(await api(this.fetcher, this.endpoint(`/v1/projects/${encodeURIComponent(this.projectName)}/protection-bypass`), this.token, "PATCH", { generate: { secret, note: "CDAS development synthetic acceptance" } })); if (!contains(result.protectionBypass)) throw new Error("DEVELOPMENT_INFRA_VERCEL_BYPASS_RESPONSE_UNSAFE"); }
+    try { const result = object(await this.request(this.endpoint(`/v1/projects/${encodeURIComponent(this.projectName)}/protection-bypass`), "PATCH", { generate: { secret, note: "CDAS development synthetic acceptance" } })); if (!contains(result.protectionBypass)) throw new Error("DEVELOPMENT_INFRA_VERCEL_BYPASS_RESPONSE_UNSAFE"); }
     catch (error) {
       if (!(error instanceof Error) || error.message !== "DEVELOPMENT_INFRA_PROVIDER_REQUEST_409") throw error;
-      const project = object(await api(this.fetcher, this.endpoint(`/v9/projects/${encodeURIComponent(this.projectName)}`), this.token));
+      const project = object(await this.request(this.endpoint(`/v9/projects/${encodeURIComponent(this.projectName)}`)));
       if (!contains(project.protectionBypass)) throw new Error("DEVELOPMENT_INFRA_VERCEL_BYPASS_CONFLICT");
     }
   }
   async deployPreview(repository: RepositoryTarget): Promise<PreviewDeployment> {
-    const created = object(await api(this.fetcher, this.endpoint("/v13/deployments?forceNew=1"), this.token, "POST", { name: this.projectName, gitSource: { type: "github", repoId: repository.repositoryId, ref: repository.branch, sha: repository.sha } }));
+    const created = object(await this.request(this.endpoint("/v13/deployments?forceNew=1"), "POST", { name: this.projectName, gitSource: { type: "github", repoId: repository.repositoryId, ref: repository.branch, sha: repository.sha } }));
     const id = string(created.id);
     for (let attempt = 0; attempt < 90; attempt += 1) {
-      const deployment = object(await api(this.fetcher, this.endpoint(`/v13/deployments/${encodeURIComponent(id)}?withGitRepoInfo=true`), this.token));
+      const deployment = object(await this.request(this.endpoint(`/v13/deployments/${encodeURIComponent(id)}?withGitRepoInfo=true`)));
       if (deployment.readyState === "READY") {
         const gitSource = object(deployment.gitSource);
         const url = `https://${string(deployment.url)}`;
