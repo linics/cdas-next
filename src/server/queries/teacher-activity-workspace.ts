@@ -10,6 +10,7 @@ import {
   publishRequestSchema,
 } from "../../domain/activity/prepare-publish-intent";
 import type { PrismaClient } from "../../generated/prisma/client";
+import { reviewFollowUp } from "../../domain/feedback/review-follow-up";
 import {
   type CommandContext,
   resolveCommandContext,
@@ -92,6 +93,12 @@ export const teacherDashboardSchema = z
           publishedAt: isoDateSchema,
           dueAt: isoDateSchema.nullable(),
           canViewSubmissions: z.boolean(),
+          attention: z
+            .strictObject({
+              pendingFeedbackCount: z.int().nonnegative(),
+              awaitingResubmissionCount: z.int().nonnegative(),
+            })
+            .nullable(),
         })
         .strict(),
     ),
@@ -182,6 +189,64 @@ function isCurrentMembership(
   );
 }
 
+function releaseAttention(
+  releaseId: string,
+  submissions: ReadonlyArray<{
+    latestRevisionNumber: number;
+    workingCopy: { id: string } | null;
+    revisions: ReadonlyArray<{
+      revisionNumber: number;
+      feedback: {
+        version: number;
+        revisions: ReadonlyArray<{
+          version: number;
+          nextStep: "CONTINUE" | "REVISE" | null;
+        }>;
+      } | null;
+    }>;
+  }>,
+): { pendingFeedbackCount: number; awaitingResubmissionCount: number } {
+  const current = submissions.filter(
+    (submission) => submission.latestRevisionNumber > 0,
+  );
+  let pendingFeedbackCount = 0;
+  let awaitingResubmissionCount = 0;
+  for (const submission of current) {
+    const revision = submission.revisions[0];
+    if (
+      !revision ||
+      revision.revisionNumber !== submission.latestRevisionNumber
+    ) {
+      throw new Error(
+        `Release ${releaseId} has a submission without an exact current formal revision`,
+      );
+    }
+    const currentFeedback = revision.feedback;
+    const currentFeedbackRevision = currentFeedback?.revisions[0];
+    if (
+      currentFeedback &&
+      (!currentFeedbackRevision ||
+        currentFeedbackRevision.version !== currentFeedback.version)
+    ) {
+      throw new Error(
+        `Release ${releaseId} has a submission without an exact current feedback revision`,
+      );
+    }
+    if (!currentFeedback) {
+      pendingFeedbackCount += 1;
+    }
+    if (
+      reviewFollowUp({
+        nextStep: currentFeedbackRevision?.nextStep,
+        hasWorkingCopy: submission.workingCopy !== null,
+      }) === "AWAITING_RESUBMISSION"
+    ) {
+      awaitingResubmissionCount += 1;
+    }
+  }
+  return { pendingFeedbackCount, awaitingResubmissionCount };
+}
+
 async function requireTeacher(
   database: PrismaClient,
   actorId: string,
@@ -250,6 +315,29 @@ export async function getTeacherActivityDashboard(
         dueAt: true,
         classroom: { select: { name: true, managerId: true } },
         snapshot: { select: { content: true } },
+        submissions: {
+          select: {
+            latestRevisionNumber: true,
+            workingCopy: { select: { id: true } },
+            revisions: {
+              orderBy: { revisionNumber: "desc" },
+              take: 1,
+              select: {
+                revisionNumber: true,
+                feedback: {
+                  select: {
+                    version: true,
+                    revisions: {
+                      orderBy: { version: "desc" },
+                      take: 1,
+                      select: { version: true, nextStep: true },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     }),
     database.classroom.findMany({
@@ -278,6 +366,8 @@ export async function getTeacherActivityDashboard(
         throw new Error(`Release ${release.id} has no immutable snapshot`);
       }
       const content = activityContentSchema.parse(release.snapshot.content);
+      const canViewSubmissions =
+        release.classroom.managerId === context.actorId;
       return {
         id: release.id,
         title: content.title,
@@ -285,8 +375,10 @@ export async function getTeacherActivityDashboard(
         status: release.status,
         publishedAt: release.publishedAt.toISOString(),
         dueAt: release.dueAt?.toISOString() ?? null,
-        canViewSubmissions:
-          release.classroom.managerId === context.actorId,
+        canViewSubmissions,
+        attention: canViewSubmissions
+          ? releaseAttention(release.id, release.submissions)
+          : null,
       };
     }),
     classrooms: classrooms.map((classroom) => ({

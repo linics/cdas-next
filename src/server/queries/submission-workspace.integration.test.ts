@@ -9,6 +9,7 @@ import { saveSubmissionWorkingCopy } from "../commands/save-submission-working-c
 import { saveTeacherFeedback } from "../commands/save-teacher-feedback";
 import { startSubmissionResubmission } from "../commands/start-submission-resubmission";
 import { submitSubmissionRevision } from "../commands/submit-submission-revision";
+import { getTeacherActivityDashboard } from "./teacher-activity-workspace";
 import {
   getStudentReleaseWorkspace,
   getTeacherReleaseSubmissions,
@@ -493,6 +494,23 @@ describeWithDatabase("submission workspace queries", () => {
     );
     expect(JSON.stringify(awaiting)).not.toContain(feedbackBody);
     expect(JSON.stringify(awaiting)).not.toContain("REVISE");
+    await expect(
+      getTeacherActivityDashboard(
+        database,
+        commandContext(teacherId, now),
+        {},
+      ),
+    ).resolves.toMatchObject({
+      releases: [
+        {
+          id: published.releaseId,
+          attention: {
+            pendingFeedbackCount: 0,
+            awaitingResubmissionCount: 1,
+          },
+        },
+      ],
+    });
 
     await startSubmissionResubmission(database, commandContext(studentId, now), {
       releaseId: published.releaseId,
@@ -508,5 +526,22 @@ describeWithDatabase("submission workspace queries", () => {
       "RESUBMISSION_IN_PROGRESS",
     );
     expect(JSON.stringify(inProgress)).not.toContain(feedbackBody);
+    await expect(
+      getTeacherActivityDashboard(
+        database,
+        commandContext(teacherId, now),
+        {},
+      ),
+    ).resolves.toMatchObject({
+      releases: [
+        {
+          id: published.releaseId,
+          attention: {
+            pendingFeedbackCount: 0,
+            awaitingResubmissionCount: 0,
+          },
+        },
+      ],
+    });
   });
 });

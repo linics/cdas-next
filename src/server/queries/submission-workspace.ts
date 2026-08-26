@@ -11,6 +11,7 @@ import {
   membershipIsCurrent,
   membershipOverlapsRelease,
 } from "./release-membership-visibility";
+import { reviewFollowUp } from "../../domain/feedback/review-follow-up";
 import { isSubmissionAudienceMemberWhere } from "../submissions/submission-audience";
 
 const queryInputSchema = z
@@ -205,18 +206,6 @@ function formalAttachmentStatus(status: string): "READY" {
     throw new Error("Formal revision references a non-ready attachment");
   }
   return "READY";
-}
-
-function followUpFromCurrentRevision(input: {
-  nextStep: "CONTINUE" | "REVISE" | null | undefined;
-  hasWorkingCopy: boolean;
-}): "AWAITING_RESUBMISSION" | "RESUBMISSION_IN_PROGRESS" | null {
-  if (input.nextStep !== "REVISE") {
-    return null;
-  }
-  return input.hasWorkingCopy
-    ? "RESUBMISSION_IN_PROGRESS"
-    : "AWAITING_RESUBMISSION";
 }
 
 function awaitingFormalRevision(
@@ -631,7 +620,7 @@ export async function getTeacherReleaseSubmissions(
           rubricAvailable && currentRevision.evaluation
             ? { currentVersion: currentRevision.evaluation.version }
             : null,
-        followUp: followUpFromCurrentRevision({
+        followUp: reviewFollowUp({
           nextStep: currentFeedbackRevision?.nextStep,
           hasWorkingCopy: submission.workingCopy !== null,
         }),

@@ -225,6 +225,10 @@ describeWithDatabase("teacher activity workspace queries", () => {
         title: "已经发布的活动",
         classroomName: "七年一班",
         canViewSubmissions: true,
+        attention: {
+          pendingFeedbackCount: 0,
+          awaitingResubmissionCount: 0,
+        },
       }),
     ]);
     expect(JSON.stringify(result)).not.toContain("仅所有者可见的任务正文");
