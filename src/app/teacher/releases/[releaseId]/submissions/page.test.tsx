@@ -125,6 +125,11 @@ const workspace = {
       complete: true,
     },
   ],
+  reviewCoverage: {
+    currentRevisionCount: 1,
+    feedbackCount: 1,
+    evaluationCount: 0,
+  },
 };
 
 async function renderPage(): Promise<string> {
@@ -185,6 +190,7 @@ describe("teacher release submissions page boundary", () => {
     expect(markup).toContain("陈同学");
     expect(markup).toContain("正式修订 2");
     expect(markup).toContain("已反馈 v3");
+    expect(markup).toContain("已反馈 1/1");
     expect(markup).toContain("无量规");
     expect(markup).toContain("查看反馈与评价");
     expect(markup).not.toContain("待评价");
@@ -211,9 +217,15 @@ describe("teacher release submissions page boundary", () => {
           },
         },
       ],
+      reviewCoverage: {
+        currentRevisionCount: 1,
+        feedbackCount: 1,
+        evaluationCount: 0,
+      },
     });
 
     expect(await renderPage()).toContain("待评价");
+    expect(await renderPage()).toContain("已评价 0/1");
     expect(await renderPage()).not.toContain("无量规");
 
     mocks.getTeacherReleaseSubmissions.mockResolvedValue({
@@ -228,12 +240,19 @@ describe("teacher release submissions page boundary", () => {
           },
         },
       ],
+      reviewCoverage: {
+        currentRevisionCount: 1,
+        feedbackCount: 1,
+        evaluationCount: 1,
+      },
     });
 
     const confirmed = await renderPage();
     expect(confirmed).toContain("已评价 v1");
+    expect(confirmed).toContain("已评价 1/1");
     expect(confirmed).not.toContain("不应出现在列表");
     expect(confirmed).not.toContain("待评价");
+    expect(confirmed).not.toContain("已评价 0/1");
   });
 
   it("renders one shared group progress row with member roles", async () => {

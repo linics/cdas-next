@@ -158,7 +158,16 @@ export default async function TeacherReleaseSubmissionsPage({
               <p className={styles.eyebrow}>当前正式版本</p>
               <h2>正式提交记录</h2>
             </div>
-            <span>{workspace.submissions.length} 份</span>
+            <span>
+              {workspace.submissions.length} 份
+              {workspace.reviewCoverage.currentRevisionCount > 0
+                ? ` · 已反馈 ${workspace.reviewCoverage.feedbackCount}/${workspace.reviewCoverage.currentRevisionCount}`
+                : ""}
+              {workspace.release.rubricAvailable &&
+              workspace.reviewCoverage.currentRevisionCount > 0
+                ? ` · 已评价 ${workspace.reviewCoverage.evaluationCount}/${workspace.reviewCoverage.currentRevisionCount}`
+                : ""}
+            </span>
           </header>
 
           {workspace.submissions.length === 0 ? (

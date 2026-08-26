@@ -375,5 +375,10 @@ describeWithDatabase("submission workspace queries", () => {
       classroomName: "工作台测试班级",
       rubricAvailable: true,
     });
+    expect(result.reviewCoverage).toEqual({
+      currentRevisionCount: 1,
+      feedbackCount: 1,
+      evaluationCount: 0,
+    });
   });
 });

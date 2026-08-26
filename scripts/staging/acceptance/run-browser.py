@@ -764,6 +764,15 @@ def run() -> None:
                 teacher.get_by_text("已评价 v1", exact=False).last,
                 "STAGING_ACCEPTANCE_TEACHER_EVALUATION_SUMMARY_MISSING",
             )
+            wait_visible(
+                teacher.get_by_text("已反馈 1/3", exact=True),
+                "STAGING_ACCEPTANCE_REVIEW_COVERAGE_MISSING",
+            )
+            wait_visible(
+                teacher.get_by_text("已评价 1/3", exact=True),
+                "STAGING_ACCEPTANCE_REVIEW_COVERAGE_MISSING",
+            )
+            checks.append({"code": "REVIEW_COVERAGE_VISIBLE", "status": "PASS"})
 
             sign_in(other_teacher, remote, "other_teacher")
             wait_visible(

@@ -176,6 +176,11 @@ const teacherReleaseSubmissionsSchema = z.strictObject({
       }).nullable(),
     }),
   ),
+  reviewCoverage: z.strictObject({
+    currentRevisionCount: z.int().nonnegative(),
+    feedbackCount: z.int().nonnegative(),
+    evaluationCount: z.int().nonnegative(),
+  }),
 });
 
 export type SubmissionWorkspaceInput = z.input<typeof queryInputSchema>;
@@ -655,6 +660,16 @@ export async function getTeacherReleaseSubmissions(
     left.student.displayName.localeCompare(right.student.displayName),
   );
 
+  const reviewCoverage = {
+    currentRevisionCount: submissions.length,
+    feedbackCount: submissions.filter(
+      (submission) => submission.currentRevision.feedback !== null,
+    ).length,
+    evaluationCount: submissions.filter(
+      (submission) => submission.currentRevision.evaluation !== null,
+    ).length,
+  };
+
   const workspace = {
     actor: { displayName: release.publisher.displayName },
     release: {
@@ -671,6 +686,7 @@ export async function getTeacherReleaseSubmissions(
     },
     submissions,
     progress,
+    reviewCoverage,
   } satisfies TeacherReleaseSubmissions;
 
   return teacherReleaseSubmissionsSchema.parse(workspace);

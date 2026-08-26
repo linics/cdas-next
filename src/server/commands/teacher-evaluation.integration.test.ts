@@ -362,6 +362,10 @@ describeWithDatabase("teacher evaluation commands", () => {
           },
         },
       ],
+      reviewCoverage: {
+        currentRevisionCount: 1,
+        evaluationCount: 1,
+      },
     });
     const studentList = await listStudentReleases(
       database!,
