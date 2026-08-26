@@ -129,8 +129,9 @@ describe("cleanCurriculumMarkdown", () => {
     expect(cleaned).toContain("初中部分");
     expect(cleaned).toContain("（一）数与代数");
     expect(curriculumHeadingLevel("初中部分")).toBe(3);
-    expect(curriculumHeadingLevel("【内容要求】")).toBe(3);
     expect(curriculumHeadingLevel("第一学段(1～2年级)")).toBe(3);
+    expect(curriculumHeadingLevel("【内容要求】")).toBe(4);
+    expect(curriculumHeadingLevel("【识字与写字】")).toBe(4);
     expect(curriculumHeadingLevel("第一学段是学生进入小学学习的开始")).toBeNull();
   });
 

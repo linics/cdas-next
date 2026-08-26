@@ -200,4 +200,29 @@ describe("official curriculum knowledge corpus", () => {
       new Set(coursePlan?.includedTopLevelHeadings),
     );
   });
+
+  it("keeps 学段 in locators so identical 【…】 blocks stay distinguishable", () => {
+    const chineseSections = corpusJson.sources.find(
+      (source) => source.id === "chinese-standard-2022",
+    )?.sections;
+    expect(chineseSections).toBeDefined();
+    expect(
+      chineseSections?.some((section) =>
+        /第一学段[^>]* > 【识字与写字】/u.test(section.locator),
+      ),
+    ).toBe(true);
+
+    const readingByStage = (chineseSections ?? [])
+      .map((section) => section.locator)
+      .filter((locator) => locator.includes("【阅读与鉴赏】"));
+    const stages = new Set(
+      readingByStage.map((locator) => {
+        const match = locator.match(/第[一二三四五六七八九十]+学段/u);
+        return match?.[0];
+      }),
+    );
+    expect(stages.has("第一学段")).toBe(true);
+    expect(stages.has("第二学段")).toBe(true);
+    expect(new Set(readingByStage).size).toBeGreaterThan(1);
+  });
 });

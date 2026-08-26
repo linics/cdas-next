@@ -55,12 +55,12 @@ export function curriculumHeadingLevel(cleanLine: string): number | null {
   if (/^[一二三四五六七八九十]+、\S/u.test(cleanLine)) return 1;
   if (/^（[一二三四五六七八九十]+）\S/u.test(cleanLine)) return 2;
   if (
-    /^【[^】]+】$/u.test(cleanLine) ||
     /^第[一二三四五六七八九十]+学段(?:[（(][^）)]+[）)])?$/u.test(cleanLine) ||
     /^(?:小学部分|初中部分)$/u.test(cleanLine)
   ) {
     return 3;
   }
+  if (/^【[^】]+】$/u.test(cleanLine)) return 4;
   return null;
 }
 
