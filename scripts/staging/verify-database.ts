@@ -28,6 +28,7 @@ async function inspectDatabase(
 ) {
   const client = new Client({ connectionString });
   let transactionStarted = false;
+  client.on("error", () => undefined);
   try {
     await client.connect();
     await client.query("BEGIN READ ONLY");
