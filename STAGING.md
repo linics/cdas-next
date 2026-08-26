@@ -92,6 +92,7 @@ Environment variables 必须包含精确 Vercel Preview 根地址 `STAGING_BASE_
 
 | 日期 | 提交 | 证据 | 结论 |
 | --- | --- | --- | --- |
+| 2026-08-26 | `0bbbc119b7f509ae128ce894a4f309b8a12464f4` | [AI-disabled 教师工作台待反馈/待重交计数完整合成闭环](https://github.com/linics/cdas-next/actions/runs/32963244909) | Hobby Preview、教师工作台当前发布「待反馈 2」与「待重交 1」、发布页跟进标记与覆盖计数、既有评价列表状态、小组成员共享评价、其他教师/学生资源隔离、关闭后拒写与只读、只读数据库核验及六张截图全部 PASS。`AI_PROVIDER_DISABLED=1`。 |
 | 2026-08-26 | `6c76b2b7f6c432c572627a9f38d756184acbc9a5` | [AI-disabled 教师发布页待重交跟进标记完整合成闭环](https://github.com/linics/cdas-next/actions/runs/32943934421) | Hobby Preview、当前正式修订「待重交 1」、覆盖计数「已反馈 1/3」与「已评价 1/3」、既有评价列表状态、小组成员共享评价、其他教师/学生资源隔离、关闭后拒写与只读、只读数据库核验及六张截图全部 PASS。`AI_PROVIDER_DISABLED=1`。 |
 | 2026-08-26 | `8e902a0e233064442041a69fe449292bfd9d1cce` | [AI-disabled 教师发布页反馈/评价覆盖计数完整合成闭环](https://github.com/linics/cdas-next/actions/runs/32937628880) | Hobby Preview、当前正式修订「已反馈 1/3」与「已评价 1/3」、既有评价列表状态、小组成员共享评价、其他教师/学生资源隔离、关闭后拒写与只读、只读数据库核验及六张截图全部 PASS。`AI_PROVIDER_DISABLED=1`。 |
 | 2026-08-26 | `d1c9386fd66fbb08d29415cec4c2989dacbe6a6f` | [AI-disabled 证据绑定量规评价完整合成闭环](https://github.com/linics/cdas-next/actions/runs/32901425620) | Hobby Preview、教师手写确认维度—证据绑定评价与证据不足、教师列表「已评价 v1」、学生列表「已有评价」且不泄露综评、小组成员共享评价、其他教师/学生资源隔离、关闭后拒写与只读、只读数据库核验及六张截图全部 PASS。`AI_PROVIDER_DISABLED=1`。 |
