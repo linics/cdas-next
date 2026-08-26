@@ -159,6 +159,7 @@ describe("teacher release submissions page boundary", () => {
     expect(markup).toContain("教师工作台当前没有开放");
     expect(markup).not.toContain("校园水表观察");
     expect(markup).not.toContain("陈同学");
+    expect(markup).not.toContain("导出评阅名册");
     expect(markup).not.toContain("准备关闭活动");
     expect(mocks.getDatabaseClient).not.toHaveBeenCalled();
     expect(mocks.getTeacherReleaseSubmissions).not.toHaveBeenCalled();
@@ -175,6 +176,7 @@ describe("teacher release submissions page boundary", () => {
     expect(markup).toContain("退出当前账号");
     expect(markup).not.toContain("准备关闭活动");
     expect(markup).not.toContain("确认并关闭活动");
+    expect(markup).not.toContain("导出评阅名册");
     expect(mocks.getDatabaseClient).not.toHaveBeenCalled();
     expect(mocks.getTeacherReleaseSubmissions).not.toHaveBeenCalled();
   });
@@ -195,6 +197,10 @@ describe("teacher release submissions page boundary", () => {
     expect(markup).toContain("已反馈 1/1");
     expect(markup).toContain("无量规");
     expect(markup).toContain("查看反馈与评价");
+    expect(markup).toContain(
+      `href="/teacher/releases/${releaseId}/submissions/export"`,
+    );
+    expect(markup).toContain("导出评阅名册");
     expect(markup).not.toContain("待评价");
     expect(markup).not.toContain("已评价");
     expect(markup).toContain("迟交");

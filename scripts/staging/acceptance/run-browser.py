@@ -319,6 +319,35 @@ def assert_attachment_download(page: Page, filename: str, expected_sha256: str) 
         raise AcceptanceFailure("STAGING_ACCEPTANCE_ATTACHMENT_CONTENT_MISMATCH")
 
 
+def assert_review_roster_export(
+    page: Page,
+    *,
+    audience: str,
+    evidence: str,
+    feedback_text: str,
+    evaluation_text: str,
+) -> None:
+    link = page.get_by_role("link", name="导出评阅名册", exact=True)
+    wait_visible(link, "STAGING_ACCEPTANCE_REVIEW_ROSTER_LINK_MISSING")
+    href = link.get_attribute("href")
+    if not href or not href.endswith("/export"):
+        raise AcceptanceFailure("STAGING_ACCEPTANCE_REVIEW_ROSTER_LINK_INVALID")
+    with page.expect_download(timeout=30_000) as event:
+        link.click()
+    download = event.value
+    suggested = download.suggested_filename or ""
+    if not suggested.endswith(".csv"):
+        raise AcceptanceFailure("STAGING_ACCEPTANCE_REVIEW_ROSTER_FILENAME_MISMATCH")
+    downloaded_path = download.path()
+    if not downloaded_path:
+        raise AcceptanceFailure("STAGING_ACCEPTANCE_REVIEW_ROSTER_EMPTY")
+    text = Path(downloaded_path).read_text(encoding="utf-8-sig")
+    if audience not in text or "待重交" not in text or "已反馈" not in text:
+        raise AcceptanceFailure("STAGING_ACCEPTANCE_REVIEW_ROSTER_FLAGS_MISSING")
+    if evidence in text or feedback_text in text or evaluation_text in text:
+        raise AcceptanceFailure("STAGING_ACCEPTANCE_REVIEW_ROSTER_TEXT_LEAK")
+
+
 def upload_student_attachment(page: Page, filename: str, payload: bytes) -> None:
     if page.get_by_text("附件存储尚未启用", exact=False).count() > 0:
         raise AcceptanceFailure("STAGING_ACCEPTANCE_ATTACHMENT_STORAGE_DISABLED")
@@ -778,6 +807,14 @@ def run() -> None:
                 "STAGING_ACCEPTANCE_FOLLOW_UP_MISSING",
             )
             checks.append({"code": "FOLLOW_UP_VISIBLE", "status": "PASS"})
+            assert_review_roster_export(
+                teacher,
+                audience=group_name,
+                evidence=evidence,
+                feedback_text=feedback_text,
+                evaluation_text=evaluation_text,
+            )
+            checks.append({"code": "REVIEW_ROSTER_EXPORT_VISIBLE", "status": "PASS"})
             teacher.goto(f"{remote}/teacher", wait_until="domcontentloaded")
             assert_origin(teacher.url, remote)
             dashboard_release = teacher.locator("article").filter(has_text=title)
@@ -824,6 +861,15 @@ def run() -> None:
             if evidence in other_teacher_text or feedback_text in other_teacher_text or evaluation_text in other_teacher_text or required("STAGING_ACCEPTANCE_TEST_STUDENT_NAME") in other_teacher_text:
                 raise AcceptanceFailure("STAGING_ACCEPTANCE_OTHER_TEACHER_RESOURCE_LEAK")
             checks.append({"code": "OTHER_TEACHER_SUBMISSION_404", "status": "PASS"})
+            denied_export = goto_with_retry(
+                other_teacher,
+                f"{remote}{release_href}/export",
+                remote,
+                "STAGING_ACCEPTANCE_OTHER_TEACHER_EXPORT_NAVIGATION_FAILED",
+            )
+            if not denied_export or denied_export.status != 404:
+                raise AcceptanceFailure("STAGING_ACCEPTANCE_OTHER_TEACHER_EXPORT_NOT_HIDDEN")
+            checks.append({"code": "OTHER_TEACHER_EXPORT_404", "status": "PASS"})
 
             # The groupmate last viewed phase 2. Select the reviewed phase
             # explicitly instead of relying on the route's default phase.

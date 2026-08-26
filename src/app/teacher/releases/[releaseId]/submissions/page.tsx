@@ -68,9 +68,17 @@ export default async function TeacherReleaseSubmissionsPage({
               发布。阶段进度只读取容器与正式修订状态，不读取学生工作草稿正文或附件元数据。
             </p>
           </div>
-          <Link className={styles.secondaryButton} href="/teacher">
-            ← 返回工作台
-          </Link>
+          <div className={styles.pageHeaderActions}>
+            <a
+              className={styles.secondaryButton}
+              href={`/teacher/releases/${workspace.release.id}/submissions/export`}
+            >
+              导出评阅名册
+            </a>
+            <Link className={styles.secondaryButton} href="/teacher">
+              ← 返回工作台
+            </Link>
+          </div>
         </header>
 
         <section className={styles.submissionPage}>

@@ -2,6 +2,7 @@
 .pageContent { min-width: 0; }
 .eyebrow { margin: 0; color: var(--text-secondary); font-size: 14px; font-weight: 600; }
 .pageHeader { display: flex; max-width: 1200px; align-items: flex-start; justify-content: space-between; gap: 24px; margin: 0 auto; padding: 40px 32px 24px; }
+.pageHeaderActions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: flex-end; }
 .pageHeader h1 { max-width: 760px; margin: 8px 0; font-size: clamp(28px, 3vw, 32px); line-height: 1.25; letter-spacing: -0.02em; }
 .pageHeader > div > p:last-child { max-width: 720px; margin: 0; color: var(--text-secondary); font-size: 16px; }
 .primaryButton, .secondaryButton, .dangerButton, .primaryLink, .rowLink { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; gap: 8px; border: 1px solid transparent; border-radius: var(--radius-sm); padding: 10px 16px; font-size: 16px; font-weight: 600; line-height: 1.25; transition: background var(--motion-fast), border-color var(--motion-fast), color var(--motion-fast); }
