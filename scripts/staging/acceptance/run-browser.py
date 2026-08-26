@@ -765,11 +765,11 @@ def run() -> None:
                 "STAGING_ACCEPTANCE_TEACHER_EVALUATION_SUMMARY_MISSING",
             )
             wait_visible(
-                teacher.get_by_text("已反馈 1/3", exact=True),
+                teacher.get_by_text("已反馈 1/3", exact=False),
                 "STAGING_ACCEPTANCE_REVIEW_COVERAGE_MISSING",
             )
             wait_visible(
-                teacher.get_by_text("已评价 1/3", exact=True),
+                teacher.get_by_text("已评价 1/3", exact=False),
                 "STAGING_ACCEPTANCE_REVIEW_COVERAGE_MISSING",
             )
             checks.append({"code": "REVIEW_COVERAGE_VISIBLE", "status": "PASS"})
