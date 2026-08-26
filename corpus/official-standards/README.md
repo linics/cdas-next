@@ -6,8 +6,9 @@
 
 - Word 原件来自并列旧项目的 `cdas/storage/raw/curriculum_standards/`。
 - 发布机构、版本与文件清单以教育部发布页为准：<https://www.moe.gov.cn/srcsite/A26/s8001/202204/t20220420_619921.html>。
-- 当前 Markdown 使用 Pandoc 3.9.0.2 和 `--track-changes=all -t gfm` 从 Word 机械转换，未把 AI 改写文本混入原文。
-- `manifest.json` 的 `includedTopLevelHeadings` 才是生产检索白名单。构建脚本只索引目标、课程内容、学业质量、课程实施等已圈定章节；前言、目录、附录及未列章节不会进入生成索引。
+- 当前 Markdown 使用 Pandoc 3.9.0.2 和 `--track-changes=all -t gfm` 从 Word 机械转换，未把 AI 改写文本混入原文。原始导出放在 `raw/`，构建时只读、永不改写。
+- 清洗器只去掉封面、目录页、页眉页脚、出版社信息行和书签锚点，不做章节取舍。
+- `manifest.json` 的 `includedTopLevelHeadings` 才是生产检索白名单。构建脚本只索引已圈定章节；前言、目录、附录及未列章节不会进入生成索引。
 - Word OOXML 不能稳定恢复物理页码，因此引用只使用来源标题、章节层级与稳定 section ID，不显示伪造页码。
 
 ## 明确排除

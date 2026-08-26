@@ -140,4 +140,64 @@ describe("official curriculum knowledge corpus", () => {
       ),
     ).toBe(false);
   });
+
+  it("indexes every manifest top-level chapter and keeps the 10% interdisciplinary clause searchable", () => {
+    for (const source of corpusJson.sources) {
+      const tops = new Set(source.sections.map((section) => section.headingPath[0]));
+      for (const heading of source.includedTopLevelHeadings) {
+        expect(tops.has(heading), `${source.id} missing ${heading}`).toBe(true);
+      }
+    }
+
+    const search = searchOfficialKnowledge({
+      query: "跨学科主题学习 课时",
+    });
+    expect(search.status).toBe("FOUND");
+    const hit = search.results.find(
+      (result) =>
+        result.sourceId === "course-plan-2022" &&
+        result.locator.includes("四、课程标准编制与教材编写"),
+    );
+    expect(
+      hit,
+      search.results.map((result) => `${result.sourceId} | ${result.locator}`).join(" ; "),
+    ).toBeDefined();
+    if (!hit) return;
+    const read = readOfficialKnowledgeSection({
+      sourceId: hit.sourceId,
+      sectionId: hit.sectionId,
+    });
+    expect(read.status).toBe("FOUND");
+    if (read.status !== "FOUND") return;
+    expect(read.content).toContain("10%的课时设计跨学科主题学习");
+  });
+
+  it("does not retain Word furniture in locators or section bodies", () => {
+    const sections = corpusJson.sources.flatMap((source) => source.sections);
+    for (const section of sections) {
+      expect(section.locator).not.toMatch(/目录|前言|北京师范大学|出版集团/u);
+      expect(section.locator).not.toMatch(/一\s+、/u);
+      expect(section.locator).not.toMatch(
+        /(?:^| > )[IVXLCDMⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ]+(?:$| > )/u,
+      );
+      expect(section.content).not.toMatch(/北京师范大学|出版集团/u);
+      expect(section.content).not.toMatch(
+        /(?:^|\n)(?:目录|前言|义务教育(?:课程方案|(?:语文|数学|物理|信息科技)课程标准)\(?2022年版\)?)(?:\n|$)/u,
+      );
+    }
+  });
+
+  it("keeps the five course-plan chapters required by the corrected manifest", () => {
+    const coursePlan = corpusJson.sources.find((source) => source.id === "course-plan-2022");
+    expect(coursePlan?.includedTopLevelHeadings).toEqual([
+      "一、培养目标",
+      "二、基本原则",
+      "三、课程设置",
+      "四、课程标准编制与教材编写",
+      "五、课程实施",
+    ]);
+    expect(new Set(coursePlan?.sections.map((section) => section.headingPath[0]))).toEqual(
+      new Set(coursePlan?.includedTopLevelHeadings),
+    );
+  });
 });

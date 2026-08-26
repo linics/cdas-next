@@ -123,33 +123,99 @@ function canonicalText(value: string): string {
 }
 
 const wordSegmenter = new Intl.Segmenter("zh-CN", { granularity: "word" });
+const BM25_K1 = 1.2;
+const BM25_B = 0.75;
+const FIELD_WEIGHTS = { title: 4, locator: 2.5, content: 1 } as const;
 
-function searchTerms(query: string): string[] {
-  const canonical = canonicalText(query);
-  const segmented = [...wordSegmenter.segment(canonical)]
-    .filter((segment) => segment.isWordLike)
-    .map((segment) => segment.segment.trim())
-    .filter((segment) => segment.length >= 2 || /^[a-z0-9]+$/u.test(segment));
-  const cjk = canonical.replace(/[^\p{Script=Han}]/gu, "");
-  if (segmented.length === 0 && cjk.length >= 2) {
-    for (let index = 0; index < cjk.length - 1; index += 1) {
-      segmented.push(cjk.slice(index, index + 2));
-    }
-  }
-  return [...new Set(segmented)].slice(0, 24);
+function addToken(counts: Map<string, number>, token: string) {
+  if (!token) return;
+  counts.set(token, (counts.get(token) ?? 0) + 1);
 }
 
-function occurrences(haystack: string, needle: string): number {
-  if (!needle) return 0;
-  let count = 0;
-  let position = 0;
-  while (count < 6) {
-    const found = haystack.indexOf(needle, position);
-    if (found < 0) break;
-    count += 1;
-    position = found + needle.length;
+function tokenize(text: string): Map<string, number> {
+  const canonical = canonicalText(text);
+  const counts = new Map<string, number>();
+  for (const segment of wordSegmenter.segment(canonical)) {
+    if (!segment.isWordLike) continue;
+    const token = segment.segment.trim();
+    if (token.length >= 2 || /^[a-z0-9]+$/u.test(token)) addToken(counts, token);
   }
-  return count;
+  const cjk = canonical.replace(/[^\p{Script=Han}]/gu, "");
+  for (let index = 0; index < cjk.length - 1; index += 1) {
+    addToken(counts, cjk.slice(index, index + 2));
+  }
+  return counts;
+}
+
+function tokenLength(counts: Map<string, number>): number {
+  let length = 0;
+  for (const count of counts.values()) length += count;
+  return length;
+}
+
+function searchTerms(query: string): string[] {
+  return [...tokenize(query).keys()].slice(0, 24);
+}
+
+type IndexedSection = {
+  source: CorpusSource;
+  section: CorpusSection;
+  title: Map<string, number>;
+  locator: Map<string, number>;
+  content: Map<string, number>;
+  titleLen: number;
+  locatorLen: number;
+  contentLen: number;
+};
+
+const indexedSections: IndexedSection[] = [];
+const documentFrequency = new Map<string, number>();
+
+for (const source of corpus.sources) {
+  for (const section of source.sections) {
+    const title = tokenize(source.title);
+    const locator = tokenize(section.locator);
+    const content = tokenize(section.content);
+    const terms = new Set([...title.keys(), ...locator.keys(), ...content.keys()]);
+    for (const term of terms) {
+      documentFrequency.set(term, (documentFrequency.get(term) ?? 0) + 1);
+    }
+    indexedSections.push({
+      source,
+      section,
+      title,
+      locator,
+      content,
+      titleLen: tokenLength(title),
+      locatorLen: tokenLength(locator),
+      contentLen: tokenLength(content),
+    });
+  }
+}
+
+const documentCount = indexedSections.length;
+const avgTitleLen =
+  indexedSections.reduce((sum, item) => sum + item.titleLen, 0) / documentCount;
+const avgLocatorLen =
+  indexedSections.reduce((sum, item) => sum + item.locatorLen, 0) / documentCount;
+const avgContentLen =
+  indexedSections.reduce((sum, item) => sum + item.contentLen, 0) / documentCount;
+
+function idf(term: string): number {
+  const df = documentFrequency.get(term) ?? 0;
+  return Math.log((documentCount - df + 0.5) / (df + 0.5) + 1);
+}
+
+function bm25Field(
+  tf: number,
+  dl: number,
+  avgdl: number,
+  termIdf: number,
+  weight: number,
+): number {
+  if (tf <= 0 || avgdl <= 0) return 0;
+  const denom = tf + BM25_K1 * (1 - BM25_B + BM25_B * (dl / avgdl));
+  return (weight * termIdf * (tf * (BM25_K1 + 1))) / denom;
 }
 
 export const officialKnowledgeSearchInputSchema = z
@@ -299,6 +365,45 @@ function excerptFor(content: string, terms: string[]): string {
   }`;
 }
 
+function queryPhrases(query: string): string[] {
+  return query
+    .split(/\s+/u)
+    .map((part) => canonicalText(part))
+    .filter((part) => part.length >= 2)
+    .slice(0, 8);
+}
+
+function phrasePositions(text: string, phrase: string): number[] {
+  const haystack = canonicalText(text);
+  const positions: number[] = [];
+  let from = 0;
+  while (from < haystack.length) {
+    const found = haystack.indexOf(phrase, from);
+    if (found < 0) break;
+    positions.push(found);
+    from = found + phrase.length;
+  }
+  return positions;
+}
+
+function proximityBoost(content: string, phrases: readonly string[]): number {
+  if (phrases.length === 0) return 0;
+  if (phrases.length === 1) {
+    return canonicalText(content).includes(phrases[0] ?? "") ? 1.5 : 0;
+  }
+  const positions = phrases.map((phrase) => phrasePositions(content, phrase));
+  if (positions.some((list) => list.length === 0)) return 0;
+  let minDistance = Number.POSITIVE_INFINITY;
+  for (const left of positions[0] ?? []) {
+    for (const right of positions[1] ?? []) {
+      minDistance = Math.min(minDistance, Math.abs(left - right));
+    }
+  }
+  if (minDistance <= 12) return 10;
+  if (minDistance <= 40) return 4;
+  return 0.8;
+}
+
 function sourceSupportsFilters(
   source: CorpusSource,
   schoolStage: SchoolStage | undefined,
@@ -324,29 +429,44 @@ export function searchOfficialKnowledge(
     section: CorpusSection;
   }> = [];
 
-  for (const source of corpus.sources) {
-    if (!sourceSupportsFilters(source, parsed.schoolStage, disciplines)) continue;
-    const sourceTitle = canonicalText(source.title);
-    const disciplineBonus = source.disciplineCodes.some((code) =>
+  for (const document of indexedSections) {
+    if (!sourceSupportsFilters(document.source, parsed.schoolStage, disciplines)) {
+      continue;
+    }
+    const disciplineBonus = document.source.disciplineCodes.some((code) =>
       disciplines.includes(code),
     )
-      ? 24
+      ? 2
       : 0;
-    for (const section of source.sections) {
-      const locator = canonicalText(section.locator);
-      const content = canonicalText(section.content);
-      let score = disciplineBonus;
-      let matchedTerms = 0;
-      for (const term of terms) {
-        const titleMatches = occurrences(sourceTitle, term);
-        const locatorMatches = occurrences(locator, term);
-        const contentMatches = occurrences(content, term);
-        if (titleMatches + locatorMatches + contentMatches > 0) matchedTerms += 1;
-        score += titleMatches * 18 + locatorMatches * 12 + contentMatches * 2;
-      }
-      if (terms.length > 0 && matchedTerms === 0) continue;
-      score += matchedTerms * 3;
-      if (score > 0) scored.push({ score, source, section });
+    let score = disciplineBonus;
+    let matchedTerms = 0;
+    for (const term of terms) {
+      const titleTf = document.title.get(term) ?? 0;
+      const locatorTf = document.locator.get(term) ?? 0;
+      const contentTf = document.content.get(term) ?? 0;
+      if (titleTf + locatorTf + contentTf === 0) continue;
+      matchedTerms += 1;
+      const termIdf = idf(term);
+      score += bm25Field(titleTf, document.titleLen, avgTitleLen, termIdf, FIELD_WEIGHTS.title);
+      score += bm25Field(
+        locatorTf,
+        document.locatorLen,
+        avgLocatorLen,
+        termIdf,
+        FIELD_WEIGHTS.locator,
+      );
+      score += bm25Field(
+        contentTf,
+        document.contentLen,
+        avgContentLen,
+        termIdf,
+        FIELD_WEIGHTS.content,
+      );
+    }
+    if (terms.length > 0 && matchedTerms === 0) continue;
+    score += proximityBoost(document.section.content, queryPhrases(parsed.query));
+    if (score > 0) {
+      scored.push({ score, source: document.source, section: document.section });
     }
   }
 

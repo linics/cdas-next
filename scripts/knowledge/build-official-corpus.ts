@@ -6,6 +6,10 @@ import {
   disciplineCodeSchema,
   schoolStages,
 } from "../../src/domain/activity/activity-content";
+import {
+  cleanCurriculumMarkdown,
+  curriculumHeadingLevel,
+} from "../../src/server/knowledge/clean-curriculum-markdown";
 
 const sourceManifestSchema = z
   .object({
@@ -34,6 +38,7 @@ type SourceManifest = z.infer<typeof sourceManifestSchema>["sources"][number];
 
 const repositoryRoot = process.cwd();
 const corpusDirectory = join(repositoryRoot, "corpus", "official-standards");
+const rawDirectory = join(corpusDirectory, "raw");
 const manifestPath = join(corpusDirectory, "manifest.json");
 const generatedPath = join(
   repositoryRoot,
@@ -46,114 +51,6 @@ const generatedPath = join(
 
 function sha256(value: string): string {
   return createHash("sha256").update(value).digest("hex");
-}
-
-function stripInlineMarkup(value: string): string {
-  return value
-    .replace(/<span\b[^>]*><\/span>/giu, "")
-    .replace(/<img\b[^>]*>/giu, "")
-    .replace(/<\/?(?:table|thead|tbody|tfoot|tr|td|th|colgroup|col|blockquote|p)\b[^>]*>/giu, " ")
-    .replace(/<[^>]+>/gu, " ")
-    .replace(/!\[([^\]]*)\]\([^)]*\)/gu, "$1")
-    .replace(/\[([^\]]+)\]\([^)]*\)/gu, "$1")
-    .replace(/\*\*|__|~~|`/gu, "")
-    .replace(/\\([.()])/gu, "$1")
-    .replace(/^\s*>\s?/gu, "")
-    .replace(/&nbsp;|&#160;/giu, " ")
-    .replace(/\s+/gu, " ")
-    .trim();
-}
-
-function headingLevel(_rawLine: string, cleanLine: string): number | null {
-  if (!cleanLine || cleanLine.length > 90) return null;
-  if (/^附录\s*\d*/u.test(cleanLine)) return 1;
-  if (/^[一二三四五六七八九十]+\s*[、.．]\s*\S/u.test(cleanLine)) return 1;
-  if (/^[（(]\s*[一二三四五六七八九十]+\s*[）)]\s*\S/u.test(cleanLine)) return 2;
-  if (
-    /^(?:【[^】]+】|第[一二三四五六七八九十]+学段|小学部分|初中部分)/u.test(
-      cleanLine,
-    )
-  ) {
-    return 4;
-  }
-  return null;
-}
-
-function isRepeatedPageFurniture(value: string, source: SourceManifest): boolean {
-  const compact = value.replace(/\s+/gu, "");
-  const titleCompact = source.title.replace(/[（）()\s]/gu, "");
-  return (
-    compact === "义务教育" ||
-    compact === "目录" ||
-    compact === "前言" ||
-    compact === titleCompact ||
-    /^(?:(?:I|V|X|Ⅰ|Ⅱ|Ⅲ|Ⅳ|Ⅴ|Ⅵ|Ⅶ|Ⅷ|Ⅸ|Ⅹ)+[.．、]?)?(?:义务教育)?(?:课程方案|语文|数学|物理|信息科技)课程?标准?\(?2022年版\)?$/iu.test(
-      compact,
-    ) ||
-    /^[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ]+$/u.test(compact)
-  );
-}
-
-function markdownBodyLines(
-  markdown: string,
-  source: SourceManifest,
-): string[] {
-  const lines = markdown.replace(/\r\n?/gu, "\n").split("\n");
-  const removed = new Set<number>();
-  let sawContents = false;
-  let startedBody = false;
-  let bodyStartIndex = 0;
-  let currentTopLevel: string | null = null;
-
-  for (const [index, rawLine] of lines.entries()) {
-    const cleanLine = stripInlineMarkup(rawLine);
-    const level = headingLevel(rawLine, cleanLine);
-    if (!startedBody) {
-      if (cleanLine.replace(/\s+/gu, "") === "目录") {
-        sawContents = true;
-        continue;
-      }
-      if (
-        sawContents &&
-        level === 1 &&
-        !rawLine.includes("](") &&
-        !rawLine.includes("#bookmark")
-      ) {
-        startedBody = true;
-        bodyStartIndex = index;
-        currentTopLevel = cleanLine;
-      }
-      continue;
-    }
-
-    const isRepeatedTopLevel =
-      level === 1 &&
-      cleanLine === currentTopLevel &&
-      !rawLine.includes('class="anchor"');
-    if (isRepeatedPageFurniture(cleanLine, source) || isRepeatedTopLevel) {
-      removed.add(index);
-      continue;
-    }
-    if (level === 1) {
-      currentTopLevel = cleanLine;
-    }
-  }
-
-  // Pandoc preserves the blank lines around Word page headers. Remove those
-  // together with the header so a sentence split by a physical page remains
-  // one paragraph in the retrieval corpus.
-  for (const index of [...removed]) {
-    for (let cursor = index - 1; cursor >= 0 && !lines[cursor]?.trim(); cursor -= 1) {
-      removed.add(cursor);
-    }
-    for (let cursor = index + 1; cursor < lines.length && !lines[cursor]?.trim(); cursor += 1) {
-      removed.add(cursor);
-    }
-  }
-
-  return lines
-    .slice(bodyStartIndex)
-    .filter((_, index) => !removed.has(index + bodyStartIndex));
 }
 
 function splitLongParagraph(value: string): string[] {
@@ -173,22 +70,20 @@ function splitLongParagraph(value: string): string[] {
 }
 
 function markdownBlocks(
-  markdown: string,
+  cleanedMarkdown: string,
   source: SourceManifest,
 ): Array<{ headingPath: string[]; text: string }> {
   const blocks: Array<{ headingPath: string[]; text: string }> = [];
   const headingPath: string[] = [];
   const includedHeadings = new Set(
-    source.includedTopLevelHeadings.map((heading) =>
-      heading.replace(/\s+/gu, ""),
-    ),
+    source.includedTopLevelHeadings.map((heading) => heading.replace(/\s+/gu, "")),
   );
   let paragraphLines: string[] = [];
 
   const flushParagraph = () => {
-    const text = paragraphLines.map(stripInlineMarkup).join("");
+    const text = paragraphLines.join("");
     paragraphLines = [];
-    if (text.length < 8 || isRepeatedPageFurniture(text, source)) return;
+    if (text.length < 8) return;
     if (
       !headingPath[0] ||
       !includedHeadings.has(headingPath[0].replace(/\s+/gu, ""))
@@ -197,32 +92,31 @@ function markdownBlocks(
     }
     for (const part of splitLongParagraph(text)) {
       if (part.length >= 8) {
-        blocks.push({ headingPath: [...headingPath], text: part });
+        blocks.push({ headingPath: [...headingPath].filter(Boolean), text: part });
       }
     }
   };
 
-  for (const rawLine of markdownBodyLines(markdown, source)) {
-    const cleanLine = stripInlineMarkup(rawLine);
-    const level = headingLevel(rawLine, cleanLine);
-    if (level !== null && !isRepeatedPageFurniture(cleanLine, source)) {
+  for (const line of cleanedMarkdown.split("\n")) {
+    const level = curriculumHeadingLevel(line);
+    if (level !== null) {
       flushParagraph();
       headingPath.splice(level - 1);
-      headingPath[level - 1] = cleanLine;
+      headingPath[level - 1] = line;
       continue;
     }
-    if (!cleanLine) {
+    if (!line) {
       flushParagraph();
       continue;
     }
-    paragraphLines.push(rawLine);
+    paragraphLines.push(line);
   }
   flushParagraph();
   return blocks;
 }
 
-function buildSections(markdown: string, source: SourceManifest) {
-  const blocks = markdownBlocks(markdown, source);
+function buildSections(cleanedMarkdown: string, source: SourceManifest) {
+  const blocks = markdownBlocks(cleanedMarkdown, source);
   const sections: Array<{
     id: string;
     headingPath: string[];
@@ -279,10 +173,11 @@ async function buildCorpus() {
   );
   const sources = [];
   for (const source of manifest.sources) {
-    const markdown = (await readFile(join(corpusDirectory, source.file), "utf8"))
+    const markdown = (await readFile(join(rawDirectory, source.file), "utf8"))
       .normalize("NFC")
       .replace(/\r\n?/gu, "\n");
-    const sections = buildSections(markdown, source);
+    const cleaned = cleanCurriculumMarkdown(markdown);
+    const sections = buildSections(cleaned, source);
     if (sections.length < 3) {
       throw new Error(`KNOWLEDGE_SOURCE_TOO_SMALL:${source.id}`);
     }
