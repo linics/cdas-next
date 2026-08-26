@@ -92,6 +92,7 @@ Environment variables 必须包含精确 Vercel Preview 根地址 `STAGING_BASE_
 
 | 日期 | 提交 | 证据 | 结论 |
 | --- | --- | --- | --- |
+| 2026-08-26 | `d1c9386fd66fbb08d29415cec4c2989dacbe6a6f` | [AI-disabled 证据绑定量规评价完整合成闭环](https://github.com/linics/cdas-next/actions/runs/32901425620) | Hobby Preview、教师手写确认维度—证据绑定评价与证据不足、教师列表「已评价 v1」、学生列表「已有评价」且不泄露综评、小组成员共享评价、其他教师/学生资源隔离、关闭后拒写与只读、只读数据库核验及六张截图全部 PASS。`AI_PROVIDER_DISABLED=1`。 |
 | 2026-08-25 | `491da4d6beaa1d0de0afa6678505f9f66e145827` | [D-033 真实 DeepSeek 受约束设计助手完整合成闭环](https://github.com/linics/cdas-next/actions/runs/32785815755) | 结构化任务理解、教师确认后创建 schema v2 草稿、人工版本 2、独立签名发布确认、学生提交、教师反馈、学生读取、关闭后拒写与只读、其他学生/教师隔离、四个精确 `SUCCEEDED` AgentRun、13 项只读数据库核验及八张截图全部 PASS。 |
 | 2026-08-25 | `b1a96a28dc789d96707d6e1b7f47317bd2a4d633` | [AI-disabled 双学生小组完整合成闭环](https://github.com/linics/cdas-next/actions/runs/32780071107) | Hobby Preview、18 个迁移与 schema drift、教师建立两人 Release 小组及角色、两名学生接力完成三个共享阶段、Private Blob 附件、共享反馈、关闭后拒写与只读、学生/其他教师资源隔离、8 项只读小组历史核验及六张截图全部 PASS。 |
 | 2026-08-25 | `b4035bba44287c298b4a3e8a1b2b05162a806c8e` | [AI-disabled 三阶段完整合成闭环](https://github.com/linics/cdas-next/actions/runs/32763998574) | Hobby Preview、17 个迁移与 schema drift、三阶段顺序解锁、三个发布内检查点、Private Blob 附件、教师反馈、关闭后拒写与只读、其他学生/教师隔离、只读阶段索引/修订精确计数及六张截图全部 PASS。 |
