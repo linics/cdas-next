@@ -39,6 +39,40 @@ type PublishInput = {
   dueAt: string | null;
 };
 
+type OfficialKnowledgeSearchOutput = {
+  status: "FOUND" | "NO_MATCH";
+  results: Array<{
+    sourceId: string;
+    sectionId: string;
+    sourceTitle: string;
+    locator: string;
+    citationLabel: string;
+    excerpt: string;
+    href: string;
+    sourceUrl: string;
+  }>;
+};
+
+type OfficialKnowledgeReadOutput =
+  | {
+      status: "FOUND";
+      sourceId: string;
+      sectionId: string;
+      sourceTitle: string;
+      publisher: "中华人民共和国教育部";
+      version: "2022年版";
+      locator: string;
+      citationLabel: string;
+      content: string;
+      href: string;
+      sourceUrl: string;
+    }
+  | {
+      status: "NOT_FOUND";
+      sourceId: string;
+      sectionId: string;
+    };
+
 type ActivityDraftProposal = {
   taskUnderstandingSummary: {
     realWorldContext: string;
@@ -59,6 +93,13 @@ type ActivityDraftProposal = {
     evidence: string;
     assessment: string;
   }>;
+  sourceReferences: Array<{
+    sourceId: string;
+    sectionId: string;
+    citationLabel: string;
+    href: string;
+    reason: string;
+  }>;
   content: ActivityContentV2;
 };
 
@@ -66,6 +107,19 @@ type ActivityAssistantMessage = UIMessage<
   undefined,
   never,
   {
+    search_knowledge: {
+      input: {
+        query: string;
+        schoolStage?: "PRIMARY" | "MIDDLE";
+        disciplineCodes?: string[];
+        limit?: number;
+      };
+      output: OfficialKnowledgeSearchOutput;
+    };
+    read_source_section: {
+      input: { sourceId: string; sectionId: string };
+      output: OfficialKnowledgeReadOutput;
+    };
     create_activity_draft: {
       input: ActivityDraftProposal;
       output: CreatedDraftOutput;
@@ -265,6 +319,24 @@ function ActivityDraftProposalCard({
           ))}
         </dl>
       </section>
+      <section className={styles.proposalSection} aria-label="官方来源依据">
+        <h3>官方来源依据</h3>
+        {proposal.sourceReferences.length > 0 ? (
+          <ul className={styles.referenceList}>
+            {proposal.sourceReferences.map((reference) => (
+              <li key={`${reference.sourceId}:${reference.sectionId}`}>
+                <Link href={reference.href}>{reference.citationLabel}</Link>
+                <p>{reference.reason}</p>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p>首版官方语料中未找到与本活动直接对应的学科章节。</p>
+        )}
+        <p className={styles.referenceCaveat}>
+          引用用于说明设计依据，不代表活动已自动通过课程标准合规审查。
+        </p>
+      </section>
       <div className={styles.inlineActions}>
         <button
           type="button"
@@ -334,7 +406,8 @@ export function ActivityAssistant({
 
       <p className={styles.boundaryNote}>
         助手只会创建「可预览」草稿；你仍可进入编辑页逐项修改。发布前会另行列出草稿版本、班级与截止时间，没有你的明确确认就不会发布。
-        助手不可用时，手动创建与编辑活动仍可正常使用。
+        助手不可用时，手动创建与编辑活动仍可正常使用。你也可以
+        <Link href="/teacher/knowledge">直接检索首版官方课程标准</Link>。
       </p>
 
       {messages.length > 0 ? (
@@ -352,6 +425,90 @@ export function ActivityAssistant({
                 {message.parts.map((part, index) => {
                   if (part.type === "text") {
                     return part.text ? <p key={index}>{part.text}</p> : null;
+                  }
+
+                  if (part.type === "tool-search_knowledge") {
+                    if (!part.input || part.state === "input-streaming") {
+                      return (
+                        <p className={styles.toolProgress} key={part.toolCallId}>
+                          正在检索教育部课程方案与课程标准…
+                        </p>
+                      );
+                    }
+                    if (part.state === "output-available") {
+                      if (part.output.status === "NO_MATCH") {
+                        return (
+                          <p className={styles.toolProgress} key={part.toolCallId}>
+                            首版官方语料中没有找到直接匹配的章节。
+                          </p>
+                        );
+                      }
+                      return (
+                        <details className={styles.knowledgeResult} key={part.toolCallId}>
+                          <summary>
+                            已找到 {part.output.results.length} 个官方标准片段
+                          </summary>
+                          <ul className={styles.referenceList}>
+                            {part.output.results.map((result) => (
+                              <li key={result.sectionId}>
+                                <Link href={result.href}>{result.citationLabel}</Link>
+                                <p>{result.excerpt}</p>
+                              </li>
+                            ))}
+                          </ul>
+                        </details>
+                      );
+                    }
+                    if (part.state === "output-error") {
+                      return (
+                        <p className={styles.errorText} key={part.toolCallId}>
+                          官方标准检索失败；你仍可继续手动设计活动。
+                        </p>
+                      );
+                    }
+                    return (
+                      <p className={styles.toolProgress} key={part.toolCallId}>
+                        正在整理检索结果…
+                      </p>
+                    );
+                  }
+
+                  if (part.type === "tool-read_source_section") {
+                    if (!part.input || part.state === "input-streaming") {
+                      return (
+                        <p className={styles.toolProgress} key={part.toolCallId}>
+                          正在读取官方标准原文…
+                        </p>
+                      );
+                    }
+                    if (part.state === "output-available") {
+                      if (part.output.status === "NOT_FOUND") {
+                        return (
+                          <p className={styles.errorText} key={part.toolCallId}>
+                            该来源章节不存在，助手不会使用它。
+                          </p>
+                        );
+                      }
+                      return (
+                        <details className={styles.knowledgeResult} key={part.toolCallId}>
+                          <summary>已读取：{part.output.citationLabel}</summary>
+                          <p>{part.output.content}</p>
+                          <Link href={part.output.href}>打开来源章节</Link>
+                        </details>
+                      );
+                    }
+                    if (part.state === "output-error") {
+                      return (
+                        <p className={styles.errorText} key={part.toolCallId}>
+                          来源原文读取失败；助手不会编造引用。
+                        </p>
+                      );
+                    }
+                    return (
+                      <p className={styles.toolProgress} key={part.toolCallId}>
+                        正在核对来源章节…
+                      </p>
+                    );
                   }
 
                   if (part.type === "tool-create_activity_draft") {

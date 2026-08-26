@@ -6,7 +6,16 @@ import {
   validateUIMessages,
 } from "ai";
 import { z } from "zod";
-import { activityAssistantMessageValidationTools } from "./activity-assistant-tools";
+import {
+  activityAssistantMessageValidationTools,
+  activityDraftProposalSchema,
+} from "./activity-assistant-tools";
+import {
+  officialKnowledgeSectionKey,
+  readOfficialKnowledgeSection,
+  searchOfficialKnowledge,
+  type OfficialKnowledgeSectionIdentity,
+} from "../knowledge/official-corpus";
 
 export const ACTIVITY_ASSISTANT_MAX_REQUEST_BYTES = 64 * 1024;
 const MAX_MESSAGES = 16;
@@ -45,6 +54,8 @@ function assertSafeMessageHistory(
   const toolCallIds = new Set<string>();
   let historyTextLength = 0;
   let toolPartCount = 0;
+  const searchedSectionKeys = new Set<string>();
+  const readSectionKeys = new Set<string>();
 
   for (const [messageIndex, message] of messages.entries()) {
     if (
@@ -85,6 +96,8 @@ function assertSafeMessageHistory(
       }
 
       if (
+        part.type !== "tool-search_knowledge" &&
+        part.type !== "tool-read_source_section" &&
         part.type !== "tool-create_activity_draft" &&
         part.type !== "tool-publish_activity_release"
       ) {
@@ -105,6 +118,50 @@ function assertSafeMessageHistory(
         throw new ActivityAssistantRequestError("INVALID_MESSAGES");
       }
       toolCallIds.add(part.toolCallId);
+
+      if (part.type === "tool-search_knowledge") {
+        if (part.state !== "output-available") {
+          throw new ActivityAssistantRequestError("INVALID_MESSAGES");
+        }
+        const canonicalOutput = searchOfficialKnowledge(part.input);
+        if (JSON.stringify(part.output) !== JSON.stringify(canonicalOutput)) {
+          throw new ActivityAssistantRequestError("INVALID_MESSAGES");
+        }
+        canonicalOutput.results.forEach((result) => {
+          searchedSectionKeys.add(officialKnowledgeSectionKey(result));
+        });
+      }
+
+      if (part.type === "tool-read_source_section") {
+        if (part.state !== "output-available") {
+          throw new ActivityAssistantRequestError("INVALID_MESSAGES");
+        }
+        const key = officialKnowledgeSectionKey(part.input);
+        const canonicalOutput = readOfficialKnowledgeSection(part.input);
+        if (
+          !searchedSectionKeys.has(key) ||
+          JSON.stringify(part.output) !==
+            JSON.stringify(canonicalOutput)
+        ) {
+          throw new ActivityAssistantRequestError("INVALID_MESSAGES");
+        }
+        if (canonicalOutput.status === "FOUND") {
+          readSectionKeys.add(key);
+        }
+      }
+
+      if (part.type === "tool-create_activity_draft") {
+        const proposal = activityDraftProposalSchema.safeParse(part.input);
+        if (
+          !proposal.success ||
+          proposal.data.sourceReferences.some(
+            (reference) =>
+              !readSectionKeys.has(officialKnowledgeSectionKey(reference)),
+          )
+        ) {
+          throw new ActivityAssistantRequestError("INVALID_MESSAGES");
+        }
+      }
 
       if (
         (part.type === "tool-create_activity_draft" ||
@@ -150,6 +207,40 @@ function assertSafeMessageHistory(
   if (!hasApprovalResponse) {
     throw new ActivityAssistantRequestError("INVALID_MESSAGES");
   }
+}
+
+export function getActivityAssistantKnowledgeLedger(
+  messages: ActivityAssistantMessage[],
+): Readonly<{
+  searchResults: OfficialKnowledgeSectionIdentity[];
+  readSections: OfficialKnowledgeSectionIdentity[];
+}> {
+  const searchResults = new Map<string, OfficialKnowledgeSectionIdentity>();
+  const readSections = new Map<string, OfficialKnowledgeSectionIdentity>();
+  for (const message of messages) {
+    if (message.role !== "assistant") continue;
+    for (const part of message.parts) {
+      if (
+        part.type === "tool-search_knowledge" &&
+        part.state === "output-available"
+      ) {
+        part.output.results.forEach((result) => {
+          searchResults.set(officialKnowledgeSectionKey(result), result);
+        });
+      }
+      if (
+        part.type === "tool-read_source_section" &&
+        part.state === "output-available" &&
+        part.output.status === "FOUND"
+      ) {
+        readSections.set(officialKnowledgeSectionKey(part.output), part.output);
+      }
+    }
+  }
+  return {
+    searchResults: [...searchResults.values()],
+    readSections: [...readSections.values()],
+  };
 }
 
 export async function parseActivityAssistantRequest(

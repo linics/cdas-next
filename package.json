@@ -40,6 +40,8 @@
     "staging:agent:verify": "node --import tsx scripts/staging/agent-acceptance/verify.ts",
     "staging:agent:assert-final": "node --import tsx scripts/staging/agent-acceptance/assert-final.ts",
     "test:agent-acceptance-python": "PYTHONDONTWRITEBYTECODE=1 python3 -B scripts/staging/agent-acceptance/run-browser.test.py",
+    "knowledge:build": "node --import tsx scripts/knowledge/build-official-corpus.ts",
+    "knowledge:check": "node --import tsx scripts/knowledge/build-official-corpus.ts --check",
     "dev": "next dev",
     "build": "next build --webpack",
     "start": "next start",
@@ -57,7 +59,7 @@
     "db:test": "prisma db execute --config prisma.test.config.ts --file prisma/tests/invariants.sql",
     "db:test:diff": "prisma migrate diff --config prisma.test.config.ts --from-config-datasource --to-schema prisma/schema.prisma --exit-code",
     "audit:prod": "pnpm audit --prod",
-    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm test:acceptance-python && pnpm test:agent-acceptance-python && pnpm build"
+    "check": "pnpm knowledge:check && pnpm lint && pnpm typecheck && pnpm test && pnpm test:acceptance-python && pnpm test:agent-acceptance-python && pnpm build"
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "3.0.35",
