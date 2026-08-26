@@ -152,6 +152,9 @@ const teacherReleaseSubmissionsSchema = z.strictObject({
         evaluation: z
           .strictObject({ currentVersion: z.int().positive() })
           .nullable(),
+        followUp: z
+          .enum(["AWAITING_RESUBMISSION", "RESUBMISSION_IN_PROGRESS"])
+          .nullable(),
       }),
     }),
   ),
@@ -166,6 +169,7 @@ const teacherReleaseSubmissionsSchema = z.strictObject({
       totalPhaseCount: z.int().nonnegative(),
       currentPhaseIndex: z.int().nonnegative(),
       complete: z.boolean(),
+      awaitingFormalRevision: z.boolean(),
       group: z.strictObject({
         id: z.uuid(),
         name: preservedNonBlankTextSchema,
@@ -201,6 +205,36 @@ function formalAttachmentStatus(status: string): "READY" {
     throw new Error("Formal revision references a non-ready attachment");
   }
   return "READY";
+}
+
+function followUpFromCurrentRevision(input: {
+  nextStep: "CONTINUE" | "REVISE" | null | undefined;
+  hasWorkingCopy: boolean;
+}): "AWAITING_RESUBMISSION" | "RESUBMISSION_IN_PROGRESS" | null {
+  if (input.nextStep !== "REVISE") {
+    return null;
+  }
+  return input.hasWorkingCopy
+    ? "RESUBMISSION_IN_PROGRESS"
+    : "AWAITING_RESUBMISSION";
+}
+
+function awaitingFormalRevision(
+  submissions: ReadonlyArray<{
+    phaseIndex: number;
+    latestRevisionNumber: number;
+  }>,
+  currentPhaseIndex: number,
+  complete: boolean,
+): boolean {
+  return (
+    !complete &&
+    submissions.some(
+      (submission) =>
+        submission.phaseIndex === currentPhaseIndex &&
+        submission.latestRevisionNumber === 0,
+    )
+  );
 }
 
 export async function getStudentReleaseWorkspace(
@@ -465,6 +499,7 @@ export async function getTeacherReleaseSubmissions(
           id: true,
           phaseIndex: true,
           latestRevisionNumber: true,
+          workingCopy: { select: { id: true } },
           student: { select: { id: true, displayName: true } },
           group: {
             select: {
@@ -481,7 +516,16 @@ export async function getTeacherReleaseSubmissions(
               revisionNumber: true,
               isLate: true,
               submittedAt: true,
-              feedback: { select: { version: true } },
+              feedback: {
+                select: {
+                  version: true,
+                  revisions: {
+                    orderBy: { version: "desc" },
+                    take: 1,
+                    select: { version: true, nextStep: true },
+                  },
+                },
+              },
               evaluation: { select: { version: true } },
             },
           },
@@ -547,6 +591,18 @@ export async function getTeacherReleaseSubmissions(
       );
     }
 
+    const currentFeedback = currentRevision.feedback;
+    const currentFeedbackRevision = currentFeedback?.revisions[0];
+    if (
+      currentFeedback &&
+      (!currentFeedbackRevision ||
+        currentFeedbackRevision.version !== currentFeedback.version)
+    ) {
+      throw new Error(
+        `Submission ${submission.id} has no exact current feedback revision`,
+      );
+    }
+
     return {
       submissionId: submission.id,
       phaseIndex: submission.phaseIndex,
@@ -568,13 +624,17 @@ export async function getTeacherReleaseSubmissions(
         revisionNumber: currentRevision.revisionNumber,
         isLate: currentRevision.isLate,
         submittedAt: currentRevision.submittedAt.toISOString(),
-        feedback: currentRevision.feedback
-          ? { currentVersion: currentRevision.feedback.version }
+        feedback: currentFeedback
+          ? { currentVersion: currentFeedback.version }
           : null,
         evaluation:
           rubricAvailable && currentRevision.evaluation
             ? { currentVersion: currentRevision.evaluation.version }
             : null,
+        followUp: followUpFromCurrentRevision({
+          nextStep: currentFeedbackRevision?.nextStep,
+          hasWorkingCopy: submission.workingCopy !== null,
+        }),
       },
     };
       });
@@ -601,14 +661,20 @@ export async function getTeacherReleaseSubmissions(
       const finalSubmitted = groupSubmissions.some((submission) => submission.phaseIndex === 0 && submission.latestRevisionNumber > 0);
       const firstIncompletePhase = Array.from({ length: phaseCount }, (_, index) => index + 1).find((phaseIndex) => !completedPhaseIndexes.has(phaseIndex));
       const complete = release.executionVersion === 0 ? finalSubmitted : completedPhaseIndexes.size === phaseCount && (submissionMode === "phased" || finalSubmitted);
+      const currentPhaseIndex = release.executionVersion === 0 ? 0 : firstIncompletePhase ?? (submissionMode === "mixed" ? 0 : Math.max(1, phaseCount));
       return {
         student: { id: group.id, displayName: group.name },
         group,
         started: groupSubmissions.length > 0,
         completedPhaseCount: completedPhaseIndexes.size,
         totalPhaseCount: phaseCount,
-        currentPhaseIndex: release.executionVersion === 0 ? 0 : firstIncompletePhase ?? (submissionMode === "mixed" ? 0 : Math.max(1, phaseCount)),
+        currentPhaseIndex,
         complete,
+        awaitingFormalRevision: awaitingFormalRevision(
+          groupSubmissions,
+          currentPhaseIndex,
+          complete,
+        ),
       };
     }),
     ...release.classroom.memberships
@@ -640,6 +706,11 @@ export async function getTeacherReleaseSubmissions(
           ? finalSubmitted
           : completedPhaseIndexes.size === phaseCount &&
             (submissionMode === "phased" || finalSubmitted);
+      const currentPhaseIndex =
+        release.executionVersion === 0
+          ? 0
+          : firstIncompletePhase ??
+            (submissionMode === "mixed" ? 0 : Math.max(1, phaseCount));
 
       return {
         student,
@@ -647,12 +718,13 @@ export async function getTeacherReleaseSubmissions(
         started: studentSubmissions.length > 0,
         completedPhaseCount: completedPhaseIndexes.size,
         totalPhaseCount: phaseCount,
-        currentPhaseIndex:
-          release.executionVersion === 0
-            ? 0
-            : firstIncompletePhase ??
-              (submissionMode === "mixed" ? 0 : Math.max(1, phaseCount)),
+        currentPhaseIndex,
         complete,
+        awaitingFormalRevision: awaitingFormalRevision(
+          studentSubmissions,
+          currentPhaseIndex,
+          complete,
+        ),
       };
     }),
   ];

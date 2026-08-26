@@ -773,6 +773,11 @@ def run() -> None:
                 "STAGING_ACCEPTANCE_REVIEW_COVERAGE_MISSING",
             )
             checks.append({"code": "REVIEW_COVERAGE_VISIBLE", "status": "PASS"})
+            wait_visible(
+                teacher.get_by_text("待重交", exact=False),
+                "STAGING_ACCEPTANCE_FOLLOW_UP_MISSING",
+            )
+            checks.append({"code": "FOLLOW_UP_VISIBLE", "status": "PASS"})
 
             sign_in(other_teacher, remote, "other_teacher")
             wait_visible(

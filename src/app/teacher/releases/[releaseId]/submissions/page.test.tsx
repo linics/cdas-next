@@ -111,6 +111,7 @@ const workspace = {
           body: "教师正式反馈正文",
         },
         evaluation: null,
+        followUp: null,
       },
     },
   ],
@@ -123,6 +124,7 @@ const workspace = {
       totalPhaseCount: 0,
       currentPhaseIndex: 0,
       complete: true,
+      awaitingFormalRevision: false,
     },
   ],
   reviewCoverage: {
@@ -197,6 +199,9 @@ describe("teacher release submissions page boundary", () => {
     expect(markup).not.toContain("已评价");
     expect(markup).toContain("迟交");
     expect(markup).not.toContain("学生工作副本正文");
+    expect(markup).not.toContain("待重交");
+    expect(markup).not.toContain("重交中");
+    expect(markup).not.toContain("尚未正式提交");
     expect(markup).not.toContain("学生正式提交正文");
     expect(markup).not.toContain("教师正式反馈正文");
     expect(markup).not.toContain("clerk_auth_subject");
@@ -291,6 +296,7 @@ describe("teacher release submissions page boundary", () => {
           totalPhaseCount: 3,
           currentPhaseIndex: 2,
           complete: false,
+          awaitingFormalRevision: false,
         },
       ],
     });
@@ -303,6 +309,64 @@ describe("teacher release submissions page boundary", () => {
     expect(markup).toContain("周同学（汇报）");
     expect(markup).toContain("已有提交 · 已锁定");
     expect(markup).toContain("当前第 2 阶段");
+    expect(markup).not.toContain("尚未正式提交");
+  });
+
+  it("renders follow-up flags without leaking working-copy or evaluation bodies", async () => {
+    mocks.getTeacherReleaseSubmissions.mockResolvedValue({
+      ...workspace,
+      release: {
+        ...workspace.release,
+        executionVersion: 1,
+        submissionMode: "phased",
+        phaseCount: 3,
+      },
+      submissions: [
+        {
+          ...workspace.submissions[0],
+          currentRevision: {
+            ...workspace.submissions[0]!.currentRevision,
+            followUp: "AWAITING_RESUBMISSION",
+          },
+        },
+      ],
+      progress: [
+        {
+          ...workspace.progress[0]!,
+          complete: false,
+          started: true,
+          currentPhaseIndex: 2,
+          completedPhaseCount: 1,
+          totalPhaseCount: 3,
+          awaitingFormalRevision: true,
+        },
+      ],
+    });
+
+    const awaiting = await renderPage();
+    expect(awaiting).toContain("待重交 1");
+    expect(awaiting).toContain(" · 待重交");
+    expect(awaiting).toContain("尚未正式提交");
+    expect(awaiting).not.toContain("重交中");
+    expect(awaiting).not.toContain("学生工作副本正文");
+    expect(awaiting).not.toContain("教师正式反馈正文");
+
+    mocks.getTeacherReleaseSubmissions.mockResolvedValue({
+      ...workspace,
+      submissions: [
+        {
+          ...workspace.submissions[0],
+          currentRevision: {
+            ...workspace.submissions[0]!.currentRevision,
+            followUp: "RESUBMISSION_IN_PROGRESS",
+          },
+        },
+      ],
+    });
+
+    const inProgress = await renderPage();
+    expect(inProgress).toContain("重交中");
+    expect(inProgress).not.toContain("待重交");
   });
 
   it("does not render a close write entrypoint for a closed release", async () => {

@@ -50,6 +50,10 @@ export default async function TeacherReleaseSubmissionsPage({
     throw error;
   }
 
+  const awaitingResubmissionCount = workspace.submissions.filter(
+    (submission) => submission.currentRevision.followUp === "AWAITING_RESUBMISSION",
+  ).length;
+
   return (
     <TeacherPage actorName={workspace.actor.displayName}>
       <div className={styles.pageContent}>
@@ -139,6 +143,9 @@ export default async function TeacherReleaseSubmissionsPage({
                               ? "正在整理整项终稿"
                               : `当前第 ${progress.currentPhaseIndex} 阶段`
                             : "尚未开始"}
+                        {progress.awaitingFormalRevision
+                          ? " · 尚未正式提交"
+                          : ""}
                       </strong>
                       <small>
                         {workspace.release.executionVersion === 1
@@ -166,6 +173,9 @@ export default async function TeacherReleaseSubmissionsPage({
               {workspace.release.rubricAvailable &&
               workspace.reviewCoverage.currentRevisionCount > 0
                 ? ` · 已评价 ${workspace.reviewCoverage.evaluationCount}/${workspace.reviewCoverage.currentRevisionCount}`
+                : ""}
+              {awaitingResubmissionCount > 0
+                ? ` · 待重交 ${awaitingResubmissionCount}`
                 : ""}
             </span>
           </header>
@@ -211,6 +221,13 @@ export default async function TeacherReleaseSubmissionsPage({
                           ? ` · 已评价 v${submission.currentRevision.evaluation.currentVersion}`
                           : " · 待评价"
                         : " · 无量规"}
+                      {submission.currentRevision.followUp ===
+                      "AWAITING_RESUBMISSION"
+                        ? " · 待重交"
+                        : submission.currentRevision.followUp ===
+                            "RESUBMISSION_IN_PROGRESS"
+                          ? " · 重交中"
+                          : ""}
                     </small>
                   </div>
                   <Link
