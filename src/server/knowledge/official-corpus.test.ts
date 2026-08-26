@@ -212,17 +212,48 @@ describe("official curriculum knowledge corpus", () => {
       ),
     ).toBe(true);
 
-    const readingByStage = (chineseSections ?? [])
-      .map((section) => section.locator)
-      .filter((locator) => locator.includes("【阅读与鉴赏】"));
-    const stages = new Set(
-      readingByStage.map((locator) => {
-        const match = locator.match(/第[一二三四五六七八九十]+学段/u);
-        return match?.[0];
-      }),
+    const readingByStage = [
+      ...new Set(
+        (chineseSections ?? [])
+          .map((section) => section.locator)
+          .filter((locator) => locator.includes("【阅读与鉴赏】")),
+      ),
+    ];
+    expect(readingByStage).toHaveLength(4);
+    expect(readingByStage).toEqual(
+      expect.arrayContaining([
+        expect.stringMatching(/第一学段[^>]* > 【阅读与鉴赏】/u),
+        expect.stringMatching(/第二学段[^>]* > 【阅读与鉴赏】/u),
+        expect.stringMatching(/第三学段[^>]* > 【阅读与鉴赏】/u),
+        expect.stringMatching(/第四学段[^>]* > 【阅读与鉴赏】/u),
+      ]),
     );
-    expect(stages.has("第一学段")).toBe(true);
-    expect(stages.has("第二学段")).toBe(true);
-    expect(new Set(readingByStage).size).toBeGreaterThan(1);
+  });
+
+  it("does not leave empty heading-path slots when 【…】 is not under a 学段", () => {
+    const locators = corpusJson.sources.flatMap((source) =>
+      source.sections.map((section) => section.locator),
+    );
+    expect(locators.length).toBeGreaterThan(0);
+    for (const locator of locators) {
+      expect(locator.split(" > ").every((part) => part.trim().length > 0)).toBe(
+        true,
+      );
+      expect(locator).not.toMatch(/ >  > /u);
+    }
+
+    const physicsLocators = corpusJson.sources
+      .find((source) => source.id === "physics-standard-2022")
+      ?.sections.map((section) => section.locator);
+    expect(physicsLocators?.some((locator) => locator === "四、课程内容 > （一）物质 > 【内容要求】")).toBe(
+      true,
+    );
+
+    const infoTechLocators = corpusJson.sources
+      .find((source) => source.id === "info-tech-standard-2022")
+      ?.sections.map((section) => section.locator);
+    expect(infoTechLocators?.some((locator) => locator === "四、课程内容 > （三）跨学科主题")).toBe(
+      true,
+    );
   });
 });
