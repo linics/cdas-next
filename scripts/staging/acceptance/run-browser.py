@@ -780,12 +780,13 @@ def run() -> None:
             checks.append({"code": "FOLLOW_UP_VISIBLE", "status": "PASS"})
             teacher.goto(f"{remote}/teacher", wait_until="domcontentloaded")
             assert_origin(teacher.url, remote)
+            dashboard_release = teacher.locator("article").filter(has_text=title)
             wait_visible(
-                teacher.get_by_text("待反馈 2", exact=False),
+                dashboard_release.get_by_text("待反馈 2", exact=False),
                 "STAGING_ACCEPTANCE_DASHBOARD_ATTENTION_MISSING",
             )
             wait_visible(
-                teacher.get_by_text("待重交 1", exact=False),
+                dashboard_release.get_by_text("待重交 1", exact=False),
                 "STAGING_ACCEPTANCE_DASHBOARD_ATTENTION_MISSING",
             )
             checks.append({"code": "DASHBOARD_ATTENTION_VISIBLE", "status": "PASS"})
