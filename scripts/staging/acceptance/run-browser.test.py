@@ -160,6 +160,7 @@ class BrowserContractTests(unittest.TestCase):
         self.assertIn("DASHBOARD_ATTENTION_VISIBLE", source)
         self.assertIn('locator("article").filter(has_text=title)', source)
         self.assertIn('dashboard_release.get_by_text("待反馈 2", exact=False)', source)
+        self.assertIn('dashboard_release.get_by_text("待评价 2", exact=False)', source)
         self.assertIn('dashboard_release.get_by_text("待重交 1", exact=False)', source)
         self.assertIn("STAGING_ACCEPTANCE_DASHBOARD_ATTENTION_MISSING", source)
         self.assertIn("确认并保存量规评价", source)

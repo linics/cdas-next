@@ -786,6 +786,10 @@ def run() -> None:
                 "STAGING_ACCEPTANCE_DASHBOARD_ATTENTION_MISSING",
             )
             wait_visible(
+                dashboard_release.get_by_text("待评价 2", exact=False),
+                "STAGING_ACCEPTANCE_DASHBOARD_ATTENTION_MISSING",
+            )
+            wait_visible(
                 dashboard_release.get_by_text("待重交 1", exact=False),
                 "STAGING_ACCEPTANCE_DASHBOARD_ATTENTION_MISSING",
             )

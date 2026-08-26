@@ -63,6 +63,7 @@ describe("teacher workspace output contracts", () => {
           canViewSubmissions: true,
           attention: {
             pendingFeedbackCount: 0,
+            pendingEvaluationCount: 0,
             awaitingResubmissionCount: 0,
           },
         },

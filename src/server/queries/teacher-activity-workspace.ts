@@ -96,6 +96,7 @@ export const teacherDashboardSchema = z
           attention: z
             .strictObject({
               pendingFeedbackCount: z.int().nonnegative(),
+              pendingEvaluationCount: z.int().nonnegative(),
               awaitingResubmissionCount: z.int().nonnegative(),
             })
             .nullable(),
@@ -191,6 +192,7 @@ function isCurrentMembership(
 
 function releaseAttention(
   releaseId: string,
+  rubricAvailable: boolean,
   submissions: ReadonlyArray<{
     latestRevisionNumber: number;
     workingCopy: { id: string } | null;
@@ -203,13 +205,19 @@ function releaseAttention(
           nextStep: "CONTINUE" | "REVISE" | null;
         }>;
       } | null;
+      evaluation: { id: string } | null;
     }>;
   }>,
-): { pendingFeedbackCount: number; awaitingResubmissionCount: number } {
+): {
+  pendingFeedbackCount: number;
+  pendingEvaluationCount: number;
+  awaitingResubmissionCount: number;
+} {
   const current = submissions.filter(
     (submission) => submission.latestRevisionNumber > 0,
   );
   let pendingFeedbackCount = 0;
+  let pendingEvaluationCount = 0;
   let awaitingResubmissionCount = 0;
   for (const submission of current) {
     const revision = submission.revisions[0];
@@ -235,6 +243,9 @@ function releaseAttention(
     if (!currentFeedback) {
       pendingFeedbackCount += 1;
     }
+    if (rubricAvailable && !revision.evaluation) {
+      pendingEvaluationCount += 1;
+    }
     if (
       reviewFollowUp({
         nextStep: currentFeedbackRevision?.nextStep,
@@ -244,7 +255,11 @@ function releaseAttention(
       awaitingResubmissionCount += 1;
     }
   }
-  return { pendingFeedbackCount, awaitingResubmissionCount };
+  return {
+    pendingFeedbackCount,
+    pendingEvaluationCount,
+    awaitingResubmissionCount,
+  };
 }
 
 async function requireTeacher(
@@ -334,6 +349,7 @@ export async function getTeacherActivityDashboard(
                     },
                   },
                 },
+                evaluation: { select: { id: true } },
               },
             },
           },
@@ -377,7 +393,11 @@ export async function getTeacherActivityDashboard(
         dueAt: release.dueAt?.toISOString() ?? null,
         canViewSubmissions,
         attention: canViewSubmissions
-          ? releaseAttention(release.id, release.submissions)
+          ? releaseAttention(
+              release.id,
+              content.schemaVersion === 2,
+              release.submissions,
+            )
           : null,
       };
     }),

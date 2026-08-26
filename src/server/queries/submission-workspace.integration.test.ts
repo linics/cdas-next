@@ -506,6 +506,7 @@ describeWithDatabase("submission workspace queries", () => {
           id: published.releaseId,
           attention: {
             pendingFeedbackCount: 0,
+            pendingEvaluationCount: 1,
             awaitingResubmissionCount: 1,
           },
         },
@@ -538,6 +539,7 @@ describeWithDatabase("submission workspace queries", () => {
           id: published.releaseId,
           attention: {
             pendingFeedbackCount: 0,
+            pendingEvaluationCount: 1,
             awaitingResubmissionCount: 0,
           },
         },

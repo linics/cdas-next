@@ -128,6 +128,7 @@ describe("teacher dashboard role guidance", () => {
           canViewSubmissions: true,
           attention: {
             pendingFeedbackCount: 2,
+            pendingEvaluationCount: 2,
             awaitingResubmissionCount: 1,
           },
         },
@@ -137,9 +138,40 @@ describe("teacher dashboard role guidance", () => {
     const markup = await renderPage();
     expect(markup).toContain("校园水表观察");
     expect(markup).toContain("待反馈 2");
+    expect(markup).toContain("待评价 2");
     expect(markup).toContain("待重交 1");
     expect(markup).toContain("查看提交");
     expect(markup).not.toContain("学生工作副本正文");
     expect(markup).not.toContain("综评");
+    expect(markup).not.toContain("已评价");
+  });
+
+  it("hides pending evaluation copy when the count is zero", async () => {
+    mocks.getTeacherActivityDashboard.mockResolvedValue({
+      actor: { displayName: "林老师" },
+      drafts: [],
+      classrooms: [],
+      releases: [
+        {
+          id: "60000000-0000-4000-8000-000000000006",
+          title: "校园水表观察",
+          classroomName: "七年一班",
+          status: "ACTIVE",
+          publishedAt: "2026-08-18T10:00:00.000Z",
+          dueAt: null,
+          canViewSubmissions: true,
+          attention: {
+            pendingFeedbackCount: 2,
+            pendingEvaluationCount: 0,
+            awaitingResubmissionCount: 1,
+          },
+        },
+      ],
+    });
+
+    const markup = await renderPage();
+    expect(markup).toContain("待反馈 2");
+    expect(markup).toContain("待重交 1");
+    expect(markup).not.toContain("待评价");
   });
 });

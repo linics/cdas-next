@@ -177,11 +177,15 @@ export default async function TeacherDashboardPage() {
                           <p>目标班级</p>
                           {release.attention &&
                           (release.attention.pendingFeedbackCount > 0 ||
+                            release.attention.pendingEvaluationCount > 0 ||
                             release.attention.awaitingResubmissionCount > 0) ? (
                             <p>
                               {[
                                 release.attention.pendingFeedbackCount > 0
                                   ? `待反馈 ${release.attention.pendingFeedbackCount}`
+                                  : null,
+                                release.attention.pendingEvaluationCount > 0
+                                  ? `待评价 ${release.attention.pendingEvaluationCount}`
                                   : null,
                                 release.attention.awaitingResubmissionCount > 0
                                   ? `待重交 ${release.attention.awaitingResubmissionCount}`
