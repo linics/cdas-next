@@ -614,8 +614,26 @@
   .accessActions { align-items: stretch; flex-direction: column; }
 }
 
-/* 完整任务书：二级入口，默认收起，不占首屏。 */
+/* 活动背景：故事的开头，常驻。收进折叠里学生会直接从「第 3 阶段」读起。 */
+.activityBackground {
+  margin-bottom: var(--space-4);
+  border-left: 2px solid var(--color-accent);
+  padding-left: var(--space-4);
+}
+
+.activityBackground p:not(.eyebrow) {
+  max-width: 46em;
+  margin: var(--space-2) 0 0;
+  color: var(--color-text);
+  font-size: var(--text-body);
+  line-height: 1.75;
+  text-align: justify;
+  text-justify: inter-character;
+}
+
+/* 完整任务书：二级入口，默认收起。位置在阶段步进器之上，不再压到页尾。 */
 .releaseBrief {
+  margin-bottom: var(--space-6);
   border: 1px solid var(--color-divider);
   border-radius: var(--radius-md);
   padding: 0;
@@ -670,5 +688,7 @@
    版面照旧单列，正文自己收在舒服的行长内。 */
 .workspaceColumn p,
 .workspaceColumn li,
+.releaseBrief p,
+.releaseBrief li,
 .revisionText,
 .feedbackBody { max-width: 46em; }

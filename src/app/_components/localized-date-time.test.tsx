@@ -9,19 +9,25 @@ const instant = "2026-08-18T12:00:00.000Z";
 
 describe("localized date time", () => {
   it("formats the same instant differently in Taipei and New York", () => {
+    // 默认不带时区名（页面上反复出现 GMT+8 只是噪音），要显示时得显式传。
     const taipei = formatDateTimeInstant(instant, {
       locales: "zh-CN",
       timeZone: "Asia/Taipei",
+      timeZoneName: "short",
     });
     const newYork = formatDateTimeInstant(instant, {
       locales: "zh-CN",
       timeZone: "America/New_York",
+      timeZoneName: "short",
     });
 
     expect(taipei).toContain("20:00");
     expect(newYork).toContain("08:00");
     expect(taipei).toMatch(/GMT|台北/u);
     expect(newYork).toMatch(/GMT|EDT|EST|纽约/u);
+    expect(
+      formatDateTimeInstant(instant, { locales: "zh-CN", timeZone: "Asia/Taipei" }),
+    ).not.toMatch(/GMT/u);
     expect(taipei).not.toBe(newYork);
   });
 

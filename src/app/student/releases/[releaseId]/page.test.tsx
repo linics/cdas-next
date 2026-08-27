@@ -358,17 +358,24 @@ describe("student release page access boundary", () => {
 
     const markup = await renderPage();
 
-    expect(markup).toContain("任务设置");
     expect(markup).toContain('aria-label="学生工作台导航"');
     expect(markup).toContain('href="/student"');
-    expect(markup).toContain("调查探究");
-    expect(markup).toContain("背景设定");
-    expect(markup).toContain("知识与技能");
+    // 背景常驻在折叠之外 —— 收起来学生就从「第 N 阶段」读起，没头没尾。
+    expect(markup).toContain("活动背景");
+    expect(markup).toContain("你们是七年级节水观察员");
+    // 折叠里保留学生用得上的三段
     expect(markup).toContain("总体任务");
     expect(markup).toContain("观察与问题界定");
     expect(markup).toContain("文字记录");
     expect(markup).toContain("评价标准");
     expect(markup).toContain("需改进：证据不足或与结论脱节");
+    // 教学设计与审计用的信息不进学生端
+    expect(markup).not.toContain("任务设置");
+    expect(markup).not.toContain("知识与技能");
+    expect(markup).not.toContain("跨学科概念");
+    expect(markup).not.toContain("快照摘要");
+    // 作业没有课时设计（旧系统把作业和教案搞混留下的表述）
+    expect(markup).not.toContain("课时");
   });
 
   it("shows confirmed feedback history to a historical member without leaking internals", async () => {
