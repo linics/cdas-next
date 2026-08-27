@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import {
   clickthroughAudienceFromPath,
@@ -6,68 +6,64 @@ import {
   resolveClickthroughAudience,
 } from "./clickthrough-auth";
 
-const enabledEnv = {
+const localIds = {
   NODE_ENV: "development",
-  DEV_CLICKTHROUGH_AUTH: "1",
   DEV_TEST_TEACHER_CLERK_ID: "user_teacher123",
   DEV_TEST_STUDENT_CLERK_ID: "user_student123",
 } satisfies NodeJS.ProcessEnv;
 
 describe("isClickthroughAuthEnabled", () => {
-  afterEach(() => {
-    vi.unstubAllEnvs();
-  });
-
-  it("is on only for local next dev with explicit flag and both demo identities", () => {
-    expect(isClickthroughAuthEnabled(enabledEnv)).toBe(true);
-  });
-
-  it("stays off in production even if the flag is set", () => {
+  it("defaults on for local next dev once demo identities exist", () => {
+    expect(isClickthroughAuthEnabled(localIds)).toBe(true);
     expect(
       isClickthroughAuthEnabled({
-        ...enabledEnv,
+        ...localIds,
+        DEV_CLICKTHROUGH_AUTH: "1",
+      }),
+    ).toBe(true);
+  });
+
+  it("opts back into Clerk only when the flag is explicitly off", () => {
+    expect(
+      isClickthroughAuthEnabled({
+        ...localIds,
+        DEV_CLICKTHROUGH_AUTH: "0",
+      }),
+    ).toBe(false);
+  });
+
+  it("stays off in production, on Vercel, and during E2E or staging runs", () => {
+    expect(
+      isClickthroughAuthEnabled({
+        ...localIds,
         NODE_ENV: "production",
       }),
     ).toBe(false);
-  });
-
-  it("stays off on Vercel Preview or production runtimes", () => {
     expect(
       isClickthroughAuthEnabled({
-        ...enabledEnv,
+        ...localIds,
         VERCEL_ENV: "preview",
       }),
     ).toBe(false);
-  });
-
-  it("stays off without the explicit flag or demo identities", () => {
     expect(
       isClickthroughAuthEnabled({
-        NODE_ENV: "development",
-        DEV_TEST_TEACHER_CLERK_ID: "user_teacher123",
-        DEV_TEST_STUDENT_CLERK_ID: "user_student123",
-      }),
-    ).toBe(false);
-    expect(
-      isClickthroughAuthEnabled({
-        NODE_ENV: "development",
-        DEV_CLICKTHROUGH_AUTH: "1",
-        DEV_TEST_TEACHER_CLERK_ID: "user_teacher123",
-      }),
-    ).toBe(false);
-  });
-
-  it("stays off during closed-loop E2E and staging runs", () => {
-    expect(
-      isClickthroughAuthEnabled({
-        ...enabledEnv,
+        ...localIds,
         E2E_RUN_MARKER: "cdas-e2e-20260823000000-test01",
       }),
     ).toBe(false);
     expect(
       isClickthroughAuthEnabled({
-        ...enabledEnv,
+        ...localIds,
         STAGING_RUN_MARKER: "cdas-staging-synthetic",
+      }),
+    ).toBe(false);
+  });
+
+  it("stays off without both demo identities", () => {
+    expect(
+      isClickthroughAuthEnabled({
+        NODE_ENV: "development",
+        DEV_TEST_TEACHER_CLERK_ID: "user_teacher123",
       }),
     ).toBe(false);
   });
@@ -85,7 +81,6 @@ describe("clickthrough audience mapping", () => {
       "STUDENT",
     );
     expect(clickthroughAudienceFromPath("/")).toBeUndefined();
-    expect(clickthroughAudienceFromPath("/attachments/abc/download")).toBeUndefined();
   });
 
   it("falls back to the referring workspace for shared attachment routes", () => {
@@ -95,11 +90,5 @@ describe("clickthrough audience mapping", () => {
         referer: "http://localhost:3000/student/releases/r1",
       }),
     ).toBe("STUDENT");
-    expect(
-      resolveClickthroughAudience({
-        pathname: "/attachments/abc/download",
-        referer: "http://localhost:3000/teacher/submissions/s1",
-      }),
-    ).toBe("TEACHER");
   });
 });

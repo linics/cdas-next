@@ -231,12 +231,11 @@ describe("student dashboard page", () => {
   it("groups real release links by progress without placeholder buttons", async () => {
     const markup = await renderPage();
 
-    expect(markup).toContain("待提交");
-    expect(markup).toContain("已有反馈");
-    expect(markup).toContain("待重交");
-    expect(markup).toContain("已有评价");
+    // 三组：要重交 → 进行中 → 已关闭。每条活动自己的状态标签不变。
+    expect(markup).toContain("要重交");
+    expect(markup).toContain("进行中");
+    expect(markup).toContain("已关闭");
     expect(markup).toContain("当前版已有量规评价");
-    expect(markup).toContain("历史与关闭");
     expect(markup).toContain("仍可迟交");
     expect(markup).toContain(`/student/releases/${pendingReleaseId}`);
     expect(markup).toContain(`/student/releases/${feedbackReleaseId}`);

@@ -344,6 +344,8 @@ export async function getTeacherActivityDashboard(
         snapshot: { select: { content: true } },
         submissions: {
           select: {
+            studentId: true,
+            groupId: true,
             latestRevisionNumber: true,
             workingCopy: { select: { id: true } },
             revisions: {
@@ -406,9 +408,16 @@ export async function getTeacherActivityDashboard(
         canViewSubmissions,
         progress: canViewSubmissions
           ? {
-              submittedCount: release.submissions.filter(
-                (submission) => submission.latestRevisionNumber > 0,
-              ).length,
+              // 分阶段活动里同一个学生每个阶段各有一行提交，直接数行会把
+              // 「4 人的班」算成「7 份已提交」。按提交主体（学生或小组）去重。
+              submittedCount: new Set(
+                release.submissions
+                  .filter((submission) => submission.latestRevisionNumber > 0)
+                  .map(
+                    (submission) =>
+                      submission.groupId ?? submission.studentId ?? "",
+                  ),
+              ).size,
               cohortSize: release.classroom.memberships.filter((membership) =>
                 isCurrentMembership(membership, context.now),
               ).length,

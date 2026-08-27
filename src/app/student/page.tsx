@@ -85,38 +85,26 @@ function AccessUnavailable({
 }
 
 type StudentRelease = StudentReleaseList["releases"][number];
-type ReleaseGroupKey = "pending" | "submitted" | "feedback" | "resubmit" | "evaluation" | "history";
+type ReleaseGroupKey = "resubmit" | "active" | "closed";
 
+// 按「急不急」分组，不按数据状态分：学生先看要不要重交，再看还在进行的，
+// 最后才是已经关掉的。原来的六组（待提交/已提交/已有反馈/待重交/已有评价/历史）
+// 是照着提交状态机切的，读的人得先懂状态机。
 const groupDetails = {
-  pending: {
-    number: "01",
-    title: "待提交",
-    detail: "尚未形成正式修订，或仍有未提交的工作草稿。",
-  },
-  submitted: {
-    number: "02",
-    title: "已提交",
-    detail: "当前正式版已经提交，等待教师反馈。",
-  },
-  feedback: {
-    number: "03",
-    title: "已有反馈",
-    detail: "当前正式修订已有教师反馈，可进入活动查看。",
-  },
   resubmit: {
-    number: "04",
-    title: "待重交",
-    detail: "教师要求按反馈修改并重交，当前还没有新的工作草稿。",
+    number: "01",
+    title: "要重交",
+    detail: "老师看过了，要你按反馈改完再交一次。",
   },
-  evaluation: {
-    number: "05",
-    title: "已有评价",
-    detail: "当前正式修订已有教师确认的量规评价。",
+  active: {
+    number: "02",
+    title: "进行中",
+    detail: "还能继续做：有的等你开始，有的等老师看，有的已经有反馈可以读。",
   },
-  history: {
-    number: "06",
-    title: "历史与关闭",
-    detail: "保留读取权限，但当前不能继续保存或提交。",
+  closed: {
+    number: "03",
+    title: "已关闭",
+    detail: "还能翻看，但不能再保存或提交。",
   },
 } satisfies Record<
   ReleaseGroupKey,
@@ -125,24 +113,12 @@ const groupDetails = {
 
 function groupRelease(release: StudentRelease): ReleaseGroupKey {
   if (!release.access.canWrite) {
-    return "history";
+    return "closed";
   }
   if (release.submission.followUp === "AWAITING_RESUBMISSION") {
     return "resubmit";
   }
-  if (release.submission.hasWorkingCopy) {
-    return "pending";
-  }
-  if (release.submission.hasCurrentEvaluation) {
-    return "evaluation";
-  }
-  if (release.submission.hasCurrentFeedback) {
-    return "feedback";
-  }
-  if (release.submission.latestRevisionNumber > 0) {
-    return "submitted";
-  }
-  return "pending";
+  return "active";
 }
 
 function releaseStatusLabel(release: StudentRelease): string {
@@ -331,19 +307,13 @@ export default async function StudentDashboardPage() {
 
   const now = context.clock();
   const grouped = {
-    pending: [] as StudentRelease[],
-    submitted: [] as StudentRelease[],
-    feedback: [] as StudentRelease[],
     resubmit: [] as StudentRelease[],
-    evaluation: [] as StudentRelease[],
-    history: [] as StudentRelease[],
+    active: [] as StudentRelease[],
+    closed: [] as StudentRelease[],
   };
   for (const release of releaseList.releases) {
     grouped[groupRelease(release)].push(release);
   }
-  const writableCount = releaseList.releases.filter(
-    (release) => release.access.canWrite,
-  ).length;
 
   return (
     <WorkspaceShell
@@ -359,26 +329,19 @@ export default async function StudentDashboardPage() {
             <h1>我的学习活动</h1>
             <p>只显示你当前可参与或依法保留读取权限的发布活动。</p>
           </div>
+          {/* 计数跟着分组走，同一套口径，不再另立五个状态。 */}
           <dl className={styles.summaryLine}>
             <div>
-              <dt>开放可写</dt>
-              <dd>{writableCount}</dd>
-            </div>
-            <div>
-              <dt>待提交</dt>
-              <dd>{grouped.pending.length}</dd>
-            </div>
-            <div>
-              <dt>已有反馈</dt>
-              <dd>{grouped.feedback.length}</dd>
-            </div>
-            <div>
-              <dt>待重交</dt>
+              <dt>要重交</dt>
               <dd>{grouped.resubmit.length}</dd>
             </div>
             <div>
-              <dt>已有评价</dt>
-              <dd>{grouped.evaluation.length}</dd>
+              <dt>进行中</dt>
+              <dd>{grouped.active.length}</dd>
+            </div>
+            <div>
+              <dt>已关闭</dt>
+              <dd>{grouped.closed.length}</dd>
             </div>
           </dl>
         </header>

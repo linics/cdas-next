@@ -15,13 +15,22 @@ function withPathname(request: NextRequest) {
 
 // Clerk supplies identity context only. Individual routes and every command
 // still perform their own authentication and resource-level authorization.
-const proxy = isClickthroughAuthEnabled()
-  ? withPathname
-  : isClerkAuthenticationAvailable()
-    ? clerkMiddleware((_auth, request) => withPathname(request))
-    : withPathname;
+const clerkProxy = clerkMiddleware((_auth, request) => withPathname(request));
 
-export default proxy;
+export default function proxy(
+  request: NextRequest,
+  event: Parameters<typeof clerkProxy>[1],
+) {
+  if (isClickthroughAuthEnabled()) {
+    return withPathname(request);
+  }
+
+  if (isClerkAuthenticationAvailable()) {
+    return clerkProxy(request, event);
+  }
+
+  return withPathname(request);
+}
 
 export const config = {
   matcher: ["/((?!_next/static|_next/image|.*\\..*).*)"],

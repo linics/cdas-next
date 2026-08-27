@@ -6,11 +6,11 @@
 python3 scripts/ui-audit/audit.py 1280 768 390
 ```
 
-需要 dev server 在 :3000，且带上 E2E 票据环境变量（脚本用它免密登录教师/学生两个身份）：
+需要 dev server 在 :3000，直接 `pnpm dev` 即可 —— 脚本靠 `.env.local` 里的
+`DEV_CLICKTHROUGH_AUTH=1` 免登录访问 `/teacher` 与 `/student`。
 
-```bash
-E2E_CLERK_TICKET_SECRET=<32+ 位> E2E_RUN_MARKER=cdas-e2e-uiaudit01 pnpm dev
-```
+**不要**给 dev server 设 `E2E_RUN_MARKER`：`isClickthroughAuthEnabled` 见到它
+就会关掉免登录通道，页面会全部落到门禁页，审查结果随之失真。
 
 ## 检查项
 

@@ -84,7 +84,7 @@
 }
 
 .groupHeading h2 { margin: 0; font-size: var(--text-section); line-height: 1.2; }
-.groupHeading p { margin: 0; color: var(--color-neutral-700); font-size: var(--text-meta); line-height: 1.6; }
+.groupHeading p { max-width: 46em; margin: 0; color: var(--color-neutral-700); font-size: var(--text-meta); line-height: 1.6; }
 .groupHeading strong { color: var(--color-neutral-700); font-size: var(--text-meta); font-weight: 400; }
 
 .releaseList { border-top: 0; }

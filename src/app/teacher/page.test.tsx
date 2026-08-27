@@ -140,7 +140,7 @@ describe("teacher dashboard role guidance", () => {
     expect(markup).toContain("待反馈 2");
     expect(markup).toContain("待评价 2");
     expect(markup).toContain("待重交 1");
-    expect(markup).toContain("查看提交");
+    expect(markup).toContain("/submissions");
     expect(markup).toContain('href="/teacher/insights"');
     expect(markup).toContain("过程诊断");
     expect(markup).not.toContain("学生工作副本正文");

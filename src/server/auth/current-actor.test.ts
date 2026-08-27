@@ -44,7 +44,6 @@ describe("getCurrentActor clickthrough", () => {
   beforeEach(() => {
     headerStore.clear();
     vi.stubEnv("NODE_ENV", "development");
-    vi.stubEnv("DEV_CLICKTHROUGH_AUTH", "1");
     vi.stubEnv("DEV_TEST_TEACHER_CLERK_ID", teacher.authSubject);
     vi.stubEnv("DEV_TEST_STUDENT_CLERK_ID", student.authSubject);
     vi.stubEnv("VERCEL_ENV", "");
@@ -55,46 +54,36 @@ describe("getCurrentActor clickthrough", () => {
     vi.clearAllMocks();
   });
 
-  it("enters the teacher workspace as the preconfigured teacher without Clerk", async () => {
+  it("enters teacher and student workspaces without Clerk by default", async () => {
     headerStore.set("x-cdas-pathname", "/teacher");
-    const database = databaseDouble();
-
     await expect(
-      getCurrentActor(database as never),
+      getCurrentActor(databaseDouble() as never),
     ).resolves.toMatchObject(teacher);
-    expect(auth).not.toHaveBeenCalled();
-  });
 
-  it("enters the student workspace as the preconfigured student without Clerk", async () => {
-    headerStore.set("x-cdas-pathname", "/student/releases/r1");
-    const database = databaseDouble();
-
+    headerStore.set("x-cdas-pathname", "/student");
     await expect(
-      getCurrentActor(database as never),
+      getCurrentActor(databaseDouble() as never),
     ).resolves.toMatchObject(student);
     expect(auth).not.toHaveBeenCalled();
   });
 
-  it("does not use clickthrough outside local development", async () => {
-    vi.stubEnv("NODE_ENV", "production");
+  it("uses Clerk when clickthrough is explicitly turned off", async () => {
+    vi.stubEnv("DEV_CLICKTHROUGH_AUTH", "0");
     vi.stubEnv("NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY", "pk_test_example");
     vi.stubEnv("CLERK_SECRET_KEY", "sk_test_example");
     headerStore.set("x-cdas-pathname", "/teacher");
     auth.mockResolvedValue({ userId: teacher.authSubject });
-    const database = databaseDouble();
 
     await expect(
-      getCurrentActor(database as never),
+      getCurrentActor(databaseDouble() as never),
     ).resolves.toMatchObject(teacher);
     expect(auth).toHaveBeenCalled();
   });
 
   it("rejects unknown paths instead of inventing an actor", async () => {
     headerStore.set("x-cdas-pathname", "/");
-    const database = databaseDouble();
-
-    await expect(getCurrentActor(database as never)).rejects.toEqual(
-      new AuthenticationError("UNAUTHENTICATED"),
+    await expect(getCurrentActor(databaseDouble() as never)).rejects.toMatchObject(
+      { code: "UNAUTHENTICATED" } satisfies Pick<AuthenticationError, "code">,
     );
     expect(auth).not.toHaveBeenCalled();
   });

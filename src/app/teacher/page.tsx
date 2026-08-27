@@ -57,6 +57,24 @@ export default async function TeacherDashboardPage() {
     throw error;
   }
 
+  const actionable = dashboard.releases
+    .filter(
+      (release) =>
+        release.attention !== null &&
+        (release.attention.pendingFeedbackCount > 0 ||
+          release.attention.pendingEvaluationCount > 0 ||
+          release.attention.awaitingResubmissionCount > 0),
+    )
+    .map((release) => ({ release, attention: release.attention! }));
+  const totals = actionable.reduce(
+    (sum, { attention }) => ({
+      feedback: sum.feedback + attention.pendingFeedbackCount,
+      evaluation: sum.evaluation + attention.pendingEvaluationCount,
+      resubmission: sum.resubmission + attention.awaitingResubmissionCount,
+    }),
+    { feedback: 0, evaluation: 0, resubmission: 0 },
+  );
+
   return (
     <TeacherPage
       actorName={dashboard.actor.displayName}
@@ -83,6 +101,75 @@ export default async function TeacherDashboardPage() {
 
         <div className={styles.dashboardBody}>
           <div className={styles.dashboardMain}>
+            {/* 待办从各张发布卡片里抽出来，聚成一个置顶区块：教师进来先看到
+                今天要处理什么，而不是挨张卡片自己数。 */}
+            <section className={styles.dashboardSection}>
+              <header className={styles.sectionHeader}>
+                <div>
+                  <p className={styles.eyebrow}>需要我处理</p>
+                  <h2>待办</h2>
+                </div>
+                <span>{actionable.length} 个发布</span>
+              </header>
+              {actionable.length === 0 ? (
+                <p className={styles.emptyState}>
+                  当前没有待反馈、待评价或待重交的提交。
+                </p>
+              ) : (
+                <>
+                  {/* 只列真有的那几档：0 不是待办，写成「待评价 0」会让人以为有事要做。 */}
+                  <dl className={styles.attentionTotals}>
+                    {(
+                      [
+                        ["待反馈", totals.feedback],
+                        ["待评价", totals.evaluation],
+                        ["待重交", totals.resubmission],
+                      ] as const
+                    )
+                      .filter(([, count]) => count > 0)
+                      .map(([label, count]) => (
+                        <div key={label}>
+                          <dt>{label}</dt>
+                          <dd>{count}</dd>
+                        </div>
+                      ))}
+                  </dl>
+                  <div className={styles.attentionList}>
+                    {actionable.map(({ release, attention }) => (
+                      <Link
+                        className={styles.attentionRow}
+                        href={`/teacher/releases/${release.id}/submissions`}
+                        key={release.id}
+                      >
+                        <span className={styles.attentionWho}>
+                          {release.classroomName}
+                        </span>
+                        <span className={styles.attentionWhat}>
+                          {release.title}
+                        </span>
+                        <span className={styles.attentionNeeds}>
+                          {[
+                            attention.pendingFeedbackCount > 0
+                              ? `待反馈 ${attention.pendingFeedbackCount}`
+                              : null,
+                            attention.pendingEvaluationCount > 0
+                              ? `待评价 ${attention.pendingEvaluationCount}`
+                              : null,
+                            attention.awaitingResubmissionCount > 0
+                              ? `待重交 ${attention.awaitingResubmissionCount}`
+                              : null,
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
+                </>
+              )}
+            </section>
+
+            {/* 发布压成单行摘要：班级、标题、提交进度、状态。细节进评阅名册。 */}
             <section className={styles.dashboardSection}>
               <header className={styles.sectionHeader}>
                 <div>
@@ -96,105 +183,45 @@ export default async function TeacherDashboardPage() {
                   尚未发布活动。草稿标记为可预览后，仍需完成独立教师确认才会产生发布。
                 </p>
               ) : (
-                <div className={styles.releaseCardList}>
+                <div className={styles.activityList}>
                   {dashboard.releases.map((release) => {
                     const status = releaseStatus[release.status];
-                    const attention = release.attention;
-                    return (
-                      <article className={styles.releaseCard} key={release.id}>
-                        <div className={styles.releaseCardHead}>
-                          <div>
-                            <h3>{release.classroomName}</h3>
-                            <p>{release.title}</p>
-                          </div>
+                    const row = (
+                      <>
+                        <span className={styles.activityTitle}>
+                          {release.classroomName} · {release.title}
+                        </span>
+                        <span className={styles.activityMeta}>
+                          {release.progress
+                            ? `${release.progress.submittedCount}/${release.progress.cohortSize} 已正式提交`
+                            : "无读取权限"}
+                          {release.dueAt ? " · " : ""}
                           {release.dueAt ? (
-                            <span className={styles.dueTag}>
+                            <>
                               <LocalizedDateTime dateTime={release.dueAt} /> 截止
-                            </span>
-                          ) : (
-                            <span className={styles.metaTag}>未设置截止</span>
-                          )}
-                        </div>
-
-                        {release.progress ? (
-                          <>
-                            <p className={styles.releaseProgress}>
-                              <span>{release.progress.submittedCount}</span>
-                              <span>
-                                / {release.progress.cohortSize} 人已正式提交
-                              </span>
-                            </p>
-                            <div
-                              aria-hidden="true"
-                              className={styles.progressTrack}
-                            >
-                              <span
-                                style={{
-                                  width:
-                                    release.progress.cohortSize > 0
-                                      ? `${Math.min(
-                                          100,
-                                          Math.round(
-                                            (release.progress.submittedCount /
-                                              release.progress.cohortSize) *
-                                              100,
-                                          ),
-                                        )}%`
-                                      : "0%",
-                                }}
-                              />
-                            </div>
-                          </>
-                        ) : null}
-
-                        <div className={styles.releaseCardFoot}>
-                          {attention && attention.pendingFeedbackCount > 0 ? (
-                            <span
-                              className={styles.statusBadge}
-                              data-tone="attention"
-                            >
-                              待反馈 {attention.pendingFeedbackCount}
-                            </span>
+                            </>
                           ) : null}
-                          {attention && attention.pendingEvaluationCount > 0 ? (
-                            <span
-                              className={styles.statusBadge}
-                              data-tone="next"
-                            >
-                              待评价 {attention.pendingEvaluationCount}
-                            </span>
-                          ) : null}
-                          {attention &&
-                          attention.awaitingResubmissionCount > 0 ? (
-                            <span
-                              className={styles.statusBadge}
-                              data-tone="waiting"
-                            >
-                              待重交 {attention.awaitingResubmissionCount}
-                            </span>
-                          ) : null}
-                          {release.canViewSubmissions ? (
-                            <Link
-                              className={styles.cardAction}
-                              href={`/teacher/releases/${release.id}/submissions`}
-                            >
-                              查看提交
-                            </Link>
-                          ) : (
-                            <span
-                              className={styles.statusBadge}
-                              data-tone={status.tone}
-                            >
-                              {status.label} · 班级管理权已变更
-                            </span>
-                          )}
-                        </div>
-
-                        <p className={styles.releaseAudit}>
-                          <LocalizedDateTime dateTime={release.publishedAt} />{" "}
-                          发布 · {status.label}
-                        </p>
-                      </article>
+                        </span>
+                        <span
+                          className={styles.statusBadge}
+                          data-tone={status.tone}
+                        >
+                          {status.label}
+                        </span>
+                      </>
+                    );
+                    return release.canViewSubmissions ? (
+                      <Link
+                        className={styles.activityRow}
+                        href={`/teacher/releases/${release.id}/submissions`}
+                        key={release.id}
+                      >
+                        {row}
+                      </Link>
+                    ) : (
+                      <div className={styles.activityRow} key={release.id}>
+                        {row}
+                      </div>
                     );
                   })}
                 </div>

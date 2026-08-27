@@ -103,6 +103,54 @@
 }
 .dashboardSection + .dashboardSection { margin-top: 0; }
 
+/* — 需要我处理：三个合计数 + 有待办的发布逐行列出 — */
+.attentionTotals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--space-8) * 1.3);
+  margin: var(--space-4) 0 var(--space-3);
+}
+
+.attentionTotals dt { color: var(--color-neutral-700); font-size: var(--text-label); }
+
+.attentionTotals dd {
+  margin: var(--space-1) 0 0;
+  font-family: var(--font-heading);
+  font-size: 32px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.attentionList { display: grid; }
+
+.attentionRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-4);
+  border-top: 1px solid var(--color-divider);
+  padding: var(--space-3) var(--space-2);
+  color: var(--color-text);
+  transition: background var(--motion-fast);
+}
+
+.attentionRow:hover { background: var(--primary-tint); }
+.attentionWho { flex: none; font-family: var(--font-heading); font-size: var(--text-subhead); }
+.attentionWhat {
+  overflow: hidden;
+  flex: 1;
+  color: var(--color-neutral-700);
+  font-size: var(--text-meta);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.attentionNeeds {
+  flex: none;
+  color: var(--color-accent-700);
+  font-family: var(--font-ui);
+  font-size: var(--text-meta);
+  font-variant-numeric: tabular-nums;
+}
+
 /* — 发布卡片：描边、不填色，右下角一个描边按钮 — */
 .releaseCardList { display: grid; gap: var(--space-4); margin-top: var(--space-4); }
 .releaseCard {

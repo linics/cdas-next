@@ -1,5 +1,5 @@
-function isEnabled(value: string | undefined): boolean {
-  return ["1", "true", "yes", "on"].includes(value?.toLowerCase() ?? "");
+function isDisabled(value: string | undefined): boolean {
+  return ["0", "false", "no", "off"].includes(value?.toLowerCase() ?? "");
 }
 
 export type ClickthroughAudience = "TEACHER" | "STUDENT";
@@ -15,11 +15,11 @@ export function isClickthroughAuthEnabled(
     return false;
   }
 
-  if (!isEnabled(environment.DEV_CLICKTHROUGH_AUTH)) {
+  if (environment.E2E_RUN_MARKER || environment.STAGING_RUN_MARKER) {
     return false;
   }
 
-  if (environment.E2E_RUN_MARKER || environment.STAGING_RUN_MARKER) {
+  if (isDisabled(environment.DEV_CLICKTHROUGH_AUTH)) {
     return false;
   }
 

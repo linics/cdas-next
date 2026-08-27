@@ -342,42 +342,24 @@ export default async function TeacherSubmissionPage({
           </span>
         </header>
 
-        <dl className={styles.contextFacts}>
-          <div>
-            <dt>活动</dt>
-            <dd>{content.title}</dd>
-          </div>
-          <div>
-            <dt>班级</dt>
-            <dd>{submission.release.classroom.name}</dd>
-          </div>
-          <div>
-            <dt>提交主体</dt>
-            <dd>{group ? `${group.name} · 小组共享` : student.displayName}</dd>
-          </div>
-          <div>
-            <dt>提交范围</dt>
-            <dd>
-              {submission.phaseName
-                ? `第 ${submission.phaseIndex} 阶段 · ${submission.phaseName}`
-                : "整项提交"}
-            </dd>
-          </div>
-          <div>
-            <dt>截止时间</dt>
-            <dd>
-              {submission.release.dueAt ? (
-                <LocalizedDateTime dateTime={submission.release.dueAt} />
-              ) : (
-                "未设置"
-              )}
-            </dd>
-          </div>
-          <div>
-            <dt>正式修订</dt>
-            <dd>{submission.latestRevisionNumber} 版</dd>
-          </div>
-        </dl>
+        {/* 这页替教师回答的是「这份提交怎么样、我要写什么反馈」。六格事实表压成
+            一行摘要：谁交的、交的哪一段、第几版、什么时候截止 —— 剩下的位置留给
+            证据与反馈撰写。 */}
+        <p className={styles.contextLine}>
+          {content.title} · {submission.release.classroom.name} ·{" "}
+          {group ? `${group.name} · 小组共享` : student.displayName} ·{" "}
+          {submission.phaseName
+            ? `第 ${submission.phaseIndex} 阶段 · ${submission.phaseName}`
+            : "整项提交"}{" "}
+          · 正式修订 {submission.latestRevisionNumber} 版 ·{" "}
+          {submission.release.dueAt ? (
+            <>
+              <LocalizedDateTime dateTime={submission.release.dueAt} /> 截止
+            </>
+          ) : (
+            "未设置截止"
+          )}
+        </p>
 
         {group ? (
           <section className={styles.railNote} role="note">
