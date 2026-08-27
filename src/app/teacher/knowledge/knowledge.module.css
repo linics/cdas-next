@@ -45,7 +45,7 @@
   border-radius: var(--radius-md);
   background: transparent;
   padding: calc(var(--space-2) * .8) calc(var(--space-3) * 1.2);
-  color: var(--color-accent);
+  color: var(--color-accent-700);
   font-family: var(--font-ui);
   font-size: 14px;
   font-weight: var(--font-heading-weight);
@@ -58,7 +58,7 @@
 .sourceMeta {
   grid-column: 2;
   color: var(--color-neutral-700);
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.6;
 }
 
@@ -73,7 +73,7 @@
 .sourceSection > a,
 .results a,
 .sourceList a {
-  color: var(--color-accent);
+  color: var(--color-accent-700);
   font-weight: var(--font-heading-weight);
   text-underline-offset: 3px;
 }
@@ -100,7 +100,7 @@
 }
 
 .results h2 { margin: var(--space-1) 0 0; font-size: 26px; }
-.results > header > span { color: var(--color-neutral-700); font-size: 12px; }
+.results > header > span { color: var(--color-neutral-700); font-size: 13px; }
 
 .results ol,
 .sourceList {
@@ -126,10 +126,10 @@
 .results ol li::before,
 .sourceList li::before {
   align-self: start;
-  color: var(--color-accent);
+  color: var(--color-accent-700);
   content: counter(knowledge-row, decimal-leading-zero);
   font-family: var(--font-heading);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .results ol li:last-child,

@@ -8,16 +8,16 @@
 .backLink {
   display: inline-flex;
   align-items: center;
-  color: var(--color-accent);
+  color: var(--color-accent-700);
   font-size: 13px;
   font-weight: var(--font-heading-weight);
 }
 
 .eyebrow {
   margin: 0;
-  color: var(--color-accent);
+  color: var(--color-accent-700);
   font-family: var(--font-ui);
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: .1em;
   text-transform: uppercase;
 }
@@ -57,7 +57,7 @@
 
 .releaseFacts > div { min-width: 0; padding: var(--space-4) var(--space-4) var(--space-4) 0; }
 .releaseFacts > div + div { border-left: 1px solid var(--color-divider); padding-left: var(--space-4); }
-.releaseFacts dt { color: var(--color-neutral-700); font-size: 12px; }
+.releaseFacts dt { color: var(--color-neutral-700); font-size: 13px; }
 .releaseFacts dd { margin: var(--space-1) 0 0; font-family: var(--font-heading); font-size: 20px; font-weight: var(--font-heading-weight); font-variant-numeric: tabular-nums; line-height: 1.2; }
 
 .groupNotice {
@@ -113,7 +113,7 @@
 .phaseNavigator > span > span {
   grid-row: 1 / 3;
   align-self: center;
-  color: var(--color-accent);
+  color: var(--color-accent-700);
   font-family: var(--font-heading);
   font-size: 16px;
   font-variant-numeric: tabular-nums;
@@ -126,7 +126,7 @@
   white-space: nowrap;
 }
 
-.phaseNavigator small { color: var(--color-neutral-700); font-size: 12px; }
+.phaseNavigator small { color: var(--color-neutral-700); font-size: 13px; }
 
 .workspaceGrid {
   display: grid;
@@ -156,7 +156,7 @@
 }
 
 .phaseFocus dl > div { border-top: 1px solid var(--color-divider); padding-top: var(--space-2); }
-.phaseFocus dt { color: var(--color-neutral-700); font-size: 12px; }
+.phaseFocus dt { color: var(--color-neutral-700); font-size: 13px; }
 .phaseFocus dd { margin: var(--space-1) 0 0; font-size: 14px; line-height: 1.6; }
 
 .editorSection {
@@ -185,7 +185,7 @@
   gap: 7px;
   flex: 0 0 auto;
   color: var(--color-neutral-700);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .draftBadge::before,
@@ -210,7 +210,7 @@
 }
 
 .checkpointFieldset legend { padding: 0; font-family: var(--font-heading); font-size: 18px; font-weight: var(--font-heading-weight); }
-.checkpointFieldset > p { margin: 2px 0 var(--space-2); color: var(--color-neutral-700); font-size: 12px; }
+.checkpointFieldset > p { margin: 2px 0 var(--space-2); color: var(--color-neutral-700); font-size: 13px; }
 
 .checkpointFieldset label {
   display: flex;
@@ -226,7 +226,7 @@
 .checkpointFieldset input { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--color-accent); }
 .checkpointFieldset label span { display: grid; gap: 3px; }
 .checkpointFieldset strong { font-size: 14px; }
-.checkpointFieldset small { color: var(--color-neutral-700); font-size: 12px; }
+.checkpointFieldset small { color: var(--color-neutral-700); font-size: 13px; }
 
 .writerForm,
 .readOnlyEditor { margin-top: var(--space-6); }
@@ -257,7 +257,7 @@
   gap: var(--space-4);
   margin-top: var(--space-2);
   color: var(--color-neutral-700);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .fieldMeta p { margin: 0; }
@@ -272,7 +272,7 @@
   margin-top: var(--space-4);
 }
 
-.saveRow > span { color: var(--color-neutral-700); font-size: 12px; }
+.saveRow > span { color: var(--color-neutral-700); font-size: 13px; }
 .saveRow > span[data-dirty="true"],
 .commitHint { color: var(--color-accent-700); }
 
@@ -287,7 +287,7 @@
   font-weight: var(--font-heading-weight);
 }
 
-.primaryButton { gap: var(--space-2); border: 1px solid var(--color-accent); background: transparent; color: var(--color-accent); }
+.primaryButton { gap: var(--space-2); border: 1px solid var(--color-accent); background: transparent; color: var(--color-accent-700); }
 .primaryButton:hover:not(:disabled) { background: var(--primary-tint); color: var(--color-accent-700); }
 .secondaryButton { border: 1px solid var(--color-divider); background: transparent; color: var(--color-text); }
 .secondaryButton:hover:not(:disabled) { background: var(--color-neutral-200); }
@@ -308,7 +308,7 @@
 .commitArea h3 { margin: var(--space-1) 0 0; font-size: 19px; }
 .commitArea > div > p:last-child,
 .resubmitForm p { margin: 6px 0 0; color: var(--color-neutral-700); font-size: 13px; line-height: 1.65; }
-.commitHint { grid-column: 1 / -1; margin: 0; font-size: 12px; }
+.commitHint { grid-column: 1 / -1; margin: 0; font-size: 13px; }
 .resubmitForm strong { font-size: 15px; }
 
 .actionNotice { display: grid; gap: var(--space-2); margin-top: var(--space-4); }
@@ -318,7 +318,7 @@
   border: 0;
   background: transparent;
   padding: 0;
-  color: var(--color-accent);
+  color: var(--color-accent-700);
   font-size: 13px;
   font-weight: var(--font-heading-weight);
 }
@@ -333,7 +333,7 @@
 .attachmentHeading h3 { margin: var(--space-1) 0 0; font-size: 19px; }
 .attachmentHeading > span,
 .attachmentHelp,
-.attachmentEmpty { color: var(--color-neutral-700); font-size: 12px; }
+.attachmentEmpty { color: var(--color-neutral-700); font-size: 13px; }
 
 .attachmentList,
 .formalAttachmentList { margin: var(--space-4) 0 0; padding: 0; list-style: none; }
@@ -353,7 +353,7 @@
 .attachmentList strong,
 .formalAttachmentList a { overflow-wrap: anywhere; }
 .attachmentList li > div:first-child span,
-.formalAttachmentList span { color: var(--color-neutral-700); font-size: 12px; }
+.formalAttachmentList span { color: var(--color-neutral-700); font-size: 13px; }
 .attachmentList li[data-status="READY"] strong { color: var(--color-neutral-800); }
 .attachmentList li[data-status="REJECTED"] strong { color: var(--stroke-heavy); }
 .attachmentActions { display: flex; flex: 0 0 auto; gap: var(--space-2); }
@@ -366,7 +366,7 @@
   border: 0;
   background: transparent;
   padding: 0 var(--space-1);
-  color: var(--color-accent);
+  color: var(--color-accent-700);
   font-size: 13px;
   font-weight: var(--font-heading-weight);
 }
@@ -392,7 +392,7 @@
 
 .attachmentHelp,
 .attachmentEmpty { margin: var(--space-3) 0 0; }
-.attachmentMessage { margin: var(--space-2) 0 0; color: var(--color-accent); font-size: 13px; font-weight: var(--font-heading-weight); }
+.attachmentMessage { margin: var(--space-2) 0 0; color: var(--color-accent-700); font-size: 13px; font-weight: var(--font-heading-weight); }
 .formalAttachmentList { border-left: 2px solid var(--color-divider); padding-left: var(--space-3); }
 
 .readOnlyNotice {
@@ -408,7 +408,7 @@
 
 .historySection { margin-top: calc(var(--space-8) * 1.3); }
 .historyHeading { align-items: flex-end; border-bottom: 1px solid var(--color-divider); padding-bottom: var(--space-3); }
-.historyHeading > span { color: var(--color-neutral-700); font-size: 12px; }
+.historyHeading > span { color: var(--color-neutral-700); font-size: 13px; }
 .emptyHistory { margin: 0; border-bottom: 1px solid var(--color-divider); padding: var(--space-6) 0; color: var(--color-neutral-700); font-size: 14px; }
 .revisionList { border-bottom: 1px solid var(--color-divider); }
 .revision { padding: var(--space-6) 0; }
@@ -418,9 +418,9 @@
 .revisionBadges { display: flex; align-items: center; }
 .revision header { justify-content: space-between; gap: var(--space-4); }
 .revision header > div:first-child { gap: var(--space-3); }
-.revisionNumber { color: var(--color-accent); font-family: var(--font-heading); font-size: 16px; }
+.revisionNumber { color: var(--color-accent-700); font-family: var(--font-heading); font-size: 16px; }
 .revision h3 { margin: 0; font-size: 18px; }
-.revision header p { margin: 3px 0 0; color: var(--color-neutral-700); font-size: 12px; }
+.revision header p { margin: 3px 0 0; color: var(--color-neutral-700); font-size: 13px; }
 .revisionBadges { flex-wrap: wrap; justify-content: end; gap: var(--space-2); }
 
 .revisionBadges span {
@@ -428,7 +428,7 @@
   align-items: center;
   gap: 6px;
   color: var(--color-neutral-700);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .revisionBadges span::before {
@@ -462,7 +462,7 @@
 
 .feedbackHeading { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-4); }
 .feedbackHeading h4 { margin: var(--space-1) 0 0; font-size: 18px; }
-.feedbackHeading > span { color: var(--color-neutral-700); font-size: 12px; }
+.feedbackHeading > span { color: var(--color-neutral-700); font-size: 13px; }
 .feedbackVersions { margin: var(--space-3) 0 0; padding: 0; list-style: none; }
 
 .feedbackVersion {
@@ -474,9 +474,9 @@
 }
 
 .feedbackVersionMeta strong { font-family: var(--font-heading); font-size: 17px; }
-.feedbackVersionMeta > span { margin-left: 6px; color: var(--color-accent-700); font-size: 12px; }
+.feedbackVersionMeta > span { margin-left: 6px; color: var(--color-accent-700); font-size: 13px; }
 .feedbackVersionMeta p,
-.feedbackVersionMeta time { display: block; margin: 6px 0 0; color: var(--color-neutral-700); font-size: 12px; }
+.feedbackVersionMeta time { display: block; margin: 6px 0 0; color: var(--color-neutral-700); font-size: 13px; }
 
 .feedbackStructure { display: flex; flex-wrap: wrap; gap: var(--space-3); margin: var(--space-2) 0 0; }
 
@@ -485,7 +485,7 @@
   align-items: center;
   gap: 6px;
   color: var(--color-accent-700);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: var(--font-heading-weight);
 }
 
@@ -497,13 +497,13 @@
   content: "";
 }
 
-.legacyFeedbackStructure { margin: var(--space-2) 0 0; color: var(--color-neutral-700); font-size: 12px; }
+.legacyFeedbackStructure { margin: var(--space-2) 0 0; color: var(--color-neutral-700); font-size: 13px; }
 .emptyFeedback { margin: var(--space-4) 0 0; color: var(--color-neutral-700); font-size: 14px; }
 .evaluationOutcomeList { display: grid; margin: 0 0 var(--space-3); padding: 0; list-style: none; }
 .evaluationOutcomeList li { display: grid; gap: 3px; border-top: 1px solid var(--color-divider); padding: var(--space-2) 0; }
 .evaluationOutcomeList strong { font-size: 13px; }
-.evaluationOutcomeList span { color: var(--color-accent-700); font-size: 12px; font-weight: var(--font-heading-weight); }
-.evaluationOutcomeList small { color: var(--color-neutral-700); font-size: 12px; }
+.evaluationOutcomeList span { color: var(--color-accent-700); font-size: 13px; font-weight: var(--font-heading-weight); }
+.evaluationOutcomeList small { color: var(--color-neutral-700); font-size: 13px; }
 
 /* 发布快照是一块实底小卡：Classical 里唯一可以填色的表面。 */
 .releaseBrief {
@@ -516,7 +516,7 @@
 }
 
 .briefHeading { align-items: baseline; padding-bottom: var(--space-2); }
-.briefHeading > span { color: var(--color-neutral-600); font-size: 13px; font-variant-numeric: tabular-nums; }
+.briefHeading > span { color: var(--color-neutral-700); font-size: 13px; font-variant-numeric: tabular-nums; }
 .releaseBrief section { border-top: 1px solid var(--color-divider); padding: var(--space-3) 0; }
 .releaseBrief h3 { margin: 0; font-family: var(--font-heading); font-size: 16px; }
 
@@ -532,20 +532,20 @@
 
 .releaseBrief section p { padding-left: 0; }
 .releaseBrief li + li { margin-top: 6px; }
-.snapshotHash { margin: var(--space-4) 0 0; color: var(--color-neutral-700); font-size: 11px; overflow-wrap: anywhere; }
+.snapshotHash { margin: var(--space-4) 0 0; color: var(--color-neutral-700); font-size: 12px; overflow-wrap: anywhere; }
 
 .accessGate { max-width: 720px; padding-top: clamp(calc(var(--space-8) * 1.5), 13vh, calc(var(--space-8) * 3.59)); }
 .accessGate h1 { margin: var(--space-2) 0 var(--space-3); font-size: clamp(36px, 5vw, 52px); font-weight: 400; line-height: 1.08; }
 .accessGate > p:not(.eyebrow) { margin: 0; color: var(--color-neutral-700); font-size: 15px; line-height: 1.7; }
 .accessActions { display: flex; align-items: center; gap: var(--space-3); margin-top: var(--space-6); }
-.accessGate a { display: inline-flex; align-items: center; color: var(--color-accent); font-size: 14px; font-weight: var(--font-heading-weight); }
+.accessGate a { display: inline-flex; align-items: center; color: var(--color-accent-700); font-size: 14px; font-weight: var(--font-heading-weight); }
 
 .signInButton {
   border: 1px solid var(--color-accent);
   border-radius: var(--radius-md);
   background: transparent;
   padding: 0 var(--space-4);
-  color: var(--color-accent);
+  color: var(--color-accent-700);
   font-size: 14px;
   font-weight: var(--font-heading-weight);
 }

@@ -26,9 +26,9 @@
 
 .eyebrow {
   margin: 0;
-  color: var(--color-accent);
+  color: var(--color-accent-700);
   font-family: var(--font-ui);
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: .1em;
   text-transform: uppercase;
 }
@@ -72,7 +72,7 @@
 .contextFacts > div:nth-child(n + 4) { border-bottom: 1px solid var(--color-divider); }
 .contextFacts > div:not(:nth-child(3n + 1)) { border-left: 1px solid var(--color-divider); }
 
-.contextFacts dt { color: var(--color-neutral-700); font-size: 12px; font-weight: var(--font-heading-weight); }
+.contextFacts dt { color: var(--color-neutral-700); font-size: 13px; font-weight: var(--font-heading-weight); }
 
 .contextFacts dd {
   overflow-wrap: anywhere;
@@ -130,7 +130,7 @@
 }
 
 .historyHeading h2 { margin: var(--space-1) 0 0; font-size: 24px; }
-.historyHeading > span { color: var(--color-neutral-700); font-size: 12px; }
+.historyHeading > span { color: var(--color-neutral-700); font-size: 13px; }
 
 .revisionList { border-bottom: 1px solid var(--color-divider); }
 
@@ -155,7 +155,7 @@
 .revisionBadges { display: flex; align-items: center; gap: var(--space-2); }
 
 .revisionIndex {
-  color: var(--color-accent);
+  color: var(--color-accent-700);
   font-family: var(--font-heading);
   font-size: 16px;
   font-variant-numeric: tabular-nums;
@@ -169,7 +169,7 @@
   display: block;
   margin-top: var(--space-1);
   color: var(--color-neutral-700);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .revisionBadges { flex-wrap: wrap; justify-content: flex-end; }
@@ -179,7 +179,7 @@
   align-items: center;
   gap: 6px;
   color: var(--color-neutral-700);
-  font-size: 12px;
+  font-size: 13px;
   white-space: nowrap;
 }
 
@@ -196,7 +196,7 @@
 .formalLabel {
   margin: var(--space-4) 0 var(--space-2);
   color: var(--color-neutral-700);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: var(--font-heading-weight);
   letter-spacing: .04em;
 }
@@ -226,7 +226,7 @@
 }
 
 .feedbackHistory h4 { margin: var(--space-1) 0 0; font-size: 17px; }
-.feedbackHistory > header > span { color: var(--color-neutral-700); font-size: 12px; }
+.feedbackHistory > header > span { color: var(--color-neutral-700); font-size: 13px; }
 .feedbackVersions { margin-top: var(--space-3); }
 
 .feedbackVersions article {
@@ -237,8 +237,8 @@
   padding: var(--space-4) 0;
 }
 
-.feedbackMeta { color: var(--color-neutral-700); font-size: 12px; }
-.feedbackMeta > span { color: var(--color-accent); font-family: var(--font-heading); font-size: 16px; }
+.feedbackMeta { color: var(--color-neutral-700); font-size: 13px; }
+.feedbackMeta > span { color: var(--color-accent-700); font-family: var(--font-heading); font-size: 16px; }
 .feedbackMeta p { margin: var(--space-1) 0 0; }
 .feedbackMeta time { display: block; margin-top: var(--space-1); }
 .feedbackBody { font-size: 14px; line-height: 1.75; }
@@ -260,9 +260,9 @@
   padding: var(--space-2) 0;
 }
 
-.formalAttachmentList a { overflow-wrap: anywhere; color: var(--color-accent); font-weight: var(--font-heading-weight); }
+.formalAttachmentList a { overflow-wrap: anywhere; color: var(--color-accent-700); font-weight: var(--font-heading-weight); }
 .formalAttachmentList a:hover { text-decoration: underline; text-underline-offset: 3px; }
-.formalAttachmentList span { flex: 0 0 auto; color: var(--color-neutral-700); font-size: 12px; }
+.formalAttachmentList span { flex: 0 0 auto; color: var(--color-neutral-700); font-size: 13px; }
 
 .composer,
 .confirmationPanel {
@@ -291,7 +291,7 @@
 }
 
 .composerForm { display: grid; gap: var(--space-2); }
-.composerForm > label { color: color-mix(in srgb, var(--color-text) 70%, transparent); font-size: 12px; }
+.composerForm > label { color: color-mix(in srgb, var(--color-text) 70%, transparent); font-size: 13px; }
 
 .composerForm textarea:hover,
 .writingField textarea:hover { border-color: color-mix(in srgb, var(--color-text) 45%, transparent); }
@@ -319,7 +319,7 @@
   gap: var(--space-4);
 }
 
-.fieldMeta { color: var(--color-neutral-700); font-size: 12px; }
+.fieldMeta { color: var(--color-neutral-700); font-size: 13px; }
 .fieldMeta p,
 .prepareRow p { margin: 0; }
 .fieldMeta span[data-over-limit="true"] { color: var(--stroke-heavy); font-weight: var(--font-heading-weight); }
@@ -329,7 +329,7 @@
   border-top: 1px solid var(--color-divider);
   padding-top: var(--space-4);
   color: var(--color-neutral-700);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .prepareButton,
@@ -351,7 +351,7 @@
 
 .prepareButton,
 .confirmButton,
-.signInButton { border-color: var(--color-accent); background: transparent; color: var(--color-accent); }
+.signInButton { border-color: var(--color-accent); background: transparent; color: var(--color-accent-700); }
 .prepareButton:hover:not(:disabled),
 .confirmButton:hover:not(:disabled),
 .signInButton:hover:not(:disabled) { background: var(--primary-tint); color: var(--color-accent-700); }
@@ -399,7 +399,7 @@
 
 .dialogDetail { display: grid; gap: var(--space-3); color: var(--color-neutral-700); font-size: 14px; line-height: 1.7; }
 .dialogDetail p { margin: 0; }
-.dialogDetail code { overflow-wrap: anywhere; font-size: 12px; }
+.dialogDetail code { overflow-wrap: anywhere; font-size: 13px; }
 
 .visuallyHidden {
   position: absolute;
@@ -433,7 +433,7 @@
 .evaluationDimension legend,
 .evaluationCitations legend {
   padding: 0 6px;
-  color: var(--color-accent);
+  color: var(--color-accent-700);
   font-family: var(--font-heading);
   font-size: 16px;
   font-weight: var(--font-heading-weight);
@@ -443,12 +443,12 @@
 .evaluationDimension > p {
   margin: 0 0 var(--space-1);
   color: var(--color-neutral-700);
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.6;
 }
 
 .structuredFeedbackFields label,
-.evaluationDimension label { color: color-mix(in srgb, var(--color-text) 70%, transparent); font-size: 12px; }
+.evaluationDimension label { color: color-mix(in srgb, var(--color-text) 70%, transparent); font-size: 13px; }
 
 .structuredFeedbackFields select,
 .evaluationDimension select {
@@ -472,7 +472,7 @@
 }
 
 .structuredFeedbackDetails > div { border-top: 1px solid var(--color-divider); padding: var(--space-2) 0; }
-.structuredFeedbackDetails dt { color: var(--color-neutral-700); font-size: 12px; font-weight: var(--font-heading-weight); }
+.structuredFeedbackDetails dt { color: var(--color-neutral-700); font-size: 13px; font-weight: var(--font-heading-weight); }
 .structuredFeedbackDetails dd { margin: 3px 0 0; color: var(--color-text); font-weight: var(--font-heading-weight); }
 
 .feedbackStructure {
@@ -488,7 +488,7 @@
   align-items: center;
   gap: 6px;
   color: var(--color-accent-700);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: var(--font-heading-weight);
 }
 
@@ -500,7 +500,7 @@
   content: "";
 }
 
-.legacyFeedbackStructure { grid-column: 2; margin: var(--space-2) 0 0; color: var(--color-neutral-700); font-size: 12px; }
+.legacyFeedbackStructure { grid-column: 2; margin: var(--space-2) 0 0; color: var(--color-neutral-700); font-size: 13px; }
 .evaluationCitations { border-style: solid; }
 
 .evaluationCitations label {
@@ -528,8 +528,8 @@
 }
 
 .evaluationOutcomeList strong { font-size: 13px; }
-.evaluationOutcomeList span { color: var(--color-accent-700); font-size: 12px; font-weight: var(--font-heading-weight); }
-.evaluationOutcomeList small { color: var(--color-neutral-700); font-size: 12px; }
+.evaluationOutcomeList span { color: var(--color-accent-700); font-size: 13px; font-weight: var(--font-heading-weight); }
+.evaluationOutcomeList small { color: var(--color-neutral-700); font-size: 13px; }
 
 @media (max-width: 1023px) {
   .pageHeader,

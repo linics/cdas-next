@@ -7,9 +7,9 @@
 
 .eyebrow {
   margin: 0;
-  color: var(--color-accent);
+  color: var(--color-accent-700);
   font-family: var(--font-ui);
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: .1em;
   text-transform: uppercase;
 }
@@ -54,7 +54,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-.summaryLine dt { color: var(--color-neutral-600); font-size: 13px; }
+.summaryLine dt { color: var(--color-neutral-700); font-size: 13px; }
 
 .summaryLine dd {
   margin: var(--space-1) 0 0;
@@ -85,7 +85,7 @@
 
 .groupHeading h2 { margin: 0; font-size: 20px; line-height: 1.2; }
 .groupHeading p { margin: 0; color: var(--color-neutral-700); font-size: 13px; line-height: 1.6; }
-.groupHeading strong { color: var(--color-neutral-600); font-size: 13px; font-weight: 400; }
+.groupHeading strong { color: var(--color-neutral-700); font-size: 13px; font-weight: 400; }
 
 .releaseList { border-top: 0; }
 
@@ -113,8 +113,8 @@
 .releaseCopy p { margin: 0 0 var(--space-1); color: var(--color-neutral-800); font-size: 13px; line-height: 1.6; }
 .releaseCopy > span {
   display: block;
-  color: var(--color-neutral-600);
-  font-size: 12px;
+  color: var(--color-neutral-700);
+  font-size: 13px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -127,13 +127,13 @@
   font-variant-numeric: tabular-nums;
 }
 .releaseDates div { display: flex; gap: var(--space-2); }
-.releaseDates dt { flex: none; color: var(--color-neutral-600); font-size: 13px; white-space: nowrap; }
+.releaseDates dt { flex: none; color: var(--color-neutral-700); font-size: 13px; white-space: nowrap; }
 .releaseDates dd { margin: 0; font-size: 13px; }
-.releaseDates strong { display: block; color: var(--color-accent-700); font-size: 12px; font-weight: 400; }
+.releaseDates strong { display: block; color: var(--color-accent-700); font-size: 13px; font-weight: 400; }
 
 .releaseAction { display: grid; justify-items: end; gap: var(--space-2); }
 .releaseAction small {
-  color: var(--color-accent);
+  color: var(--color-accent-700);
   font-family: var(--font-ui);
   font-size: 13px;
   white-space: nowrap;
@@ -166,7 +166,7 @@
 .accessGate a {
   display: inline-flex;
   align-items: center;
-  color: var(--color-accent);
+  color: var(--color-accent-700);
   font-size: 14px;
   font-weight: var(--font-heading-weight);
 }
@@ -176,7 +176,7 @@
   border-radius: var(--radius-md);
   background: transparent;
   padding: calc(var(--space-2) * .8) calc(var(--space-3) * 1.2);
-  color: var(--color-accent);
+  color: var(--color-accent-700);
   font-family: var(--font-ui);
   font-size: 14px;
   font-weight: var(--font-heading-weight);

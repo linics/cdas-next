@@ -56,7 +56,7 @@
 }
 
 .brand > span {
-  color: var(--color-neutral-600);
+  color: var(--color-neutral-700);
   font-family: var(--font-ui);
   font-size: 13px;
   letter-spacing: .14em;
@@ -76,6 +76,7 @@
   color: var(--color-text);
   font-family: var(--font-heading);
   font-size: 16px;
+  font-weight: var(--font-heading-weight);
   transition:
     background var(--motion-fast),
     color var(--motion-fast);
@@ -114,7 +115,7 @@
   margin: 0 var(--space-6);
   border-top: 1px solid var(--color-divider);
   padding-top: var(--space-3);
-  color: var(--color-neutral-600);
+  color: var(--color-neutral-700);
   font-size: 13px;
   line-height: 1.6;
 }
@@ -154,7 +155,7 @@
 
 .actorLabel {
   overflow: hidden;
-  color: var(--color-neutral-600);
+  color: var(--color-neutral-700);
   font-size: 13px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -189,8 +190,8 @@
 
 .roleGate > p:first-child {
   margin: 0 0 var(--space-2);
-  color: var(--color-accent);
-  font-size: 12px;
+  color: var(--color-accent-700);
+  font-size: 13px;
   font-weight: var(--font-heading-weight);
   letter-spacing: .08em;
 }
@@ -221,7 +222,7 @@
   border: 1px solid var(--color-accent);
   border-radius: var(--radius-md);
   padding: 0 var(--space-4);
-  color: var(--color-accent);
+  color: var(--color-accent-700);
   font-family: var(--font-ui);
   font-size: 14px;
   transition: background var(--motion-fast);
@@ -306,7 +307,7 @@
 @media (max-width: 520px) {
   .audienceLabel { display: none; }
   .toolbar { justify-content: flex-end; }
-  .actorLabel { max-width: 45vw; font-size: 12px; }
+  .actorLabel { max-width: 45vw; font-size: 13px; }
   .signOutButton { padding: 0 var(--space-2); }
   .roleGate { margin-top: var(--space-6); }
 }

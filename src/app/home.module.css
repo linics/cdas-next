@@ -29,7 +29,7 @@
 }
 
 .brand span {
-  color: var(--color-neutral-600);
+  color: var(--color-neutral-700);
   font-family: var(--font-ui);
   font-size: 13px;
   letter-spacing: .14em;
@@ -50,9 +50,9 @@
 
 .kicker {
   margin: 0 0 var(--space-2);
-  color: var(--color-accent);
+  color: var(--color-accent-700);
   font-family: var(--font-ui);
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: .1em;
   text-transform: uppercase;
 }
@@ -113,14 +113,14 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: var(--color-accent);
+  color: var(--color-accent-700);
   font-family: var(--font-ui);
   font-size: 13px;
 }
 
 .flow {
   margin: var(--space-6) 0 0;
-  color: var(--color-neutral-600);
+  color: var(--color-neutral-700);
   font-size: 13px;
 }
 
@@ -135,9 +135,9 @@
 
 .noteIndex {
   margin: 3px 0 0;
-  color: var(--color-accent);
+  color: var(--color-accent-700);
   font-family: var(--font-ui);
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: .1em;
   text-transform: uppercase;
 }

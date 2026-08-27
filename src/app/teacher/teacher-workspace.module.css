@@ -2,9 +2,9 @@
 .pageContent { min-width: 0; }
 .eyebrow {
   margin: 0;
-  color: var(--color-accent);
+  color: var(--color-accent-700);
   font-family: var(--font-ui);
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: .1em;
   text-transform: uppercase;
 }
@@ -64,7 +64,7 @@
     color var(--motion-fast);
 }
 .primaryButton,
-.primaryLink { border-color: var(--color-accent); background: transparent; color: var(--color-accent); }
+.primaryLink { border-color: var(--color-accent); background: transparent; color: var(--color-accent-700); }
 .primaryButton:hover:not(:disabled),
 .primaryLink:hover { background: color-mix(in srgb, var(--color-accent) 12%, transparent); }
 .primaryButton:active:not(:disabled),
@@ -124,11 +124,11 @@
   border-radius: calc(var(--radius-md) * .75);
   padding: 3px var(--space-2);
   font-family: var(--font-ui);
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: .02em;
   white-space: nowrap;
 }
-.dueTag { border: 1px solid var(--color-accent); color: var(--color-accent); }
+.dueTag { border: 1px solid var(--color-accent); color: var(--color-accent-700); }
 .metaTag { background: var(--color-neutral-200); color: var(--color-neutral-800); }
 .releaseProgress {
   display: flex;
@@ -169,7 +169,7 @@
   border: 1px solid var(--color-accent);
   border-radius: var(--radius-md);
   padding: calc(var(--space-2) * .8) calc(var(--space-3) * 1.2);
-  color: var(--color-accent);
+  color: var(--color-accent-700);
   font-family: var(--font-ui);
   font-size: 14px;
   font-weight: var(--font-heading-weight);
@@ -183,7 +183,7 @@
   margin: var(--space-3) 0 0;
   border-top: 1px solid var(--color-divider);
   padding-top: var(--space-2);
-  color: var(--color-neutral-600);
+  color: var(--color-neutral-700);
   font-size: 13px;
   font-variant-numeric: tabular-nums;
 }
@@ -201,7 +201,7 @@
 .activityRow:hover { background: color-mix(in srgb, var(--color-accent) 8%, transparent); }
 .activityRow:active { background: color-mix(in srgb, var(--color-accent) 16%, transparent); }
 .activityTitle { flex: 1; font-family: var(--font-heading); font-size: 20px; }
-.activityMeta { color: var(--color-neutral-600); font-size: 13px; font-variant-numeric: tabular-nums; }
+.activityMeta { color: var(--color-neutral-700); font-size: 13px; font-variant-numeric: tabular-nums; }
 
 /* — 侧栏：班级 — */
 .classroomList { display: grid; margin-top: var(--space-2); }
@@ -217,7 +217,7 @@
 }
 .classroomRow:hover { background: color-mix(in srgb, var(--color-accent) 8%, transparent); color: var(--color-accent-700); }
 .classroomRow > span:first-child { font-family: var(--font-heading); font-size: 16px; }
-.classroomRow > span:last-child { color: var(--color-neutral-600); font-size: 13px; font-variant-numeric: tabular-nums; }
+.classroomRow > span:last-child { color: var(--color-neutral-700); font-size: 13px; font-variant-numeric: tabular-nums; }
 .asideNote {
   margin: var(--space-2) 0 0;
   color: var(--color-neutral-700);
@@ -236,7 +236,7 @@
 .sectionHeader h2,
 .historyHeading h2 { margin: var(--space-1) 0 0; font-size: 20px; line-height: 1.2; }
 .sectionHeader > span,
-.historyHeading > span { color: var(--color-neutral-600); font-size: 13px; }
+.historyHeading > span { color: var(--color-neutral-700); font-size: 13px; }
 .submissionList { border-bottom: 1px solid var(--color-divider); }
 .submissionRow {
   display: grid;
@@ -258,7 +258,7 @@
   min-height: 30px;
   border-color: transparent;
   padding: 7px var(--space-1);
-  color: var(--color-accent);
+  color: var(--color-accent-700);
   font-weight: 400;
   white-space: nowrap;
 }
@@ -329,7 +329,7 @@
   padding: var(--space-6) 0;
 }
 .formIndex {
-  color: var(--color-neutral-600);
+  color: var(--color-neutral-700);
   font-family: var(--font-ui);
   font-size: 13px;
   font-variant-numeric: tabular-nums;
@@ -346,7 +346,7 @@
   display: grid;
   gap: var(--space-1);
   color: color-mix(in srgb, var(--color-text) 70%, transparent);
-  font-size: 12px;
+  font-size: 13px;
 }
 .formField > small,
 .parameterForm small {
@@ -435,7 +435,7 @@
 .actionNotice[data-tone="conflict"] { border-left-color: var(--color-accent-600); }
 .actionNotice[data-status="error"],
 .actionNotice[data-tone="error"] { border-left-color: var(--stroke-heavy); }
-.conflictLink { color: var(--color-accent); font-size: 13px; font-weight: var(--font-heading-weight); text-underline-offset: 3px; }
+.conflictLink { color: var(--color-accent-700); font-size: 13px; font-weight: var(--font-heading-weight); text-underline-offset: 3px; }
 .taskGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -446,7 +446,7 @@
   display: grid;
   gap: var(--space-1);
   color: color-mix(in srgb, var(--color-text) 70%, transparent);
-  font-size: 12px;
+  font-size: 13px;
 }
 .taskGrid input,
 .taskGrid textarea,
@@ -480,9 +480,9 @@
 .phaseCard legend,
 .rubricCard legend {
   padding: 0 var(--space-2);
-  color: var(--color-accent);
+  color: var(--color-accent-700);
   font-family: var(--font-ui);
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: .1em;
   text-transform: uppercase;
 }
@@ -556,7 +556,7 @@
   padding: 3px var(--space-2);
   color: var(--color-neutral-800);
   font-family: var(--font-ui);
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: .02em;
 }
 .snapshotSheet ol,
@@ -643,9 +643,9 @@
 .dialogDetail p { margin: 0; }
 .dialogDetail dl { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); margin: 0; }
 .dialogDetail dl > div { border-top: 1px solid var(--color-divider); padding: var(--space-2) 0; }
-.dialogDetail dt { color: var(--color-neutral-700); font-size: 12px; font-weight: var(--font-heading-weight); }
+.dialogDetail dt { color: var(--color-neutral-700); font-size: 13px; font-weight: var(--font-heading-weight); }
 .dialogDetail dd { margin: var(--space-1) 0 0; color: var(--color-text); }
-.dialogDetail code { overflow-wrap: anywhere; font-size: 12px; }
+.dialogDetail code { overflow-wrap: anywhere; font-size: 13px; }
 .visuallyHidden {
   position: absolute;
   width: 1px;

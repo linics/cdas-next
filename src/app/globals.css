@@ -56,7 +56,12 @@
   --font-body: var(--font-body-loaded), var(--font-cjk-loaded), "Songti SC", "STSong", serif;
   /* 界面小字（按钮、标签、分段控件、表头、字段名）全是中文，字形来自 Noto Serif SC，
      行盒若按 Cormorant/Lora 的度量计算，两套度量叠加会让上下留白不对称。
-     让度量和字形出自同一个字，并显式定行高；拉丁标题仍走 Cormorant。 */
+     让度量和字形出自同一个字，并显式定行高；拉丁标题仍走 Cormorant。
+
+     另：Classical 的 10/11/12px 三档是按拉丁字形定的，中文在这几档上笔画会糊。
+     界面小字的下限整体抬一档（kicker 11、tag 12、字段名 13），并且正文颜色最浅
+     只到 --color-neutral-700（5.83:1）—— neutral-600 在这块底色上只有 3.85:1。
+     这是本项目对 Classical 的两处中文适配之一，另一处是按钮内边距。 */
   --font-ui: var(--font-cjk-loaded), "Songti SC", "STSong", serif;
 
   --space-1: 4.6px;
@@ -108,8 +113,6 @@ body {
   font-size: 15px;
   font-weight: 400;
   line-height: 1.55;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
 }
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
