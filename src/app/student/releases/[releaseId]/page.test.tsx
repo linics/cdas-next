@@ -359,6 +359,8 @@ describe("student release page access boundary", () => {
     const markup = await renderPage();
 
     expect(markup).toContain("任务设置");
+    expect(markup).toContain('aria-label="学生工作台导航"');
+    expect(markup).toContain('href="/student"');
     expect(markup).toContain("调查探究");
     expect(markup).toContain("背景设定");
     expect(markup).toContain("知识与技能");
