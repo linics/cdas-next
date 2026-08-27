@@ -1,23 +1,23 @@
 .assistant {
   display: grid;
   max-width: var(--content-width);
-  gap: 20px;
+  gap: var(--space-4);
   margin: 0 auto;
-  padding: 4px 36px 36px;
+  padding: var(--space-1) var(--space-8) var(--space-8);
 }
 
 .header {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 20px;
-  border-top: 1px solid var(--border);
-  padding-top: 22px;
+  gap: var(--space-4);
+  border-top: 1px solid var(--color-divider);
+  padding-top: var(--space-4);
 }
 
 .eyebrow {
   margin: 0;
-  color: var(--primary);
+  color: var(--color-accent);
   font-family: var(--font-ui);
   font-size: 10px;
   letter-spacing: .1em;
@@ -26,7 +26,7 @@
 
 .speaker {
   margin: 0;
-  color: var(--text-muted);
+  color: var(--color-neutral-600);
   font-size: 13px;
 }
 
@@ -41,9 +41,9 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--color-divider);
   border-radius: var(--radius-md);
-  padding: 4px 10px;
+  padding: var(--space-1) var(--space-2);
   color: var(--color-neutral-800);
   font-family: var(--font-ui);
   font-size: 13px;
@@ -65,20 +65,20 @@
 .boundaryNote,
 .emptyPrompt {
   margin: 0;
-  border: 1px solid var(--border);
-  border-left: 2px solid var(--primary);
+  border: 1px solid var(--color-divider);
+  border-left: 2px solid var(--color-accent);
   border-radius: var(--radius-md);
   background: transparent;
   padding: var(--space-3) var(--space-4);
-  color: var(--text-secondary);
+  color: var(--color-neutral-700);
   font-size: 13px;
   line-height: 1.7;
 }
 
 .boundaryNote a {
-  margin-left: 4px;
-  color: var(--primary);
-  font-weight: 600;
+  margin-left: var(--space-1);
+  color: var(--color-accent);
+  font-weight: var(--font-heading-weight);
   text-underline-offset: 3px;
 }
 
@@ -86,16 +86,16 @@
 
 .transcript {
   display: grid;
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
+  border-top: 1px solid var(--color-divider);
+  border-bottom: 1px solid var(--color-divider);
 }
 
 .turn {
   display: grid;
   grid-template-columns: 92px minmax(0, 1fr);
-  gap: 20px;
-  border-bottom: 1px solid var(--border);
-  padding: 20px 0;
+  gap: var(--space-4);
+  border-bottom: 1px solid var(--color-divider);
+  padding: var(--space-4) 0;
 }
 
 .turn:last-child { border-bottom: 0; }
@@ -109,25 +109,25 @@
   white-space: pre-wrap;
 }
 
-.errorText { color: var(--danger); }
+.errorText { color: var(--stroke-heavy); }
 
 .toolResult,
 .approval,
 .knowledgeResult {
-  margin-top: 14px;
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-  background: color-mix(in srgb, var(--surface) 60%, transparent);
-  padding: 16px 0;
+  margin-top: var(--space-3);
+  border-top: 1px solid var(--color-divider);
+  border-bottom: 1px solid var(--color-divider);
+  background: color-mix(in srgb, var(--color-surface) 60%, transparent);
+  padding: var(--space-4) 0;
 }
 
 .toolResult strong,
-.approval > strong { font-family: var(--font-display); font-size: 19px; }
+.approval > strong { font-family: var(--font-heading); font-size: 19px; }
 
 .toolResult p,
 .approval p,
 .knowledgeResult p {
-  color: var(--text-secondary);
+  color: var(--color-neutral-700);
   font-size: 13px;
   line-height: 1.7;
 }
@@ -136,9 +136,9 @@
 .inlineActions a,
 .knowledgeResult a,
 .referenceList a {
-  color: var(--primary);
+  color: var(--color-accent);
   font-size: 13px;
-  font-weight: 600;
+  font-weight: var(--font-heading-weight);
   text-underline-offset: 3px;
 }
 
@@ -149,9 +149,9 @@
 
 .knowledgeResult summary {
   cursor: pointer;
-  font-family: var(--font-display);
+  font-family: var(--font-heading);
   font-size: 16px;
-  font-weight: 600;
+  font-weight: var(--font-heading-weight);
 }
 
 .knowledgeResult > p { white-space: pre-wrap; }
@@ -159,32 +159,32 @@
 .approval dl {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
+  gap: var(--space-3);
 }
 
-.approval dt { color: var(--text-secondary); font-size: 12px; }
+.approval dt { color: var(--color-neutral-700); font-size: 12px; }
 
 .approval dd {
-  margin: 4px 0 0;
-  font-family: var(--font-display);
+  margin: var(--space-1) 0 0;
+  font-family: var(--font-heading);
   font-size: 17px;
-  font-weight: 600;
+  font-weight: var(--font-heading-weight);
 }
 
 .approval .proposalSummary {
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  margin: 16px 0;
+  margin: var(--space-4) 0;
 }
 
 .proposalSummary > div {
-  border-top: 1px solid var(--border);
-  padding-top: 10px;
+  border-top: 1px solid var(--color-divider);
+  padding-top: var(--space-2);
 }
 
-.proposalSection { margin-top: 20px; }
+.proposalSection { margin-top: var(--space-4); }
 
 .proposalSection h3 {
-  margin: 0 0 8px;
+  margin: 0 0 var(--space-2);
   font-family: var(--font-body);
   font-size: 13px;
   letter-spacing: .03em;
@@ -194,15 +194,15 @@
   display: grid;
   gap: 6px;
   margin: 0;
-  padding-left: 20px;
-  color: var(--text-secondary);
+  padding-left: var(--space-4);
+  color: var(--color-neutral-700);
   font-size: 13px;
   line-height: 1.65;
 }
 
 .proposalSection dl {
   grid-template-columns: 1fr;
-  gap: 10px;
+  gap: var(--space-2);
   margin: 0;
 }
 
@@ -210,77 +210,78 @@
 
 .referenceList {
   display: grid;
-  gap: 10px;
-  margin: 10px 0 0;
-  padding-left: 20px;
+  gap: var(--space-2);
+  margin: var(--space-2) 0 0;
+  padding-left: var(--space-4);
 }
 
-.referenceList li > p { margin: 4px 0 0; }
+.referenceList li > p { margin: var(--space-1) 0 0; }
 .referenceCaveat { margin-bottom: 0; }
 
 .inlineActions,
 .composerFooter {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 14px;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
 }
 
 .inlineActions button,
 .composerFooter button {
-  min-height: 34px;
-  border: 1px solid var(--primary);
+  border: 1px solid var(--color-accent);
   border-radius: var(--radius-md);
-  background: var(--primary);
-  padding: 9px 15px;
-  color: var(--primary);
+  background: transparent;
+  padding: calc(var(--space-2) * .8) calc(var(--space-3) * 1.2);
+  color: var(--color-accent);
+  font-family: var(--font-ui);
   font-size: 14px;
-  font-weight: 600;
-  transition: background var(--motion-fast), transform var(--motion-fast);
+  font-weight: var(--font-heading-weight);
+  line-height: 1.15;
+  transition: background var(--motion-fast), color var(--motion-fast);
 }
 
 .inlineActions button:hover:not(:disabled),
-.composerFooter button:hover:not(:disabled) { background: var(--primary-tint); color: var(--primary-hover); }
+.composerFooter button:hover:not(:disabled) { background: var(--primary-tint); color: var(--color-accent-700); }
 
 .inlineActions button[data-tone="quiet"],
 .composerFooter button[data-tone="quiet"] {
-  border-color: var(--border);
+  border-color: var(--color-divider);
   background: transparent;
-  color: var(--text);
+  color: var(--color-text);
 }
 
 .inlineActions button:disabled,
-.composerFooter button:disabled { cursor: wait; opacity: .55; }
+.composerFooter button:disabled { cursor: wait; opacity: .45; }
 
 .composer {
   display: grid;
-  gap: 9px;
-  border-top: 1px solid var(--border);
-  padding-top: 20px;
+  gap: var(--space-2);
+  border-top: 1px solid var(--color-divider);
+  padding-top: var(--space-4);
 }
 
-.composer label { font-family: var(--font-display); font-size: 18px; font-weight: 600; }
+.composer label { font-family: var(--font-heading); font-size: 18px; font-weight: var(--font-heading-weight); }
 
 .composer textarea {
   width: 100%;
   min-height: 112px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--color-divider);
   border-radius: var(--radius-md);
   background: transparent;
-  padding: 12px;
-  color: var(--text);
+  padding: var(--space-3);
+  color: var(--color-text);
   font-size: 14px;
   line-height: 1.65;
 }
 
-.composer textarea:focus { border-color: var(--primary); outline-offset: 0; }
+.composer textarea:focus { border-color: var(--color-accent); outline-offset: 0; }
 .composerFooter { align-items: center; }
-.composerFooter > span { color: var(--text-secondary); font-size: 12px; }
+.composerFooter > span { color: var(--color-neutral-700); font-size: 12px; }
 
 @media (max-width: 767px) {
-  .assistant { padding: 0 16px 28px; }
+  .assistant { padding: 0 var(--space-4) var(--space-6); }
   .header { display: grid; align-items: start; }
-  .turn { grid-template-columns: 1fr; gap: 8px; }
+  .turn { grid-template-columns: 1fr; gap: var(--space-2); }
   .approval dl,
   .proposalSummary { grid-template-columns: 1fr; }
   .inlineActions,

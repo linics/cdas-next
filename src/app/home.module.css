@@ -1,6 +1,6 @@
 .home {
   min-height: 100svh;
-  background: var(--surface-page);
+  background: var(--color-bg);
 }
 
 .toolbar {
@@ -9,26 +9,27 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
-  border-bottom: 1px solid var(--border);
-  padding: 0 clamp(16px, 5vw, var(--space-8));
+  border-bottom: 1px solid var(--color-divider);
+  padding: 0 clamp(var(--space-4), 5vw, var(--space-8));
 }
 
 .brand {
   display: inline-flex;
+  color: var(--color-text);
   min-height: 44px;
   align-items: baseline;
   gap: var(--space-2);
 }
 
 .brand strong {
-  font-family: var(--font-display);
+  font-family: var(--font-heading);
   font-size: 20px;
-  font-weight: 600;
+  font-weight: var(--font-heading-weight);
   letter-spacing: .01em;
 }
 
 .brand span {
-  color: var(--text-muted);
+  color: var(--color-neutral-600);
   font-family: var(--font-ui);
   font-size: 13px;
   letter-spacing: .14em;
@@ -44,12 +45,12 @@
 .main {
   width: min(100% - 40px, 900px);
   margin: 0 auto;
-  padding: var(--space-8) 0 var(--space-12);
+  padding: var(--space-8) 0 calc(var(--space-8) * 1.5);
 }
 
 .kicker {
   margin: 0 0 var(--space-2);
-  color: var(--primary);
+  color: var(--color-accent);
   font-family: var(--font-ui);
   font-size: 10px;
   letter-spacing: .1em;
@@ -78,19 +79,20 @@
 .workspaceList {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
+  border-top: 1px solid var(--color-divider);
+  border-bottom: 1px solid var(--color-divider);
 }
 
 .workspaceLink {
   display: flex;
+  color: var(--color-text);
   flex-direction: column;
   gap: var(--space-2);
   padding: var(--space-6);
   transition: background var(--motion-fast);
 }
 
-.workspaceLink + .workspaceLink { border-left: 1px solid var(--border); }
+.workspaceLink + .workspaceLink { border-left: 1px solid var(--color-divider); }
 .workspaceLink:hover { background: color-mix(in srgb, var(--color-accent) 8%, transparent); }
 .workspaceLink:active { background: color-mix(in srgb, var(--color-accent) 16%, transparent); }
 
@@ -111,14 +113,14 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: var(--primary);
+  color: var(--color-accent);
   font-family: var(--font-ui);
   font-size: 13px;
 }
 
 .flow {
   margin: var(--space-6) 0 0;
-  color: var(--text-muted);
+  color: var(--color-neutral-600);
   font-size: 13px;
 }
 
@@ -126,14 +128,14 @@
   display: grid;
   grid-template-columns: 130px minmax(0, 1fr);
   gap: var(--space-6);
-  margin-top: var(--space-12);
-  border-top: 1px solid var(--border);
+  margin-top: calc(var(--space-8) * 1.5);
+  border-top: 1px solid var(--color-divider);
   padding-top: var(--space-4);
 }
 
 .noteIndex {
   margin: 3px 0 0;
-  color: var(--primary);
+  color: var(--color-accent);
   font-family: var(--font-ui);
   font-size: 10px;
   letter-spacing: .1em;
@@ -157,7 +159,7 @@
 @media (max-width: 640px) {
   .main { width: min(100% - 32px, 900px); padding-top: var(--space-6); }
   .workspaceList { grid-template-columns: 1fr; }
-  .workspaceLink + .workspaceLink { border-top: 1px solid var(--border); border-left: 0; }
+  .workspaceLink + .workspaceLink { border-top: 1px solid var(--color-divider); border-left: 0; }
   .note { grid-template-columns: 1fr; gap: var(--space-2); }
   .toolbar p { display: none; }
 }

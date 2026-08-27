@@ -30,12 +30,12 @@
   background: transparent;
 }
 .statusBadge[data-tone="success"] .statusDot { background: var(--color-neutral-400); }
-.statusBadge[data-tone="danger"] .statusDot { background: var(--danger); }
+.statusBadge[data-tone="danger"] .statusDot { background: var(--stroke-heavy); }
 
 /* 提示走描边，不走大色块 —— Classical 的色是笔画不是填充。 */
 .alert {
-  border: 1px solid var(--border);
-  border-left: 2px solid var(--primary);
+  border: 1px solid var(--color-divider);
+  border-left: 2px solid var(--color-accent);
   border-radius: var(--radius-md);
   background: transparent;
   padding: var(--space-3) var(--space-4);
@@ -45,23 +45,23 @@
 }
 
 .alert[data-tone="warning"] { border-left-color: var(--color-accent-600); }
-.alert[data-tone="danger"] { border-left-color: var(--danger); }
+.alert[data-tone="danger"] { border-left-color: var(--stroke-heavy); }
 .alert[data-tone="success"] { border-left-color: var(--color-neutral-500); }
 
 .emptyState {
   display: grid;
   max-width: 680px;
   grid-template-columns: 32px minmax(0, 1fr);
-  gap: 16px;
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-  padding: 28px 0;
+  gap: var(--space-4);
+  border-top: 1px solid var(--color-divider);
+  border-bottom: 1px solid var(--color-divider);
+  padding: var(--space-6) 0;
 }
 
 .emptyIndex {
   margin: 2px 0 0;
   color: var(--color-neutral-400);
-  font-family: var(--font-display);
+  font-family: var(--font-heading);
   font-size: 24px;
 }
 
@@ -72,22 +72,22 @@
 }
 
 .emptyState h2 + p {
-  margin: 8px 0 0;
-  color: var(--text-secondary);
+  margin: var(--space-2) 0 0;
+  color: var(--color-neutral-700);
   font-size: 15px;
   line-height: 1.65;
 }
 
-.emptyState > div > div { margin-top: 20px; }
+.emptyState > div > div { margin-top: var(--space-4); }
 
 .dialog {
   width: min(540px, calc(100% - 32px));
-  border: 1px solid var(--border);
+  border: 1px solid var(--color-divider);
   border-radius: var(--radius-lg);
-  background: var(--surface);
-  box-shadow: var(--shadow-overlay);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-lg);
   padding: 0;
-  color: var(--text);
+  color: var(--color-text);
 }
 
 .dialog[open] { animation: dialogEnter var(--motion-medium) both; }
@@ -100,7 +100,7 @@
 
 .dialogKicker {
   margin: 0 0 var(--space-2);
-  color: var(--primary);
+  color: var(--color-accent);
   font-family: var(--font-ui);
   font-size: 10px;
   letter-spacing: .1em;
@@ -114,8 +114,8 @@
 }
 
 .dialogContent h2 + div {
-  margin-top: 16px;
-  color: var(--text-secondary);
+  margin-top: var(--space-4);
+  color: var(--color-neutral-700);
   font-size: 15px;
   line-height: 1.65;
 }
@@ -125,18 +125,17 @@
   justify-content: flex-end;
   gap: var(--space-2);
   margin-top: var(--space-4);
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--color-divider);
   padding-top: var(--space-3);
 }
 
 .primaryButton,
 .secondaryButton {
-  min-height: 34px;
   border-radius: var(--radius-md);
-  padding: 7px 17px;
+  padding: calc(var(--space-2) * .8) calc(var(--space-3) * 1.2);
   font-family: var(--font-ui);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: var(--font-heading-weight);
   line-height: 1.15;
   white-space: nowrap;
   cursor: pointer;
@@ -147,27 +146,27 @@
 }
 
 .primaryButton {
-  border: 1px solid var(--primary);
+  border: 1px solid var(--color-accent);
   background: transparent;
-  color: var(--primary);
+  color: var(--color-accent);
 }
 
 .primaryButton:hover:not(:disabled) { background: color-mix(in srgb, var(--color-accent) 12%, transparent); }
 .primaryButton:active:not(:disabled) { background: color-mix(in srgb, var(--color-accent) 22%, transparent); }
 
 .primaryButton[data-tone="danger"] {
-  border-color: var(--danger);
-  color: var(--danger);
+  border-color: var(--stroke-heavy);
+  color: var(--stroke-heavy);
 }
 
 .primaryButton[data-tone="danger"]:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  background: var(--ink-tint);
 }
 
 .secondaryButton {
-  border: 1px solid var(--border);
+  border: 1px solid var(--color-divider);
   background: transparent;
-  color: var(--text);
+  color: var(--color-text);
 }
 
 .secondaryButton:hover:not(:disabled) { background: color-mix(in srgb, var(--color-text) 7%, transparent); }
@@ -181,7 +180,7 @@
 }
 
 @media (max-width: 480px) {
-  .dialogContent { padding: 24px 20px 20px; }
+  .dialogContent { padding: var(--space-6) var(--space-4) var(--space-4); }
   .dialogActions { display: grid; grid-template-columns: 1fr; }
   .dialogActions button { width: 100%; }
   .emptyState { grid-template-columns: 24px minmax(0, 1fr); }

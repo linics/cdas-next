@@ -2,12 +2,12 @@
 .accessGate {
   width: min(100%, 1040px);
   margin: 0 auto;
-  padding: var(--space-8) var(--space-8) var(--space-12);
+  padding: var(--space-8) var(--space-8) calc(var(--space-8) * 1.5);
 }
 
 .eyebrow {
   margin: 0;
-  color: var(--primary);
+  color: var(--color-accent);
   font-family: var(--font-ui);
   font-size: 10px;
   letter-spacing: .1em;
@@ -33,11 +33,13 @@
 
 .dashboardHeader > div > p:last-child,
 .accessGate > p:not(.eyebrow) {
-  max-width: 680px;
+  max-width: 44em;
   margin: 0;
   color: var(--color-neutral-800);
   font-size: 15px;
   line-height: 1.7;
+  text-align: justify;
+  text-justify: inter-character;
 }
 
 /* 计数跟在标题旁边，不做成一条大色带：数字自己就是版面重音。 */
@@ -52,11 +54,11 @@
   font-variant-numeric: tabular-nums;
 }
 
-.summaryLine dt { color: var(--text-muted); font-size: 13px; }
+.summaryLine dt { color: var(--color-neutral-600); font-size: 13px; }
 
 .summaryLine dd {
-  margin: 4px 0 0;
-  font-family: var(--font-display);
+  margin: var(--space-1) 0 0;
+  font-family: var(--font-heading);
   font-size: 25px;
   font-weight: 400;
   line-height: 1;
@@ -70,29 +72,30 @@
   grid-template-columns: 30px minmax(0, 1fr) auto;
   align-items: baseline;
   gap: var(--space-3);
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--color-divider);
   padding-bottom: var(--space-2);
 }
 
 .groupHeading > span {
   color: var(--color-accent-600);
-  font-family: var(--font-display);
+  font-family: var(--font-heading);
   font-size: 20px;
   font-variant-numeric: tabular-nums;
 }
 
 .groupHeading h2 { margin: 0; font-size: 20px; line-height: 1.2; }
 .groupHeading p { margin: 0; color: var(--color-neutral-700); font-size: 13px; line-height: 1.6; }
-.groupHeading strong { color: var(--text-muted); font-size: 13px; font-weight: 400; }
+.groupHeading strong { color: var(--color-neutral-600); font-size: 13px; font-weight: 400; }
 
 .releaseList { border-top: 0; }
 
 .releaseRow {
   display: grid;
+  color: var(--color-text);
   grid-template-columns: minmax(0, 1fr) 210px auto;
   align-items: baseline;
   gap: var(--space-6);
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--color-divider);
   padding: var(--space-4) var(--space-2);
   transition: background var(--motion-fast);
 }
@@ -101,16 +104,16 @@
 .releaseRow:active { background: color-mix(in srgb, var(--color-accent) 16%, transparent); }
 
 .releaseCopy h3 {
-  margin: 0 0 4px;
-  font-family: var(--font-display);
+  margin: 0 0 var(--space-1);
+  font-family: var(--font-heading);
   font-size: 20px;
   font-weight: 400;
   line-height: 1.2;
 }
-.releaseCopy p { margin: 0 0 4px; color: var(--color-neutral-800); font-size: 13px; line-height: 1.6; }
+.releaseCopy p { margin: 0 0 var(--space-1); color: var(--color-neutral-800); font-size: 13px; line-height: 1.6; }
 .releaseCopy > span {
   display: block;
-  color: var(--text-muted);
+  color: var(--color-neutral-600);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
@@ -124,64 +127,62 @@
   font-variant-numeric: tabular-nums;
 }
 .releaseDates div { display: flex; gap: var(--space-2); }
-.releaseDates dt { flex: none; color: var(--text-muted); font-size: 13px; white-space: nowrap; }
+.releaseDates dt { flex: none; color: var(--color-neutral-600); font-size: 13px; white-space: nowrap; }
 .releaseDates dd { margin: 0; font-size: 13px; }
 .releaseDates strong { display: block; color: var(--color-accent-700); font-size: 12px; font-weight: 400; }
 
 .releaseAction { display: grid; justify-items: end; gap: var(--space-2); }
 .releaseAction small {
-  color: var(--primary);
+  color: var(--color-accent);
   font-family: var(--font-ui);
   font-size: 13px;
   white-space: nowrap;
 }
-.releaseAction i { font-family: var(--font-display); font-size: 16px; font-style: normal; }
+.releaseAction i { font-family: var(--font-heading); font-size: 16px; font-style: normal; }
 
 .accessGate {
   max-width: 720px;
-  padding-top: clamp(56px, 13vh, 132px);
+  padding-top: clamp(calc(var(--space-8) * 1.5), 13vh, calc(var(--space-8) * 3.59));
 }
 
 .accessGate::before,
 .accessGate::after {
   display: block;
   height: 1px;
-  background: var(--border);
+  background: var(--color-divider);
   content: "";
 }
 
-.accessGate::before { margin-bottom: 32px; }
-.accessGate::after { margin-top: 40px; }
+.accessGate::before { margin-bottom: var(--space-6); }
+.accessGate::after { margin-top: var(--space-8); }
 
 .accessActions {
   display: flex;
   align-items: center;
-  gap: 14px;
-  margin-top: 28px;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
 }
 
 .accessGate a {
   display: inline-flex;
-  min-height: 34px;
   align-items: center;
-  color: var(--primary);
+  color: var(--color-accent);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: var(--font-heading-weight);
 }
 
 .signInButton {
-  min-height: 34px;
-  border: 1px solid var(--primary);
+  border: 1px solid var(--color-accent);
   border-radius: var(--radius-md);
   background: transparent;
-  padding: 7px 17px;
-  color: var(--primary);
+  padding: calc(var(--space-2) * .8) calc(var(--space-3) * 1.2);
+  color: var(--color-accent);
   font-family: var(--font-ui);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: var(--font-heading-weight);
 }
 
-.signInButton:hover { background: var(--primary-tint); color: var(--primary-hover); }
+.signInButton:hover { background: var(--primary-tint); color: var(--color-accent-700); }
 
 @media (max-width: 800px) {
   .dashboardHeader { flex-wrap: wrap; }
@@ -190,20 +191,20 @@
   .releaseDates {
     grid-column: 1 / -1;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    border-top: 1px solid var(--border);
-    padding-top: 16px;
+    border-top: 1px solid var(--color-divider);
+    padding-top: var(--space-4);
   }
   .releaseAction { grid-column: 2; grid-row: 1; }
 }
 
 @media (max-width: 520px) {
   .dashboardMain,
-  .accessGate { padding: 32px 16px 56px; }
+  .accessGate { padding: var(--space-6) var(--space-4) calc(var(--space-8) * 1.5); }
   .summaryLine { width: 100%; gap: var(--space-3); }
   .summaryLine dd { font-size: 20px; }
   .releaseRow { display: block; padding: var(--space-3) 0; }
-  .releaseDates { display: grid; margin-top: 18px; }
-  .releaseAction { display: flex; justify-content: space-between; margin-top: 18px; }
+  .releaseDates { display: grid; margin-top: var(--space-4); }
+  .releaseAction { display: flex; justify-content: space-between; margin-top: var(--space-4); }
   .groupHeading { grid-template-columns: 28px minmax(0, 1fr) auto; }
   .accessActions { align-items: stretch; flex-direction: column; }
 }

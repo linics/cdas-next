@@ -1,21 +1,23 @@
 @import "tailwindcss";
 
-/* Classical design system tokens.
-   Source of truth: design-system/cdas-next Classical bundle
-   (Cormorant Garamond headings · Lora latin body · Noto Serif SC 中文界面字).
-   Colour, spacing, radius and elevation come from the Classical ramps —
-   never hard-code a hex or a raw px value a token already carries. */
+/* ══════════════════════════════════════════════════════════════════════════
+   Classical — the token sheet, ported verbatim from the design system
+   (`_ds/classical-…/styles.css`) plus the two 中文 adjustments the prototype
+   documents. Every colour, font, spacing, radius and shadow comes from here.
+   Never hard-code a hex, a font name or a px value these tokens carry.
+   ══════════════════════════════════════════════════════════════════════ */
 :root {
   color-scheme: light;
 
-  /* — roles — */
   --color-bg: #f3f2f2;
   --color-surface: #eae9e9;
   --color-text: #201f1d;
   --color-accent: #b68235;
-  --color-divider: rgb(32 31 29 / 16%);
+  --color-accent-2: #ac803e;
+  --color-divider: color-mix(in srgb, #201f1d 16%, transparent);
 
-  /* — neutral ramp (OKLCH-derived, one shared lightness scale) — */
+  /* Tonal ramps — generated in OKLCH on one shared lightness scale, so the
+     same step of any role matches the others in visual value. */
   --color-neutral-100: #f8f4f4;
   --color-neutral-200: #eae7e7;
   --color-neutral-300: #d7d3d3;
@@ -26,7 +28,6 @@
   --color-neutral-800: #444141;
   --color-neutral-900: #2d2b2b;
 
-  /* — accent ramp — */
   --color-accent-100: #fff3e4;
   --color-accent-200: #ffe3bf;
   --color-accent-300: #facb8d;
@@ -37,35 +38,51 @@
   --color-accent-800: #5a3b0a;
   --color-accent-900: #3a270d;
 
-  /* — application aliases — */
-  --surface-page: var(--color-bg);
-  --surface: var(--color-surface);
-  --surface-raised: var(--color-neutral-100);
-  --surface-subtle: var(--color-neutral-200);
-  --text: var(--color-text);
-  --text-secondary: var(--color-neutral-700);
-  --text-muted: var(--color-neutral-600);
-  --border: var(--color-divider);
-  --border-strong: rgb(32 31 29 / 32%);
-  --primary: var(--color-accent);
-  --primary-hover: var(--color-accent-700);
-  --primary-soft: var(--color-accent-100);
-  --primary-tint: color-mix(in srgb, var(--color-accent) 10%, transparent);
-  --primary-tint-strong: color-mix(in srgb, var(--color-accent) 18%, transparent);
-  --success: #55704f;
-  --warning: var(--color-accent-700);
-  --danger: #8f4436;
-  --focus-ring: color-mix(in srgb, var(--color-accent) 32%, transparent);
+  /* Mono scheme: no second accent was chosen. These carry a machine-derived
+     stand-in kept only so both sets resolve — treat them as one role. */
+  --color-accent-2-100: #fff3e4;
+  --color-accent-2-200: #ffe3be;
+  --color-accent-2-300: #f5cd96;
+  --color-accent-2-400: #dbaf70;
+  --color-accent-2-500: #bc8f4e;
+  --color-accent-2-600: #9b7232;
+  --color-accent-2-700: #79561f;
+  --color-accent-2-800: #573d14;
+  --color-accent-2-900: #382810;
 
-  /* — radius (4px base, Classical) — */
+  --font-heading: var(--font-heading-loaded), var(--font-cjk-loaded), "Songti SC", "STSong", serif;
+  --font-heading-weight: 600; /* bold is retired — semibold is the interface
+     headings' ceiling; display sizes go lighter still, to the normal cut */
+  --font-body: var(--font-body-loaded), var(--font-cjk-loaded), "Songti SC", "STSong", serif;
+  /* 界面小字（按钮、标签、分段控件、表头、字段名）全是中文，字形来自 Noto Serif SC，
+     行盒若按 Cormorant/Lora 的度量计算，两套度量叠加会让上下留白不对称。
+     让度量和字形出自同一个字，并显式定行高；拉丁标题仍走 Cormorant。 */
+  --font-ui: var(--font-cjk-loaded), "Songti SC", "STSong", serif;
+
+  --space-1: 4.6px;
+  --space-2: 9.2px;
+  --space-3: 13.8px;
+  --space-4: 18.4px;
+  --space-6: 27.6px;
+  --space-8: 36.8px;
+
   --radius-sm: 2px;
   --radius-md: 4px;
   --radius-lg: 7px;
 
-  /* — elevation: a whisper, tuned to the ground — */
-  --shadow-sm: 0 1px 2px color-mix(in srgb, #2d2b2b 14%, transparent);
-  --shadow-float: 0 3px 10px color-mix(in srgb, #2d2b2b 16%, transparent);
-  --shadow-overlay: 0 12px 32px color-mix(in srgb, #2d2b2b 22%, transparent);
+  /* Elevation — derived from the ground: a whisper, never a heavy drop. */
+  --shadow-sm: 0 1px 2px color-mix(in srgb, var(--color-neutral-900) 14%, transparent);
+  --shadow-md: 0 3px 10px color-mix(in srgb, var(--color-neutral-900) 16%, transparent);
+  --shadow-lg: 0 12px 32px color-mix(in srgb, var(--color-neutral-900) 22%, transparent);
+
+  /* — the only derived values, all resolved from the palette above — */
+  --primary-tint: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  --primary-tint-strong: color-mix(in srgb, var(--color-accent) 22%, transparent);
+  --ink-tint: color-mix(in srgb, var(--color-text) 7%, transparent);
+  --ink-tint-strong: color-mix(in srgb, var(--color-text) 14%, transparent);
+  /* Mono scheme: 破坏性动作与错误不靠色相区分 —— 靠措辞、确认对话框和更重的
+     笔画。这里只给一档更深的墨色，不引入调色板以外的红。 */
+  --stroke-heavy: var(--color-neutral-900);
 
   --motion-fast: 160ms cubic-bezier(.2, .8, .2, 1);
   --motion-medium: 240ms cubic-bezier(.2, .8, .2, 1);
@@ -74,92 +91,62 @@
   --toolbar-height: 52px;
   --sidebar-width: 232px;
   --content-width: 1200px;
-
-  /* — type — */
-  --font-display: var(--font-display-loaded), var(--font-cjk-loaded), "Songti SC", "STSong", serif;
-  --font-body: var(--font-body-loaded), var(--font-cjk-loaded), "Songti SC", "STSong", serif;
-  /* 中文界面小字（按钮、标签、表头、字段名）：字形与度量出自同一个字，
-     避免与 Cormorant/Lora 的度量叠加导致行盒不对称。 */
-  --font-ui: var(--font-cjk-loaded), "Songti SC", "STSong", serif;
-  --font-heading-weight: 600;
-
-  /* — spacing: Classical density 1.15× — */
-  --space-1: 4.6px;
-  --space-2: 9.2px;
-  --space-3: 13.8px;
-  --space-4: 18.4px;
-  --space-5: 23px;
-  --space-6: 27.6px;
-  --space-8: 36.8px;
-  --space-10: 46px;
-  --space-12: 55.2px;
-  --space-16: 73.6px;
-
-  /* Compatibility aliases retained while route modules are migrated. */
-  --background: var(--surface-page);
-  --foreground: var(--text);
-  --muted: var(--text-secondary);
-  --line: var(--border);
-  --accent: var(--primary);
-  --accent-strong: var(--primary-hover);
-  --accent-soft: var(--primary-soft);
 }
 
 *, *::before, *::after { box-sizing: border-box; }
 html {
-  background: var(--surface-page);
+  background: var(--color-bg);
   scroll-behavior: smooth;
 }
 body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
-  background: var(--surface-page);
-  color: var(--text);
+  background: var(--color-bg);
+  color: var(--color-text);
   font-family: var(--font-body);
   font-size: 15px;
   font-weight: 400;
-  line-height: 1.6;
+  line-height: 1.55;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
 }
-button, input, textarea, select {
-  font: inherit;
-}
-button, label, th, legend, dt, summary {
-  font-family: var(--font-ui);
-}
-button { line-height: 1.15; }
-button, a {
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-}
-button { cursor: pointer; }
-a { color: inherit; text-decoration: none; }
 h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-display);
+  font-family: var(--font-heading);
   font-weight: var(--font-heading-weight);
-  letter-spacing: -.015em;
   line-height: 1.12;
+  letter-spacing: -.015em;
+  margin: 0 0 var(--space-2);
 }
-h1 { font-size: 42px; }
+h1 { font-size: 42px; font-weight: 400; } /* display sizes take the normal cut */
 h2 { font-size: 32px; }
 h3 { font-size: 25px; }
 h4 { font-size: 20px; }
 h5 { font-size: 16px; }
-/* Figures set tabular wherever they stand as numbers or columns;
-   running prose keeps its text figures. */
-time, dd, th, td, output { font-variant-numeric: tabular-nums; }
-button:focus-visible,
-a:focus-visible,
-input:focus-visible,
-textarea:focus-visible,
-select:focus-visible,
-[tabindex="-1"]:focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 2px;
+h6 { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; }
+p { margin: 0 0 var(--space-3); }
+a { color: var(--color-accent); text-decoration: none; text-underline-offset: 3px; }
+a:hover { color: var(--color-accent-700); }
+img { display: block; max-width: 100%; }
+figure { margin: 0; }
+figcaption {
+  margin-top: var(--space-1);
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+  font-size: 11px;
 }
-::selection { background: color-mix(in srgb, var(--color-accent) 30%, transparent); color: var(--text); }
+button, input, textarea, select { font: inherit; }
+button, label, th, legend, dt, summary { font-family: var(--font-ui); }
+button { cursor: pointer; line-height: 1.15; }
+button, a {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+/* Figures set tabular wherever they stand as numbers or columns; running
+   prose keeps its text figures. */
+time, th, td, output { font-variant-numeric: tabular-nums; }
+:focus { outline: none; }
+:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+::selection { background: color-mix(in srgb, var(--color-accent) 30%, transparent); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     scroll-behavior: auto !important;

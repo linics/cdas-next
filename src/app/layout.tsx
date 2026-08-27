@@ -8,7 +8,7 @@ import "./globals.css";
 const displayFont = Cormorant_Garamond({
   display: "swap",
   subsets: ["latin"],
-  variable: "--font-display-loaded",
+  variable: "--font-heading-loaded",
   weight: ["400", "600"],
 });
 

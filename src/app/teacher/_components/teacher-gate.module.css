@@ -4,8 +4,8 @@
   display: grid;
   min-height: 100svh;
   grid-template-columns: 1.15fr 1fr;
-  background: var(--surface-page);
-  color: var(--text);
+  background: var(--color-bg);
+  color: var(--color-text);
 }
 
 .gateAside {
@@ -13,22 +13,23 @@
   flex-direction: column;
   justify-content: space-between;
   gap: var(--space-8);
-  border-right: 1px solid var(--border);
+  border-right: 1px solid var(--color-divider);
   padding: var(--space-8) calc(var(--space-8) * 1.2);
 }
 
+.brand { color: var(--color-text); }
 .brand strong,
 .brand small { display: block; }
 
 .brand strong {
-  font-family: var(--font-display);
+  font-family: var(--font-heading);
   font-size: 20px;
-  font-weight: 600;
+  font-weight: var(--font-heading-weight);
   line-height: 1.1;
 }
 
 .brand small {
-  color: var(--text-muted);
+  color: var(--color-neutral-600);
   font-family: var(--font-ui);
   font-size: 13px;
   letter-spacing: .14em;
@@ -57,7 +58,7 @@
   flex-wrap: wrap;
   gap: var(--space-6);
   margin: 0;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--color-divider);
   padding: var(--space-4) 0 0;
   list-style: none;
 }
@@ -70,7 +71,7 @@
 .steps span {
   display: block;
   color: var(--color-accent-600);
-  font-family: var(--font-display);
+  font-family: var(--font-heading);
   font-size: 20px;
   font-variant-numeric: tabular-nums;
 }
@@ -87,7 +88,7 @@
 
 .eyebrow {
   margin: 0 0 var(--space-2);
-  color: var(--primary);
+  color: var(--color-accent);
   font-family: var(--font-ui);
   font-size: 10px;
   letter-spacing: .1em;
@@ -112,43 +113,42 @@
 .secondaryButton,
 .backLink {
   display: inline-flex;
-  min-height: 34px;
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-md);
-  padding: 7px 17px;
+  padding: calc(var(--space-2) * .8) calc(var(--space-3) * 1.2);
   font-family: var(--font-ui);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: var(--font-heading-weight);
   line-height: 1.15;
   transition: background var(--motion-fast);
 }
 
 .primaryButton {
-  border: 1px solid var(--primary);
+  border: 1px solid var(--color-accent);
   background: transparent;
-  color: var(--primary);
+  color: var(--color-accent);
 }
 
 .primaryButton:hover { background: color-mix(in srgb, var(--color-accent) 12%, transparent); }
 .primaryButton:active { background: color-mix(in srgb, var(--color-accent) 22%, transparent); }
 
 .secondaryButton {
-  border: 1px solid var(--border);
+  border: 1px solid var(--color-divider);
   background: transparent;
-  color: var(--text);
+  color: var(--color-text);
 }
 
 .secondaryButton:hover { background: color-mix(in srgb, var(--color-text) 7%, transparent); }
 
-.backLink { padding-right: var(--space-1); padding-left: var(--space-1); color: var(--primary); }
+.backLink { padding-right: var(--space-1); padding-left: var(--space-1); color: var(--color-accent); }
 .backLink:hover { background: color-mix(in srgb, var(--color-accent) 10%, transparent); }
 
 .gateNote {
   margin: 0;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--color-divider);
   padding-top: var(--space-3);
-  color: var(--text-muted);
+  color: var(--color-neutral-600);
   font-size: 13px;
   line-height: 1.7;
 }
@@ -158,10 +158,10 @@
   .gateAside {
     gap: var(--space-6);
     border-right: 0;
-    border-bottom: 1px solid var(--border);
-    padding: var(--space-6) 16px;
+    border-bottom: 1px solid var(--color-divider);
+    padding: var(--space-6) var(--space-4);
   }
-  .accessGate { padding: var(--space-6) 16px var(--space-8); }
+  .accessGate { padding: var(--space-6) var(--space-4) var(--space-8); }
 }
 
 @media (max-width: 520px) {
