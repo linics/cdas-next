@@ -392,11 +392,17 @@ describe("buildActivityAssistantInstructions", () => {
   it("lists legal assignment subtypes and the unread-citation rule", () => {
     const text = buildActivityAssistantInstructions([]);
     expect(text).toContain("inquiry 配 literature、survey、experiment");
-    expect(text).toContain("project 的 assignmentSubtype 必須為 null");
+    expect(text).toContain("project 的 assignmentSubtype 必须为 null");
     expect(text).toContain("read_source_section 已返回 FOUND");
     expect(text).toContain("引用数量不得超过已通读章节数");
     expect(text).toContain("优先只引用 2 条已通读来源");
-    expect(text).toContain("content.schemaVersion 為 2");
+    expect(text).toContain("content.schemaVersion 为 2");
+    expect(text).toContain("使用简体中文");
+    expect(text).toContain("不要使用繁体中文");
+    expect(text).not.toContain("繁體");
+    expect(text).toContain("你们是……");
+    expect(text).toContain("同一个故事的连续剧集");
+    expect(text).toContain("三阶段是否同一故事、证据是否逐级递进");
   });
 });
 
@@ -1003,7 +1009,7 @@ describe("activity assistant route handler", () => {
 
     expect(executionResponse.status).toBe(200);
     expect(executionBody).toContain(releaseId);
-    expect(executionBody).not.toContain("助手請求未完成");
+    expect(executionBody).not.toContain("助手请求未完成");
     expect(mocks.preparePublish).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ source: "AGENT", actorId }),

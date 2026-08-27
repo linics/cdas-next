@@ -15,7 +15,6 @@ import type { StudentReleaseWorkspace } from "../../../../server/queries/submiss
 import { AttachmentEditor } from "./attachment-editor";
 import {
   saveWorkingCopyAction,
-  startResubmissionAction,
   submitRevisionAction,
 } from "./actions";
 import {
@@ -148,20 +147,14 @@ export function SubmissionEditor({
     submitRevisionAction,
     initialSubmissionActionState,
   );
-  const [resubmitState, resubmitAction, resubmitPending] = useActionState(
-    startResubmissionAction,
-    initialSubmissionActionState,
-  );
   const submitFormRef = useRef<HTMLFormElement>(null);
   const [submitConfirmationOpen, setSubmitConfirmationOpen] = useState(false);
-  const anyPending = savePending || submitPending || resubmitPending;
+  const anyPending = savePending || submitPending;
 
   const saveIdempotencyKey =
     saveState.nextIdempotencyKey ?? idempotencySeeds.save;
   const submitIdempotencyKey =
     submitState.nextIdempotencyKey ?? idempotencySeeds.submit;
-  const resubmitIdempotencyKey =
-    resubmitState.nextIdempotencyKey ?? idempotencySeeds.resubmit;
 
   const draftKind =
     workingCopy && workingCopy.baseRevisionNumber > 0
@@ -170,7 +163,7 @@ export function SubmissionEditor({
 
   if (!workingCopy && latestRevisionNumber > 0) {
     return (
-      <section className={styles.editorSection} aria-labelledby="submission-title">
+      <section className={styles.editorSection} aria-labelledby="submission-title" id="submission-workspace">
         <div className={styles.sectionHeading}>
           <div>
             <p className={styles.eyebrow}>当前状态</p>
@@ -179,32 +172,9 @@ export function SubmissionEditor({
           <span className={styles.formalBadge}>正式修订</span>
         </div>
         <p className={styles.sectionLead}>
-          当前没有未提交的修改。正式修订不可覆盖；若要补充内容，需另外创建重交草稿。
+          当前没有未提交的修改。老师的反馈写在下方时间线里；若要补充内容，在对应版本上开始重交。
         </p>
-
-        {canWrite ? (
-          <form className={styles.resubmitForm} action={resubmitAction}>
-            <HiddenActionFields
-              releaseId={releaseId}
-              phaseIndex={phaseIndex}
-              version={latestRevisionNumber}
-              idempotencyKey={resubmitIdempotencyKey}
-            />
-            <div>
-              <strong>开始下一版</strong>
-              <p>
-                系统会复制第 {latestRevisionNumber} 版文字、检查点与附件作为新草稿，现有修订与反馈都会保留。
-              </p>
-            </div>
-            <button
-              className={styles.secondaryButton}
-              type="submit"
-              disabled={anyPending}
-            >
-              {resubmitPending ? "正在创建…" : "开始重交"}
-            </button>
-          </form>
-        ) : (
+        {canWrite ? null : (
           <div className={styles.readOnlyNotice} role="note">
             <span aria-hidden="true">◇</span>
             <p>{readOnlyMessage}</p>
@@ -212,7 +182,6 @@ export function SubmissionEditor({
         )}
         <ActionNotice state={saveState} />
         <ActionNotice state={submitState} />
-        <ActionNotice state={resubmitState} />
       </section>
     );
   }
@@ -261,7 +230,7 @@ export function SubmissionEditor({
   );
 
   return (
-    <section className={styles.editorSection} aria-labelledby="submission-title">
+    <section className={styles.editorSection} aria-labelledby="submission-title" id="submission-workspace">
       <div className={styles.sectionHeading}>
         <div>
           <p className={styles.eyebrow}>作业内容</p>
@@ -281,7 +250,6 @@ export function SubmissionEditor({
           "先保存一份工作草稿，再确认正式提交。未正式提交的工作草稿只有你自己可见。"
         )}
       </p>
-      <ActionNotice state={resubmitState} />
 
       {canWrite ? (
         <form className={styles.writerForm} action={saveAction}>
@@ -371,7 +339,7 @@ export function SubmissionEditor({
       ) : null}
 
       {canWrite && workingCopy ? (
-        <div className={styles.commitArea}>
+        <div className={styles.commitArea} id="submission-commit">
           <div>
             <p className={styles.eyebrow}>正式提交</p>
             <h3>

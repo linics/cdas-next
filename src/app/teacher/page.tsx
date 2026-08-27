@@ -60,6 +60,14 @@ export default async function TeacherDashboardPage() {
   const readyCount = dashboard.drafts.filter(
     (draft) => draft.status === "READY_FOR_PREVIEW",
   ).length;
+  const attentionReleases = dashboard.releases.filter(
+    (release) =>
+      release.canViewSubmissions &&
+      release.attention &&
+      (release.attention.pendingFeedbackCount > 0 ||
+        release.attention.pendingEvaluationCount > 0 ||
+        release.attention.awaitingResubmissionCount > 0),
+  );
 
   return (
     <TeacherPage actorName={dashboard.actor.displayName}>
@@ -72,9 +80,14 @@ export default async function TeacherDashboardPage() {
               从草稿版本走到不可变发布，再进入学生正式提交；这里只列出当前教师身份有权操作的资源。
             </p>
           </div>
-          <Link className={styles.primaryLink} href="/teacher/activities/new">
-            新建学习活动 <span aria-hidden="true">＋</span>
-          </Link>
+          <div className={styles.pageHeaderActions}>
+            <Link className={styles.secondaryButton} href="/teacher/insights">
+              过程诊断
+            </Link>
+            <Link className={styles.primaryLink} href="/teacher/activities/new">
+              新建学习活动 <span aria-hidden="true">＋</span>
+            </Link>
+          </div>
         </header>
 
         <dl className={styles.overviewStrip} aria-label="工作台摘要">
@@ -94,6 +107,56 @@ export default async function TeacherDashboardPage() {
 
         <div className={styles.dashboardBody}>
           <div className={styles.dashboardMain}>
+            {attentionReleases.length > 0 ? (
+              <section className={styles.dashboardSection}>
+                <header className={styles.sectionHeader}>
+                  <div>
+                    <p className={styles.eyebrow}>评阅队列</p>
+                    <h2>需要我处理</h2>
+                  </div>
+                  <span>{attentionReleases.length} 项</span>
+                </header>
+                <div className={styles.attentionList}>
+                  {attentionReleases.map((release) => {
+                    const attention = release.attention;
+                    if (!attention) {
+                      return null;
+                    }
+                    const attentionParts = [
+                      attention.pendingFeedbackCount > 0
+                        ? `待反馈 ${attention.pendingFeedbackCount}`
+                        : null,
+                      attention.pendingEvaluationCount > 0
+                        ? `待评价 ${attention.pendingEvaluationCount}`
+                        : null,
+                      attention.awaitingResubmissionCount > 0
+                        ? `待重交 ${attention.awaitingResubmissionCount}`
+                        : null,
+                    ].filter(Boolean);
+                    return (
+                      <article className={styles.attentionRow} key={release.id}>
+                        <div>
+                          <h3>{release.title}</h3>
+                          <p>
+                            {release.classroomName}
+                            {attentionParts.length > 0
+                              ? ` · ${attentionParts.join(" · ")}`
+                              : ""}
+                          </p>
+                        </div>
+                        <Link
+                          className={styles.secondaryButton}
+                          href={`/teacher/releases/${release.id}/submissions`}
+                        >
+                          去处理
+                        </Link>
+                      </article>
+                    );
+                  })}
+                </div>
+              </section>
+            ) : null}
+
             <section className={styles.dashboardSection}>
               <header className={styles.sectionHeader}>
                 <div>
@@ -129,7 +192,7 @@ export default async function TeacherDashboardPage() {
                           className={styles.rowLink}
                           href={`/teacher/activities/${draft.id}`}
                         >
-                          {draft.status === "SEALED" ? "查看" : "编辑"} →
+                          {draft.status === "SEALED" ? "查看" : "编辑"}
                         </Link>
                       </article>
                     );
@@ -159,6 +222,8 @@ export default async function TeacherDashboardPage() {
                         <div>
                           <h3>{release.title}</h3>
                           <p>
+                            {release.classroomName}
+                            {" · "}
                             <LocalizedDateTime dateTime={release.publishedAt} />{" "}
                             发布
                             {release.dueAt ? (
@@ -167,41 +232,17 @@ export default async function TeacherDashboardPage() {
                                 <LocalizedDateTime dateTime={release.dueAt} />{" "}
                                 截止
                               </>
-                            ) : (
-                              " · 未设置截止"
-                            )}
+                            ) : null}
+                            {" · "}
+                            {status.label}
                           </p>
-                        </div>
-                        <div>
-                          <h3>{release.classroomName}</h3>
-                          <p>目标班级</p>
-                          {release.attention &&
-                          (release.attention.pendingFeedbackCount > 0 ||
-                            release.attention.pendingEvaluationCount > 0 ||
-                            release.attention.awaitingResubmissionCount > 0) ? (
-                            <p>
-                              {[
-                                release.attention.pendingFeedbackCount > 0
-                                  ? `待反馈 ${release.attention.pendingFeedbackCount}`
-                                  : null,
-                                release.attention.pendingEvaluationCount > 0
-                                  ? `待评价 ${release.attention.pendingEvaluationCount}`
-                                  : null,
-                                release.attention.awaitingResubmissionCount > 0
-                                  ? `待重交 ${release.attention.awaitingResubmissionCount}`
-                                  : null,
-                              ]
-                                .filter(Boolean)
-                                .join(" · ")}
-                            </p>
-                          ) : null}
                         </div>
                         {release.canViewSubmissions ? (
                           <Link
                             className={styles.rowLink}
                             href={`/teacher/releases/${release.id}/submissions`}
                           >
-                            查看提交 →
+                            查看提交
                           </Link>
                         ) : (
                           <span

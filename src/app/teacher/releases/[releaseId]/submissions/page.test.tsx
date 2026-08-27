@@ -371,6 +371,7 @@ describe("teacher release submissions page boundary", () => {
     });
 
     const inProgress = await renderPage();
+    expect(inProgress).toContain("进行中");
     expect(inProgress).toContain("重交中");
     expect(inProgress).not.toContain("待重交");
   });

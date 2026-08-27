@@ -19,6 +19,86 @@ import styles from "../../../teacher-workspace.module.css";
 import { CloseActivityPanel } from "./close-activity-panel";
 import { ReleaseGroupManager } from "./release-group-manager";
 
+type ReleaseSubmissions = Awaited<
+  ReturnType<typeof getTeacherReleaseSubmissions>
+>;
+type ReleaseSubmission = ReleaseSubmissions["submissions"][number];
+
+function submissionListGroup(
+  submission: ReleaseSubmission,
+  releaseStatus: ReleaseSubmissions["release"]["status"],
+  rubricAvailable: boolean,
+): "revise" | "active" | "closed" {
+  if (releaseStatus !== "ACTIVE") {
+    return "closed";
+  }
+  if (submission.currentRevision.followUp === "AWAITING_RESUBMISSION") {
+    return "revise";
+  }
+  if (submission.currentRevision.followUp === "RESUBMISSION_IN_PROGRESS") {
+    return "active";
+  }
+  const needsFeedback = !submission.currentRevision.feedback;
+  const needsEvaluation =
+    rubricAvailable && submission.currentRevision.evaluation === null;
+  if (needsFeedback || needsEvaluation) {
+    return "active";
+  }
+  return "closed";
+}
+
+function SubmissionListRow({
+  release,
+  submission,
+}: {
+  release: ReleaseSubmissions["release"];
+  submission: ReleaseSubmission;
+}) {
+  return (
+    <article className={styles.submissionRow}>
+      <div>
+        <h2>{submission.group?.name ?? submission.student.displayName}</h2>
+        <p>
+          {submission.phaseName
+            ? `第 ${submission.phaseIndex} 阶段 · ${submission.phaseName}`
+            : "整项提交"}
+          {submission.group
+            ? ` · 小组共享 · ${submission.group.members
+                .map((member) => member.student.displayName)
+                .join("、")}`
+            : ` · 学生识别 ${shortResourceId(submission.student.id)}`}
+        </p>
+      </div>
+      <div className={styles.submissionMeta}>
+        <strong>正式修订 {submission.currentRevision.revisionNumber}</strong>
+        <small>
+          <LocalizedDateTime dateTime={submission.currentRevision.submittedAt} />
+          {submission.currentRevision.isLate ? " · 迟交" : ""}
+          {submission.currentRevision.feedback
+            ? ` · 已反馈 v${submission.currentRevision.feedback.currentVersion}`
+            : " · 待反馈"}
+          {release.rubricAvailable
+            ? submission.currentRevision.evaluation
+              ? ` · 已评价 v${submission.currentRevision.evaluation.currentVersion}`
+              : " · 待评价"
+            : " · 无量规"}
+          {submission.currentRevision.followUp === "AWAITING_RESUBMISSION"
+            ? " · 待重交"
+            : submission.currentRevision.followUp === "RESUBMISSION_IN_PROGRESS"
+              ? " · 重交中"
+              : ""}
+        </small>
+      </div>
+      <Link
+        className={styles.rowLink}
+        href={`/teacher/submissions/${submission.submissionId}`}
+      >
+        查看反馈与评价
+      </Link>
+    </article>
+  );
+}
+
 export default async function TeacherReleaseSubmissionsPage({
   params,
 }: {
@@ -193,59 +273,43 @@ export default async function TeacherReleaseSubmissionsPage({
               尚无正式提交。未正式提交的学生工作草稿不会出现在教师列表中。
             </p>
           ) : (
-            <div className={styles.submissionList}>
-              {workspace.submissions.map((submission) => (
-                <article
-                  className={styles.submissionRow}
-                  key={submission.submissionId}
-                >
-                  <div>
-                    <h2>
-                      {submission.group?.name ?? submission.student.displayName}
-                    </h2>
-                    <p>
-                      {submission.phaseName
-                        ? `第 ${submission.phaseIndex} 阶段 · ${submission.phaseName}`
-                        : "整项提交"}
-                      {submission.group
-                        ? ` · 小组共享 · ${submission.group.members
-                            .map((member) => member.student.displayName)
-                            .join("、")}`
-                        : ` · 学生识别 ${shortResourceId(submission.student.id)}`}
-                    </p>
-                  </div>
-                  <div className={styles.submissionMeta}>
-                    <strong>正式修订 {submission.currentRevision.revisionNumber}</strong>
-                    <small>
-                      <LocalizedDateTime
-                        dateTime={submission.currentRevision.submittedAt}
-                      />
-                      {submission.currentRevision.isLate ? " · 迟交" : ""}
-                      {submission.currentRevision.feedback
-                        ? ` · 已反馈 v${submission.currentRevision.feedback.currentVersion}`
-                        : " · 待反馈"}
-                      {workspace.release.rubricAvailable
-                        ? submission.currentRevision.evaluation
-                          ? ` · 已评价 v${submission.currentRevision.evaluation.currentVersion}`
-                          : " · 待评价"
-                        : " · 无量规"}
-                      {submission.currentRevision.followUp ===
-                      "AWAITING_RESUBMISSION"
-                        ? " · 待重交"
-                        : submission.currentRevision.followUp ===
-                            "RESUBMISSION_IN_PROGRESS"
-                          ? " · 重交中"
-                          : ""}
-                    </small>
-                  </div>
-                  <Link
-                    className={styles.rowLink}
-                    href={`/teacher/submissions/${submission.submissionId}`}
-                  >
-                    查看反馈与评价 →
-                  </Link>
-                </article>
-              ))}
+            <div className={styles.submissionGroups}>
+              {(
+                [
+                  ["revise", "待重交"],
+                  ["active", "进行中"],
+                  ["closed", "已关闭"],
+                ] as const
+              ).map(([key, title]) => {
+                const items = workspace.submissions.filter(
+                  (submission) =>
+                    submissionListGroup(
+                      submission,
+                      workspace.release.status,
+                      workspace.release.rubricAvailable,
+                    ) === key,
+                );
+                if (items.length === 0) {
+                  return null;
+                }
+                return (
+                  <section className={styles.submissionGroup} key={key}>
+                    <h3 className={styles.submissionGroupTitle}>
+                      {title}
+                      <span>{items.length}</span>
+                    </h3>
+                    <div className={styles.submissionList}>
+                      {items.map((submission) => (
+                        <SubmissionListRow
+                          key={submission.submissionId}
+                          release={workspace.release}
+                          submission={submission}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                );
+              })}
             </div>
           )}
         </section>

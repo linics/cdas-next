@@ -22,6 +22,7 @@ import {
   LocalizedDateTime,
 } from "../../_components/localized-date-time";
 import type { ActivityContentV2 } from "../../../domain/activity/activity-content";
+import { AssistantMarkdown } from "./assistant-markdown";
 import styles from "./activity-assistant.module.css";
 
 type CreatedDraftOutput = {
@@ -281,7 +282,7 @@ function ActivityDraftProposalCard({
           <dd>{proposal.taskUnderstandingSummary.intendedOutcome}</dd>
         </div>
         <div>
-          <dt>证据与评价</dt>
+          <dt>证据、评价与叙事自检</dt>
           <dd>{proposal.taskUnderstandingSummary.evidenceAndAssessment}</dd>
         </div>
       </dl>
@@ -427,7 +428,15 @@ export function ActivityAssistant({
               <div className={styles.turnBody}>
                 {message.parts.map((part, index) => {
                   if (part.type === "text") {
-                    return part.text ? <p key={index}>{part.text}</p> : null;
+                    if (!part.text) return null;
+                    if (message.role === "assistant") {
+                      return (
+                        <AssistantMarkdown key={index}>
+                          {part.text}
+                        </AssistantMarkdown>
+                      );
+                    }
+                    return <p key={index}>{part.text}</p>;
                   }
 
                   if (part.type === "tool-search_knowledge") {

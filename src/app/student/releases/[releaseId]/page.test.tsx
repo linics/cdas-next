@@ -310,6 +310,7 @@ describe("student release page access boundary", () => {
 
     expect(markup).toContain("当前账号：陈同学 · 学生");
     expect(markup).toContain("退出登录");
+    expect(markup).toContain("我的提交与反馈");
     expect(markup).toContain("还没有正式修订");
     expect(mocks.getStudentFeedbackWorkspace).not.toHaveBeenCalled();
   });
@@ -347,6 +348,12 @@ describe("student release page access boundary", () => {
   it("renders the complete structured task book from the immutable release snapshot", async () => {
     mocks.getStudentReleaseWorkspace.mockResolvedValue({
       ...workspace,
+      execution: {
+        version: 1,
+        mode: "phased",
+        phaseCount: 3,
+        currentPhaseIndex: 1,
+      },
       release: {
         ...workspace.release,
         snapshot: {
@@ -358,6 +365,12 @@ describe("student release page access boundary", () => {
 
     const markup = await renderPage();
 
+    expect(markup).toContain("查看完整任务书");
+    expect(markup).toContain("这一步做什么");
+    expect(markup).toContain("可以怎么做");
+    expect(markup).toContain("老师会看什么");
+    expect(markup).toContain("总务处请你们先去现场看。");
+    expect(markup).not.toContain("核心行动");
     expect(markup).toContain("任务设置");
     expect(markup).toContain("调查探究");
     expect(markup).toContain("背景设定");
@@ -378,6 +391,7 @@ describe("student release page access boundary", () => {
     const markup = await renderPage();
 
     expect(markup).toContain("历史成员 · 唯读");
+    expect(markup).toContain("我的提交与反馈");
     expect(markup).toContain('data-can-write="false"');
     expect(markup).toContain("第一版正式观察记录");
     expect(markup).toContain("第二版正式观察记录");

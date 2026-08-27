@@ -1,0 +1,230 @@
+.insightsLayout {
+  display: grid;
+  max-width: 1200px;
+  gap: 32px;
+  margin: 0 auto;
+  padding: 8px 32px 64px;
+}
+
+.filterForm {
+  display: grid;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  padding: 20px 24px;
+}
+
+.filterForm label {
+  font-size: 16px;
+  font-weight: 650;
+}
+
+.filterForm > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.filterForm select,
+.filterForm button {
+  min-height: 44px;
+  border-radius: var(--radius-sm);
+  font: inherit;
+}
+
+.filterForm select {
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  padding: 10px 12px;
+  color: var(--text);
+}
+
+.filterForm select:focus {
+  border-color: var(--primary);
+  outline: 3px solid #c9d9f5;
+}
+
+.filterForm button {
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  padding: 10px 16px;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 650;
+}
+
+.filterForm small {
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.card {
+  display: grid;
+  gap: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  padding: 24px;
+}
+
+.card h2 {
+  margin: 6px 0 0;
+  font-size: 22px;
+  line-height: 1.3;
+}
+
+.cardLead {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+.releaseBlock + .releaseBlock {
+  margin-top: 20px;
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+}
+
+.releaseBlock h3 {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+.releaseBlock > p {
+  margin: 4px 0 12px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.dimensionList,
+.stageList,
+.statGrid {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dimensionRow,
+.stageRow {
+  display: grid;
+  gap: 8px;
+}
+
+.dimensionHead,
+.stageHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.dimensionHead strong,
+.stageHead strong {
+  font-size: 16px;
+}
+
+.weakMark {
+  border-radius: 999px;
+  background: #fef3f2;
+  padding: 4px 8px;
+  color: var(--danger);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.barTrack {
+  display: flex;
+  overflow: hidden;
+  min-height: 28px;
+  border-radius: 6px;
+  background: var(--surface-subtle);
+}
+
+.barFill {
+  display: grid;
+  min-width: 0;
+  place-items: center;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.barFill[data-tone="excellent"] { background: #0f5b35; }
+.barFill[data-tone="good"] { background: var(--primary); }
+.barFill[data-tone="pass"] { background: #b8832b; }
+.barFill[data-tone="improve"] { background: var(--danger); }
+.barFill[data-tone="insufficient"] { background: #667085; }
+.barFill[data-tone="stage"] { background: var(--primary); }
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.statGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.statGrid div {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-subtle);
+  padding: 16px;
+}
+
+.statGrid dt {
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.statGrid dd {
+  margin: 8px 0 0;
+  font-size: 28px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.sampleNote {
+  margin: 0;
+  border: 1px solid #e7c281;
+  border-radius: var(--radius-sm);
+  background: #fff7e6;
+  padding: 12px 14px;
+  color: #7a4700;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+@media (max-width: 1023px) {
+  .insightsLayout {
+    padding-left: 24px;
+    padding-right: 24px;
+  }
+}
+
+@media (max-width: 767px) {
+  .insightsLayout {
+    padding: 0 16px 48px;
+  }
+
+  .filterForm > div,
+  .statGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .filterForm button {
+    width: 100%;
+  }
+}

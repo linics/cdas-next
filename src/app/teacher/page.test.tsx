@@ -136,11 +136,15 @@ describe("teacher dashboard role guidance", () => {
     });
 
     const markup = await renderPage();
+    expect(markup).toContain("需要我处理");
+    expect(markup).toContain("去处理");
     expect(markup).toContain("校园水表观察");
     expect(markup).toContain("待反馈 2");
     expect(markup).toContain("待评价 2");
     expect(markup).toContain("待重交 1");
     expect(markup).toContain("查看提交");
+    expect(markup).toContain('href="/teacher/insights"');
+    expect(markup).toContain("过程诊断");
     expect(markup).not.toContain("学生工作副本正文");
     expect(markup).not.toContain("综评");
     expect(markup).not.toContain("已评价");

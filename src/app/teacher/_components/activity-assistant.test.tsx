@@ -186,6 +186,7 @@ describe("ActivityAssistant", () => {
     expect(markup).toContain("明确假设");
     expect(markup).toContain("跨学科必要性");
     expect(markup).toContain("目标—任务—证据—评价一致性链");
+    expect(markup).toContain("证据、评价与叙事自检");
     expect(markup).toContain("官方来源依据");
     expect(markup).toContain("用于校准跨学科任务的真实情境与实践要求");
     expect(markup).toContain("不代表活动已自动通过课程标准合规审查");
@@ -463,5 +464,21 @@ describe("ActivityAssistant", () => {
     expect(markup).toContain("继续核对活动并准备发布");
     expect(markup).toContain("确认发布这个精确版本");
     expect(markup).toContain("七年一班");
+  });
+
+  it("renders assistant markdown instead of leftover asterisks", () => {
+    mocks.useChat.mockReturnValue(
+      helpers([
+        {
+          id: "assistant_markdown",
+          role: "assistant",
+          parts: [{ type: "text", text: "请用**观察记录**支持判断。" }],
+        },
+      ]),
+    );
+
+    const markup = renderAssistant();
+    expect(markup).toContain("<strong>观察记录</strong>");
+    expect(markup).not.toContain("**观察记录**");
   });
 });

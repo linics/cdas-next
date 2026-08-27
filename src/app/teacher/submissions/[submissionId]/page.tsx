@@ -341,18 +341,6 @@ export default async function TeacherSubmissionPage({
 
         <dl className={styles.contextFacts}>
           <div>
-            <dt>活动</dt>
-            <dd>{content.title}</dd>
-          </div>
-          <div>
-            <dt>班级</dt>
-            <dd>{submission.release.classroom.name}</dd>
-          </div>
-          <div>
-            <dt>提交主体</dt>
-            <dd>{group ? `${group.name} · 小组共享` : student.displayName}</dd>
-          </div>
-          <div>
             <dt>提交范围</dt>
             <dd>
               {submission.phaseName
@@ -395,38 +383,15 @@ export default async function TeacherSubmissionPage({
         ) : null}
 
         {phase ? (
-          <section className={styles.railNote}>
-            <p className={styles.eyebrow}>冻结阶段要求</p>
+          <details className={styles.secondaryDetails}>
+            <summary>查看阶段要求</summary>
             <p>
               {phase.action} · 评价要点：{phase.evaluationFocus}
             </p>
-          </section>
+          </details>
         ) : null}
 
         <div className={styles.workspaceGrid}>
-          <section
-            className={styles.submissionHistory}
-            aria-labelledby="submission-history-title"
-          >
-            <header className={styles.historyHeading}>
-              <div>
-                <p className={styles.eyebrow}>学生证据</p>
-                <h2 id="submission-history-title">正式修订、反馈与评价历史</h2>
-              </div>
-              <span>{revisions.length} 版 · 新版在前</span>
-            </header>
-            <div className={styles.revisionList}>
-              {revisions.map((revision) => (
-                <SubmissionRevision
-                  key={revision.id}
-                  revision={revision}
-                  current={revision.id === currentRevision.id}
-                  phase={phase}
-                />
-              ))}
-            </div>
-          </section>
-
           <aside className={styles.feedbackRail}>
             <FeedbackComposer
               key={`${currentRevision.id}:${currentRevision.feedback?.currentVersion ?? 0}`}
@@ -491,6 +456,29 @@ export default async function TeacherSubmissionPage({
               </p>
             </div>
           </aside>
+
+          <section
+            className={styles.submissionHistory}
+            aria-labelledby="submission-history-title"
+          >
+            <header className={styles.historyHeading}>
+              <div>
+                <p className={styles.eyebrow}>学生证据</p>
+                <h2 id="submission-history-title">正式修订、反馈与评价历史</h2>
+              </div>
+              <span>{revisions.length} 版 · 新版在前</span>
+            </header>
+            <div className={styles.revisionList}>
+              {revisions.map((revision) => (
+                <SubmissionRevision
+                  key={revision.id}
+                  revision={revision}
+                  current={revision.id === currentRevision.id}
+                  phase={phase}
+                />
+              ))}
+            </div>
+          </section>
         </div>
       </div>
     </TeacherPage>

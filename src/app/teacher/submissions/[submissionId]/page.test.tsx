@@ -333,7 +333,7 @@ describe("teacher feedback page access boundary", () => {
 
     const markup = await renderPage();
 
-    expect(markup).toContain("data-evaluation-composer");
+    expect(markup).toContain("查看阶段要求");
     expect(markup).toContain('data-evaluation-version="1"');
     expect(markup).toContain("按冻结量规给出综评。");
     expect(markup).toContain("证据不足");

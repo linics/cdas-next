@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import type { ReactNode } from "react";
 import { SignInButton, SignOutButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { connection } from "next/server";
@@ -39,7 +40,10 @@ import {
   SubmissionWorkspaceQueryError,
   type StudentReleaseWorkspace,
 } from "../../../../server/queries/submission-workspace";
+import { hasMeaningfulTextEvidence } from "../../../../domain/submission/text-evidence";
+import { StartResubmitForm } from "./start-resubmit-form";
 import { SubmissionEditor } from "./submission-editor";
+import { TaskBookDialog } from "./task-book-dialog";
 import styles from "./submission-workspace.module.css";
 
 function AccessUnavailable({
@@ -108,10 +112,10 @@ function ReleaseBrief({
 }) {
   const { content } = snapshot;
   return (
-    <aside className={styles.releaseBrief} aria-labelledby="release-brief-title">
+    <div className={styles.taskBookBody} aria-labelledby="release-brief-title">
       <div className={styles.briefHeading}>
-        <p className={styles.eyebrow}>活动要求</p>
-        <h2 id="release-brief-title">发布快照</h2>
+        <p className={styles.eyebrow}>冻结发布快照</p>
+        <h2 id="release-brief-title">全部阶段与评价标准</h2>
         <span>版本 {snapshot.sourceDraftVersion}</span>
       </div>
 
@@ -133,7 +137,7 @@ function ReleaseBrief({
       <p className={styles.snapshotHash} title={snapshot.contentHash}>
         快照摘要 {snapshot.contentHash.slice(0, 12)}…
       </p>
-    </aside>
+    </div>
   );
 }
 
@@ -141,6 +145,10 @@ function RevisionHistory({
   submission,
   feedbackWorkspace,
   phase,
+  canWrite,
+  releaseId,
+  phaseIndex,
+  resubmitIdempotencyKey,
 }: {
   submission: StudentReleaseWorkspace["submission"];
   feedbackWorkspace: StudentFeedbackWorkspace | null;
@@ -151,6 +159,10 @@ function RevisionHistory({
         : null
       : null
     : null;
+  canWrite: boolean;
+  releaseId: string;
+  phaseIndex: number;
+  resubmitIdempotencyKey: string;
 }) {
   const revisions = submission ? [...submission.revisions].reverse() : [];
   const feedbackByRevisionId = new Map(
@@ -159,13 +171,15 @@ function RevisionHistory({
       revision,
     ]) ?? [],
   );
+  const showResubmit =
+    canWrite && Boolean(submission) && !submission?.workingCopy && revisions.length > 0;
 
   return (
     <section className={styles.historySection} aria-labelledby="history-title">
       <div className={styles.historyHeading}>
         <div>
-          <p className={styles.eyebrow}>不可变历史</p>
-          <h2 id="history-title">正式修订</h2>
+          <p className={styles.eyebrow}>提交进度</p>
+          <h2 id="history-title">我的提交与反馈</h2>
         </div>
         <span>{revisions.length} 版</span>
       </div>
@@ -190,8 +204,12 @@ function RevisionHistory({
             const evaluationHeadingId = `evaluation-${revision.id}`;
 
             return (
-              <article className={styles.revision} key={revision.id}>
-                <header>
+              <details
+                className={styles.revision}
+                key={revision.id}
+                open={index === 0 ? true : undefined}
+              >
+                <summary className={styles.revisionSummary}>
                   <div>
                     <span className={styles.revisionNumber}>
                       {String(revision.revisionNumber).padStart(2, "0")}
@@ -208,8 +226,9 @@ function RevisionHistory({
                     <span data-late={revision.isLate ? "true" : "false"}>
                       {revision.isLate ? "迟交" : "期限内"}
                     </span>
+                    {index === 0 ? null : <span>点击展开</span>}
                   </div>
-                </header>
+                </summary>
                 <p className={styles.formalNote}>正式修订 · 内容不可覆盖</p>
                 {revision.textEvidence ? (
                   <div className={styles.revisionText}>
@@ -401,7 +420,16 @@ function RevisionHistory({
                     </p>
                   )}
                 </section>
-              </article>
+                {index === 0 && showResubmit ? (
+                  <StartResubmitForm
+                    idempotencyKey={resubmitIdempotencyKey}
+                    latestRevisionNumber={revision.revisionNumber}
+                    layout="inline"
+                    phaseIndex={phaseIndex}
+                    releaseId={releaseId}
+                  />
+                ) : null}
+              </details>
             );
           })}
         </div>
@@ -484,21 +512,69 @@ function PhaseNavigator({
 function PhaseFocus({
   phase,
   phaseIndex,
+  isMixedCapstone,
+  narrative,
+  dueLabel,
+  isPastDue,
+  primaryAction,
+  taskBook,
 }: {
   phase: Extract<
     StudentReleaseWorkspace["release"]["snapshot"]["content"],
     { schemaVersion: 2 }
   >["phases"][number] | null;
   phaseIndex: number;
+  isMixedCapstone: boolean;
+  narrative: string | null;
+  dueLabel: ReactNode;
+  isPastDue: boolean;
+  primaryAction: ReactNode;
+  taskBook: ReactNode;
 }) {
-  if (!phase) {
-    return phaseIndex === 0 ? (
+  if (isMixedCapstone) {
+    return (
       <section className={styles.phaseFocus}>
-        <p className={styles.eyebrow}>混合提交 / 整项终稿</p>
+        <p className={styles.eyebrow}>整项终稿</p>
         <h2>汇总全部阶段成果</h2>
         <p>所有阶段已经正式提交。现在整理跨阶段说明、最终成果和必要附件。</p>
+        <dl>
+          <div>
+            <dt>截止时间</dt>
+            <dd>
+              {dueLabel}
+              {isPastDue ? " · 已过截止，提交会标为迟交" : ""}
+            </dd>
+          </div>
+        </dl>
+        <div className={styles.stageActions}>
+          {primaryAction}
+          {taskBook}
+        </div>
       </section>
-    ) : null;
+    );
+  }
+
+  if (!phase) {
+    return (
+      <section className={styles.phaseFocus}>
+        <p className={styles.eyebrow}>当前任务</p>
+        <h2>现在要完成的事</h2>
+        {narrative ? <p>{narrative}</p> : null}
+        <dl>
+          <div>
+            <dt>截止时间</dt>
+            <dd>
+              {dueLabel}
+              {isPastDue ? " · 已过截止，提交会标为迟交" : ""}
+            </dd>
+          </div>
+        </dl>
+        <div className={styles.stageActions}>
+          {primaryAction}
+          {taskBook}
+        </div>
+      </section>
+    );
   }
 
   return (
@@ -507,12 +583,91 @@ function PhaseFocus({
       <h2>{phase.name}</h2>
       <p>{phase.context}</p>
       <dl>
-        <div><dt>核心行动</dt><dd>{phase.action}</dd></div>
-        <div><dt>学习支架</dt><dd>{phase.support}</dd></div>
-        <div><dt>评价要点</dt><dd>{phase.evaluationFocus}</dd></div>
-        <div><dt>建议课时</dt><dd>{phase.suggestedLessons} 课时</dd></div>
+        <div>
+          <dt>这一步做什么</dt>
+          <dd>{phase.action}</dd>
+        </div>
+        <div>
+          <dt>可以怎么做</dt>
+          <dd>{phase.support}</dd>
+        </div>
+        <div>
+          <dt>老师会看什么</dt>
+          <dd>{phase.evaluationFocus}</dd>
+        </div>
+        <div>
+          <dt>需要交什么</dt>
+          <dd>
+            {phase.evidence
+              .map(
+                (evidence) =>
+                  `${evidenceTypeLabel(evidence.type)}：${evidence.description}`,
+              )
+              .join("；")}
+          </dd>
+        </div>
+        <div>
+          <dt>截止时间</dt>
+          <dd>
+            {dueLabel}
+            {isPastDue ? " · 已过截止，提交会标为迟交" : ""}
+          </dd>
+        </div>
       </dl>
+      <div className={styles.stageActions}>
+        {primaryAction}
+        {taskBook}
+      </div>
     </section>
+  );
+}
+
+function StagePrimaryAction({
+  canWrite,
+  workingCopy,
+  latestRevisionNumber,
+  releaseId,
+  phaseIndex,
+  resubmitIdempotencyKey,
+}: {
+  canWrite: boolean;
+  workingCopy: NonNullable<StudentReleaseWorkspace["submission"]>["workingCopy"];
+  latestRevisionNumber: number;
+  releaseId: string;
+  phaseIndex: number;
+  resubmitIdempotencyKey: string;
+}) {
+  if (!canWrite) {
+    return null;
+  }
+  if (workingCopy) {
+    const hasSavedEvidence =
+      hasMeaningfulTextEvidence(workingCopy.textEvidence) ||
+      workingCopy.completedEvidenceIndexes.length > 0 ||
+      workingCopy.attachments.some((attachment) => attachment.status === "READY");
+    return (
+      <a
+        className={styles.secondaryButton}
+        href={hasSavedEvidence ? "#submission-commit" : "#submission-workspace"}
+      >
+        {hasSavedEvidence ? "提交正式版" : "继续编辑草稿"}
+      </a>
+    );
+  }
+  if (latestRevisionNumber > 0) {
+    return (
+      <StartResubmitForm
+        idempotencyKey={resubmitIdempotencyKey}
+        latestRevisionNumber={latestRevisionNumber}
+        phaseIndex={phaseIndex}
+        releaseId={releaseId}
+      />
+    );
+  }
+  return (
+    <a className={styles.secondaryButton} href="#submission-workspace">
+      开始完成任务
+    </a>
   );
 }
 
@@ -631,6 +786,26 @@ export default async function StudentReleasePage({
       : "尚未创建草稿";
   const attachmentStorageEnabled =
     createAttachmentStorageFromEnvironment() !== null;
+  const resubmitIdempotencyKey = `resubmit_${randomUUID()}`;
+  const isMixedCapstone =
+    workspace.execution.version === 1 &&
+    selectedPhaseIndex === 0 &&
+    content.schemaVersion === 2;
+  const taskBook = (
+    <TaskBookDialog>
+      <ReleaseBrief snapshot={workspace.release.snapshot} />
+    </TaskBookDialog>
+  );
+  const primaryAction = (
+    <StagePrimaryAction
+      canWrite={canWrite}
+      latestRevisionNumber={selectedSubmission?.latestRevisionNumber ?? 0}
+      phaseIndex={selectedPhaseIndex}
+      releaseId={releaseId}
+      resubmitIdempotencyKey={resubmitIdempotencyKey}
+      workingCopy={selectedSubmission?.workingCopy ?? null}
+    />
+  );
 
   return (
     <WorkspaceShell
@@ -641,7 +816,7 @@ export default async function StudentReleasePage({
         <Link className={styles.backLink} href="/student">← 返回我的活动</Link>
         <header className={styles.releaseHeader}>
           <div>
-            <p className={styles.eyebrow}>学习活动 / 阶段证据</p>
+            <p className={styles.eyebrow}>当前任务</p>
             <h1>{content.title}</h1>
             <p>{content.summary}</p>
           </div>
@@ -652,16 +827,8 @@ export default async function StudentReleasePage({
 
         <dl className={styles.releaseFacts}>
           <div>
-            <dt>发布时间</dt>
-            <dd>
-              <LocalizedDateTime dateTime={workspace.release.publishedAt} />
-            </dd>
-          </div>
-          <div>
             <dt>截止时间</dt>
-            <dd>
-              {dueAt ? <LocalizedDateTime dateTime={dueAt} /> : "未设置"}
-            </dd>
+            <dd>{dueAt ? <LocalizedDateTime dateTime={dueAt} /> : "未设置"}</dd>
           </div>
           <div>
             <dt>当前进度</dt>
@@ -672,7 +839,7 @@ export default async function StudentReleasePage({
         {workspace.group ? (
           <section className={styles.groupNotice} aria-labelledby="student-group-title">
             <div>
-              <p className={styles.eyebrow}>作业小组 / 全组共享</p>
+              <p className={styles.eyebrow}>小组共享</p>
               <h2 id="student-group-title">{workspace.group.name}</h2>
             </div>
             <p>
@@ -707,8 +874,14 @@ export default async function StudentReleasePage({
         <div className={styles.workspaceGrid}>
           <div className={styles.submissionColumn}>
             <PhaseFocus
+              dueLabel={dueAt ? <LocalizedDateTime dateTime={dueAt} /> : "未设置"}
+              isMixedCapstone={isMixedCapstone}
+              isPastDue={isPastDue}
+              narrative={selectedPhase ? null : content.taskInstructions}
               phase={selectedPhase}
               phaseIndex={selectedPhaseIndex}
+              primaryAction={primaryAction}
+              taskBook={taskBook}
             />
             <SubmissionEditor
               releaseId={releaseId}
@@ -729,16 +902,19 @@ export default async function StudentReleasePage({
               idempotencySeeds={{
                 save: `save_${randomUUID()}`,
                 submit: `submit_${randomUUID()}`,
-                resubmit: `resubmit_${randomUUID()}`,
+                resubmit: resubmitIdempotencyKey,
               }}
             />
             <RevisionHistory
-              submission={selectedSubmission}
+              canWrite={canWrite}
               feedbackWorkspace={feedbackWorkspace}
               phase={selectedPhase}
+              phaseIndex={selectedPhaseIndex}
+              releaseId={releaseId}
+              resubmitIdempotencyKey={resubmitIdempotencyKey}
+              submission={selectedSubmission}
             />
           </div>
-          <ReleaseBrief snapshot={workspace.release.snapshot} />
         </div>
       </div>
     </WorkspaceShell>
