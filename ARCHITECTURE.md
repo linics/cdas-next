@@ -1,7 +1,7 @@
 # CDAS Next 实现架构
 
-状态：第一阶段 v0.1 已完成外部验收；D-025–D-041 已完成开发期远程验收
-日期：2026-08-26
+状态：第一阶段 v0.1 已完成外部验收；D-025–D-041 已完成开发期远程验收；首版官方课程标准检索已合入主线
+日期：2026-08-27
 
 ## 运行时边界
 
@@ -15,7 +15,9 @@ flowchart LR
   AgentRoute --> AI[AI SDK OpenAI-compatible provider / DeepSeek API]
   AgentRoute --> Tools[严格 Agent 工具]
   Tools --> Commands
+  Tools --> Knowledge[只读官方语料索引]
   AgentRoute --> Run[AgentRun provenance]
+  KnowledgePage[教师课程标准检索页] --> Knowledge
   Commands --> Prisma[Prisma transaction]
   Run --> Prisma
   Prisma --> PG[(PostgreSQL)]
@@ -32,7 +34,9 @@ flowchart LR
 | `src/app/` | 页面、表单、结构化确认和导航 | 直接访问 Prisma、相信客户端角色或确认参数 |
 | `src/domain/` | Zod 合同、纯不变量、内容快照和可确定测试 | 框架会话、数据库连接、模型调用 |
 | `src/server/commands/` | 重新授权、乐观并发、事务、幂等和审计 | 将外部网络调用放进数据库事务 |
+| `src/server/knowledge/` | 官方课程标准静态索引、确定性词法检索与章节读取 | 写入业务表、embedding、任意 URL 或文件路径 |
 | `src/server/db/` | Prisma 连接生命周期 | 业务规则 |
+| `corpus/official-standards/` | 首版白名单 Markdown 与构建清单 | 把设计理论、教材或 AI 产物混入证据语料 |
 | `prisma/` | 模型、migration、数据库约束和数据库测试 | 依赖页面状态或 Prompt |
 
 ## 发布事务
@@ -120,7 +124,8 @@ ActionIntent 的 action、payload、hash、目标、预期版本、创建者和�
 - “新建学习活动”是助手会话的唯一起点。`/teacher/activities` 共享客户端 layout 持有唯一官方 `useChat` session，使草稿工具返回后的客户端导航可以在精确预览页继续同一消息与签名 approval；直接进入或刷新预览页时 session 为空，页面不伪造恢复。消息、prompt、ticket 与 approval 签名不进入 URL、localStorage 或业务数据库，导航到 Release 后 layout 卸载。Server Component 仅在 `AI_PROVIDER_DISABLED=0` 且 DeepSeek API key、模型和审批签名配置全部有效时渲染助手；这个检查不构造 provider，也不创建 AgentRun。
 - Route Handler 先从 Clerk 会话解析应用教师，再严格校验消息数量、总字节、角色顺序、文本长度和 AI SDK 工具 part。学生、未配置账号和伪造历史不能进入 provider 或业务工具。
 - AI SDK 官方 `useChat + streamText` 负责消息流与工具 part，不维护第二套聊天协议。模型调用始终在数据库事务之外；请求正文、Prompt、工具正文和 provider 原始 chunk 不写日志或 tracing。
-- `create_activity_draft` 是 D-033 的 L1 工具。资料不足时每轮只提出一个会改变设计的必要问题，且不写入。资料充分后，签名 approval 展示理解摘要、教师已提供要求、明确假设、各融合学科贡献、知识/过程/情感三条目标—任务—证据—评价链和完整 schema v2 内容；教师批准前不执行草稿写入。批准后仍以当前教师、`AGENT` 来源和 owned RUNNING AgentRun 调用共享 `saveActivityDraft`；拒绝确认不产生草稿。该理解确认不是发布确认，也不建立 ActionIntent。成功输出包含精确 draft ID 和站内路径；客户端只在两者一致时进入预览。
+- `create_activity_draft` 是 D-033 的 L1 工具。资料不足时每轮只提出一个会改变设计的必要问题，且不写入。资料充分后，签名 approval 展示理解摘要、教师已提供要求、明确假设、各融合学科贡献、知识/过程/情感三条目标—任务—证据—评价链、完整 schema v2 内容，以及（命中语文、数学、物理或信息科技时）至少两条不同官方来源的可点开引用；教师批准前不执行草稿写入。批准后仍以当前教师、`AGENT` 来源和 owned RUNNING AgentRun 调用共享 `saveActivityDraft`；拒绝确认不产生草稿。该理解确认不是发布确认，也不建立 ActionIntent。成功输出包含精确 draft ID 和站内路径；客户端只在两者一致时进入预览。
+- 首版官方依据检索是 L0 只读能力：`search_knowledge` 只对 `src/server/knowledge/generated/official-standards.json` 做确定性词法检索，`read_source_section` 只读取同一会话已命中章节。客户端回传的片段必须能由相同输入在当前语料中重算。`/teacher/knowledge` 复用同一检索，不经模型。检索失败或模型关闭都不阻塞手工设计闭环。
 - `publish_activity_release` 先由 AI SDK 签名 `toolApproval` 暂停交互；教师批准后仍依次调用发布 prepare、第一方 UI decide 与原有 publish command。ActionIntent 才是精确参数、资源版本、确认人和重新授权的业务信任边界。
 - 普通模型工具写入由 AI SDK `stopWhen` 在该工具 step 后结束。`saveActivityDraft` 与 `publishActivityRelease` 的 Agent 路径会在同一领域事务提交业务结果、成功审计、幂等结果与 AgentRun 的 `RUNNING → SUCCEEDED`；若运行已经失败或取消，事务整体回滚。签名审批续传会先执行已批准工具，成功后再由官方 `prepareStep` 给后续 provider adapter 一个已中止 signal；后续流或连接失败不能把已提交业务事实改写成失败。模型在工具前中断不会创建草稿、Release 或反馈。
 - 同一工具调用可由命令幂等重放。若整个 HTTP 请求在确认执行后丢失并以新的 AgentRun 原样重建，当前会安全地返回幂等冲突，而不是弱化 AgentRun provenance；跨运行恢复仍是明确的可用性缺口。
