@@ -23,7 +23,7 @@
 
 .brand strong {
   font-family: var(--font-heading);
-  font-size: 20px;
+  font-size: var(--text-subhead);
   font-weight: var(--font-heading-weight);
   letter-spacing: .01em;
 }
@@ -31,7 +31,7 @@
 .brand span {
   color: var(--color-neutral-700);
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: var(--text-meta);
   letter-spacing: .14em;
   text-transform: uppercase;
 }
@@ -39,7 +39,7 @@
 .toolbar p {
   margin: 0;
   color: var(--color-neutral-700);
-  font-size: 14px;
+  font-size: var(--text-meta);
 }
 
 .main {
@@ -52,7 +52,7 @@
   margin: 0 0 var(--space-2);
   color: var(--color-accent-700);
   font-family: var(--font-ui);
-  font-size: 12px;
+  font-size: var(--text-kicker);
   letter-spacing: .1em;
   text-transform: uppercase;
 }
@@ -60,7 +60,7 @@
 .main h1 {
   max-width: 16em;
   margin: 0 0 var(--space-3);
-  font-size: clamp(32px, 5vw, 42px);
+  font-size: var(--text-display);
   font-weight: 400;
   line-height: 1.12;
   text-wrap: balance;
@@ -69,7 +69,7 @@
 .lead {
   max-width: 46em;
   margin: 0 0 var(--space-8);
-  font-size: 16px;
+  font-size: var(--text-body);
   line-height: 1.7;
   text-align: justify;
   text-justify: inter-character;
@@ -98,14 +98,14 @@
 
 .workspaceLink h2 {
   margin: 0;
-  font-size: 25px;
+  font-size: var(--text-card);
   line-height: 1.15;
 }
 
 .workspaceLink p {
   margin: 0;
   color: var(--color-neutral-800);
-  font-size: 16px;
+  font-size: var(--text-body);
   line-height: 1.6;
 }
 
@@ -115,13 +115,14 @@
   gap: 6px;
   color: var(--color-accent-700);
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: var(--text-meta);
 }
 
 .flow {
+  max-width: 46em;
   margin: var(--space-6) 0 0;
   color: var(--color-neutral-700);
-  font-size: 14px;
+  font-size: var(--text-meta);
 }
 
 .note {
@@ -137,14 +138,14 @@
   margin: 3px 0 0;
   color: var(--color-accent-700);
   font-family: var(--font-ui);
-  font-size: 12px;
+  font-size: var(--text-kicker);
   letter-spacing: .1em;
   text-transform: uppercase;
 }
 
 .note h2 {
   margin: 0;
-  font-size: 20px;
+  font-size: var(--text-section);
   line-height: 1.2;
 }
 
@@ -152,7 +153,7 @@
   max-width: 760px;
   margin: var(--space-2) 0 0;
   color: var(--color-neutral-800);
-  font-size: 15px;
+  font-size: var(--text-ui);
   line-height: 1.7;
 }
 

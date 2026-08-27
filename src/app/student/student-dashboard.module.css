@@ -9,7 +9,7 @@
   margin: 0;
   color: var(--color-accent-700);
   font-family: var(--font-ui);
-  font-size: 12px;
+  font-size: var(--text-kicker);
   letter-spacing: .1em;
   text-transform: uppercase;
 }
@@ -25,7 +25,7 @@
 .dashboardHeader h1,
 .accessGate h1 {
   margin: var(--space-2) 0 var(--space-2);
-  font-size: clamp(32px, 4vw, 42px);
+  font-size: var(--text-display);
   font-weight: 400;
   letter-spacing: -.015em;
   line-height: 1.12;
@@ -36,7 +36,7 @@
   max-width: 44em;
   margin: 0;
   color: var(--color-neutral-800);
-  font-size: 16px;
+  font-size: var(--text-body);
   line-height: 1.7;
   text-align: justify;
   text-justify: inter-character;
@@ -50,16 +50,16 @@
   gap: var(--space-6);
   margin: 0;
   padding-top: 6px;
-  font-size: 14px;
+  font-size: var(--text-meta);
   font-variant-numeric: tabular-nums;
 }
 
-.summaryLine dt { color: var(--color-neutral-700); font-size: 14px; }
+.summaryLine dt { color: var(--color-neutral-700); font-size: var(--text-meta); }
 
 .summaryLine dd {
   margin: var(--space-1) 0 0;
   font-family: var(--font-heading);
-  font-size: 25px;
+  font-size: var(--text-card);
   font-weight: 400;
   line-height: 1;
 }
@@ -77,15 +77,15 @@
 }
 
 .groupHeading > span {
-  color: var(--color-accent-600);
+  color: var(--color-accent-700);
   font-family: var(--font-heading);
-  font-size: 20px;
+  font-size: var(--text-section);
   font-variant-numeric: tabular-nums;
 }
 
-.groupHeading h2 { margin: 0; font-size: 20px; line-height: 1.2; }
-.groupHeading p { margin: 0; color: var(--color-neutral-700); font-size: 14px; line-height: 1.6; }
-.groupHeading strong { color: var(--color-neutral-700); font-size: 14px; font-weight: 400; }
+.groupHeading h2 { margin: 0; font-size: var(--text-section); line-height: 1.2; }
+.groupHeading p { margin: 0; color: var(--color-neutral-700); font-size: var(--text-meta); line-height: 1.6; }
+.groupHeading strong { color: var(--color-neutral-700); font-size: var(--text-meta); font-weight: 400; }
 
 .releaseList { border-top: 0; }
 
@@ -106,15 +106,15 @@
 .releaseCopy h3 {
   margin: 0 0 var(--space-1);
   font-family: var(--font-heading);
-  font-size: 20px;
+  font-size: var(--text-section);
   font-weight: 400;
   line-height: 1.2;
 }
-.releaseCopy p { margin: 0 0 var(--space-1); color: var(--color-neutral-800); font-size: 14px; line-height: 1.6; }
+.releaseCopy p { margin: 0 0 var(--space-1); color: var(--color-neutral-800); font-size: var(--text-meta); line-height: 1.6; }
 .releaseCopy > span {
   display: block;
   color: var(--color-neutral-700);
-  font-size: 14px;
+  font-size: var(--text-meta);
   font-variant-numeric: tabular-nums;
 }
 
@@ -123,22 +123,22 @@
   gap: 2px;
   margin: 0;
   color: var(--color-neutral-700);
-  font-size: 14px;
+  font-size: var(--text-meta);
   font-variant-numeric: tabular-nums;
 }
 .releaseDates div { display: flex; gap: var(--space-2); }
-.releaseDates dt { flex: none; color: var(--color-neutral-700); font-size: 14px; white-space: nowrap; }
-.releaseDates dd { margin: 0; font-size: 14px; }
-.releaseDates strong { display: block; color: var(--color-accent-700); font-size: 14px; font-weight: 400; }
+.releaseDates dt { flex: none; color: var(--color-neutral-700); font-size: var(--text-meta); white-space: nowrap; }
+.releaseDates dd { margin: 0; font-size: var(--text-meta); }
+.releaseDates strong { display: block; color: var(--color-accent-700); font-size: var(--text-meta); font-weight: 400; }
 
 .releaseAction { display: grid; justify-items: end; gap: var(--space-2); }
 .releaseAction small {
   color: var(--color-accent-700);
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: var(--text-meta);
   white-space: nowrap;
 }
-.releaseAction i { font-family: var(--font-heading); font-size: 16px; font-style: normal; }
+.releaseAction i { font-family: var(--font-heading); font-size: var(--text-body); font-style: normal; }
 
 .accessGate {
   max-width: 720px;
@@ -167,7 +167,7 @@
   display: inline-flex;
   align-items: center;
   color: var(--color-accent-700);
-  font-size: 15px;
+  font-size: var(--text-ui);
   font-weight: var(--font-heading-weight);
 }
 
@@ -178,7 +178,7 @@
   padding: calc(var(--space-2) * .8) calc(var(--space-3) * 1.2);
   color: var(--color-accent-700);
   font-family: var(--font-ui);
-  font-size: 15px;
+  font-size: var(--text-ui);
   font-weight: var(--font-heading-weight);
 }
 
@@ -201,7 +201,7 @@
   .dashboardMain,
   .accessGate { padding: var(--space-6) var(--space-4) calc(var(--space-8) * 1.5); }
   .summaryLine { width: 100%; gap: var(--space-3); }
-  .summaryLine dd { font-size: 20px; }
+  .summaryLine dd { font-size: var(--text-subhead); }
   .releaseRow { display: block; padding: var(--space-3) 0; }
   .releaseDates { display: grid; margin-top: var(--space-4); }
   .releaseAction { display: flex; justify-content: space-between; margin-top: var(--space-4); }

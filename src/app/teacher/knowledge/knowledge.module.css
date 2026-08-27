@@ -18,7 +18,7 @@
 .searchForm label {
   padding-top: var(--space-2);
   font-family: var(--font-heading);
-  font-size: 18px;
+  font-size: var(--text-subhead);
   font-weight: var(--font-heading-weight);
 }
 
@@ -47,7 +47,7 @@
   padding: calc(var(--space-2) * .8) calc(var(--space-3) * 1.2);
   color: var(--color-accent-700);
   font-family: var(--font-ui);
-  font-size: 15px;
+  font-size: var(--text-ui);
   font-weight: var(--font-heading-weight);
   transition: background var(--motion-fast);
 }
@@ -58,7 +58,7 @@
 .sourceMeta {
   grid-column: 2;
   color: var(--color-neutral-700);
-  font-size: 14px;
+  font-size: var(--text-meta);
   line-height: 1.6;
 }
 
@@ -68,15 +68,20 @@
   padding: var(--space-6) 0;
 }
 
-.sourceSection h2 { margin: 6px 0 var(--space-4); font-size: 26px; line-height: 1.3; }
+.sourceSection h2 { margin: 6px 0 var(--space-4); font-size: var(--text-section); line-height: 1.3; }
 
 .sourceSection > a,
 .results a,
 .sourceList a {
+  display: inline-flex;
+  align-items: center;
+  padding: calc(var(--space-2) * .8) var(--space-1);
   color: var(--color-accent-700);
   font-weight: var(--font-heading-weight);
   text-underline-offset: 3px;
 }
+
+.sourceList a:hover { background: var(--primary-tint); }
 
 .sourceSection > a:hover,
 .results a:hover,
@@ -85,7 +90,7 @@
 .sourceContent {
   max-width: 76ch;
   color: var(--color-text);
-  font-size: 16px;
+  font-size: var(--text-body);
   line-height: 1.85;
   white-space: pre-wrap;
 }
@@ -99,8 +104,8 @@
   gap: var(--space-4);
 }
 
-.results h2 { margin: var(--space-1) 0 0; font-size: 26px; }
-.results > header > span { color: var(--color-neutral-700); font-size: 14px; }
+.results h2 { margin: var(--space-1) 0 0; font-size: var(--text-section); }
+.results > header > span { color: var(--color-neutral-700); font-size: var(--text-meta); }
 
 .results ol,
 .sourceList {
@@ -129,7 +134,7 @@
   color: var(--color-accent-700);
   content: counter(knowledge-row, decimal-leading-zero);
   font-family: var(--font-heading);
-  font-size: 14px;
+  font-size: var(--text-meta);
 }
 
 .results ol li:last-child,
@@ -139,13 +144,13 @@
 .results ol li > * { grid-column: 2; }
 
 .results h3,
-.sourceList h3 { margin: 0; font-size: 17px; line-height: 1.45; }
+.sourceList h3 { margin: 0; font-size: var(--text-section); line-height: 1.45; }
 
 .results ol p,
 .sourceList p {
   margin: 6px 0 0;
   color: var(--color-neutral-700);
-  font-size: 14px;
+  font-size: var(--text-meta);
   line-height: 1.7;
 }
 

@@ -49,7 +49,7 @@
 .brand strong,
 .compactBrand {
   font-family: var(--font-heading);
-  font-size: 20px;
+  font-size: var(--text-subhead);
   font-weight: var(--font-heading-weight);
   letter-spacing: .01em;
   line-height: 1.1;
@@ -58,7 +58,7 @@
 .brand > span {
   color: var(--color-neutral-700);
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: var(--text-meta);
   letter-spacing: .14em;
   text-transform: uppercase;
 }
@@ -75,7 +75,7 @@
   padding: var(--space-2) var(--space-6);
   color: var(--color-text);
   font-family: var(--font-heading);
-  font-size: 16px;
+  font-size: var(--text-body);
   font-weight: var(--font-heading-weight);
   transition:
     background var(--motion-fast),
@@ -116,7 +116,7 @@
   border-top: 1px solid var(--color-divider);
   padding-top: var(--space-3);
   color: var(--color-neutral-700);
-  font-size: 14px;
+  font-size: var(--text-meta);
   line-height: 1.6;
 }
 
@@ -142,7 +142,7 @@
   margin: 0;
   margin-right: auto;
   color: var(--color-neutral-700);
-  font-size: 14px;
+  font-size: var(--text-meta);
 }
 
 .toolbarEnd {
@@ -156,7 +156,7 @@
 .actorLabel {
   overflow: hidden;
   color: var(--color-neutral-700);
-  font-size: 14px;
+  font-size: var(--text-meta);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -169,7 +169,7 @@
   background: transparent;
   padding: 0 var(--space-1);
   color: var(--color-neutral-700);
-  font-size: 14px;
+  font-size: var(--text-meta);
   transition: color var(--motion-fast), background var(--motion-fast);
 }
 
@@ -191,14 +191,14 @@
 .roleGate > p:first-child {
   margin: 0 0 var(--space-2);
   color: var(--color-accent-700);
-  font-size: 14px;
+  font-size: var(--text-meta);
   font-weight: var(--font-heading-weight);
   letter-spacing: .08em;
 }
 
 .roleGate h1 {
   margin: 0;
-  font-size: clamp(32px, 5vw, 48px);
+  font-size: var(--text-display);
   line-height: 1.08;
 }
 
@@ -224,7 +224,7 @@
   padding: 0 var(--space-4);
   color: var(--color-accent-700);
   font-family: var(--font-ui);
-  font-size: 15px;
+  font-size: var(--text-ui);
   transition: background var(--motion-fast);
 }
 
@@ -246,7 +246,12 @@
     padding: 0 var(--space-4);
   }
 
-  .brand { padding: 0; }
+  .brand {
+    display: inline-flex;
+    min-height: 34px;
+    align-items: center;
+    padding: 0;
+  }
   .brand > span, .sidebarNote { display: none; }
   .navigationRegion { margin: 0; }
 
@@ -260,7 +265,7 @@
     background: transparent;
     padding: 0 var(--space-3);
     color: var(--color-text);
-    font-size: 14px;
+    font-size: var(--text-meta);
   }
 
   .navigationToggle > span,
@@ -307,7 +312,7 @@
 @media (max-width: 520px) {
   .audienceLabel { display: none; }
   .toolbar { justify-content: flex-end; }
-  .actorLabel { max-width: 45vw; font-size: 14px; }
+  .actorLabel { max-width: 45vw; font-size: var(--text-meta); }
   .signOutButton { padding: 0 var(--space-2); }
   .roleGate { margin-top: var(--space-6); }
 }
