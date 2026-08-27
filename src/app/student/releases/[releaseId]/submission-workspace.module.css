@@ -58,7 +58,7 @@
 .releaseFacts > div { min-width: 0; padding: var(--space-4) var(--space-4) var(--space-4) 0; }
 .releaseFacts > div + div { border-left: 1px solid var(--color-divider); padding-left: var(--space-4); }
 .releaseFacts dt { color: var(--color-neutral-700); font-size: 12px; }
-.releaseFacts dd { margin: var(--space-1) 0 0; font-family: var(--font-heading); font-size: 20px; font-weight: var(--font-heading-weight); line-height: 1.2; }
+.releaseFacts dd { margin: var(--space-1) 0 0; font-family: var(--font-heading); font-size: 20px; font-weight: var(--font-heading-weight); font-variant-numeric: tabular-nums; line-height: 1.2; }
 
 .groupNotice {
   display: grid;
