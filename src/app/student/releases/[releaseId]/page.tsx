@@ -42,6 +42,10 @@ import {
 import { SubmissionEditor } from "./submission-editor";
 import styles from "./submission-workspace.module.css";
 
+const studentNavigation = [
+  { href: "/student", label: "我的活动" },
+] as const;
+
 function AccessUnavailable({
   code,
   releaseId,
@@ -636,6 +640,7 @@ export default async function StudentReleasePage({
     <WorkspaceShell
       audience="学生"
       actorName={workspace.actor.displayName}
+      navigation={studentNavigation}
     >
       <div className={styles.releasePage}>
         <Link className={styles.backLink} href="/student">← 返回我的活动</Link>
