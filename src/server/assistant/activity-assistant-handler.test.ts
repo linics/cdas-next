@@ -392,11 +392,28 @@ describe("buildActivityAssistantInstructions", () => {
   it("lists legal assignment subtypes and the unread-citation rule", () => {
     const text = buildActivityAssistantInstructions([]);
     expect(text).toContain("inquiry 配 literature、survey、experiment");
-    expect(text).toContain("project 的 assignmentSubtype 必須為 null");
+    expect(text).toContain("project 的 assignmentSubtype 必须为 null");
     expect(text).toContain("read_source_section 已返回 FOUND");
     expect(text).toContain("引用数量不得超过已通读章节数");
     expect(text).toContain("优先只引用 2 条已通读来源");
-    expect(text).toContain("content.schemaVersion 為 2");
+    expect(text).toContain("content.schemaVersion 为 2");
+  });
+
+  it("pins the assistant to 简体中文 and to backward design", () => {
+    const text = buildActivityAssistantInstructions([]);
+    expect(text).toContain("全程使用简体中文");
+    expect(text).toContain("不得出现繁体字形");
+    expect(text).toContain("按逆向设计推进");
+    expect(text).toContain("先定目标、再定");
+    // 「繁体」二字本身出现在指令里，所以只查繁体字形，不查这个词
+    expect(text).not.toMatch(/[體資證據調儲發佈預覽學課務]/u);
+  });
+
+  it("refuses to stand in for a standards-compliance verdict", () => {
+    const text = buildActivityAssistantInstructions([]);
+    expect(text).toContain("语料中未找到依据");
+    expect(text).toContain("不能改用记忆里的课程标准原文充数");
+    expect(text).toContain("不是课程质量结论");
   });
 });
 

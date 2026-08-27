@@ -25,6 +25,7 @@ import {
 import { LocalizedDateTime } from "../../../_components/localized-date-time";
 import { InlineAlert, StatusBadge } from "../../../_components/ui";
 import { WorkspaceShell } from "../../../_components/workspace-shell";
+import { isClickthroughAuthEnabled } from "../../../../server/auth/clickthrough-auth";
 import { AuthenticationError } from "../../../../server/auth/current-actor";
 import { createAttachmentStorageFromEnvironment } from "../../../../server/attachments/vercel-blob-attachment-storage";
 import { createUiCommandContext } from "../../../../server/commands/create-ui-command-context";
@@ -82,7 +83,7 @@ function AccessUnavailable({
         <h1>{copy.title}</h1>
         <p>{copy.detail}</p>
         <div className={styles.accessActions}>
-          {code === "UNAUTHENTICATED" ? (
+          {isClickthroughAuthEnabled() ? null : code === "UNAUTHENTICATED" ? (
             <SignInButton
               mode="modal"
               fallbackRedirectUrl={`/student/releases/${releaseId}`}

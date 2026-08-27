@@ -10,6 +10,7 @@ import {
   WorkspaceRoleGate,
   WorkspaceShell,
 } from "../_components/workspace-shell";
+import { isClickthroughAuthEnabled } from "../../server/auth/clickthrough-auth";
 import { AuthenticationError } from "../../server/auth/current-actor";
 import { createUiCommandContext } from "../../server/commands/create-ui-command-context";
 import { getDatabaseClient } from "../../server/db/client";
@@ -63,7 +64,7 @@ function AccessUnavailable({
         <h1>{copy.title}</h1>
         <p>{copy.detail}</p>
         <div className={styles.accessActions}>
-          {code === "UNAUTHENTICATED" ? (
+          {isClickthroughAuthEnabled() ? null : code === "UNAUTHENTICATED" ? (
             <SignInButton mode="modal" fallbackRedirectUrl="/student">
               <button className={styles.signInButton} type="button">
                 登录学生账号

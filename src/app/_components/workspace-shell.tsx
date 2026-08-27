@@ -1,6 +1,7 @@
 import { SignOutButton } from "@clerk/nextjs";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { isClickthroughAuthEnabled } from "../../server/auth/clickthrough-auth";
 import { WorkspaceNavigation } from "./workspace-navigation";
 import styles from "./workspace-shell.module.css";
 
@@ -66,7 +67,7 @@ export function WorkspaceShell({
                 : `${audience}工作台`}
             </span>
             {toolbarAction}
-            {actorName ? (
+            {actorName && !isClickthroughAuthEnabled() ? (
               <SignOutButton redirectUrl="/">
                 <button className={styles.signOutButton} type="button">
                   退出登录

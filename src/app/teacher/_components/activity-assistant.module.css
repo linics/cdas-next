@@ -289,3 +289,27 @@
   .inlineActions button,
   .composerFooter button { width: 100%; }
 }
+
+/* 引用就地展开：来源名 · 章节 + 原文片段。教师不必离开对话就能核对依据。 */
+.referenceList summary {
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-size: var(--text-meta);
+}
+
+.sourceMeta {
+  margin: var(--space-2) 0 var(--space-1);
+  color: var(--color-neutral-700);
+  font-size: var(--text-label);
+}
+
+.sourceExcerpt {
+  margin: 0 0 var(--space-2);
+  border-left: 2px solid var(--color-accent);
+  padding: var(--space-1) 0 var(--space-1) var(--space-3);
+  color: var(--color-neutral-800);
+  font-size: var(--text-meta);
+  line-height: 1.75;
+  text-align: justify;
+  text-justify: inter-character;
+}

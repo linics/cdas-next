@@ -2,6 +2,7 @@ import { SignInButton, SignOutButton } from "@clerk/nextjs";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import type { AuthenticationError } from "../../../server/auth/current-actor";
+import { isClickthroughAuthEnabled } from "../../../server/auth/clickthrough-auth";
 import { InlineAlert } from "../../_components/ui";
 import { WorkspaceShell } from "../../_components/workspace-shell";
 import gateStyles from "./teacher-gate.module.css";
@@ -103,7 +104,7 @@ export function TeacherAccessGate({
         </div>
         <InlineAlert tone="info">{copy.detail}</InlineAlert>
         <div className={gateStyles.actions}>
-          {code === "UNAUTHENTICATED" ? (
+          {isClickthroughAuthEnabled() ? null : code === "UNAUTHENTICATED" ? (
             <SignInButton mode="modal" fallbackRedirectUrl={returnPath}>
               <button className={gateStyles.primaryButton} type="button">
                 登录教师账号

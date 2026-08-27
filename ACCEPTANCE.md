@@ -247,6 +247,18 @@ Agent 不是新的业务主体。审计中的 actor 始终是登录用户，`age
   当同一账号访问不属于自己的具体草稿、发布或提交路径
   那么系统仍返回不存在，避免枚举资源
 
+场景: 本地开发可点击进入预配置工作台
+  假如 NODE_ENV 为 development 且未运行在 Vercel
+  并且显式启用 DEV_CLICKTHROUGH_AUTH
+  并且 DEV_TEST_TEACHER_CLERK_ID 与 DEV_TEST_STUDENT_CLERK_ID 已绑定对应 AppUser
+  当未持有 Clerk 会话访问 /teacher
+  那么以该教师身份进入教师工作台并显示其名称与角色
+  当未持有 Clerk 会话访问 /student
+  那么以该学生身份进入学生工作台并显示其名称与角色
+  并且查询与写入仍走同一套领域命令，只把身份解析换成预配置演示账号
+  当 NODE_ENV 不是 development、存在 VERCEL_ENV、E2E_RUN_MARKER 或 STAGING_RUN_MARKER，或缺少演示账号 ID
+  那么该开关无效，仍要求 Clerk 会话
+
 场景: 教师确认后发布精确草稿版本
   假如教师拥有 ready 状态的草稿版本 7
   并且该教师管理目标班级

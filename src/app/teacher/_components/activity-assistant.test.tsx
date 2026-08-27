@@ -186,7 +186,7 @@ describe("ActivityAssistant", () => {
     expect(markup).toContain("明确假设");
     expect(markup).toContain("跨学科必要性");
     expect(markup).toContain("目标—任务—证据—评价一致性链");
-    expect(markup).toContain("官方来源依据");
+    expect(markup).toContain("本次设计参考了哪些依据");
     expect(markup).toContain("用于校准跨学科任务的真实情境与实践要求");
     expect(markup).toContain("不代表活动已自动通过课程标准合规审查");
     expect(markup).toContain("确认理解并创建草稿");

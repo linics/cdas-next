@@ -243,11 +243,16 @@ const objectiveKindLabel = {
 
 function ActivityDraftProposalCard({
   proposal,
+  readSections,
   toolCallId,
   approval,
   onRespond,
 }: Readonly<{
   proposal: ActivityDraftProposal;
+  readSections: ReadonlyMap<
+    string,
+    { sourceTitle: string; locator: string; content: string; sourceUrl: string }
+  >;
   toolCallId: string;
   approval: { id: string; isAutomatic?: boolean };
   onRespond: (response: {
@@ -322,19 +327,40 @@ function ActivityDraftProposalCard({
           ))}
         </dl>
       </section>
-      <section className={styles.proposalSection} aria-label="官方来源依据">
-        <h3>官方来源依据</h3>
+      <section className={styles.proposalSection} aria-label="本次设计参考了哪些依据">
+        <h3>本次设计参考了哪些依据</h3>
         {proposal.sourceReferences.length > 0 ? (
           <ul className={styles.referenceList}>
-            {proposal.sourceReferences.map((reference) => (
-              <li key={`${reference.sourceId}:${reference.sectionId}`}>
-                <Link href={reference.href}>{reference.citationLabel}</Link>
-                <p>{reference.reason}</p>
-              </li>
-            ))}
+            {proposal.sourceReferences.map((reference) => {
+              const section = readSections.get(
+                `${reference.sourceId}:${reference.sectionId}`,
+              );
+              return (
+                <li key={`${reference.sourceId}:${reference.sectionId}`}>
+                  <details>
+                    <summary>{reference.citationLabel}</summary>
+                    <p>{reference.reason}</p>
+                    {section ? (
+                      <>
+                        <p className={styles.sourceMeta}>
+                          {section.sourceTitle} · {section.locator}
+                        </p>
+                        <blockquote className={styles.sourceExcerpt}>
+                          {section.content}
+                        </blockquote>
+                      </>
+                    ) : null}
+                    <Link href={reference.href}>在课程依据页打开这一节</Link>
+                  </details>
+                </li>
+              );
+            })}
           </ul>
         ) : (
-          <p>首版官方语料中未找到与本活动直接对应的学科章节。</p>
+          <p>
+            语料中未找到依据。首版语料只收教育部课程方案与语文、数学、物理、信息科技
+            四科课程标准；本次设计未引用任何官方来源，请在确认前自行核对。
+          </p>
         )}
         <p className={styles.referenceCaveat}>
           引用用于说明设计依据，不代表活动已自动通过课程标准合规审查。
@@ -388,6 +414,31 @@ export function ActivityAssistant({
     [classrooms],
   );
   const busy = status === "submitted" || status === "streaming";
+  // 提案里的每条引用都必须先经 read_source_section 通读（工具会拒绝未通读的引用），
+  // 所以原文一定已经在这段对话的消息流里 —— 就地展开，不必把教师带离对话。
+  const readSections = useMemo(() => {
+    const sections = new Map<
+      string,
+      { sourceTitle: string; locator: string; content: string; sourceUrl: string }
+    >();
+    for (const message of messages) {
+      for (const part of message.parts) {
+        if (
+          part.type === "tool-read_source_section" &&
+          part.state === "output-available" &&
+          part.output.status === "FOUND"
+        ) {
+          sections.set(`${part.output.sourceId}:${part.output.sectionId}`, {
+            sourceTitle: part.output.sourceTitle,
+            locator: part.output.locator,
+            content: part.output.content,
+            sourceUrl: part.output.sourceUrl,
+          });
+        }
+      }
+    }
+    return sections;
+  }, [messages]);
 
   if (continuationOnly && messages.length === 0) {
     return null;
@@ -402,9 +453,11 @@ export function ActivityAssistant({
             {continuationOnly ? "继续核对活动并准备发布" : "把活动构想整理成可编辑草稿"}
           </h2>
         </div>
-        <span className={styles.availability} data-busy={busy}>
-          {busy ? "处理中" : "可使用"}
-        </span>
+        {busy ? (
+          <span className={styles.availability} data-busy="true">
+            处理中
+          </span>
+        ) : null}
       </header>
 
       <p className={styles.boundaryNote}>
@@ -442,7 +495,7 @@ export function ActivityAssistant({
                       if (part.output.status === "NO_MATCH") {
                         return (
                           <p className={styles.toolProgress} key={part.toolCallId}>
-                            首版官方语料中没有找到直接匹配的章节。
+                            语料中未找到依据（首版只收课程方案与语文、数学、物理、信息科技）。
                           </p>
                         );
                       }
@@ -524,6 +577,7 @@ export function ActivityAssistant({
                         <ActivityDraftProposalCard
                           key={part.toolCallId}
                           proposal={part.input}
+                          readSections={readSections}
                           toolCallId={part.toolCallId}
                           approval={part.approval}
                           onRespond={addToolApprovalResponse}

@@ -2,6 +2,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Lora, Noto_Serif_SC } from "next/font/google";
 import type { ReactNode } from "react";
+import { isClickthroughAuthEnabled } from "../server/auth/clickthrough-auth";
 import { isClerkAuthenticationAvailable } from "../server/auth/clerk-availability";
 import "./globals.css";
 
@@ -42,7 +43,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     </html>
   );
 
-  return isClerkAuthenticationAvailable() ? (
+  return isClerkAuthenticationAvailable() && !isClickthroughAuthEnabled() ? (
     <ClerkProvider>{document}</ClerkProvider>
   ) : (
     document

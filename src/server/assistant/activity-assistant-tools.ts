@@ -371,7 +371,7 @@ export function createActivityAssistantTools({
 
     create_activity_draft: tool({
       description:
-        "把教師已經說明清楚的完整跨學科任務書儲存成可預覽、可繼續編輯的活動草稿。content.schemaVersion 必須是數字 2。作業類型只用 practical、inquiry、project；practical 子類型只用 visit、simulation、observation；inquiry 子類型只用 literature、survey、experiment；project 的 assignmentSubtype 必須為 null。融合學科貢獻必須與 content.integratedDisciplineCodes 恰好一一對應，且不得包含主學科。sourceReferences 每一條都必須是本輪 read_source_section 已返回 FOUND 的章節，數量不得超過已通讀章節。必須包含三維目標、三至四個連續階段、類型化證據及四檔量規，不能臆造缺失事實。",
+        "把教师已经说明清楚的完整跨学科任务书储存成可预览、可继续编辑的活动草稿。所有文字使用简体中文。content.schemaVersion 必须是数字 2。作业类型只用 practical、inquiry、project；practical 子类型只用 visit、simulation、observation；inquiry 子类型只用 literature、survey、experiment；project 的 assignmentSubtype 必须为 null。融合学科贡献必须与 content.integratedDisciplineCodes 恰好一一对应，且不得包含主学科。sourceReferences 每一条都必须是本轮 read_source_section 已返回 FOUND 的章节，数量不得超过已通读章节。必须包含三维目标、三至四个连续阶段、类型化证据及四档量规，不能臆造缺失事实。",
       inputSchema: proposalAfterReadingSchema,
       outputSchema: createdDraftToolOutputSchema,
       strict: true,
@@ -421,7 +421,7 @@ export function createActivityAssistantTools({
 
     publish_activity_release: tool({
       description:
-        "發佈一個已處於可預覽狀態的活動草稿。此操作會先暫停並展示精確參數，只有目前教師明確批准後才會執行。",
+        "发布一个已处于可预览状态的活动草稿。此操作会先暂停并展示精确参数，只有目前教师明确批准后才会执行。",
       inputSchema: publishActivityToolInputSchema,
       outputSchema: publishActivityToolOutputSchema,
       strict: true,
