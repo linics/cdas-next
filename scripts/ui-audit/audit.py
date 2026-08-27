@@ -9,17 +9,17 @@ TEACHER_ROUTES = [
     ("首页", "/"),
     ("教师工作台", "/teacher"),
     ("活动设计·新建", "/teacher/activities/new"),
-    ("活动设计·编辑中", "/teacher/activities/7a968753-2f9c-4a60-9b05-17d0e58695fd"),
-    ("发布确认", "/teacher/activities/7ac7486c-6af1-4d5e-89f9-5b7d0ab1a79c/preview"),
+    ("活动设计·编辑中", "/teacher/activities/8170a39a-77ad-4104-9c1e-67a5aca1a9dd"),
+    ("发布确认", "/teacher/activities/8170a39a-77ad-4104-9c1e-67a5aca1a9dd/preview"),
     ("过程诊断", "/teacher/insights"),
     ("课程依据", "/teacher/knowledge"),
     ("班级与名单", "/teacher/classrooms/7e7e7e7e-7e7e-4e7e-8e7e-7e7e7e7e7e01/members"),
-    ("评阅名册", "/teacher/releases/055c3503-9d8e-4419-b487-a854bd45be8e/submissions"),
-    ("反馈与评价", "/teacher/submissions/60469a02-1bd8-474f-a6dd-a811d8cc66ed"),
+    ("评阅名册", "/teacher/releases/75e064aa-efe5-44f5-a0b5-4b4fb91447b9/submissions"),
+    ("反馈与评价", "/teacher/submissions/ca0de124-a491-4cbf-8a5d-f0f97c15d49f"),
 ]
 STUDENT_ROUTES = [
     ("学生·我的活动", "/student"),
-    ("学生·活动详情", "/student/releases/055c3503-9d8e-4419-b487-a854bd45be8e"),
+    ("学生·活动详情", "/student/releases/75e064aa-efe5-44f5-a0b5-4b4fb91447b9"),
 ]
 
 AUDIT = r"""

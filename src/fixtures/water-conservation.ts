@@ -43,7 +43,7 @@ export const waterConservationTaskBook = {
   submissionMode: "phased",
   durationWeeks: 2,
   backgroundSetting:
-    "你们是七年级节水观察员。总务处下周要向全校宣布节水措施，请用现场证据回答：校园里哪一处用水最浪费，怎样说服相关负责人立刻改？",
+    "你们是七年级节水观察员。总务处下周要在公示栏向全校宣布一批节水措施，但手上没有证据，不知道该先改哪一处。请你们用现场证据回答：校园里哪一处用水最浪费，怎样说服相关负责人立刻改？两周后你们要交出一份《校园节水建议书》，被采纳的建议会直接贴上公示栏。",
   objectiveKnowledge: "理解校园用水行为与资源节约之间的关系。",
   objectiveProcess: "能够通过观察、调查和简单统计形成有证据的判断。",
   objectiveEmotion: "愿意对公共资源负责，并与同伴沟通可行的改进方案。",

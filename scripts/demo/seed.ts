@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import nextEnvironment from "@next/env";
 import type { ActivityContent } from "../../src/domain/activity/activity-content";
+import { classroomDaylightTaskBook } from "../../src/fixtures/classroom-daylight";
 import { waterConservationTaskBook } from "../../src/fixtures/water-conservation";
 import type { TeacherEvaluationOutcome } from "../../src/domain/evaluation/teacher-evaluation-intent";
 import type { PrismaClient } from "../../src/generated/prisma/client";
@@ -32,8 +33,8 @@ const DEMO_PREFIX = "【演示】";
 const COMPLETE_TITLE = `${DEMO_PREFIX}校园节水行动`;
 const LIVE_TITLE = `${DEMO_PREFIX}校园用水现场调查`;
 const CLOSED_TITLE = `${DEMO_PREFIX}节水倡议展示`;
-const EDITING_TITLE = `${DEMO_PREFIX}编辑中的校园调查`;
-const READY_TITLE = `${DEMO_PREFIX}待发布的跨学科实验`;
+const EDITING_TITLE = `${DEMO_PREFIX}饮水区用水记录`;
+const READY_TITLE = `${DEMO_PREFIX}教室采光改造提案`;
 
 const DEMO_CLASSROOM_ID = "7e7e7e7e-7e7e-4e7e-8e7e-7e7e7e7e7e01";
 const DEMO_CLASSROOM_NAME = "七年一班";
@@ -91,13 +92,42 @@ function parseSeedArgs(argv: readonly string[]): {
   };
 }
 
+// 每个演示活动都得有自己的情境，不能是同一份任务书换个标题、再拼一句
+// `${title}主题` 了事 —— SPRINT-0901 第 4 步要求种子活动本身就是第 1.5 步的范例。
+const demoNarratives: Record<string, { topic: string; summary: string }> = {
+  [COMPLETE_TITLE]: {
+    topic: "生态与可持续发展",
+    summary:
+      "你们是七年级节水观察员：查清校园哪一处用水最浪费，交出一份能贴上公示栏的《校园节水建议书》。",
+  },
+  [LIVE_TITLE]: {
+    topic: "校园用水的现场证据",
+    summary:
+      "总务处只剩一周就要公布节水措施。这一轮先把现场证据拿到手：哪个用水点在漏、漏了多少、谁能改。",
+  },
+  [CLOSED_TITLE]: {
+    topic: "把证据讲给全校听",
+    summary:
+      "节水建议已经被采纳。这一轮你们要把调查过程讲成全校听得懂的展示，让别的班也照着做。",
+  },
+  [EDITING_TITLE]: {
+    topic: "饮水区的用水记录",
+    summary:
+      "饮水区每天接水的人最多，也最难说清浪费在哪。先从连续一周的定点记录做起。",
+  },
+};
+
 function taskBook(title: string, submissionMode: "phased" | "once"): ActivityContent {
+  if (title === READY_TITLE) {
+    return { ...classroomDaylightTaskBook, title, submissionMode };
+  }
+  const narrative = demoNarratives[title];
   return {
     ...waterConservationTaskBook,
     title,
     submissionMode,
-    topic: `${title}主题`,
-    summary: `${title}：观察校园真实用水场景，用简单统计识别问题，并形成可执行建议。`,
+    topic: narrative?.topic ?? waterConservationTaskBook.topic,
+    summary: narrative?.summary ?? waterConservationTaskBook.summary,
   };
 }
 
