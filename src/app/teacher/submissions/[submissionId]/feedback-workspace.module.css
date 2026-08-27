@@ -20,7 +20,7 @@
 .pageHeader > div > p:last-child {
   margin: 0;
   color: var(--color-neutral-700);
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1.7;
 }
 
@@ -28,7 +28,7 @@
   margin: 0;
   color: var(--color-accent-700);
   font-family: var(--font-ui);
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: .1em;
   text-transform: uppercase;
 }
@@ -40,7 +40,7 @@
   gap: 6px;
   color: var(--color-neutral-800);
   font-family: var(--font-ui);
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.15;
   white-space: nowrap;
 }
@@ -72,7 +72,7 @@
 .contextFacts > div:nth-child(n + 4) { border-bottom: 1px solid var(--color-divider); }
 .contextFacts > div:not(:nth-child(3n + 1)) { border-left: 1px solid var(--color-divider); }
 
-.contextFacts dt { color: var(--color-neutral-700); font-size: 13px; font-weight: var(--font-heading-weight); }
+.contextFacts dt { color: var(--color-neutral-700); font-size: 14px; font-weight: var(--font-heading-weight); }
 
 .contextFacts dd {
   overflow-wrap: anywhere;
@@ -96,7 +96,7 @@
 .railNote > p:last-child {
   margin: var(--space-1) 0 0;
   color: var(--color-neutral-700);
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.7;
 }
 
@@ -130,7 +130,7 @@
 }
 
 .historyHeading h2 { margin: var(--space-1) 0 0; font-size: 24px; }
-.historyHeading > span { color: var(--color-neutral-700); font-size: 13px; }
+.historyHeading > span { color: var(--color-neutral-700); font-size: 14px; }
 
 .revisionList { border-bottom: 1px solid var(--color-divider); }
 
@@ -169,7 +169,7 @@
   display: block;
   margin-top: var(--space-1);
   color: var(--color-neutral-700);
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .revisionBadges { flex-wrap: wrap; justify-content: flex-end; }
@@ -179,7 +179,7 @@
   align-items: center;
   gap: 6px;
   color: var(--color-neutral-700);
-  font-size: 13px;
+  font-size: 14px;
   white-space: nowrap;
 }
 
@@ -196,7 +196,7 @@
 .formalLabel {
   margin: var(--space-4) 0 var(--space-2);
   color: var(--color-neutral-700);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: var(--font-heading-weight);
   letter-spacing: .04em;
 }
@@ -208,7 +208,7 @@
 .submissionBody {
   border-left: 2px solid var(--color-accent-100);
   padding-left: var(--space-4);
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1.8;
 }
 
@@ -226,7 +226,7 @@
 }
 
 .feedbackHistory h4 { margin: var(--space-1) 0 0; font-size: 17px; }
-.feedbackHistory > header > span { color: var(--color-neutral-700); font-size: 13px; }
+.feedbackHistory > header > span { color: var(--color-neutral-700); font-size: 14px; }
 .feedbackVersions { margin-top: var(--space-3); }
 
 .feedbackVersions article {
@@ -237,11 +237,11 @@
   padding: var(--space-4) 0;
 }
 
-.feedbackMeta { color: var(--color-neutral-700); font-size: 13px; }
+.feedbackMeta { color: var(--color-neutral-700); font-size: 14px; }
 .feedbackMeta > span { color: var(--color-accent-700); font-family: var(--font-heading); font-size: 16px; }
 .feedbackMeta p { margin: var(--space-1) 0 0; }
 .feedbackMeta time { display: block; margin-top: var(--space-1); }
-.feedbackBody { font-size: 14px; line-height: 1.75; }
+.feedbackBody { font-size: 15px; line-height: 1.75; }
 .feedbackVersions article > .feedbackBody { grid-column: 2; }
 
 .formalAttachmentList {
@@ -262,7 +262,7 @@
 
 .formalAttachmentList a { overflow-wrap: anywhere; color: var(--color-accent-700); font-weight: var(--font-heading-weight); }
 .formalAttachmentList a:hover { text-decoration: underline; text-underline-offset: 3px; }
-.formalAttachmentList span { flex: 0 0 auto; color: var(--color-neutral-700); font-size: 13px; }
+.formalAttachmentList span { flex: 0 0 auto; color: var(--color-neutral-700); font-size: 14px; }
 
 .composer,
 .confirmationPanel {
@@ -286,12 +286,12 @@
 .confirmationLead {
   margin: 0;
   color: var(--color-neutral-700);
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.7;
 }
 
 .composerForm { display: grid; gap: var(--space-2); }
-.composerForm > label { color: color-mix(in srgb, var(--color-text) 70%, transparent); font-size: 13px; }
+.composerForm > label { color: color-mix(in srgb, var(--color-text) 70%, transparent); font-size: 14px; }
 
 .composerForm textarea:hover,
 .writingField textarea:hover { border-color: color-mix(in srgb, var(--color-text) 45%, transparent); }
@@ -304,7 +304,7 @@
   background: transparent;
   padding: var(--space-3);
   color: var(--color-text);
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.7;
   resize: vertical;
 }
@@ -319,7 +319,7 @@
   gap: var(--space-4);
 }
 
-.fieldMeta { color: var(--color-neutral-700); font-size: 13px; }
+.fieldMeta { color: var(--color-neutral-700); font-size: 14px; }
 .fieldMeta p,
 .prepareRow p { margin: 0; }
 .fieldMeta span[data-over-limit="true"] { color: var(--stroke-heavy); font-weight: var(--font-heading-weight); }
@@ -329,7 +329,7 @@
   border-top: 1px solid var(--color-divider);
   padding-top: var(--space-4);
   color: var(--color-neutral-700);
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .prepareButton,
@@ -345,7 +345,7 @@
   background: transparent;
   padding: var(--space-2) var(--space-3);
   color: var(--color-text);
-  font-size: 14px;
+  font-size: 15px;
   font-weight: var(--font-heading-weight);
 }
 
@@ -369,7 +369,7 @@
   background: transparent;
   padding: var(--space-2) var(--space-3);
   color: var(--color-neutral-800);
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.7;
 }
 
@@ -393,13 +393,13 @@
   border-bottom: 1px solid var(--color-divider);
   padding: var(--space-3) 0;
   color: var(--color-text);
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.7;
 }
 
-.dialogDetail { display: grid; gap: var(--space-3); color: var(--color-neutral-700); font-size: 14px; line-height: 1.7; }
+.dialogDetail { display: grid; gap: var(--space-3); color: var(--color-neutral-700); font-size: 15px; line-height: 1.7; }
 .dialogDetail p { margin: 0; }
-.dialogDetail code { overflow-wrap: anywhere; font-size: 13px; }
+.dialogDetail code { overflow-wrap: anywhere; font-size: 14px; }
 
 .visuallyHidden {
   position: absolute;
@@ -443,12 +443,12 @@
 .evaluationDimension > p {
   margin: 0 0 var(--space-1);
   color: var(--color-neutral-700);
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.6;
 }
 
 .structuredFeedbackFields label,
-.evaluationDimension label { color: color-mix(in srgb, var(--color-text) 70%, transparent); font-size: 13px; }
+.evaluationDimension label { color: color-mix(in srgb, var(--color-text) 70%, transparent); font-size: 14px; }
 
 .structuredFeedbackFields select,
 .evaluationDimension select {
@@ -472,7 +472,7 @@
 }
 
 .structuredFeedbackDetails > div { border-top: 1px solid var(--color-divider); padding: var(--space-2) 0; }
-.structuredFeedbackDetails dt { color: var(--color-neutral-700); font-size: 13px; font-weight: var(--font-heading-weight); }
+.structuredFeedbackDetails dt { color: var(--color-neutral-700); font-size: 14px; font-weight: var(--font-heading-weight); }
 .structuredFeedbackDetails dd { margin: 3px 0 0; color: var(--color-text); font-weight: var(--font-heading-weight); }
 
 .feedbackStructure {
@@ -488,7 +488,7 @@
   align-items: center;
   gap: 6px;
   color: var(--color-accent-700);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: var(--font-heading-weight);
 }
 
@@ -500,14 +500,14 @@
   content: "";
 }
 
-.legacyFeedbackStructure { grid-column: 2; margin: var(--space-2) 0 0; color: var(--color-neutral-700); font-size: 13px; }
+.legacyFeedbackStructure { grid-column: 2; margin: var(--space-2) 0 0; color: var(--color-neutral-700); font-size: 14px; }
 .evaluationCitations { border-style: solid; }
 
 .evaluationCitations label {
   display: flex;
   align-items: flex-start;
   gap: var(--space-2);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: var(--font-heading-weight);
 }
 
@@ -527,9 +527,9 @@
   padding: var(--space-2) 0;
 }
 
-.evaluationOutcomeList strong { font-size: 13px; }
-.evaluationOutcomeList span { color: var(--color-accent-700); font-size: 13px; font-weight: var(--font-heading-weight); }
-.evaluationOutcomeList small { color: var(--color-neutral-700); font-size: 13px; }
+.evaluationOutcomeList strong { font-size: 14px; }
+.evaluationOutcomeList span { color: var(--color-accent-700); font-size: 14px; font-weight: var(--font-heading-weight); }
+.evaluationOutcomeList small { color: var(--color-neutral-700); font-size: 14px; }
 
 @media (max-width: 1023px) {
   .pageHeader,

@@ -47,7 +47,7 @@
   padding: calc(var(--space-2) * .8) calc(var(--space-3) * 1.2);
   color: var(--color-accent-700);
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: 15px;
   font-weight: var(--font-heading-weight);
   transition: background var(--motion-fast);
 }
@@ -58,7 +58,7 @@
 .sourceMeta {
   grid-column: 2;
   color: var(--color-neutral-700);
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.6;
 }
 
@@ -85,7 +85,7 @@
 .sourceContent {
   max-width: 76ch;
   color: var(--color-text);
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1.85;
   white-space: pre-wrap;
 }
@@ -100,7 +100,7 @@
 }
 
 .results h2 { margin: var(--space-1) 0 0; font-size: 26px; }
-.results > header > span { color: var(--color-neutral-700); font-size: 13px; }
+.results > header > span { color: var(--color-neutral-700); font-size: 14px; }
 
 .results ol,
 .sourceList {
@@ -129,7 +129,7 @@
   color: var(--color-accent-700);
   content: counter(knowledge-row, decimal-leading-zero);
   font-family: var(--font-heading);
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .results ol li:last-child,
@@ -145,7 +145,7 @@
 .sourceList p {
   margin: 6px 0 0;
   color: var(--color-neutral-700);
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.7;
 }
 

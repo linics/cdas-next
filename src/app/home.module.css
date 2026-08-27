@@ -31,7 +31,7 @@
 .brand span {
   color: var(--color-neutral-700);
   font-family: var(--font-ui);
-  font-size: 13px;
+  font-size: 14px;
   letter-spacing: .14em;
   text-transform: uppercase;
 }
@@ -39,7 +39,7 @@
 .toolbar p {
   margin: 0;
   color: var(--color-neutral-700);
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .main {
@@ -52,7 +52,7 @@
   margin: 0 0 var(--space-2);
   color: var(--color-accent-700);
   font-family: var(--font-ui);
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: .1em;
   text-transform: uppercase;
 }
@@ -105,7 +105,7 @@
 .workspaceLink p {
   margin: 0;
   color: var(--color-neutral-800);
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1.6;
 }
 
@@ -115,13 +115,13 @@
   gap: 6px;
   color: var(--color-accent-700);
   font-family: var(--font-ui);
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .flow {
   margin: var(--space-6) 0 0;
   color: var(--color-neutral-700);
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .note {
@@ -137,7 +137,7 @@
   margin: 3px 0 0;
   color: var(--color-accent-700);
   font-family: var(--font-ui);
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: .1em;
   text-transform: uppercase;
 }
@@ -152,7 +152,7 @@
   max-width: 760px;
   margin: var(--space-2) 0 0;
   color: var(--color-neutral-800);
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.7;
 }
 

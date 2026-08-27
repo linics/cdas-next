@@ -64,12 +64,15 @@
      这是本项目对 Classical 的两处中文适配之一，另一处是按钮内边距。 */
   --font-ui: var(--font-cjk-loaded), "Songti SC", "STSong", serif;
 
-  --space-1: 4.6px;
-  --space-2: 9.2px;
-  --space-3: 13.8px;
-  --space-4: 18.4px;
-  --space-6: 27.6px;
-  --space-8: 36.8px;
+  /* Classical 出厂密度是 1.15×（4.6 / 9.2 / …），那是给拉丁文本的行宽定的。
+     中文字面本身就比拉丁密实，同样的留白会显得版面发空，所以密度收回 1.0×。
+     这是 token 层的调参，不是逐处覆写 —— 要再松再紧，只改这六个值。 */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
 
   --radius-sm: 2px;
   --radius-md: 4px;
@@ -110,9 +113,9 @@ body {
   background: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-body);
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 400;
-  line-height: 1.55;
+  line-height: 1.6;
 }
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
@@ -126,7 +129,7 @@ h2 { font-size: 32px; }
 h3 { font-size: 25px; }
 h4 { font-size: 20px; }
 h5 { font-size: 16px; }
-h6 { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; }
+h6 { font-size: 14px; letter-spacing: .08em; text-transform: uppercase; }
 p { margin: 0 0 var(--space-3); }
 a { color: var(--color-accent); text-decoration: none; text-underline-offset: 3px; }
 a:hover { color: var(--color-accent-700); }
@@ -135,7 +138,7 @@ figure { margin: 0; }
 figcaption {
   margin-top: var(--space-1);
   color: color-mix(in srgb, var(--color-text) 55%, transparent);
-  font-size: 11px;
+  font-size: 12px;
 }
 button, input, textarea, select { font: inherit; }
 button, label, th, legend, dt, summary { font-family: var(--font-ui); }

@@ -17,7 +17,7 @@
 
 .filterForm label {
   color: color-mix(in srgb, var(--color-text) 70%, transparent);
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .filterForm > div {
@@ -37,7 +37,7 @@
   background: transparent;
   padding: 6px var(--space-2);
   color: var(--color-text);
-  font-size: 14px;
+  font-size: 15px;
 }
 
 .filterForm select:focus {
@@ -51,7 +51,7 @@
   padding: calc(var(--space-2) * .8) calc(var(--space-3) * 1.2);
   color: var(--color-accent-700);
   font-family: var(--font-ui);
-  font-size: 14px;
+  font-size: 15px;
   font-weight: var(--font-heading-weight);
 }
 
@@ -61,7 +61,7 @@
 
 .filterForm small {
   color: var(--color-neutral-700);
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.5;
 }
 
@@ -84,7 +84,7 @@
 .cardLead {
   margin: 0;
   color: var(--color-neutral-700);
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1.7;
 }
 
@@ -103,7 +103,7 @@
 .releaseBlock > p {
   margin: var(--space-1) 0 var(--space-3);
   color: var(--color-neutral-700);
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .dimensionList,
@@ -129,12 +129,12 @@
   align-items: baseline;
   justify-content: space-between;
   gap: var(--space-2);
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .dimensionHead strong,
 .stageHead strong {
-  font-size: 15px;
+  font-size: 16px;
 }
 
 .weakMark {
@@ -144,7 +144,7 @@
   padding: 3px var(--space-2);
   color: var(--stroke-heavy);
   font-family: var(--font-ui);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 /* 图表只用同一条 accent 阶梯：同一色相里换明度，四档一眼可比，
@@ -164,7 +164,7 @@
   place-items: center;
   color: var(--color-accent-900);
   font-family: var(--font-ui);
-  font-size: 13px;
+  font-size: 14px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -181,7 +181,7 @@
   flex-wrap: wrap;
   gap: var(--space-2) var(--space-3);
   color: var(--color-neutral-700);
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .statGrid {
@@ -197,7 +197,7 @@
 
 .statGrid dt {
   color: var(--color-neutral-700);
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .statGrid dd {
@@ -217,7 +217,7 @@
   background: transparent;
   padding: var(--space-2) var(--space-3);
   color: var(--color-neutral-800);
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.7;
 }
 
