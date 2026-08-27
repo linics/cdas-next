@@ -409,6 +409,16 @@ describe("buildActivityAssistantInstructions", () => {
     expect(text).not.toMatch(/[體資證據調儲發佈預覽學課務]/u);
   });
 
+  it("forces the driving-context trio and a continuous three-act story", () => {
+    const text = buildActivityAssistantInstructions([]);
+    expect(text).toContain("你们是");
+    expect(text).toContain("真实受众");
+    expect(text).toContain("驱动性问题");
+    expect(text).toContain("同一个故事的三集");
+    expect(text).toContain("证据是否逐级递进");
+    expect(text).toContain("纯作业");
+  });
+
   it("refuses to stand in for a standards-compliance verdict", () => {
     const text = buildActivityAssistantInstructions([]);
     expect(text).toContain("语料中未找到依据");
