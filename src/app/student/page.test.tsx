@@ -247,6 +247,7 @@ describe("student dashboard page", () => {
     expect(markup).not.toContain("问题意识");
     expect(markup).not.toContain("创建活动");
     expect(markup).not.toContain("打开导航");
+    expect(markup).toContain("我的活动");
     expect(markup).toContain("当前账号：测试学生 · 学生");
     expect(markup).toContain("退出登录");
     expect(markup).toContain('data-clerk-sign-out="true"');

@@ -4,7 +4,13 @@ import type { ReactNode } from "react";
 import type { AuthenticationError } from "../../../server/auth/current-actor";
 import { InlineAlert } from "../../_components/ui";
 import { WorkspaceShell } from "../../_components/workspace-shell";
-import styles from "../teacher-workspace.module.css";
+import gateStyles from "./teacher-gate.module.css";
+
+const teacherNavigation = [
+  { href: "/teacher", label: "工作台" },
+  { href: "/teacher/activities/new", label: "活动设计" },
+  { href: "/teacher/knowledge", label: "课程依据" },
+] as const;
 
 export function TeacherPage({
   actorName,
@@ -14,7 +20,11 @@ export function TeacherPage({
   children: ReactNode;
 }) {
   return (
-    <WorkspaceShell audience="教师" actorName={actorName}>
+    <WorkspaceShell
+      audience="教师"
+      actorName={actorName}
+      navigation={teacherNavigation}
+    >
       {children}
     </WorkspaceShell>
   );
@@ -50,36 +60,35 @@ export function TeacherAccessGate({
           };
 
   return (
-    <div className={styles.teacherApp}>
-      <header className={styles.gateMasthead}>
-        <Link className={styles.brand} href="/teacher" aria-label="CDAS Next 教师工作台">
-          <span aria-hidden="true">C</span>
+    <div className={gateStyles.teacherApp}>
+      <header className={gateStyles.masthead}>
+        <Link className={gateStyles.brand} href="/teacher" aria-label="CDAS Next 教师工作台">
           <span>
             <strong>CDAS Next</strong>
             <small>跨学科学习活动</small>
           </span>
         </Link>
-        <span>教师工作区</span>
+        <span className={gateStyles.workspaceLabel}>教师工作区</span>
       </header>
-      <main className={styles.accessGate}>
-        <p className={styles.eyebrow}>{copy.eyebrow}</p>
+      <main className={gateStyles.accessGate}>
+        <p className={gateStyles.eyebrow}>{copy.eyebrow}</p>
         <h1>{copy.title}</h1>
         <InlineAlert tone="info">{copy.detail}</InlineAlert>
-        <div className={styles.gateActions}>
+        <div className={gateStyles.actions}>
           {code === "UNAUTHENTICATED" ? (
             <SignInButton mode="modal" fallbackRedirectUrl={returnPath}>
-              <button className={styles.primaryButton} type="button">
+              <button className={gateStyles.primaryButton} type="button">
                 登录教师账号
               </button>
             </SignInButton>
           ) : code === "USER_NOT_PROVISIONED" ? (
             <SignOutButton redirectUrl={returnPath}>
-              <button className={styles.secondaryButton} type="button">
+              <button className={gateStyles.secondaryButton} type="button">
                 退出当前账号
               </button>
             </SignOutButton>
           ) : null}
-          <Link href="/">返回首页</Link>
+          <Link className={gateStyles.backLink} href="/">返回首页</Link>
         </div>
       </main>
     </div>

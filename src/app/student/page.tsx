@@ -20,6 +20,10 @@ import {
 } from "../../server/queries/student-releases";
 import styles from "./student-dashboard.module.css";
 
+const studentNavigation = [
+  { href: "/student", label: "我的活动" },
+] as const;
+
 export const metadata: Metadata = {
   title: "我的学习活动 | CDAS Next",
   description: "查看可见活动、提交状态、教师反馈与量规评价",
@@ -344,6 +348,7 @@ export default async function StudentDashboardPage() {
     <WorkspaceShell
       audience="学生"
       actorName={releaseList.actor.displayName}
+      navigation={studentNavigation}
     >
       <div className={styles.dashboardMain}>
         <header className={styles.dashboardHeader}>

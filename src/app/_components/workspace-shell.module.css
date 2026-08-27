@@ -1,11 +1,334 @@
-.shell { min-height: 100svh; background: var(--surface-page); color: var(--text); }
-.skipLink { position: fixed; z-index: calc(var(--z-overlay) + 1); top: 8px; left: 8px; transform: translateY(-160%); border-radius: var(--radius-sm); background: var(--text); padding: 10px 14px; color: white; font-weight: 650; }
+.shell {
+  min-height: 100svh;
+  background: var(--surface-page);
+  color: var(--text);
+}
+
+.shell[data-with-sidebar] {
+  display: grid;
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+}
+
+.skipLink {
+  position: fixed;
+  z-index: calc(var(--z-overlay) + 1);
+  top: 8px;
+  left: 8px;
+  transform: translateY(-160%);
+  border-radius: var(--radius-md);
+  background: var(--text);
+  padding: 10px 14px;
+  color: var(--surface-raised);
+  font-weight: 600;
+  transition: transform var(--motion-fast);
+}
+
 .skipLink:focus { transform: translateY(0); }
-.toolbar { display: grid; position: sticky; z-index: var(--z-nav); top: 0; grid-template-columns: minmax(190px, 1fr) auto minmax(190px, 1fr); min-height: var(--toolbar-height); align-items: center; gap: 20px; border-bottom: 1px solid var(--border); background: var(--surface); padding: 0 clamp(16px, 4vw, 48px); }
-.brand { display: inline-flex; width: fit-content; min-height: 44px; align-items: center; gap: 10px; color: var(--text); font-size: 16px; font-weight: 750; }
-.brandMark { display: inline-flex; width: 30px; height: 30px; align-items: center; justify-content: center; border-radius: 6px; background: var(--primary); color: white; font-size: 12px; font-weight: 800; letter-spacing: -.04em; }
-.navigation { display: flex; align-items: center; gap: 4px; }
-.navigationLink { display: inline-flex; min-height: 44px; align-items: center; border-radius: var(--radius-sm); padding: 0 12px; color: var(--text-secondary); font-size: 15px; font-weight: 650; transition: background var(--motion-fast), color var(--motion-fast); }
-.navigationLink:hover { background: var(--surface-subtle); color: var(--primary-hover); }.navigationLink[data-active] { background: var(--primary-soft); color: var(--primary-hover); }
-.toolbarSpacer { min-height: 1px; }.toolbarEnd { display: flex; min-width: 0; align-items: center; justify-content: flex-end; gap: 12px; }.actorLabel { overflow: hidden; color: var(--text-secondary); font-size: 14px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }.signOutButton { min-height: 40px; flex: 0 0 auto; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); padding: 0 12px; color: var(--text); font: inherit; font-size: 14px; font-weight: 650; cursor: pointer; transition: border-color var(--motion-fast), background var(--motion-fast), color var(--motion-fast); }.signOutButton:hover { border-color: var(--primary); background: var(--primary-soft); color: var(--primary-hover); }.signOutButton:focus-visible { outline: 3px solid var(--primary-soft); outline-offset: 2px; }.main { min-width: 0; }.roleGate { width: min(680px, calc(100% - 32px)); margin: clamp(48px, 10vw, 120px) auto; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); padding: clamp(28px, 5vw, 52px); box-shadow: var(--shadow-overlay); }.roleGate > p:first-child { margin: 0 0 12px; color: var(--primary); font-size: 13px; font-weight: 750; letter-spacing: .08em; }.roleGate h1 { margin: 0; font-size: clamp(28px, 5vw, 44px); line-height: 1.1; }.roleGate h1 + p { max-width: 56ch; margin: 20px 0 0; color: var(--text-secondary); line-height: 1.75; }.roleGateActions { display: flex; margin-top: 28px; }.roleGateActions a { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; border-radius: var(--radius-sm); background: var(--primary); padding: 0 18px; color: white; font-weight: 700; }.roleGateActions a:hover { background: var(--primary-hover); }
-@media (max-width: 767px) { .toolbar { grid-template-columns: minmax(0, 1fr) auto; gap: 12px; padding: 0 16px; }.toolbarSpacer, .navigation { display: none; }.actorLabel { max-width: 116px; }.toolbarEnd { grid-column: 2; grid-row: 1; gap: 8px; }.signOutButton { min-height: 36px; padding: 0 10px; }.roleGate { margin-top: 32px; } }
+
+.sidebar {
+  position: sticky;
+  z-index: var(--z-nav);
+  top: 0;
+  display: grid;
+  height: 100svh;
+  grid-template-rows: auto 1fr auto;
+  border-right: 1px solid var(--border);
+  background: var(--surface);
+  padding: 28px 0 24px;
+}
+
+.brand {
+  display: grid;
+  gap: 2px;
+  padding: 0 24px;
+}
+
+.brand strong,
+.compactBrand {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: .01em;
+  line-height: 1;
+}
+
+.brand > span {
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: .12em;
+}
+
+.navigationRegion { margin-top: 36px; }
+
+.navigation {
+  display: grid;
+  border-top: 1px solid var(--border);
+}
+
+.navigationLink {
+  position: relative;
+  display: grid;
+  min-height: 46px;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: center;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  transition:
+    background var(--motion-fast),
+    color var(--motion-fast),
+    padding var(--motion-fast);
+}
+
+.navigationLink > span {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.navigationLink::before {
+  position: absolute;
+  inset: 8px auto 8px 0;
+  width: 2px;
+  background: var(--primary);
+  content: "";
+  opacity: 0;
+  transform: scaleY(.3);
+  transition: opacity var(--motion-fast), transform var(--motion-fast);
+}
+
+.navigationLink:hover {
+  background: color-mix(in srgb, var(--primary-soft) 42%, transparent);
+  color: var(--primary-hover);
+  padding-left: 27px;
+}
+
+.navigationLink[data-active] {
+  color: var(--primary-hover);
+  font-weight: 600;
+}
+
+.navigationLink[data-active]::before {
+  opacity: 1;
+  transform: scaleY(1);
+}
+
+.navigationToggle { display: none; }
+
+.sidebarNote {
+  margin: 0 24px;
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.65;
+}
+
+.workspace { min-width: 0; }
+
+.toolbar {
+  position: sticky;
+  z-index: calc(var(--z-nav) - 1);
+  top: 0;
+  display: flex;
+  min-height: var(--toolbar-height);
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface-page) 94%, transparent);
+  padding: 0 clamp(16px, 3vw, 36px);
+  backdrop-filter: blur(12px);
+}
+
+.compactBrand { color: var(--text); }
+
+.audienceLabel {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.toolbarEnd {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.actorLabel {
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.signOutButton {
+  min-height: 36px;
+  flex: 0 0 auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: transparent;
+  padding: 0 12px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+  transition:
+    border-color var(--motion-fast),
+    background var(--motion-fast),
+    color var(--motion-fast);
+}
+
+.signOutButton:hover {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--primary-hover);
+}
+
+.main { min-width: 0; }
+
+.roleGate {
+  width: min(720px, calc(100% - 32px));
+  margin: clamp(48px, 10vw, 120px) auto;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: clamp(28px, 5vw, 52px) 0;
+}
+
+.roleGate > p:first-child {
+  margin: 0 0 10px;
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .08em;
+}
+
+.roleGate h1 {
+  margin: 0;
+  font-size: clamp(32px, 5vw, 48px);
+  line-height: 1.08;
+}
+
+.roleGate h1 + p {
+  max-width: 58ch;
+  margin: 20px 0 0;
+  color: var(--text-secondary);
+  line-height: 1.75;
+}
+
+.roleGateActions {
+  display: flex;
+  margin-top: 28px;
+}
+
+.roleGateActions a {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-md);
+  padding: 0 18px;
+  color: var(--primary);
+  font-weight: 600;
+  transition: background var(--motion-fast), transform var(--motion-fast);
+}
+
+.roleGateActions a:hover {
+  background: var(--primary-soft);
+  transform: translateY(-1px);
+}
+
+@media (max-width: 840px) {
+  .shell[data-with-sidebar] { display: block; }
+
+  .sidebar {
+    position: sticky;
+    display: flex;
+    height: auto;
+    min-height: 58px;
+    align-items: center;
+    justify-content: space-between;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+    padding: 0 16px;
+  }
+
+  .brand { padding: 0; }
+  .brand > span, .sidebarNote { display: none; }
+  .navigationRegion { margin: 0; }
+
+  .navigationToggle {
+    display: inline-flex;
+    min-height: 38px;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: transparent;
+    padding: 0 12px;
+    color: var(--text);
+    font-size: 13px;
+  }
+
+  .navigationToggle > span,
+  .navigationToggle > span::before,
+  .navigationToggle > span::after {
+    display: block;
+    width: 14px;
+    height: 1px;
+    background: currentColor;
+    content: "";
+  }
+
+  .navigationToggle > span { position: relative; }
+  .navigationToggle > span::before { position: absolute; top: -4px; }
+  .navigationToggle > span::after { position: absolute; top: 4px; }
+
+  .navigation {
+    position: absolute;
+    top: calc(100% + 1px);
+    right: 0;
+    left: 0;
+    display: none;
+    border-top: 0;
+    background: var(--surface-raised);
+    box-shadow: var(--shadow-float);
+  }
+
+  .navigation[data-open] {
+    display: grid;
+    animation: navigationEnter var(--motion-medium) both;
+  }
+
+  .navigationLink { padding-right: 20px; padding-left: 20px; }
+  .navigationLink:hover { padding-left: 23px; }
+
+  .toolbar {
+    position: static;
+    min-height: 52px;
+    padding: 0 16px;
+  }
+
+  .actorLabel { max-width: 52vw; }
+}
+
+@media (max-width: 520px) {
+  .audienceLabel { display: none; }
+  .toolbar { justify-content: flex-end; }
+  .actorLabel { max-width: 45vw; font-size: 12px; }
+  .signOutButton { min-height: 34px; padding: 0 10px; }
+  .roleGate { margin-top: 32px; }
+}
+
+@keyframes navigationEnter {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}

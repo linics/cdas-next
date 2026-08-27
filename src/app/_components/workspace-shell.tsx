@@ -1,9 +1,7 @@
-"use client";
-
 import { SignOutButton } from "@clerk/nextjs";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
+import { WorkspaceNavigation } from "./workspace-navigation";
 import styles from "./workspace-shell.module.css";
 
 export type WorkspaceNavigationItem = { href: string; label: string };
@@ -23,43 +21,60 @@ export function WorkspaceShell({
   toolbarAction?: ReactNode;
   children: ReactNode;
 }) {
-  const pathname = usePathname();
   const workspaceHref = audience === "教师" ? "/teacher" : "/student";
-  const showNavigation = navigation.length >= 2;
+  const showNavigation = navigation.length > 0;
 
   return (
-    <div className={styles.shell}>
+    <div className={styles.shell} data-with-sidebar={showNavigation || undefined}>
       <a className={styles.skipLink} href="#main-content">跳到主要内容</a>
-      <header className={styles.toolbar}>
-        <Link className={styles.brand} href={workspaceHref} aria-label={`CDAS Next ${audience}工作台`}>
-          <span className={styles.brandMark} aria-hidden="true">CD</span>
-          <span>CDAS Next</span>
-        </Link>
-        {showNavigation ? (
-          <nav className={styles.navigation} aria-label={`${audience}工作台导航`}>
-            {navigation.map((item) => {
-              const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
-              return <Link aria-current={active ? "page" : undefined} className={styles.navigationLink} data-active={active || undefined} href={item.href} key={item.href}>{item.label}</Link>;
-            })}
-          </nav>
-        ) : <span className={styles.toolbarSpacer} aria-hidden="true" />}
-        <div className={styles.toolbarEnd}>
-          <span className={styles.actorLabel}>
-            {actorName
-              ? `当前账号：${actorName} · ${actorAudience}`
-              : `${audience}工作台`}
-          </span>
-          {toolbarAction}
-          {actorName ? (
-            <SignOutButton redirectUrl="/">
-              <button className={styles.signOutButton} type="button">
-                退出登录
-              </button>
-            </SignOutButton>
+      {showNavigation ? (
+        <aside className={styles.sidebar}>
+          <Link
+            className={styles.brand}
+            href={workspaceHref}
+            aria-label={`CDAS Next ${audience}工作台`}
+          >
+            <strong>CDAS</strong>
+            <span>跨学科学习活动</span>
+          </Link>
+          <WorkspaceNavigation audience={audience} items={navigation} />
+          <p className={styles.sidebarNote}>
+            AI 负责准备与说明，正式发布和评价始终由教师确认。
+          </p>
+        </aside>
+      ) : null}
+      <div className={styles.workspace}>
+        <header className={styles.toolbar}>
+          {!showNavigation ? (
+            <Link
+              className={styles.compactBrand}
+              href={workspaceHref}
+              aria-label={`CDAS Next ${audience}工作台`}
+            >
+              CDAS
+            </Link>
           ) : null}
-        </div>
-      </header>
-      <main className={styles.main} id="main-content" tabIndex={-1}>{children}</main>
+          <p className={styles.audienceLabel}>{audience}工作区</p>
+          <div className={styles.toolbarEnd}>
+            <span className={styles.actorLabel}>
+              {actorName
+                ? `当前账号：${actorName} · ${actorAudience}`
+                : `${audience}工作台`}
+            </span>
+            {toolbarAction}
+            {actorName ? (
+              <SignOutButton redirectUrl="/">
+                <button className={styles.signOutButton} type="button">
+                  退出登录
+                </button>
+              </SignOutButton>
+            ) : null}
+          </div>
+        </header>
+        <main className={styles.main} id="main-content" tabIndex={-1}>
+          {children}
+        </main>
+      </div>
     </div>
   );
 }
