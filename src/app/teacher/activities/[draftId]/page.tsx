@@ -49,7 +49,10 @@ export default async function TeacherActivityPage({
   const { draft } = workspace;
   const content = draft.revision.content;
   return (
-    <TeacherPage actorName={workspace.actor.displayName}>
+    <TeacherPage
+      actorName={workspace.actor.displayName}
+      breadcrumb={`教师工作台 › 活动设计 › ${content.title}`}
+    >
       <div className={styles.pageContent}>
         <header className={styles.pageHeader}>
           <div>

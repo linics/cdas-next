@@ -64,7 +64,7 @@ export default async function TeacherKnowledgePage({
   const sources = listOfficialKnowledgeSources();
 
   return (
-    <TeacherPage actorName={actor.displayName}>
+    <TeacherPage actorName={actor.displayName} breadcrumb="教师工作台 › 课程依据">
       <div className={workspaceStyles.pageContent}>
         <header className={workspaceStyles.pageHeader}>
           <div>

@@ -60,7 +60,7 @@ export default async function NewTeacherActivityPage() {
   }
 
   return (
-    <TeacherPage actorName={actor.displayName}>
+    <TeacherPage actorName={actor.displayName} breadcrumb="教师工作台 › 活动设计">
       <div className={styles.pageContent}>
         <header className={styles.pageHeader}>
           <div>

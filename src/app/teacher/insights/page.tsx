@@ -312,7 +312,10 @@ export default async function TeacherInsightsPage({
   const hasReleases = dashboard.releaseOptions.length > 0;
 
   return (
-    <TeacherPage actorName={dashboard.actor.displayName}>
+    <TeacherPage
+      actorName={dashboard.actor.displayName}
+      breadcrumb="教师工作台 › 过程诊断"
+    >
       <div className={workspaceStyles.pageContent}>
         <header className={workspaceStyles.pageHeader}>
           <div>

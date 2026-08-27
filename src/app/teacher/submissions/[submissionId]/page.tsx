@@ -322,7 +322,10 @@ export default async function TeacherSubmissionPage({
   const revisions = [...submission.revisions].reverse();
 
   return (
-    <TeacherPage actorName={workspace.actor.displayName}>
+    <TeacherPage
+      actorName={workspace.actor.displayName}
+      breadcrumb={`教师工作台 › 评阅名册 › ${group?.name ?? student.displayName}`}
+    >
       <div>
         <header className={styles.pageHeader}>
           <div>

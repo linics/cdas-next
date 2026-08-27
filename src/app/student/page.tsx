@@ -348,6 +348,7 @@ export default async function StudentDashboardPage() {
     <WorkspaceShell
       audience="学生"
       actorName={releaseList.actor.displayName}
+      breadcrumb="学生端 › 我的学习活动"
       navigation={studentNavigation}
     >
       <div className={styles.dashboardMain}>

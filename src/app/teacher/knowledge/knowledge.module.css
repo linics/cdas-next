@@ -10,7 +10,7 @@
   display: grid;
   grid-template-columns: 180px minmax(0, 1fr);
   gap: 10px 24px;
-  border-top: 1px solid var(--border-strong);
+  border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
   padding: 24px 0;
 }
@@ -30,29 +30,30 @@
 
 .searchForm input {
   min-height: 44px;
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  background: var(--surface-raised);
+  background: transparent;
   padding: 9px 12px;
   color: var(--text);
   font: inherit;
 }
 
-.searchForm input:focus { border-color: var(--primary); outline: 3px solid var(--focus-ring); }
+.searchForm input:focus { border-color: var(--primary); outline-offset: 0; }
 
 .searchForm button {
-  min-height: 44px;
+  min-height: 34px;
   border: 1px solid var(--primary);
   border-radius: var(--radius-md);
-  background: var(--primary);
-  padding: 9px 16px;
-  color: var(--surface-raised);
+  background: transparent;
+  padding: 7px 17px;
+  color: var(--primary);
+  font-family: var(--font-ui);
   font-size: 14px;
   font-weight: 600;
-  transition: background var(--motion-fast), transform var(--motion-fast);
+  transition: background var(--motion-fast);
 }
 
-.searchForm button:hover { background: var(--primary-hover); transform: translateY(-1px); }
+.searchForm button:hover { background: var(--primary-tint); color: var(--primary-hover); }
 
 .searchForm small,
 .sourceMeta {
@@ -63,7 +64,7 @@
 }
 
 .sourceSection {
-  border-top: 1px solid var(--border-strong);
+  border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
   padding: 28px 0;
 }
@@ -90,7 +91,7 @@
   white-space: pre-wrap;
 }
 
-.results { border-top: 1px solid var(--border-strong); padding-top: 22px; }
+.results { border-top: 1px solid var(--border); padding-top: 22px; }
 
 .results > header {
   display: flex;

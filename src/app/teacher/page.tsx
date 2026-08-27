@@ -57,12 +57,11 @@ export default async function TeacherDashboardPage() {
     throw error;
   }
 
-  const readyCount = dashboard.drafts.filter(
-    (draft) => draft.status === "READY_FOR_PREVIEW",
-  ).length;
-
   return (
-    <TeacherPage actorName={dashboard.actor.displayName}>
+    <TeacherPage
+      actorName={dashboard.actor.displayName}
+      breadcrumb="教师工作台"
+    >
       <div className={styles.pageContent}>
         <header className={styles.pageHeader}>
           <div>
@@ -82,23 +81,126 @@ export default async function TeacherDashboardPage() {
           </div>
         </header>
 
-        <dl className={styles.overviewStrip} aria-label="工作台摘要">
-          <div>
-            <dt>我的草稿</dt>
-            <dd>{dashboard.drafts.length}</dd>
-          </div>
-          <div>
-            <dt>可进入发布预览</dt>
-            <dd>{readyCount}</dd>
-          </div>
-          <div>
-            <dt>我管理的班级</dt>
-            <dd>{dashboard.classrooms.length}</dd>
-          </div>
-        </dl>
-
         <div className={styles.dashboardBody}>
           <div className={styles.dashboardMain}>
+            <section className={styles.dashboardSection}>
+              <header className={styles.sectionHeader}>
+                <div>
+                  <p className={styles.eyebrow}>不可变快照</p>
+                  <h2>我的发布</h2>
+                </div>
+                <span>{dashboard.releases.length} 次</span>
+              </header>
+              {dashboard.releases.length === 0 ? (
+                <p className={styles.emptyState}>
+                  尚未发布活动。草稿标记为可预览后，仍需完成独立教师确认才会产生发布。
+                </p>
+              ) : (
+                <div className={styles.releaseCardList}>
+                  {dashboard.releases.map((release) => {
+                    const status = releaseStatus[release.status];
+                    const attention = release.attention;
+                    return (
+                      <article className={styles.releaseCard} key={release.id}>
+                        <div className={styles.releaseCardHead}>
+                          <div>
+                            <h3>{release.classroomName}</h3>
+                            <p>{release.title}</p>
+                          </div>
+                          {release.dueAt ? (
+                            <span className={styles.dueTag}>
+                              <LocalizedDateTime dateTime={release.dueAt} /> 截止
+                            </span>
+                          ) : (
+                            <span className={styles.metaTag}>未设置截止</span>
+                          )}
+                        </div>
+
+                        {release.progress ? (
+                          <>
+                            <p className={styles.releaseProgress}>
+                              <span>{release.progress.submittedCount}</span>
+                              <span>
+                                / {release.progress.cohortSize} 人已正式提交
+                              </span>
+                            </p>
+                            <div
+                              aria-hidden="true"
+                              className={styles.progressTrack}
+                            >
+                              <span
+                                style={{
+                                  width:
+                                    release.progress.cohortSize > 0
+                                      ? `${Math.min(
+                                          100,
+                                          Math.round(
+                                            (release.progress.submittedCount /
+                                              release.progress.cohortSize) *
+                                              100,
+                                          ),
+                                        )}%`
+                                      : "0%",
+                                }}
+                              />
+                            </div>
+                          </>
+                        ) : null}
+
+                        <div className={styles.releaseCardFoot}>
+                          {attention && attention.pendingFeedbackCount > 0 ? (
+                            <span
+                              className={styles.statusBadge}
+                              data-tone="attention"
+                            >
+                              待反馈 {attention.pendingFeedbackCount}
+                            </span>
+                          ) : null}
+                          {attention && attention.pendingEvaluationCount > 0 ? (
+                            <span
+                              className={styles.statusBadge}
+                              data-tone="next"
+                            >
+                              待评价 {attention.pendingEvaluationCount}
+                            </span>
+                          ) : null}
+                          {attention &&
+                          attention.awaitingResubmissionCount > 0 ? (
+                            <span
+                              className={styles.statusBadge}
+                              data-tone="waiting"
+                            >
+                              待重交 {attention.awaitingResubmissionCount}
+                            </span>
+                          ) : null}
+                          {release.canViewSubmissions ? (
+                            <Link
+                              className={styles.cardAction}
+                              href={`/teacher/releases/${release.id}/submissions`}
+                            >
+                              查看提交
+                            </Link>
+                          ) : (
+                            <span
+                              className={styles.statusBadge}
+                              data-tone={status.tone}
+                            >
+                              {status.label} · 班级管理权已变更
+                            </span>
+                          )}
+                        </div>
+
+                        <p className={styles.releaseAudit}>
+                          <LocalizedDateTime dateTime={release.publishedAt} />{" "}
+                          发布 · {status.label}
+                        </p>
+                      </article>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+
             <section className={styles.dashboardSection}>
               <header className={styles.sectionHeader}>
                 <div>
@@ -116,107 +218,25 @@ export default async function TeacherDashboardPage() {
                   {dashboard.drafts.map((draft) => {
                     const status = draftStatus[draft.status];
                     return (
-                      <article className={styles.activityRow} key={draft.id}>
-                        <div>
-                          <h3>{draft.title}</h3>
-                          <p>
-                            版本 {draft.version} ·{" "}
-                            <LocalizedDateTime dateTime={draft.updatedAt} /> 更新
-                          </p>
-                        </div>
+                      <Link
+                        className={styles.activityRow}
+                        href={`/teacher/activities/${draft.id}`}
+                        key={draft.id}
+                      >
+                        <span className={styles.activityTitle}>
+                          {draft.title}
+                        </span>
+                        <span className={styles.activityMeta}>
+                          版本 {draft.version} ·{" "}
+                          <LocalizedDateTime dateTime={draft.updatedAt} /> 更新
+                        </span>
                         <span
                           className={styles.statusBadge}
                           data-tone={status.tone}
                         >
                           {status.label}
                         </span>
-                        <Link
-                          className={styles.rowLink}
-                          href={`/teacher/activities/${draft.id}`}
-                        >
-                          {draft.status === "SEALED" ? "查看" : "编辑"} →
-                        </Link>
-                      </article>
-                    );
-                  })}
-                </div>
-              )}
-            </section>
-
-            <section className={styles.dashboardSection}>
-              <header className={styles.sectionHeader}>
-                <div>
-                  <p className={styles.eyebrow}>不可变快照</p>
-                  <h2>我的发布</h2>
-                </div>
-                <span>{dashboard.releases.length} 次</span>
-              </header>
-              {dashboard.releases.length === 0 ? (
-                <p className={styles.emptyState}>
-                  尚未发布活动。草稿标记为可预览后，仍需完成独立教师确认才会产生发布。
-                </p>
-              ) : (
-                <div className={styles.releaseList}>
-                  {dashboard.releases.map((release) => {
-                    const status = releaseStatus[release.status];
-                    return (
-                      <article className={styles.releaseRow} key={release.id}>
-                        <div>
-                          <h3>{release.title}</h3>
-                          <p>
-                            <LocalizedDateTime dateTime={release.publishedAt} />{" "}
-                            发布
-                            {release.dueAt ? (
-                              <>
-                                {" · "}
-                                <LocalizedDateTime dateTime={release.dueAt} />{" "}
-                                截止
-                              </>
-                            ) : (
-                              " · 未设置截止"
-                            )}
-                          </p>
-                        </div>
-                        <div>
-                          <h3>{release.classroomName}</h3>
-                          <p>目标班级</p>
-                          {release.attention &&
-                          (release.attention.pendingFeedbackCount > 0 ||
-                            release.attention.pendingEvaluationCount > 0 ||
-                            release.attention.awaitingResubmissionCount > 0) ? (
-                            <p>
-                              {[
-                                release.attention.pendingFeedbackCount > 0
-                                  ? `待反馈 ${release.attention.pendingFeedbackCount}`
-                                  : null,
-                                release.attention.pendingEvaluationCount > 0
-                                  ? `待评价 ${release.attention.pendingEvaluationCount}`
-                                  : null,
-                                release.attention.awaitingResubmissionCount > 0
-                                  ? `待重交 ${release.attention.awaitingResubmissionCount}`
-                                  : null,
-                              ]
-                                .filter(Boolean)
-                                .join(" · ")}
-                            </p>
-                          ) : null}
-                        </div>
-                        {release.canViewSubmissions ? (
-                          <Link
-                            className={styles.rowLink}
-                            href={`/teacher/releases/${release.id}/submissions`}
-                          >
-                            查看提交 →
-                          </Link>
-                        ) : (
-                          <span
-                            className={styles.statusBadge}
-                            data-tone={status.tone}
-                          >
-                            {status.label} · 班级管理权已变更
-                          </span>
-                        )}
-                      </article>
+                      </Link>
                     );
                   })}
                 </div>
@@ -225,33 +245,33 @@ export default async function TeacherDashboardPage() {
           </div>
 
           <aside className={styles.dashboardAside}>
-            <header className={styles.sectionHeader}>
-              <div>
-                <p className={styles.eyebrow}>发布边界</p>
-                <h2>我管理的班级</h2>
-              </div>
-              <span>{dashboard.classrooms.length} 个</span>
-            </header>
-            {dashboard.classrooms.length === 0 ? (
-              <p className={styles.configurationNote} role="note">
-                当前没有预先配置给你的班级，因此可保存草稿，但不能准备发布。请由系统管理流程先创建班级归属。
-              </p>
-            ) : (
-              <div className={styles.classroomList}>
-                {dashboard.classrooms.map((classroom) => (
-                  <article className={styles.classroomRow} key={classroom.id}>
-                    <div>
-                      <h3>{classroom.name}</h3>
-                      <p>当前有效成员</p>
-                    </div>
-                    <strong>{classroom.currentMemberCount} 名</strong>
-                    <Link href={`/teacher/classrooms/${classroom.id}/members`}>
-                      管理成员 →
+            <div>
+              <p className={styles.eyebrow}>我管理的班级</p>
+              {dashboard.classrooms.length === 0 ? (
+                <p className={styles.asideNote} role="note">
+                  当前没有预先配置给你的班级，因此可保存草稿，但不能准备发布。请由系统管理流程先创建班级归属。
+                </p>
+              ) : (
+                <div className={styles.classroomList}>
+                  {dashboard.classrooms.map((classroom) => (
+                    <Link
+                      className={styles.classroomRow}
+                      href={`/teacher/classrooms/${classroom.id}/members`}
+                      key={classroom.id}
+                    >
+                      <span>{classroom.name}</span>
+                      <span>{classroom.currentMemberCount} 名</span>
                     </Link>
-                  </article>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
+            </div>
+            <div>
+              <p className={styles.eyebrow}>发布边界</p>
+              <p className={styles.asideNote}>
+                只有班级管理者可以发布活动与阅读提交；班级管理权变更后，历史发布仍保留，但不再可读。
+              </p>
+            </div>
           </aside>
         </div>
       </div>

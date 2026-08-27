@@ -15,15 +15,18 @@ const teacherNavigation = [
 
 export function TeacherPage({
   actorName,
+  breadcrumb,
   children,
 }: {
   actorName?: string;
+  breadcrumb?: string;
   children: ReactNode;
 }) {
   return (
     <WorkspaceShell
       audience="教师"
       actorName={actorName}
+      breadcrumb={breadcrumb}
       navigation={teacherNavigation}
     >
       {children}
@@ -61,19 +64,43 @@ export function TeacherAccessGate({
           };
 
   return (
-    <div className={gateStyles.teacherApp}>
-      <header className={gateStyles.masthead}>
-        <Link className={gateStyles.brand} href="/teacher" aria-label="CDAS Next 教师工作台">
-          <span>
-            <strong>CDAS Next</strong>
-            <small>跨学科学习活动</small>
-          </span>
+    <div className={gateStyles.gate}>
+      <section className={gateStyles.gateAside}>
+        <Link
+          className={gateStyles.brand}
+          href="/teacher"
+          aria-label="CDAS Next 教师工作台"
+        >
+          <strong>CDAS</strong>
+          <small>跨学科学习活动</small>
         </Link>
-        <span className={gateStyles.workspaceLabel}>教师工作区</span>
-      </header>
+        <div className={gateStyles.pitch}>
+          <p className={gateStyles.eyebrow}>教师工作台</p>
+          <h1>设计一次活动，走完一整条反馈闭环</h1>
+          <p>
+            从任务书草稿到确认发布，从学生的阶段证据到反馈与量规评价，每一步留存版本记录。
+          </p>
+        </div>
+        <ol className={gateStyles.steps}>
+          <li>
+            <span>01</span>设计任务书
+          </li>
+          <li>
+            <span>02</span>确认发布
+          </li>
+          <li>
+            <span>03</span>学生交证据
+          </li>
+          <li>
+            <span>04</span>反馈与评价
+          </li>
+        </ol>
+      </section>
       <main className={gateStyles.accessGate}>
-        <p className={gateStyles.eyebrow}>{copy.eyebrow}</p>
-        <h1>{copy.title}</h1>
+        <div>
+          <p className={gateStyles.eyebrow}>{copy.eyebrow}</p>
+          <h2>{copy.title}</h2>
+        </div>
         <InlineAlert tone="info">{copy.detail}</InlineAlert>
         <div className={gateStyles.actions}>
           {code === "UNAUTHENTICATED" ? (
@@ -91,6 +118,9 @@ export function TeacherAccessGate({
           ) : null}
           <Link className={gateStyles.backLink} href="/">返回首页</Link>
         </div>
+        <p className={gateStyles.gateNote}>
+          教师工作区 · 未通过身份确认前不会读取任何草稿、班级与提交数据。
+        </p>
       </main>
     </div>
   );

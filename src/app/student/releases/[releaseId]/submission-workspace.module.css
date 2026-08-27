@@ -7,7 +7,7 @@
 
 .backLink {
   display: inline-flex;
-  min-height: 42px;
+  min-height: 34px;
   align-items: center;
   color: var(--primary);
   font-size: 13px;
@@ -17,9 +17,10 @@
 .eyebrow {
   margin: 0;
   color: var(--primary);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: .07em;
+  font-family: var(--font-ui);
+  font-size: 10px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
 }
 
 .releaseHeader {
@@ -27,7 +28,7 @@
   align-items: flex-end;
   justify-content: space-between;
   gap: 28px;
-  border-bottom: 1px solid var(--border-strong);
+  border-bottom: 1px solid var(--border);
   padding: 18px 0 30px;
 }
 
@@ -37,7 +38,7 @@
   margin: 8px 0 12px;
   font-size: clamp(36px, 5vw, 52px);
   font-weight: 400;
-  letter-spacing: -.025em;
+  letter-spacing: -.015em;
   line-height: 1.08;
 }
 
@@ -58,7 +59,7 @@
 .releaseFacts > div { min-width: 0; padding: 18px 22px 18px 0; }
 .releaseFacts > div + div { border-left: 1px solid var(--border); padding-left: 22px; }
 .releaseFacts dt { color: var(--text-secondary); font-size: 12px; }
-.releaseFacts dd { margin: 4px 0 0; font-family: var(--font-display); font-size: 17px; font-weight: 600; }
+.releaseFacts dd { margin: 4px 0 0; font-family: var(--font-display); font-size: 20px; font-weight: var(--font-heading-weight); line-height: 1.2; }
 
 .groupNotice {
   display: grid;
@@ -66,7 +67,7 @@
   gap: 10px 24px;
   margin-top: 24px;
   border-left: 2px solid var(--primary);
-  background: color-mix(in srgb, var(--primary-soft) 38%, transparent);
+  background: transparent;
   padding: 16px 18px;
 }
 
@@ -80,7 +81,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   margin-top: 28px;
-  border-top: 1px solid var(--border-strong);
+  border-top: 1px solid var(--border);
 }
 
 .phaseNavigator > a,
@@ -103,7 +104,7 @@
 
 .phaseNavigator > a:hover,
 .phaseNavigator > a[data-current="true"] {
-  background: color-mix(in srgb, var(--primary-soft) 48%, transparent);
+  background: transparent;
   color: var(--primary-hover);
 }
 
@@ -140,7 +141,7 @@
 
 .phaseFocus {
   margin-bottom: 28px;
-  border-top: 1px solid var(--border-strong);
+  border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
   padding: 22px 0;
 }
@@ -160,7 +161,7 @@
 .phaseFocus dd { margin: 4px 0 0; font-size: 14px; line-height: 1.6; }
 
 .editorSection {
-  border-top: 1px solid var(--border-strong);
+  border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
   padding: 28px 0;
 }
@@ -197,7 +198,7 @@
   content: "";
 }
 
-.formalBadge { color: var(--success); }
+.formalBadge { color: var(--color-neutral-800); }
 .formalBadge::before { background: currentColor; }
 .sectionLead { margin: 12px 0 0; color: var(--text-secondary); font-size: 14px; line-height: 1.7; }
 
@@ -222,7 +223,7 @@
 }
 
 .checkpointFieldset label:last-child { border-bottom: 1px solid var(--border); }
-.checkpointFieldset label:has(input:checked) { background: color-mix(in srgb, var(--primary-soft) 42%, transparent); }
+.checkpointFieldset label:has(input:checked) { background: transparent; }
 .checkpointFieldset input { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--primary); }
 .checkpointFieldset label span { display: grid; gap: 3px; }
 .checkpointFieldset strong { font-size: 14px; }
@@ -237,16 +238,16 @@
   width: 100%;
   min-height: 300px;
   resize: vertical;
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  background: var(--surface-raised);
+  background: transparent;
   padding: 14px;
   color: var(--text);
   font-size: 15px;
   line-height: 1.75;
 }
 
-.writingField textarea:focus { border-color: var(--primary); outline: 3px solid var(--focus-ring); }
+.writingField textarea:focus { border-color: var(--primary); outline-offset: 0; }
 .writingField textarea[readonly] { background: var(--surface-subtle); }
 
 .fieldMeta {
@@ -272,12 +273,12 @@
 
 .saveRow > span { color: var(--text-secondary); font-size: 12px; }
 .saveRow > span[data-dirty="true"],
-.commitHint { color: var(--warning); font-weight: 600; }
+.commitHint { color: var(--color-accent-700); }
 
 .primaryButton,
 .secondaryButton {
   display: inline-flex;
-  min-height: 42px;
+  min-height: 34px;
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-md);
@@ -286,9 +287,9 @@
   font-weight: 600;
 }
 
-.primaryButton { gap: 10px; border: 1px solid var(--primary); background: var(--primary); color: var(--surface-raised); }
-.primaryButton:hover:not(:disabled) { background: var(--primary-hover); }
-.secondaryButton { border: 1px solid var(--border-strong); background: transparent; color: var(--text); }
+.primaryButton { gap: 10px; border: 1px solid var(--primary); background: transparent; color: var(--primary); }
+.primaryButton:hover:not(:disabled) { background: var(--primary-tint); color: var(--primary-hover); }
+.secondaryButton { border: 1px solid var(--border); background: transparent; color: var(--text); }
 .secondaryButton:hover:not(:disabled) { background: var(--surface-subtle); }
 .primaryButton:disabled,
 .secondaryButton:disabled { cursor: not-allowed; opacity: .58; }
@@ -314,7 +315,7 @@
 
 .actionNotice button {
   justify-self: start;
-  min-height: 42px;
+  min-height: 34px;
   border: 0;
   background: transparent;
   padding: 0;
@@ -354,7 +355,7 @@
 .formalAttachmentList a { overflow-wrap: anywhere; }
 .attachmentList li > div:first-child span,
 .formalAttachmentList span { color: var(--text-secondary); font-size: 12px; }
-.attachmentList li[data-status="READY"] strong { color: var(--success); }
+.attachmentList li[data-status="READY"] strong { color: var(--color-neutral-800); }
 .attachmentList li[data-status="REJECTED"] strong { color: var(--danger); }
 .attachmentActions { display: flex; flex: 0 0 auto; gap: 8px; }
 
@@ -373,10 +374,10 @@
 
 .attachmentPicker {
   display: inline-flex;
-  min-height: 42px;
+  min-height: 34px;
   align-items: center;
   margin-top: 16px;
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: 0 14px;
   font-size: 13px;
@@ -408,7 +409,7 @@
 .readOnlyNotice p { margin: 0; font-size: 14px; }
 
 .historySection { margin-top: 48px; }
-.historyHeading { align-items: flex-end; border-bottom: 1px solid var(--border-strong); padding-bottom: 14px; }
+.historyHeading { align-items: flex-end; border-bottom: 1px solid var(--border); padding-bottom: 14px; }
 .historyHeading > span { color: var(--text-secondary); font-size: 12px; }
 .emptyHistory { margin: 0; border-bottom: 1px solid var(--border); padding: 24px 0; color: var(--text-secondary); font-size: 14px; }
 .revisionList { border-bottom: 1px solid var(--border); }
@@ -440,8 +441,8 @@
   content: "";
 }
 
-.revisionBadges span[data-late="true"] { color: var(--warning); }
-.formalNote { margin: 18px 0 8px; color: var(--success); font-size: 12px; font-weight: 600; }
+.revisionBadges span[data-late="true"] { color: var(--color-accent-700); }
+.formalNote { margin: 18px 0 8px; color: var(--color-neutral-700); font-size: 13px; }
 
 .revisionText,
 .feedbackBody {
@@ -453,7 +454,7 @@
 }
 
 .revisionText { border-left: 2px solid var(--primary); padding-left: 14px; }
-.completedCheckpoints { display: grid; gap: 6px; margin: 14px 0 0; padding-left: 20px; color: var(--success); font-size: 12px; }
+.completedCheckpoints { display: grid; gap: 6px; margin: 14px 0 0; padding-left: 20px; color: var(--color-neutral-700); font-size: 13px; }
 
 .feedbackSection {
   margin-top: 26px;
@@ -506,24 +507,27 @@
 .evaluationOutcomeList span { color: var(--primary-hover); font-size: 12px; font-weight: 600; }
 .evaluationOutcomeList small { color: var(--text-secondary); font-size: 12px; }
 
+/* 发布快照是一块实底小卡：Classical 里唯一可以填色的表面。 */
 .releaseBrief {
   position: sticky;
-  top: calc(var(--toolbar-height) + 24px);
-  border-left: 1px solid var(--border);
-  padding-left: 28px;
+  top: calc(var(--toolbar-height) + var(--space-4));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  padding: var(--space-4);
 }
 
-.briefHeading { align-items: flex-end; padding-bottom: 16px; }
-.briefHeading > span { color: var(--text-secondary); font-size: 12px; }
-.releaseBrief section { border-top: 1px solid var(--border); padding: 18px 0; }
-.releaseBrief h3 { margin: 0; font-size: 16px; }
+.briefHeading { align-items: baseline; padding-bottom: var(--space-2); }
+.briefHeading > span { color: var(--text-muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.releaseBrief section { border-top: 1px solid var(--border); padding: var(--space-3) 0; }
+.releaseBrief h3 { margin: 0; font-family: var(--font-display); font-size: 16px; }
 
 .releaseBrief section p,
 .releaseBrief section ol,
 .releaseBrief section ul {
-  margin: 8px 0 0;
+  margin: 4px 0 0;
   padding-left: 18px;
-  color: var(--text-secondary);
+  color: var(--color-neutral-800);
   font-size: 13px;
   line-height: 1.7;
 }
@@ -536,22 +540,22 @@
 .accessGate h1 { margin: 8px 0 12px; font-size: clamp(36px, 5vw, 52px); font-weight: 400; line-height: 1.08; }
 .accessGate > p:not(.eyebrow) { margin: 0; color: var(--text-secondary); font-size: 15px; line-height: 1.7; }
 .accessActions { display: flex; align-items: center; gap: 14px; margin-top: 28px; }
-.accessGate a { display: inline-flex; min-height: 42px; align-items: center; color: var(--primary); font-size: 14px; font-weight: 600; }
+.accessGate a { display: inline-flex; min-height: 34px; align-items: center; color: var(--primary); font-size: 14px; font-weight: 600; }
 
 .signInButton {
-  min-height: 42px;
+  min-height: 34px;
   border: 1px solid var(--primary);
   border-radius: var(--radius-md);
-  background: var(--primary);
+  background: transparent;
   padding: 0 16px;
-  color: var(--surface-raised);
+  color: var(--primary);
   font-size: 14px;
   font-weight: 600;
 }
 
 @media (max-width: 860px) {
   .workspaceGrid { grid-template-columns: 1fr; }
-  .releaseBrief { position: static; border-top: 1px solid var(--border); border-left: 0; padding: 28px 0 0; }
+  .releaseBrief { position: static; }
 }
 
 @media (max-width: 620px) {

@@ -1,16 +1,20 @@
-.teacherApp {
+/* 门禁页：左侧是刊头与闭环说明，右侧只放当前这一种情形的处置。
+   正式环境整屏显示，没有左侧工作台导航。 */
+.gate {
+  display: grid;
   min-height: 100svh;
+  grid-template-columns: 1.15fr 1fr;
   background: var(--surface-page);
   color: var(--text);
 }
 
-.masthead {
+.gateAside {
   display: flex;
-  min-height: var(--toolbar-height);
-  align-items: center;
+  flex-direction: column;
   justify-content: space-between;
-  border-bottom: 1px solid var(--border);
-  padding: 0 clamp(16px, 5vw, 56px);
+  gap: var(--space-8);
+  border-right: 1px solid var(--border);
+  padding: var(--space-8) calc(var(--space-8) * 1.2);
 }
 
 .brand strong,
@@ -18,75 +22,106 @@
 
 .brand strong {
   font-family: var(--font-display);
-  font-size: 21px;
+  font-size: 20px;
   font-weight: 600;
-  line-height: 1;
+  line-height: 1.1;
 }
 
-.brand small,
-.workspaceLabel {
-  color: var(--text-secondary);
-  font-size: 11px;
-  letter-spacing: .08em;
+.brand small {
+  color: var(--text-muted);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
 }
 
-.brand small { margin-top: 3px; }
+.pitch { max-width: 24em; }
 
-.accessGate {
-  display: grid;
-  width: min(720px, calc(100% - 32px));
-  min-height: calc(100svh - var(--toolbar-height));
-  align-content: center;
-  gap: 18px;
-  margin: 0 auto;
-  padding: 48px 0;
-}
-
-.accessGate::before,
-.accessGate::after {
-  height: 1px;
-  background: var(--border);
-  content: "";
-}
-
-.accessGate::before { margin-bottom: 16px; }
-.accessGate::after { margin-top: 20px; }
-
-.eyebrow {
-  margin: 0;
-  color: var(--primary);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: .08em;
-}
-
-.accessGate h1 {
-  margin: 0;
-  font-size: clamp(32px, 5vw, 48px);
+.pitch h1 {
+  margin: 0 0 var(--space-4);
+  font-size: clamp(32px, 4.4vw, 42px);
   font-weight: 400;
   line-height: 1.08;
+}
+
+.pitch > p:last-child {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.8;
+  text-align: justify;
+  text-justify: inter-character;
+}
+
+.steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-6);
+  margin: 0;
+  border-top: 1px solid var(--border);
+  padding: var(--space-4) 0 0;
+  list-style: none;
+}
+
+.steps li {
+  color: var(--color-neutral-700);
+  font-size: 13px;
+}
+
+.steps span {
+  display: block;
+  color: var(--color-accent-600);
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+}
+
+.accessGate {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-6);
+  padding: var(--space-8);
+}
+
+.accessGate > * { max-width: 24em; }
+
+.eyebrow {
+  margin: 0 0 var(--space-2);
+  color: var(--primary);
+  font-family: var(--font-ui);
+  font-size: 10px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.accessGate h2 {
+  margin: 0;
+  font-size: 32px;
+  font-weight: var(--font-heading-weight);
+  line-height: 1.12;
 }
 
 .actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
-  margin-top: 8px;
+  gap: var(--space-2);
 }
 
 .primaryButton,
 .secondaryButton,
 .backLink {
   display: inline-flex;
-  min-height: 42px;
+  min-height: 34px;
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-md);
-  padding: 0 16px;
+  padding: 7px 17px;
+  font-family: var(--font-ui);
   font-size: 14px;
   font-weight: 600;
-  transition: background var(--motion-fast), transform var(--motion-fast);
+  line-height: 1.15;
+  transition: background var(--motion-fast);
 }
 
 .primaryButton {
@@ -95,21 +130,42 @@
   color: var(--primary);
 }
 
-.primaryButton:hover { background: var(--primary-soft); transform: translateY(-1px); }
+.primaryButton:hover { background: color-mix(in srgb, var(--color-accent) 12%, transparent); }
+.primaryButton:active { background: color-mix(in srgb, var(--color-accent) 22%, transparent); }
 
 .secondaryButton {
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--border);
   background: transparent;
   color: var(--text);
 }
 
-.secondaryButton:hover { background: var(--surface-subtle); }
+.secondaryButton:hover { background: color-mix(in srgb, var(--color-text) 7%, transparent); }
 
-.backLink { padding-right: 8px; padding-left: 8px; color: var(--primary); }
+.backLink { padding-right: var(--space-1); padding-left: var(--space-1); color: var(--primary); }
+.backLink:hover { background: color-mix(in srgb, var(--color-accent) 10%, transparent); }
+
+.gateNote {
+  margin: 0;
+  border-top: 1px solid var(--border);
+  padding-top: var(--space-3);
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+@media (max-width: 860px) {
+  .gate { grid-template-columns: 1fr; }
+  .gateAside {
+    gap: var(--space-6);
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+    padding: var(--space-6) 16px;
+  }
+  .accessGate { padding: var(--space-6) 16px var(--space-8); }
+}
 
 @media (max-width: 520px) {
-  .workspaceLabel { display: none; }
-  .accessGate { align-content: start; padding-top: 56px; }
   .actions { align-items: stretch; flex-direction: column; }
   .actions > * { width: 100%; }
+  .steps { gap: var(--space-4); }
 }

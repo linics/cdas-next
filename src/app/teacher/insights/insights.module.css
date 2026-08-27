@@ -8,16 +8,16 @@
 
 .filterForm {
   display: grid;
-  gap: 10px;
+  gap: var(--space-2);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  background: var(--surface-raised);
-  padding: 20px 24px;
+  background: var(--surface);
+  padding: var(--space-4);
 }
 
 .filterForm label {
-  font-size: 15px;
-  font-weight: 650;
+  color: color-mix(in srgb, var(--color-text) 70%, transparent);
+  font-size: 12px;
 }
 
 .filterForm > div {
@@ -28,36 +28,36 @@
 
 .filterForm select,
 .filterForm button {
-  min-height: 42px;
+  min-height: 34px;
   border-radius: var(--radius-md);
   font: inherit;
 }
 
 .filterForm select {
-  border: 1px solid var(--border-strong);
-  background: var(--surface-raised);
-  padding: 10px 12px;
+  border: 1px solid var(--border);
+  background: transparent;
+  padding: 6px 10px;
   color: var(--text);
+  font-size: 14px;
 }
 
 .filterForm select:focus {
   border-color: var(--primary);
-  outline: 3px solid var(--focus-ring);
+  outline-offset: 0;
 }
 
 .filterForm button {
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--primary);
   background: transparent;
-  padding: 10px 16px;
-  color: var(--text);
+  padding: 7px 17px;
+  color: var(--primary);
+  font-family: var(--font-ui);
   font-size: 14px;
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .filterForm button:hover {
-  border-color: var(--primary);
-  background: var(--primary-soft);
-  color: var(--primary-hover);
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
 }
 
 .filterForm small {
@@ -71,8 +71,8 @@
   gap: 16px;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  background: var(--surface-raised);
-  padding: 24px;
+  background: transparent;
+  padding: var(--space-4);
 }
 
 .card h2 {
@@ -139,37 +139,43 @@
 }
 
 .weakMark {
-  border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--danger) 12%, transparent);
-  padding: 4px 8px;
+  border: 1px solid var(--danger);
+  border-radius: calc(var(--radius-md) * .75);
+  background: transparent;
+  padding: 3px 10px;
   color: var(--danger);
-  font-size: 12px;
-  font-weight: 700;
+  font-family: var(--font-ui);
+  font-size: 11px;
 }
 
+/* 图表只用同一条 accent 阶梯：同一色相里换明度，四档一眼可比，
+   也不会在页面上砸出一块彩色。 */
 .barTrack {
   display: flex;
   overflow: hidden;
-  min-height: 28px;
+  min-height: 22px;
+  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  background: var(--surface-subtle);
+  background: var(--color-neutral-200);
 }
 
 .barFill {
   display: grid;
   min-width: 0;
   place-items: center;
-  color: var(--surface-raised);
+  color: var(--color-accent-900);
+  font-family: var(--font-ui);
   font-size: 12px;
-  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
-.barFill[data-tone="excellent"] { background: var(--success); }
-.barFill[data-tone="good"] { background: var(--primary); }
-.barFill[data-tone="pass"] { background: var(--warning); }
-.barFill[data-tone="improve"] { background: var(--danger); }
-.barFill[data-tone="insufficient"] { background: var(--text-secondary); }
-.barFill[data-tone="stage"] { background: var(--primary); }
+.barFill + .barFill { border-left: 1px solid var(--surface-page); }
+.barFill[data-tone="excellent"] { background: var(--color-accent-600); color: var(--color-accent-100); }
+.barFill[data-tone="good"] { background: var(--color-accent-400); }
+.barFill[data-tone="pass"] { background: var(--color-accent-200); }
+.barFill[data-tone="improve"] { background: var(--color-neutral-300); }
+.barFill[data-tone="insufficient"] { background: var(--color-neutral-400); }
+.barFill[data-tone="stage"] { background: var(--color-accent-400); }
 
 .legend {
   display: flex;
@@ -185,33 +191,35 @@
 
 .statGrid div {
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--surface-subtle);
-  padding: 16px;
+  border-radius: var(--radius-md);
+  background: transparent;
+  padding: var(--space-4);
 }
 
 .statGrid dt {
-  color: var(--text-secondary);
-  font-size: 13px;
-  font-weight: 600;
+  color: var(--text-muted);
+  font-size: 12px;
 }
 
 .statGrid dd {
-  margin: 8px 0 0;
-  font-size: 28px;
+  margin: var(--space-2) 0 0;
+  font-family: var(--font-display);
+  font-size: 32px;
   font-weight: 400;
   font-variant-numeric: tabular-nums;
+  line-height: 1;
 }
 
 .sampleNote {
   margin: 0;
-  border: 1px solid color-mix(in srgb, var(--warning) 35%, var(--border));
-  border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--warning) 10%, var(--surface-raised));
-  padding: 12px 14px;
-  color: var(--warning);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--color-accent-600);
+  border-radius: var(--radius-md);
+  background: transparent;
+  padding: var(--space-2) var(--space-3);
+  color: var(--color-neutral-800);
   font-size: 13px;
-  line-height: 1.5;
+  line-height: 1.7;
 }
 
 @media (max-width: 1023px) {

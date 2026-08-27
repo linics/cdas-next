@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { WorkspaceIcon, iconForNavigationHref } from "./workspace-icons";
 import styles from "./workspace-shell.module.css";
 
 export function WorkspaceNavigation({
@@ -34,7 +35,7 @@ export function WorkspaceNavigation({
         data-open={open || undefined}
         id="workspace-navigation"
       >
-        {items.map((item, index) => {
+        {items.map((item) => {
           const active =
             pathname === item.href ||
             (item.href !== "/teacher" &&
@@ -49,10 +50,8 @@ export function WorkspaceNavigation({
               key={item.href}
               onClick={() => setOpen(false)}
             >
-              <span aria-hidden="true">
-                {String(index + 1).padStart(2, "0")}
-              </span>
-              {item.label}
+              <WorkspaceIcon name={iconForNavigationHref(item.href)} />
+              <span>{item.label}</span>
             </Link>
           );
         })}

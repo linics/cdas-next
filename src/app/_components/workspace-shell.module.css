@@ -31,64 +31,56 @@
   top: 0;
   display: grid;
   height: 100svh;
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: auto auto 1fr;
+  align-content: start;
+  gap: var(--space-6);
   border-right: 1px solid var(--border);
   background: var(--surface);
-  padding: 28px 0 24px;
+  padding: var(--space-6) 0;
 }
 
 .brand {
   display: grid;
   gap: 2px;
-  padding: 0 24px;
+  padding: 0 var(--space-6);
 }
 
 .brand strong,
 .compactBrand {
   font-family: var(--font-display);
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 600;
   letter-spacing: .01em;
-  line-height: 1;
+  line-height: 1.1;
 }
 
 .brand > span {
-  color: var(--text-secondary);
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: .12em;
+  color: var(--text-muted);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
 }
 
-.navigationRegion { margin-top: 36px; }
+.navigationRegion { min-width: 0; }
 
-.navigation {
-  display: grid;
-  border-top: 1px solid var(--border);
-}
+.navigation { display: grid; }
 
 .navigationLink {
   position: relative;
-  display: grid;
-  min-height: 46px;
-  grid-template-columns: 28px minmax(0, 1fr);
+  display: flex;
   align-items: center;
-  gap: 4px;
-  border-bottom: 1px solid var(--border);
-  padding: 0 24px;
-  color: var(--text-secondary);
-  font-size: 14px;
-  font-weight: 500;
+  gap: var(--space-2);
+  padding: 10px var(--space-6);
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 16px;
   transition:
     background var(--motion-fast),
-    color var(--motion-fast),
-    padding var(--motion-fast);
+    color var(--motion-fast);
 }
 
-.navigationLink > span {
-  font-family: var(--font-display);
-  font-size: 13px;
-  font-variant-numeric: tabular-nums;
-}
+.navigationLink svg { flex: none; }
 
 .navigationLink::before {
   position: absolute;
@@ -97,35 +89,33 @@
   background: var(--primary);
   content: "";
   opacity: 0;
-  transform: scaleY(.3);
-  transition: opacity var(--motion-fast), transform var(--motion-fast);
+  transition: opacity var(--motion-fast);
 }
 
 .navigationLink:hover {
-  background: color-mix(in srgb, var(--primary-soft) 42%, transparent);
+  background: var(--primary-tint);
   color: var(--primary-hover);
-  padding-left: 27px;
 }
+
+.navigationLink:active { background: var(--primary-tint-strong); }
 
 .navigationLink[data-active] {
+  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
   color: var(--primary-hover);
-  font-weight: 600;
 }
 
-.navigationLink[data-active]::before {
-  opacity: 1;
-  transform: scaleY(1);
-}
+.navigationLink[data-active]::before { opacity: 1; }
 
 .navigationToggle { display: none; }
 
 .sidebarNote {
-  margin: 0 24px;
+  align-self: end;
+  margin: 0 var(--space-6);
   border-top: 1px solid var(--border);
-  padding-top: 16px;
-  color: var(--text-secondary);
-  font-size: 11px;
-  line-height: 1.65;
+  padding-top: var(--space-3);
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.6;
 }
 
 .workspace { min-width: 0; }
@@ -138,10 +128,10 @@
   min-height: var(--toolbar-height);
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
+  gap: var(--space-4);
   border-bottom: 1px solid var(--border);
   background: color-mix(in srgb, var(--surface-page) 94%, transparent);
-  padding: 0 clamp(16px, 3vw, 36px);
+  padding: 0 clamp(16px, 3vw, var(--space-8));
   backdrop-filter: blur(12px);
 }
 
@@ -149,6 +139,7 @@
 
 .audienceLabel {
   margin: 0;
+  margin-right: auto;
   color: var(--text-secondary);
   font-size: 13px;
 }
@@ -163,32 +154,26 @@
 
 .actorLabel {
   overflow: hidden;
-  color: var(--text-secondary);
+  color: var(--text-muted);
   font-size: 13px;
-  font-weight: 500;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .signOutButton {
-  min-height: 36px;
+  min-height: 30px;
   flex: 0 0 auto;
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: var(--radius-md);
   background: transparent;
-  padding: 0 12px;
-  color: var(--text);
+  padding: 0 var(--space-1);
+  color: var(--text-secondary);
   font-size: 13px;
-  font-weight: 500;
-  transition:
-    border-color var(--motion-fast),
-    background var(--motion-fast),
-    color var(--motion-fast);
+  transition: color var(--motion-fast), background var(--motion-fast);
 }
 
 .signOutButton:hover {
-  border-color: var(--primary);
-  background: var(--primary-soft);
+  background: var(--primary-tint);
   color: var(--primary-hover);
 }
 
@@ -230,21 +215,20 @@
 
 .roleGateActions a {
   display: inline-flex;
-  min-height: 42px;
+  min-height: 36px;
   align-items: center;
   justify-content: center;
   border: 1px solid var(--primary);
   border-radius: var(--radius-md);
-  padding: 0 18px;
+  padding: 0 var(--space-4);
   color: var(--primary);
-  font-weight: 600;
-  transition: background var(--motion-fast), transform var(--motion-fast);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  transition: background var(--motion-fast);
 }
 
-.roleGateActions a:hover {
-  background: var(--primary-soft);
-  transform: translateY(-1px);
-}
+.roleGateActions a:hover { background: var(--primary-tint); }
+.roleGateActions a:active { background: var(--primary-tint-strong); }
 
 @media (max-width: 840px) {
   .shell[data-with-sidebar] { display: block; }
@@ -298,8 +282,8 @@
     right: 0;
     left: 0;
     display: none;
-    border-top: 0;
-    background: var(--surface-raised);
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
     box-shadow: var(--shadow-float);
   }
 
@@ -309,7 +293,6 @@
   }
 
   .navigationLink { padding-right: 20px; padding-left: 20px; }
-  .navigationLink:hover { padding-left: 23px; }
 
   .toolbar {
     position: static;

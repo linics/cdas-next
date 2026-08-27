@@ -72,7 +72,10 @@ export default async function TeacherActivityPreviewPage({
 
   const content = workspace.draft.revision.content;
   return (
-    <TeacherPage actorName={workspace.actor.displayName}>
+    <TeacherPage
+      actorName={workspace.actor.displayName}
+      breadcrumb={`教师工作台 › 活动设计 › 发布确认`}
+    >
       <div className={styles.pageContent}>
         <header className={styles.pageHeader}>
           <div>
@@ -98,7 +101,23 @@ export default async function TeacherActivityPreviewPage({
               <p>{content.summary}</p>
             </header>
             {content.schemaVersion === 2 ? <>
-              <section><h3>基本设置</h3><p>{content.topic} · {content.schoolStage === "PRIMARY" ? "小学" : "初中"}{content.grade}年级 · 主学科：{disciplineLabel(content.mainDisciplineCode)} · 融合：{content.integratedDisciplineCodes.map(disciplineLabel).join("、")}<br />{assignmentTypeDetails(content.assignmentType).label}：{assignmentTypeDetails(content.assignmentType).description}{assignmentSubtypeLabel(content.assignmentType, content.assignmentSubtype) ? ` · ${assignmentSubtypeLabel(content.assignmentType, content.assignmentSubtype)}` : ""} · {inquiryDepths.find((item) => item.code === content.inquiryDepth)?.label} · {submissionModes.find((item) => item.code === content.submissionMode)?.label} · {content.durationWeeks} 周</p></section>
+              <section>
+                <h3>基本设置</h3>
+                <div>
+                  <p>{content.topic}</p>
+                  <div className={styles.factTags}>
+                    <span>{content.schoolStage === "PRIMARY" ? "小学" : "初中"} {content.grade} 年级</span>
+                    <span>主学科 {disciplineLabel(content.mainDisciplineCode)}</span>
+                    <span>融合 {content.integratedDisciplineCodes.map(disciplineLabel).join(" · ")}</span>
+                    <span>{assignmentTypeDetails(content.assignmentType).label}</span>
+                    {assignmentSubtypeLabel(content.assignmentType, content.assignmentSubtype) ? <span>{assignmentSubtypeLabel(content.assignmentType, content.assignmentSubtype)}</span> : null}
+                    <span>{inquiryDepths.find((item) => item.code === content.inquiryDepth)?.label}</span>
+                    <span>{submissionModes.find((item) => item.code === content.submissionMode)?.label}</span>
+                    <span>{content.durationWeeks} 周</span>
+                  </div>
+                  <p>{assignmentTypeDetails(content.assignmentType).description}</p>
+                </div>
+              </section>
               {content.crossDisciplinaryConceptCodes.length > 0 ? <section><h3>跨学科概念</h3><p>{content.crossDisciplinaryConceptCodes.map((code) => { const concept = crossDisciplinaryConcepts.find((item) => item.code === code)!; return `${concept.label}（${concept.description}）`; }).join("；")}</p></section> : null}
               <section><h3>背景设定</h3><p>{content.backgroundSetting}</p></section>
               <section><h3>三维目标</h3><ol><li>知识与技能：{content.objectiveKnowledge}</li><li>过程与方法：{content.objectiveProcess}</li><li>情感态度：{content.objectiveEmotion}</li></ol></section>

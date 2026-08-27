@@ -640,6 +640,7 @@ export default async function StudentReleasePage({
     <WorkspaceShell
       audience="学生"
       actorName={workspace.actor.displayName}
+      breadcrumb={`学生端 › 我的学习活动 › ${content.title}`}
       navigation={studentNavigation}
     >
       <div className={styles.releasePage}>

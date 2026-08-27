@@ -93,6 +93,12 @@ export const teacherDashboardSchema = z
           publishedAt: isoDateSchema,
           dueAt: isoDateSchema.nullable(),
           canViewSubmissions: z.boolean(),
+          progress: z
+            .strictObject({
+              submittedCount: z.int().nonnegative(),
+              cohortSize: z.int().nonnegative(),
+            })
+            .nullable(),
           attention: z
             .strictObject({
               pendingFeedbackCount: z.int().nonnegative(),
@@ -328,7 +334,13 @@ export async function getTeacherActivityDashboard(
         status: true,
         publishedAt: true,
         dueAt: true,
-        classroom: { select: { name: true, managerId: true } },
+        classroom: {
+          select: {
+            name: true,
+            managerId: true,
+            memberships: { select: { joinedAt: true, endedAt: true } },
+          },
+        },
         snapshot: { select: { content: true } },
         submissions: {
           select: {
@@ -392,6 +404,16 @@ export async function getTeacherActivityDashboard(
         publishedAt: release.publishedAt.toISOString(),
         dueAt: release.dueAt?.toISOString() ?? null,
         canViewSubmissions,
+        progress: canViewSubmissions
+          ? {
+              submittedCount: release.submissions.filter(
+                (submission) => submission.latestRevisionNumber > 0,
+              ).length,
+              cohortSize: release.classroom.memberships.filter((membership) =>
+                isCurrentMembership(membership, context.now),
+              ).length,
+            }
+          : null,
         attention: canViewSubmissions
           ? releaseAttention(
               release.id,

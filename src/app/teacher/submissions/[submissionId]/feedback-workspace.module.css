@@ -27,18 +27,21 @@
 .eyebrow {
   margin: 0;
   color: var(--primary);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: .07em;
+  font-family: var(--font-ui);
+  font-size: 10px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
 }
 
 .workspaceStatus,
 .manualMode {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  color: var(--success);
-  font-size: 12px;
+  gap: 6px;
+  color: var(--color-neutral-800);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  line-height: 1.15;
   white-space: nowrap;
 }
 
@@ -46,8 +49,9 @@
 .manualMode::before {
   width: 7px;
   height: 7px;
+  box-sizing: border-box;
   border-radius: 50%;
-  background: currentColor;
+  background: var(--color-accent-300);
   content: "";
 }
 
@@ -74,16 +78,18 @@
   overflow-wrap: anywhere;
   margin: 5px 0 0;
   font-family: var(--font-display);
-  font-size: 17px;
-  line-height: 1.35;
+  font-size: 20px;
+  line-height: 1.2;
 }
 
 .railNote {
   width: min(calc(100% - 72px), 1128px);
-  margin: 18px auto 0;
+  margin: var(--space-3) auto 0;
+  border: 1px solid var(--border);
   border-left: 2px solid var(--primary);
-  background: color-mix(in srgb, var(--primary-soft) 38%, transparent);
-  padding: 11px 15px;
+  border-radius: var(--radius-md);
+  background: transparent;
+  padding: var(--space-2) var(--space-3);
 }
 
 .railNote > p:last-child {
@@ -118,7 +124,7 @@
   align-items: flex-end;
   justify-content: space-between;
   gap: 16px;
-  border-bottom: 1px solid var(--border-strong);
+  border-bottom: 1px solid var(--border);
   padding-bottom: 14px;
 }
 
@@ -184,7 +190,7 @@
   content: "";
 }
 
-.revisionBadges span[data-late="true"] { color: var(--warning); }
+.revisionBadges span[data-late="true"] { color: var(--color-accent-700); }
 
 .formalLabel {
   margin: 20px 0 8px;
@@ -261,7 +267,7 @@
 .confirmationPanel {
   display: grid;
   gap: 16px;
-  border-top: 1px solid var(--border-strong);
+  border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
   padding: 22px 0;
 }
@@ -284,14 +290,14 @@
 }
 
 .composerForm { display: grid; gap: 10px; }
-.composerForm > label { font-size: 13px; font-weight: 600; }
+.composerForm > label { color: color-mix(in srgb, var(--color-text) 70%, transparent); font-size: 12px; }
 
 .composerForm textarea {
   width: 100%;
   min-height: 220px;
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  background: var(--surface-raised);
+  background: transparent;
   padding: 12px;
   color: var(--text);
   font-size: 14px;
@@ -299,7 +305,7 @@
   resize: vertical;
 }
 
-.composerForm textarea:focus { border-color: var(--primary); outline: 3px solid var(--focus-ring); }
+.composerForm textarea:focus { border-color: var(--primary); outline-offset: 0; }
 
 .fieldMeta,
 .prepareRow {
@@ -328,10 +334,10 @@
 .signInButton,
 .secondaryButton {
   display: inline-flex;
-  min-height: 42px;
+  min-height: 34px;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: transparent;
   padding: 9px 15px;
@@ -342,10 +348,10 @@
 
 .prepareButton,
 .confirmButton,
-.signInButton { border-color: var(--primary); background: var(--primary); color: var(--surface-raised); }
+.signInButton { border-color: var(--primary); background: transparent; color: var(--primary); }
 .prepareButton:hover:not(:disabled),
 .confirmButton:hover:not(:disabled),
-.signInButton:hover:not(:disabled) { background: var(--primary-hover); }
+.signInButton:hover:not(:disabled) { background: var(--primary-tint); color: var(--primary-hover); }
 .prepareButton:disabled,
 .confirmButton:disabled,
 .cancelButton:disabled { cursor: not-allowed; opacity: .5; }
@@ -353,19 +359,21 @@
 .actionNotice {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: var(--space-2);
+  border: 1px solid var(--border);
   border-left: 2px solid var(--primary);
-  background: color-mix(in srgb, var(--primary-soft) 42%, transparent);
-  padding: 11px 12px;
-  color: var(--text-secondary);
+  border-radius: var(--radius-md);
+  background: transparent;
+  padding: var(--space-2) var(--space-3);
+  color: var(--color-neutral-800);
   font-size: 13px;
-  line-height: 1.6;
+  line-height: 1.7;
 }
 
 .actionNotice p { margin: 0; }
-.actionNotice[data-tone="success"] { border-left-color: var(--success); color: var(--success); }
-.actionNotice[data-tone="conflict"] { border-left-color: var(--warning); color: var(--warning); }
-.actionNotice[data-tone="error"] { border-left-color: var(--danger); color: var(--danger); }
+.actionNotice[data-tone="success"] { border-left-color: var(--color-neutral-500); }
+.actionNotice[data-tone="conflict"] { border-left-color: var(--color-accent-600); }
+.actionNotice[data-tone="error"] { border-left-color: var(--danger); }
 
 .actionNotice button {
   margin-left: auto;
@@ -437,22 +445,22 @@
 }
 
 .structuredFeedbackFields label,
-.evaluationDimension label { font-size: 13px; font-weight: 600; }
+.evaluationDimension label { color: color-mix(in srgb, var(--color-text) 70%, transparent); font-size: 12px; }
 
 .structuredFeedbackFields select,
 .evaluationDimension select {
   width: 100%;
-  min-height: 42px;
-  border: 1px solid var(--border-strong);
+  min-height: 34px;
+  border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  background: var(--surface-raised);
+  background: transparent;
   padding: 0 10px;
   color: var(--text);
   font: inherit;
 }
 
 .structuredFeedbackFields select:focus,
-.evaluationDimension select:focus { border-color: var(--primary); outline: 3px solid var(--focus-ring); }
+.evaluationDimension select:focus { border-color: var(--primary); outline-offset: 0; }
 
 .structuredFeedbackDetails {
   display: grid;

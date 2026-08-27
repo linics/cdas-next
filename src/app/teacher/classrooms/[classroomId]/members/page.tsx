@@ -34,7 +34,10 @@ export default async function TeacherClassroomMembersPage({
   }
 
   return (
-    <TeacherPage actorName={roster.actor.displayName}>
+    <TeacherPage
+      actorName={roster.actor.displayName}
+      breadcrumb={`教师工作台 › 班级与名单 › ${roster.classroom.name}`}
+    >
       <div className={styles.pageContent}>
         <header className={styles.pageHeader}>
           <div>

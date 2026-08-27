@@ -10,6 +10,7 @@ export function WorkspaceShell({
   audience,
   actorName,
   actorAudience = audience,
+  breadcrumb,
   navigation = [],
   toolbarAction,
   children,
@@ -17,6 +18,7 @@ export function WorkspaceShell({
   audience: "教师" | "学生";
   actorName?: string;
   actorAudience?: "教师" | "学生";
+  breadcrumb?: string;
   navigation?: readonly WorkspaceNavigationItem[];
   toolbarAction?: ReactNode;
   children: ReactNode;
@@ -54,7 +56,9 @@ export function WorkspaceShell({
               CDAS
             </Link>
           ) : null}
-          <p className={styles.audienceLabel}>{audience}工作区</p>
+          <p className={styles.audienceLabel}>
+            {breadcrumb ?? `${audience}工作区`}
+          </p>
           <div className={styles.toolbarEnd}>
             <span className={styles.actorLabel}>
               {actorName
