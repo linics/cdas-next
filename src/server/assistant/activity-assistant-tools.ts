@@ -371,7 +371,7 @@ export function createActivityAssistantTools({
 
     create_activity_draft: tool({
       description:
-        "把教師已經說明清楚的完整跨學科任務書儲存成可預覽、可繼續編輯的活動草稿。必須包含基本設定、三維目標、三至四個連續階段、類型化證據及四檔量規，不能臆造缺失事實。",
+        "把教師已經說明清楚的完整跨學科任務書儲存成可預覽、可繼續編輯的活動草稿。content.schemaVersion 必須是數字 2。作業類型只用 practical、inquiry、project；practical 子類型只用 visit、simulation、observation；inquiry 子類型只用 literature、survey、experiment；project 的 assignmentSubtype 必須為 null。融合學科貢獻必須與 content.integratedDisciplineCodes 恰好一一對應，且不得包含主學科。sourceReferences 每一條都必須是本輪 read_source_section 已返回 FOUND 的章節，數量不得超過已通讀章節。必須包含三維目標、三至四個連續階段、類型化證據及四檔量規，不能臆造缺失事實。",
       inputSchema: proposalAfterReadingSchema,
       outputSchema: createdDraftToolOutputSchema,
       strict: true,

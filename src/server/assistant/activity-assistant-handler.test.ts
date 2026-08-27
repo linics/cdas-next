@@ -13,6 +13,8 @@ import {
 import { ActivityAssistantConfigError } from "./assistant-config";
 import { PreparePublishActivityIntentError } from "../commands/prepare-publish-activity-intent";
 import {
+  activityAssistantSdkToolFailureCode,
+  buildActivityAssistantInstructions,
   handleActivityAssistantRequest,
   selectActivityAssistantToolChoice,
   type ActivityAssistantHandlerDependencies,
@@ -386,6 +388,44 @@ function dependencies(): ActivityAssistantHandlerDependencies {
   };
 }
 
+describe("buildActivityAssistantInstructions", () => {
+  it("lists legal assignment subtypes and the unread-citation rule", () => {
+    const text = buildActivityAssistantInstructions([]);
+    expect(text).toContain("inquiry 配 literature、survey、experiment");
+    expect(text).toContain("project 的 assignmentSubtype 必須為 null");
+    expect(text).toContain("read_source_section 已返回 FOUND");
+    expect(text).toContain("引用数量不得超过已通读章节数");
+    expect(text).toContain("优先只引用 2 条已通读来源");
+    expect(text).toContain("content.schemaVersion 為 2");
+  });
+});
+
+describe("activityAssistantSdkToolFailureCode", () => {
+  it("appends the first Zod issue path from an SDK tool-error string", () => {
+    expect(
+      activityAssistantSdkToolFailureCode([
+        {
+          type: "tool-error",
+          error:
+            'AI_InvalidToolInputError: Invalid input for tool create_activity_draft: [\n  {\n    "code": "custom",\n    "path": [\n      "sourceReferences",\n      2\n    ],\n    "message": "not read"\n  }\n]',
+        },
+      ]),
+    ).toBe("TOOL_INPUT_OR_EXECUTION_FAILED_SOURCEREFERENCES_2");
+  });
+
+  it("appends JSON_PARSE when the SDK error is a truncated payload", () => {
+    expect(
+      activityAssistantSdkToolFailureCode([
+        {
+          type: "tool-error",
+          error:
+            "AI_InvalidToolInputError: Invalid input for tool create_activity_draft: AI_JSONParseError: JSON parsing failed: Text: {\"taskUnderstanding.\nError message: SyntaxError: Unexpected end of JSON input",
+        },
+      ]),
+    ).toBe("TOOL_INPUT_OR_EXECUTION_FAILED_JSON_PARSE");
+  });
+});
+
 describe("activity assistant route handler", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -543,7 +583,7 @@ describe("activity assistant route handler", () => {
     expect(languageModel.doStreamCalls[0]?.providerOptions).toEqual({
       deepseek: { thinking: { type: "disabled" } },
     });
-    expect(languageModel.doStreamCalls[0]?.maxOutputTokens).toBe(4_000);
+    expect(languageModel.doStreamCalls[0]?.maxOutputTokens).toBe(8_000);
   });
 
   it("runs search and source reading before presenting the signed proposal", async () => {
@@ -606,6 +646,57 @@ describe("activity assistant route handler", () => {
     expect(body).not.toContain("tool-approval-request");
     expect(mocks.saveDraft).not.toHaveBeenCalled();
     expect(directCreateModel.doStreamCalls).toHaveLength(1);
+    expect(mocks.finishRun).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ source: "AGENT", actorId }),
+      {
+        agentRunId: runId,
+        status: "FAILED",
+        failureCode: "TOOL_INPUT_OR_EXECUTION_FAILED_SOURCEREFERENCES_0",
+      },
+    );
+  });
+
+  it("records a JSON parse suffix when the draft proposal payload is truncated", async () => {
+    const truncatedCreateModel = new MockLanguageModelV4({
+      doStream: async () => ({
+        stream: simulateReadableStream({
+          chunks: [
+            {
+              type: "tool-call",
+              toolCallId: "draft_truncated",
+              toolName: "create_activity_draft",
+              input: '{"taskUnderstandingSummary":{"realWorldContext":"校园',
+            },
+            {
+              type: "finish",
+              finishReason: { unified: "tool-calls", raw: undefined },
+              usage,
+            },
+          ],
+        }),
+      }),
+    });
+    mocks.createModel.mockReturnValue(truncatedCreateModel);
+
+    const response = await handleActivityAssistantRequest(
+      userRequest("直接给出完整任务书"),
+      dependencies(),
+    );
+    const body = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(body).not.toContain("tool-approval-request");
+    expect(mocks.saveDraft).not.toHaveBeenCalled();
+    expect(mocks.finishRun).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ source: "AGENT", actorId }),
+      {
+        agentRunId: runId,
+        status: "FAILED",
+        failureCode: "TOOL_INPUT_OR_EXECUTION_FAILED_JSON_PARSE",
+      },
+    );
   });
 
   it("forces the publish tool only for an explicit post-draft publish request", () => {

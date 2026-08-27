@@ -39,6 +39,9 @@ type PublishInput = {
   dueAt: string | null;
 };
 
+const draftNotCreatedRetryText =
+  '草稿未创建。你可以补一句"请重新创建草稿"让助手重试，或改用手动表单。';
+
 type OfficialKnowledgeSearchOutput = {
   status: "FOUND" | "NO_MATCH";
   results: Array<{
@@ -512,15 +515,9 @@ export function ActivityAssistant({
                   }
 
                   if (part.type === "tool-create_activity_draft") {
-                    if (!part.input) {
-                      return (
-                        <p className={styles.toolProgress} key={part.toolCallId}>
-                          正在整理任务理解与设计建议…
-                        </p>
-                      );
-                    }
                     if (
                       part.state === "approval-requested" &&
+                      part.input &&
                       !part.approval.isAutomatic
                     ) {
                       return (
@@ -548,7 +545,9 @@ export function ActivityAssistant({
                     if (part.state === "output-error") {
                       return (
                         <p className={styles.errorText} key={part.toolCallId}>
-                          草稿未创建。请重新确认内容或改用手动表单。
+                          {part.input
+                            ? "草稿未创建。请重新确认内容或改用手动表单。"
+                            : draftNotCreatedRetryText}
                         </p>
                       );
                     }
@@ -556,6 +555,20 @@ export function ActivityAssistant({
                       return (
                         <p className={styles.toolProgress} key={part.toolCallId}>
                           已保留这份建议，尚未创建草稿。你可以继续补充要求或改用手动表单。
+                        </p>
+                      );
+                    }
+                    if (!busy) {
+                      return (
+                        <p className={styles.errorText} key={part.toolCallId}>
+                          {draftNotCreatedRetryText}
+                        </p>
+                      );
+                    }
+                    if (!part.input) {
+                      return (
+                        <p className={styles.toolProgress} key={part.toolCallId}>
+                          正在整理任务理解与设计建议…
                         </p>
                       );
                     }

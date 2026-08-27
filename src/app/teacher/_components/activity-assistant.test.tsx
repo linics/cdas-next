@@ -74,11 +74,14 @@ const draftProposal = {
   content: {},
 };
 
-function helpers(messages: unknown[] = []) {
+function helpers(
+  messages: unknown[] = [],
+  status: "ready" | "submitted" | "streaming" = "ready",
+) {
   return {
     messages,
     sendMessage: mocks.sendMessage,
-    status: "ready",
+    status,
     error: undefined,
     stop: mocks.stop,
     addToolApprovalResponse: mocks.addToolApprovalResponse,
@@ -190,6 +193,78 @@ describe("ActivityAssistant", () => {
     expect(markup).toContain("继续补充");
     expect(markup).not.toContain("draft-signed-but-never-rendered");
     expect(markup).not.toContain("draft_approval_1");
+  });
+
+  it("keeps the draft-progress copy only while the stream is still open", () => {
+    mocks.useChat.mockReturnValue(
+      helpers(
+        [
+          {
+            id: "assistant_draft_streaming",
+            role: "assistant",
+            parts: [
+              {
+                type: "tool-create_activity_draft",
+                toolCallId: "draft_streaming_1",
+                state: "input-streaming",
+              },
+            ],
+          },
+        ],
+        "streaming",
+      ),
+    );
+
+    expect(renderAssistant()).toContain("正在整理任务理解与设计建议…");
+  });
+
+  it("shows a terminal draft failure after the stream ends without a proposal", () => {
+    mocks.useChat.mockReturnValue(
+      helpers([
+        {
+          id: "assistant_draft_incomplete",
+          role: "assistant",
+          parts: [
+            {
+              type: "tool-create_activity_draft",
+              toolCallId: "draft_incomplete_1",
+              state: "input-streaming",
+            },
+          ],
+        },
+      ]),
+    );
+
+    const markup = renderAssistant();
+    expect(markup).toContain(
+      "草稿未创建。你可以补一句&quot;请重新创建草稿&quot;让助手重试，或改用手动表单。",
+    );
+    expect(markup).not.toContain("正在整理任务理解与设计建议…");
+  });
+
+  it("shows the same terminal copy when draft input validation fails without parsed input", () => {
+    mocks.useChat.mockReturnValue(
+      helpers([
+        {
+          id: "assistant_draft_input_error",
+          role: "assistant",
+          parts: [
+            {
+              type: "tool-create_activity_draft",
+              toolCallId: "draft_input_error_1",
+              state: "output-error",
+              errorText: "Invalid input for tool create_activity_draft",
+            },
+          ],
+        },
+      ]),
+    );
+
+    const markup = renderAssistant();
+    expect(markup).toContain(
+      "草稿未创建。你可以补一句&quot;请重新创建草稿&quot;让助手重试，或改用手动表单。",
+    );
+    expect(markup).not.toContain("正在整理任务理解与设计建议…");
   });
 
   it("renders official search and source-reading results as inspectable citations", () => {
