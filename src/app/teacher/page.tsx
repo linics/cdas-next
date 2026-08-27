@@ -72,9 +72,14 @@ export default async function TeacherDashboardPage() {
               从草稿版本走到不可变发布，再进入学生正式提交；这里只列出当前教师身份有权操作的资源。
             </p>
           </div>
-          <Link className={styles.primaryLink} href="/teacher/activities/new">
-            新建学习活动 <span aria-hidden="true">＋</span>
-          </Link>
+          <div className={styles.pageHeaderActions}>
+            <Link className={styles.secondaryButton} href="/teacher/insights">
+              过程诊断
+            </Link>
+            <Link className={styles.primaryLink} href="/teacher/activities/new">
+              新建学习活动 <span aria-hidden="true">＋</span>
+            </Link>
+          </div>
         </header>
 
         <dl className={styles.overviewStrip} aria-label="工作台摘要">

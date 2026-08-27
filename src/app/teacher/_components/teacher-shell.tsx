@@ -9,6 +9,7 @@ import gateStyles from "./teacher-gate.module.css";
 const teacherNavigation = [
   { href: "/teacher", label: "工作台" },
   { href: "/teacher/activities/new", label: "活动设计" },
+  { href: "/teacher/insights", label: "过程诊断" },
   { href: "/teacher/knowledge", label: "课程依据" },
 ] as const;
 
