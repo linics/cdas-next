@@ -13,6 +13,8 @@ import {
 import { ActivityAssistantConfigError } from "./assistant-config";
 import { PreparePublishActivityIntentError } from "../commands/prepare-publish-activity-intent";
 import {
+  activityAssistantSdkToolFailureCode,
+  buildActivityAssistantInstructions,
   handleActivityAssistantRequest,
   selectActivityAssistantToolChoice,
   type ActivityAssistantHandlerDependencies,
@@ -21,6 +23,10 @@ import {
   createActivityAssistantTools,
   type ActivityDraftProposal,
 } from "./activity-assistant-tools";
+import {
+  readOfficialKnowledgeSection,
+  searchOfficialKnowledge,
+} from "../knowledge/official-corpus";
 
 const actorId = "10000000-0000-4000-8000-000000000001";
 const runId = "20000000-0000-4000-8000-000000000002";
@@ -52,8 +58,57 @@ const proposal: ActivityDraftProposal = {
     { objectiveKind: "process", objective: content.objectiveProcess, task: content.phases[1].action, evidence: content.phases[1].evidence[0].description, assessment: content.phases[1].evaluationFocus },
     { objectiveKind: "emotion", objective: content.objectiveEmotion, task: content.phases[2].action, evidence: content.phases[2].evidence[0].description, assessment: content.phases[2].evaluationFocus },
   ],
+  sourceReferences: searchOfficialKnowledge({
+    query: "初中跨学科实践 数据分析 评价",
+    schoolStage: "MIDDLE",
+    disciplineCodes: ["physics", "math", "chinese"],
+    limit: 8,
+  }).results
+    .filter(
+      (result, index, results) =>
+        results.findIndex((item) => item.sourceId === result.sourceId) === index,
+    )
+    .slice(0, 2)
+    .map((result) => ({
+      sourceId: result.sourceId,
+      sectionId: result.sectionId,
+      citationLabel: result.citationLabel,
+      href: result.href,
+      reason: "用于校准活动目标、证据与评价。",
+    })),
   content,
 };
+const proposalSearchInput = {
+  query: "初中跨学科实践 数据分析 评价",
+  schoolStage: "MIDDLE" as const,
+  disciplineCodes: ["physics" as const, "math" as const, "chinese" as const],
+  limit: 8,
+};
+
+function knowledgeHistoryParts() {
+  return [
+    {
+      type: "tool-search_knowledge",
+      toolCallId: "search_call_handler",
+      state: "output-available",
+      input: proposalSearchInput,
+      output: searchOfficialKnowledge(proposalSearchInput),
+    },
+    ...proposal.sourceReferences.map((reference, index) => ({
+      type: "tool-read_source_section",
+      toolCallId: `read_call_handler_${index + 1}`,
+      state: "output-available",
+      input: {
+        sourceId: reference.sourceId,
+        sectionId: reference.sectionId,
+      },
+      output: readOfficialKnowledgeSection({
+        sourceId: reference.sourceId,
+        sectionId: reference.sectionId,
+      }),
+    })),
+  ];
+}
 const usage = {
   inputTokens: {
     total: 10,
@@ -128,6 +183,7 @@ function postDraftPublishConversation() {
       id: "assistant_1",
       role: "assistant",
       parts: [
+        ...knowledgeHistoryParts(),
         {
           type: "tool-create_activity_draft",
           toolCallId: "draft_call",
@@ -229,6 +285,7 @@ function draftApprovalMessage(body: string, approved: boolean) {
     id: "assistant_draft_approval_1",
     role: "assistant",
     parts: [
+      ...knowledgeHistoryParts(),
       {
         type: "tool-create_activity_draft",
         toolCallId: event.toolCallId,
@@ -257,59 +314,48 @@ function startedRun(id: string) {
 }
 
 function successfulModel() {
+  return retrievalProposalModel();
+}
+
+function retrievalProposalModel() {
+  const [firstReference, secondReference] = proposal.sourceReferences;
+  if (!firstReference || !secondReference) {
+    throw new Error("Expected two official proposal references");
+  }
+  const toolStep = (toolCallId: string, toolName: string, input: unknown) => ({
+    stream: simulateReadableStream({
+      chunks: [
+        {
+          type: "tool-call" as const,
+          toolCallId,
+          toolName,
+          input: JSON.stringify(input),
+        },
+        {
+          type: "finish" as const,
+          finishReason: { unified: "tool-calls" as const, raw: undefined },
+          usage,
+        },
+      ],
+    }),
+  });
   return new MockLanguageModelV4({
     doStream: [
-      {
-        stream: simulateReadableStream({
-          chunks: [
-            {
-              type: "tool-call",
-              toolCallId: "draft_call_handler",
-              toolName: "create_activity_draft",
-              input: JSON.stringify(proposal),
-            },
-            {
-              type: "finish",
-              finishReason: { unified: "tool-calls", raw: undefined },
-              usage,
-            },
-          ],
-        }),
-      },
-      {
-        stream: simulateReadableStream({
-          chunks: [
-            {
-              type: "tool-call",
-              toolCallId: "open_call_handler",
-              toolName: "open_activity_draft",
-              input: JSON.stringify({
-                draftId,
-                destination: "PREVIEW",
-              }),
-            },
-            {
-              type: "finish",
-              finishReason: { unified: "tool-calls", raw: undefined },
-              usage,
-            },
-          ],
-        }),
-      },
-      {
-        stream: simulateReadableStream({
-          chunks: [
-            { type: "text-start", id: "text_1" },
-            { type: "text-delta", id: "text_1", delta: "草稿已建立。" },
-            { type: "text-end", id: "text_1" },
-            {
-              type: "finish",
-              finishReason: { unified: "stop", raw: undefined },
-              usage,
-            },
-          ],
-        }),
-      },
+      toolStep("search_call_handler", "search_knowledge", {
+        query: "初中跨学科实践 数据分析 评价",
+        schoolStage: "MIDDLE",
+        disciplineCodes: ["physics", "math", "chinese"],
+        limit: 8,
+      }),
+      toolStep("read_call_handler_1", "read_source_section", {
+        sourceId: firstReference.sourceId,
+        sectionId: firstReference.sectionId,
+      }),
+      toolStep("read_call_handler_2", "read_source_section", {
+        sourceId: secondReference.sourceId,
+        sectionId: secondReference.sectionId,
+      }),
+      toolStep("draft_after_retrieval", "create_activity_draft", proposal),
     ],
   });
 }
@@ -341,6 +387,44 @@ function dependencies(): ActivityAssistantHandlerDependencies {
       }),
   };
 }
+
+describe("buildActivityAssistantInstructions", () => {
+  it("lists legal assignment subtypes and the unread-citation rule", () => {
+    const text = buildActivityAssistantInstructions([]);
+    expect(text).toContain("inquiry 配 literature、survey、experiment");
+    expect(text).toContain("project 的 assignmentSubtype 必須為 null");
+    expect(text).toContain("read_source_section 已返回 FOUND");
+    expect(text).toContain("引用数量不得超过已通读章节数");
+    expect(text).toContain("优先只引用 2 条已通读来源");
+    expect(text).toContain("content.schemaVersion 為 2");
+  });
+});
+
+describe("activityAssistantSdkToolFailureCode", () => {
+  it("appends the first Zod issue path from an SDK tool-error string", () => {
+    expect(
+      activityAssistantSdkToolFailureCode([
+        {
+          type: "tool-error",
+          error:
+            'AI_InvalidToolInputError: Invalid input for tool create_activity_draft: [\n  {\n    "code": "custom",\n    "path": [\n      "sourceReferences",\n      2\n    ],\n    "message": "not read"\n  }\n]',
+        },
+      ]),
+    ).toBe("TOOL_INPUT_OR_EXECUTION_FAILED_SOURCEREFERENCES_2");
+  });
+
+  it("appends JSON_PARSE when the SDK error is a truncated payload", () => {
+    expect(
+      activityAssistantSdkToolFailureCode([
+        {
+          type: "tool-error",
+          error:
+            "AI_InvalidToolInputError: Invalid input for tool create_activity_draft: AI_JSONParseError: JSON parsing failed: Text: {\"taskUnderstanding.\nError message: SyntaxError: Unexpected end of JSON input",
+        },
+      ]),
+    ).toBe("TOOL_INPUT_OR_EXECUTION_FAILED_JSON_PARSE");
+  });
+});
 
 describe("activity assistant route handler", () => {
   beforeEach(() => {
@@ -494,12 +578,125 @@ describe("activity assistant route handler", () => {
       },
     );
     expect(mocks.publishRelease).not.toHaveBeenCalled();
-    expect(languageModel.doStreamCalls).toHaveLength(1);
+    expect(languageModel.doStreamCalls).toHaveLength(4);
     expect(languageModel.doStreamCalls[0]?.toolChoice).toEqual({ type: "auto" });
     expect(languageModel.doStreamCalls[0]?.providerOptions).toEqual({
       deepseek: { thinking: { type: "disabled" } },
     });
-    expect(languageModel.doStreamCalls[0]?.maxOutputTokens).toBe(4_000);
+    expect(languageModel.doStreamCalls[0]?.maxOutputTokens).toBe(8_000);
+  });
+
+  it("runs search and source reading before presenting the signed proposal", async () => {
+    const languageModel = retrievalProposalModel();
+    mocks.createModel.mockReturnValue(languageModel);
+
+    const response = await handleActivityAssistantRequest(
+      userRequest("设计一个七年级校园节水跨学科活动"),
+      dependencies(),
+    );
+    const body = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(body).toContain("search_knowledge");
+    expect(body).toContain("read_source_section");
+    expect(body).toContain("tool-approval-request");
+    expect(body).toContain("sourceReferences");
+    expect(languageModel.doStreamCalls).toHaveLength(4);
+    expect(mocks.saveDraft).not.toHaveBeenCalled();
+    expect(mocks.finishRun).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ source: "AGENT", actorId }),
+      {
+        agentRunId: runId,
+        status: "SUCCEEDED",
+        failureCode: null,
+      },
+    );
+  });
+
+  it("does not present or save a proposal that skipped official source reading", async () => {
+    const directCreateModel = new MockLanguageModelV4({
+      doStream: async () => ({
+        stream: simulateReadableStream({
+          chunks: [
+            {
+              type: "tool-call",
+              toolCallId: "draft_without_retrieval",
+              toolName: "create_activity_draft",
+              input: JSON.stringify(proposal),
+            },
+            {
+              type: "finish",
+              finishReason: { unified: "tool-calls", raw: undefined },
+              usage,
+            },
+          ],
+        }),
+      }),
+    });
+    mocks.createModel.mockReturnValue(directCreateModel);
+
+    const response = await handleActivityAssistantRequest(
+      userRequest("直接创建这份活动，不检索资料"),
+      dependencies(),
+    );
+    const body = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(body).not.toContain("tool-approval-request");
+    expect(mocks.saveDraft).not.toHaveBeenCalled();
+    expect(directCreateModel.doStreamCalls).toHaveLength(1);
+    expect(mocks.finishRun).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ source: "AGENT", actorId }),
+      {
+        agentRunId: runId,
+        status: "FAILED",
+        failureCode: "TOOL_INPUT_OR_EXECUTION_FAILED_SOURCEREFERENCES_0",
+      },
+    );
+  });
+
+  it("records a JSON parse suffix when the draft proposal payload is truncated", async () => {
+    const truncatedCreateModel = new MockLanguageModelV4({
+      doStream: async () => ({
+        stream: simulateReadableStream({
+          chunks: [
+            {
+              type: "tool-call",
+              toolCallId: "draft_truncated",
+              toolName: "create_activity_draft",
+              input: '{"taskUnderstandingSummary":{"realWorldContext":"校园',
+            },
+            {
+              type: "finish",
+              finishReason: { unified: "tool-calls", raw: undefined },
+              usage,
+            },
+          ],
+        }),
+      }),
+    });
+    mocks.createModel.mockReturnValue(truncatedCreateModel);
+
+    const response = await handleActivityAssistantRequest(
+      userRequest("直接给出完整任务书"),
+      dependencies(),
+    );
+    const body = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(body).not.toContain("tool-approval-request");
+    expect(mocks.saveDraft).not.toHaveBeenCalled();
+    expect(mocks.finishRun).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ source: "AGENT", actorId }),
+      {
+        agentRunId: runId,
+        status: "FAILED",
+        failureCode: "TOOL_INPUT_OR_EXECUTION_FAILED_JSON_PARSE",
+      },
+    );
   });
 
   it("forces the publish tool only for an explicit post-draft publish request", () => {
@@ -732,7 +929,13 @@ describe("activity assistant route handler", () => {
 
     const proposalResponse = await handleActivityAssistantRequest(userRequest(), dependencies());
     const forgedMessage = draftApprovalMessage(await proposalResponse.text(), true);
-    forgedMessage.parts[0]!.approval.signature = "forged-signature";
+    const forgedCreatePart = forgedMessage.parts.find(
+      (part) => part.type === "tool-create_activity_draft",
+    );
+    if (!forgedCreatePart || !("approval" in forgedCreatePart)) {
+      throw new Error("Expected create draft approval part");
+    }
+    forgedCreatePart.approval.signature = "forged-signature";
     const forgedResponse = await handleActivityAssistantRequest(
       messageRequest([
         { id: "message_1", role: "user", parts: [{ type: "text", text: "設計校園節水活動" }] },

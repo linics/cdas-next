@@ -619,7 +619,7 @@ def run_real_model_browser_flow(
     broker_secret: str,
 ) -> None:
     title = f"E2E AI 草稿 {marker}"
-    prompt = f"""資料已完整。請先提出 D-033 結構化任務理解與設計建議，等待教師確認後才建立草稿；不要發佈，也不要提問。
+    prompt = f"""資料已完整。請先調用 search_knowledge 檢索官方課程方案及物理、數學、語文課程標準，再用 read_source_section 核對相關原文；之後提出 D-033 結構化任務理解與設計建議，至少引用兩個不同官方來源，等待教師確認後才建立草稿；不要發佈，也不要提問。
 標題必須逐字為：{title}
 請建立完整跨學科任務書：初中七年級，主學科物理，融合數學與語文；探究性作業、調查探究、中等探究、一次性提交、2周。
 探究主題與摘要聚焦校園節水觀察；背景是學生受邀核驗兩次不含個資的合成水表讀數。
@@ -661,8 +661,17 @@ def run_real_model_browser_flow(
                 "明确假设",
                 "跨学科必要性",
                 "目标—任务—证据—评价一致性链",
+                "官方来源依据",
             ):
                 proposal.get_by_text(label, exact=True).wait_for()
+            if proposal.locator(
+                'section[aria-label="官方来源依据"] a[href^="/teacher/knowledge?source="]'
+            ).count() < 2:
+                raise E2eFailure("REAL_MODEL_OFFICIAL_REFERENCES_MISSING")
+            if page.locator(
+                "details > summary", has_text="已读取："
+            ).count() < 2:
+                raise E2eFailure("REAL_MODEL_SOURCE_READING_MISSING")
             proposal.get_by_text("math", exact=True).wait_for()
             proposal.get_by_text("chinese", exact=True).wait_for()
             proposal.get_by_text("知识与技能", exact=True).wait_for()

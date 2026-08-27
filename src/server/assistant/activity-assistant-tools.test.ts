@@ -4,6 +4,7 @@ import type { PrismaClient } from "../../generated/prisma/client";
 import { DecideActionIntentError } from "../commands/decide-action-intent";
 import { PreparePublishActivityIntentError } from "../commands/prepare-publish-activity-intent";
 import type { CommandContext } from "../commands/command-context";
+import { searchOfficialKnowledge } from "../knowledge/official-corpus";
 import {
   activityDraftProposalSchema,
   createActivityAssistantTools,
@@ -60,6 +61,24 @@ const proposal: ActivityDraftProposal = {
     { objectiveKind: "process", objective: "使用資料支持結論。", task: "整理資料。", evidence: "分析表。", assessment: "結論有據。" },
     { objectiveKind: "emotion", objective: "願意參與校園節水。", task: "提出建議。", evidence: "建議稿。", assessment: "方案可行。" },
   ],
+  sourceReferences: searchOfficialKnowledge({
+    query: "初中跨学科实践 数据分析 评价",
+    schoolStage: "MIDDLE",
+    disciplineCodes: ["physics", "math"],
+    limit: 8,
+  }).results
+    .filter(
+      (result, index, results) =>
+        results.findIndex((item) => item.sourceId === result.sourceId) === index,
+    )
+    .slice(0, 2)
+    .map((result) => ({
+      sourceId: result.sourceId,
+      sectionId: result.sectionId,
+      citationLabel: result.citationLabel,
+      href: result.href,
+      reason: "用于校准活动目标、证据与评价。",
+    })),
   content,
 };
 
@@ -84,7 +103,7 @@ function options(toolCallId: string) {
   };
 }
 
-function tools() {
+function tools({ seedReadSections = true } = {}) {
   return createActivityAssistantTools({
     database: database(),
     agentContext,
@@ -92,6 +111,12 @@ function tools() {
     agentRunId: runId,
     onToolFailure: mocks.onToolFailure,
     onBusinessWriteSuccess: mocks.onBusinessWriteSuccess,
+    ...(seedReadSections
+      ? {
+          initialKnowledgeSearchResults: proposal.sourceReferences,
+          initialKnowledgeReadSections: proposal.sourceReferences,
+        }
+      : {}),
     commands: {
       saveDraft: mocks.saveDraft,
       preparePublish: mocks.preparePublish,
@@ -157,6 +182,22 @@ describe("activity assistant tools", () => {
         ],
       }).success,
     ).toBe(false);
+    expect(
+      activityDraftProposalSchema.safeParse({
+        ...proposal,
+        sourceReferences: [],
+      }).success,
+    ).toBe(false);
+    expect(
+      activityDraftProposalSchema.safeParse({
+        ...proposal,
+        sourceReferences: proposal.sourceReferences.map((reference, index) =>
+          index === 0
+            ? { ...reference, citationLabel: "伪造的课程标准章节" }
+            : reference,
+        ),
+      }).success,
+    ).toBe(false);
   });
 
   it("creates a READY draft through the shared command with AGENT provenance", async () => {
@@ -185,6 +226,58 @@ describe("activity assistant tools", () => {
       previewHref: `/teacher/activities/${draftId}/preview`,
     });
     expect(mocks.onBusinessWriteSuccess).toHaveBeenCalledWith("DRAFT_SAVED");
+  });
+
+  it("rejects a draft whose cited official sections were not searched and read", async () => {
+    const registry = tools({ seedReadSections: false });
+
+    await expect(
+      registry.create_activity_draft.execute!(
+        proposal,
+        options("draft_without_reading"),
+      ),
+    ).rejects.toThrow("ACTIVITY_DRAFT_OFFICIAL_SOURCES_NOT_READ");
+
+    expect(mocks.saveDraft).not.toHaveBeenCalled();
+    expect(mocks.onToolFailure).toHaveBeenCalledWith(
+      "DRAFT_OFFICIAL_SOURCES_NOT_READ",
+    );
+  });
+
+  it("only records a source read after that section appeared in search results", async () => {
+    const registry = tools({ seedReadSections: false });
+    const firstReference = proposal.sourceReferences[0];
+    expect(firstReference).toBeDefined();
+    if (!firstReference) return;
+
+    expect(
+      registry.read_source_section.execute!(
+        {
+          sourceId: firstReference.sourceId,
+          sectionId: firstReference.sectionId,
+        },
+        options("read_before_search"),
+      ),
+    ).toMatchObject({ status: "NOT_FOUND" });
+
+    await registry.search_knowledge.execute!(
+      {
+        query: "初中跨学科实践 数据分析 评价",
+        schoolStage: "MIDDLE",
+        disciplineCodes: ["physics", "math"],
+        limit: 8,
+      },
+      options("search_before_read"),
+    );
+    expect(
+      registry.read_source_section.execute!(
+        {
+          sourceId: firstReference.sourceId,
+          sectionId: firstReference.sectionId,
+        },
+        options("read_after_search"),
+      ),
+    ).toMatchObject({ status: "FOUND" });
   });
 
   it("keeps a committed draft authoritative when response mapping fails", async () => {

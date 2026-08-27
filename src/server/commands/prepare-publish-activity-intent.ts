@@ -116,6 +116,30 @@ async function recordFailureAudit(
   }
 }
 
+async function readMatchingIdempotentResponse(
+  database: PrismaClient,
+  context: ResolvedCommandContext,
+  input: z.infer<typeof commandInputSchema>,
+  requestHash: string,
+): Promise<PreparePublishActivityIntentResult | null> {
+  const existing = await database.idempotencyRecord.findUnique({
+    where: {
+      actorId_commandName_idempotencyKey: {
+        actorId: context.actorId,
+        commandName,
+        idempotencyKey: input.idempotencyKey,
+      },
+    },
+  });
+  if (!existing) {
+    return null;
+  }
+  if (existing.requestHash !== requestHash) {
+    throw new PreparePublishActivityIntentError("IDEMPOTENCY_MISMATCH");
+  }
+  return commandResponseSchema.parse(existing.response);
+}
+
 async function runTransaction(
   database: PrismaClient,
   context: ResolvedCommandContext,
@@ -298,8 +322,33 @@ export async function preparePublishActivityIntent(
         error instanceof Prisma.PrismaClientKnownRequestError &&
         (error.code === "P2034" || error.code === "P2002");
 
-      if (retryable && attempt < 3) {
-        continue;
+      if (retryable) {
+        try {
+          const replayed = await readMatchingIdempotentResponse(
+            database,
+            context,
+            input,
+            requestHash,
+          );
+          if (replayed) {
+            return replayed;
+          }
+        } catch (replayError) {
+          if (replayError instanceof PreparePublishActivityIntentError) {
+            await recordFailureAudit(
+              database,
+              context,
+              input,
+              requestHash,
+              replayError,
+            );
+            throw replayError;
+          }
+          throw replayError;
+        }
+        if (attempt < 3) {
+          continue;
+        }
       }
 
       const domainError =

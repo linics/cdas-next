@@ -105,6 +105,8 @@ describe("new teacher activity assistant gate", () => {
 
     expect(markup).toContain('data-manual-draft="true"');
     expect(markup).not.toContain('data-assistant="enabled"');
+    expect(markup).toContain('href="/teacher/knowledge"');
+    expect(markup).toContain("检索课程标准");
     expect(mocks.getTeacherAssistantClassrooms).not.toHaveBeenCalled();
   });
 

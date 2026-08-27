@@ -29,7 +29,7 @@ SCREENSHOTS = (
     "07-teacher-closed.png",
     "08-student-closed-readonly.png",
 )
-CREATE_PROMPT = """资料已经完整，不要提问。标题必须逐字为：{title}。请调用 create_activity_draft 提出一份 D-033 结构化任务理解与设计建议，等待教师确认后再创建草稿。围绕“学生辨识合成证据”生成完整跨学科任务书：初中七年级，主学科语文，融合数学与信息科技，探究性作业／调查探究／中等探究／一次性提交／2周，以核验校园档案中的合成内容为真实情境。提案必须明确教师已提供要求、没有事实根据的假设、数学与信息科技各自不可替代的贡献，以及知识与技能／过程与方法／情感态度三条完整的目标—任务—证据—评价链。完整内容必须包含探究主题、任务描述、背景设定、三维目标、总体任务；设置3个连续阶段，每阶段都要有明确行动、情境承接、学习支架、至少一项类型化提交证据、评价要点和课时建议；设置问题意识、证据质量、跨学科连接、方案表达4个评价维度，每个维度都有优秀、良好、合格、需改进四档非空描述。"""
+CREATE_PROMPT = """资料已经完整，不要提问。标题必须逐字为：{title}。请先调用 search_knowledge 检索教育部官方课程方案与语文、数学、信息科技课程标准，再调用 read_source_section 核对相关原文；最后调用 create_activity_draft 提出一份 D-033 结构化任务理解与设计建议，至少引用两个不同的官方来源，并等待教师确认后再创建草稿。围绕“学生辨识合成证据”生成完整跨学科任务书：初中七年级，主学科语文，融合数学与信息科技，探究性作业／调查探究／中等探究／一次性提交／2周，以核验校园档案中的合成内容为真实情境。提案必须明确教师已提供要求、没有事实根据的假设、数学与信息科技各自不可替代的贡献，以及知识与技能／过程与方法／情感态度三条完整的目标—任务—证据—评价链。完整内容必须包含探究主题、任务描述、背景设定、三维目标、总体任务；设置3个连续阶段，每阶段都要有明确行动、情境承接、学习支架、至少一项类型化提交证据、评价要点和课时建议；设置问题意识、证据质量、跨学科连接、方案表达4个评价维度，每个维度都有优秀、良好、合格、需改进四档非空描述。"""
 EDITED_SUMMARY = "固定合成验收摘要（教师人工修订）"
 PUBLISH_PROMPT = "立即调用 publish_activity_release 工具，将版本2发布到班级：{classroom}。无截止日期。"
 EVIDENCE_TEXT = "Synthetic Agent acceptance text evidence."
@@ -321,8 +321,18 @@ def main() -> None:
             teacher.get_by_role("button", name="交给助手整理").click()
             draft_approval = teacher.locator('[role="group"][aria-label="任务理解确认"]')
             draft_approval.get_by_role("button", name="确认理解并创建草稿", exact=True).wait_for(timeout=120_000)
-            for label in ("教师已提供要求", "明确假设", "跨学科必要性", "目标—任务—证据—评价一致性链"):
+            for label in ("教师已提供要求", "明确假设", "跨学科必要性", "目标—任务—证据—评价一致性链", "官方来源依据"):
                 draft_approval.get_by_text(label, exact=True).wait_for()
+            official_references = draft_approval.locator(
+                'section[aria-label="官方来源依据"] a[href^="/teacher/knowledge?source="]'
+            )
+            if official_references.count() < 2:
+                raise AcceptanceFailure("STAGING_AGENT_ACCEPTANCE_OFFICIAL_REFERENCES_MISSING")
+            read_source_results = teacher.locator(
+                "details > summary", has_text="已读取："
+            )
+            if read_source_results.count() < 2:
+                raise AcceptanceFailure("STAGING_AGENT_ACCEPTANCE_SOURCE_READING_MISSING")
             draft_approval.get_by_text("math", exact=True).wait_for()
             draft_approval.get_by_text("infoTech", exact=True).wait_for()
             draft_approval.get_by_text("知识与技能", exact=True).wait_for()

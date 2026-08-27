@@ -3,7 +3,10 @@ import "server-only";
 import { createHash } from "node:crypto";
 import { tool } from "ai";
 import { z } from "zod";
-import { activityContentV2Schema } from "../../domain/activity/activity-content";
+import {
+  activityContentV2Schema,
+  type DisciplineCode,
+} from "../../domain/activity/activity-content";
 import { publishDueAtSchema } from "../../domain/activity/prepare-publish-intent";
 import type { PrismaClient } from "../../generated/prisma/client";
 import {
@@ -23,6 +26,18 @@ import {
   SaveActivityDraftError,
 } from "../commands/save-activity-draft";
 import type { CommandContext } from "../commands/command-context";
+import {
+  getOfficialKnowledgeReference,
+  officialKnowledgeSectionKey,
+  type OfficialKnowledgeSectionIdentity,
+  officialKnowledgeReadInputSchema,
+  officialKnowledgeReadOutputSchema,
+  officialKnowledgeReferenceSchema,
+  officialKnowledgeSearchInputSchema,
+  officialKnowledgeSearchOutputSchema,
+  readOfficialKnowledgeSection,
+  searchOfficialKnowledge,
+} from "../knowledge/official-corpus";
 
 export const publishActivityToolInputSchema = z
   .object({
@@ -34,6 +49,12 @@ export const publishActivityToolInputSchema = z
   .strict();
 
 const proposalText = z.string().trim().min(1).max(600);
+const firstCorpusDisciplineCodes = new Set<DisciplineCode>([
+  "chinese",
+  "math",
+  "physics",
+  "infoTech",
+]);
 
 const taskUnderstandingSummarySchema = z
   .object({
@@ -77,6 +98,7 @@ export const activityDraftProposalSchema = z
       .min(1)
       .max(14),
     alignmentChains: z.array(alignmentChainSchema).length(3),
+    sourceReferences: z.array(officialKnowledgeReferenceSchema).max(8),
     content: activityContentV2Schema,
   })
   .strict()
@@ -113,6 +135,73 @@ export const activityDraftProposalSchema = z
           "Alignment chains must contain knowledge, process, and emotion exactly once",
       });
     }
+
+    const sourceReferenceKeys = new Set<string>();
+    const activityDisciplines = new Set([
+      proposal.content.mainDisciplineCode,
+      ...proposal.content.integratedDisciplineCodes,
+    ]);
+    const coveredByFirstCorpus = [...activityDisciplines].some((code) =>
+      firstCorpusDisciplineCodes.has(code),
+    );
+    if (
+      coveredByFirstCorpus &&
+      (proposal.sourceReferences.length < 2 ||
+        new Set(proposal.sourceReferences.map((reference) => reference.sourceId))
+          .size < 2)
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["sourceReferences"],
+        message:
+          "Activities covered by the first official corpus require two distinct official sources",
+      });
+    }
+    proposal.sourceReferences.forEach((reference, index) => {
+      const key = `${reference.sourceId}:${reference.sectionId}`;
+      if (sourceReferenceKeys.has(key)) {
+        context.addIssue({
+          code: "custom",
+          path: ["sourceReferences", index],
+          message: "Official source references must not repeat",
+        });
+        return;
+      }
+      sourceReferenceKeys.add(key);
+      const canonical = getOfficialKnowledgeReference(
+        reference.sourceId,
+        reference.sectionId,
+      );
+      if (
+        !canonical ||
+        canonical.citationLabel !== reference.citationLabel ||
+        canonical.href !== reference.href
+      ) {
+        context.addIssue({
+          code: "custom",
+          path: ["sourceReferences", index],
+          message: "Official source reference must match the server corpus",
+        });
+        return;
+      }
+      if (!canonical.schoolStages.includes(proposal.content.schoolStage)) {
+        context.addIssue({
+          code: "custom",
+          path: ["sourceReferences", index],
+          message: "Official source reference does not cover the selected stage",
+        });
+      }
+      if (
+        canonical.disciplineCodes.length > 0 &&
+        !canonical.disciplineCodes.some((code) => activityDisciplines.has(code))
+      ) {
+        context.addIssue({
+          code: "custom",
+          path: ["sourceReferences", index],
+          message: "Official source reference does not cover an activity discipline",
+        });
+      }
+    });
   });
 
 export type ActivityDraftProposal = z.infer<typeof activityDraftProposalSchema>;
@@ -145,6 +234,16 @@ export const publishActivityToolOutputSchema = z
  * before an AgentRun is opened. It deliberately has no execute functions.
  */
 export const activityAssistantMessageValidationTools = {
+  search_knowledge: tool({
+    inputSchema: officialKnowledgeSearchInputSchema,
+    outputSchema: officialKnowledgeSearchOutputSchema,
+    strict: true,
+  }),
+  read_source_section: tool({
+    inputSchema: officialKnowledgeReadInputSchema,
+    outputSchema: officialKnowledgeReadOutputSchema,
+    strict: true,
+  }),
   create_activity_draft: tool({
     inputSchema: activityDraftProposalSchema,
     outputSchema: createdDraftToolOutputSchema,
@@ -180,6 +279,8 @@ export type ActivityAssistantToolDependencies = Readonly<{
   onBusinessWriteSuccess: (
     result: "DRAFT_SAVED" | "RELEASE_PUBLISHED",
   ) => void;
+  initialKnowledgeSearchResults?: readonly OfficialKnowledgeSectionIdentity[];
+  initialKnowledgeReadSections?: readonly OfficialKnowledgeSectionIdentity[];
   commands?: ActivityAssistantCommands;
 }>;
 
@@ -207,18 +308,83 @@ export function createActivityAssistantTools({
   agentRunId,
   onToolFailure,
   onBusinessWriteSuccess,
+  initialKnowledgeSearchResults = [],
+  initialKnowledgeReadSections = [],
   commands = defaultCommands,
 }: ActivityAssistantToolDependencies) {
   let createToolCallId: string | null = null;
+  const searchedSectionKeys = new Set(
+    initialKnowledgeSearchResults.map(officialKnowledgeSectionKey),
+  );
+  const readSectionKeys = new Set(
+    initialKnowledgeReadSections.map(officialKnowledgeSectionKey),
+  );
+  const proposalAfterReadingSchema = activityDraftProposalSchema.superRefine(
+    (proposal, context) => {
+      proposal.sourceReferences.forEach((reference, index) => {
+        if (!readSectionKeys.has(officialKnowledgeSectionKey(reference))) {
+          context.addIssue({
+            code: "custom",
+            path: ["sourceReferences", index],
+            message:
+              "Every official source reference must be read in the current conversation before draft creation",
+          });
+        }
+      });
+    },
+  );
 
   return {
+    search_knowledge: tool({
+      description:
+        "检索 CDAS 首版白名单中的教育部官方 2022 年义务教育课程方案与学科课程标准。用于为活动目标、学科贡献、任务证据和评价找到可引用依据；其中不含设计理论、AI 生成案例或教师私有材料。",
+      inputSchema: officialKnowledgeSearchInputSchema,
+      outputSchema: officialKnowledgeSearchOutputSchema,
+      strict: true,
+      execute: (input) => {
+        const output = searchOfficialKnowledge(input);
+        output.results.forEach((result) => {
+          searchedSectionKeys.add(officialKnowledgeSectionKey(result));
+        });
+        return output;
+      },
+    }),
+
+    read_source_section: tool({
+      description:
+        "读取 search_knowledge 返回的一个官方来源章节原文。只能使用检索结果中的 sourceId 与 sectionId，不得猜测编号或引用未读取的材料。",
+      inputSchema: officialKnowledgeReadInputSchema,
+      outputSchema: officialKnowledgeReadOutputSchema,
+      strict: true,
+      execute: (input) => {
+        const key = officialKnowledgeSectionKey(input);
+        if (!searchedSectionKeys.has(key)) {
+          return { status: "NOT_FOUND" as const, ...input };
+        }
+        const output = readOfficialKnowledgeSection(input);
+        if (output.status === "FOUND") {
+          readSectionKeys.add(key);
+        }
+        return output;
+      },
+    }),
+
     create_activity_draft: tool({
       description:
-        "把教師已經說明清楚的完整跨學科任務書儲存成可預覽、可繼續編輯的活動草稿。必須包含基本設定、三維目標、三至四個連續階段、類型化證據及四檔量規，不能臆造缺失事實。",
-      inputSchema: activityDraftProposalSchema,
+        "把教師已經說明清楚的完整跨學科任務書儲存成可預覽、可繼續編輯的活動草稿。content.schemaVersion 必須是數字 2。作業類型只用 practical、inquiry、project；practical 子類型只用 visit、simulation、observation；inquiry 子類型只用 literature、survey、experiment；project 的 assignmentSubtype 必須為 null。融合學科貢獻必須與 content.integratedDisciplineCodes 恰好一一對應，且不得包含主學科。sourceReferences 每一條都必須是本輪 read_source_section 已返回 FOUND 的章節，數量不得超過已通讀章節。必須包含三維目標、三至四個連續階段、類型化證據及四檔量規，不能臆造缺失事實。",
+      inputSchema: proposalAfterReadingSchema,
       outputSchema: createdDraftToolOutputSchema,
       strict: true,
       execute: async (proposal, { toolCallId }) => {
+        if (
+          proposal.sourceReferences.some(
+            (reference) =>
+              !readSectionKeys.has(officialKnowledgeSectionKey(reference)),
+          )
+        ) {
+          onToolFailure("DRAFT_OFFICIAL_SOURCES_NOT_READ");
+          throw new Error("ACTIVITY_DRAFT_OFFICIAL_SOURCES_NOT_READ");
+        }
         if (createToolCallId !== null && createToolCallId !== toolCallId) {
           onToolFailure("DRAFT_MULTIPLE_CREATE_ATTEMPTS");
           throw new Error("ACTIVITY_DRAFT_MULTIPLE_CREATE_ATTEMPTS");

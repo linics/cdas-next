@@ -62,14 +62,26 @@ const draftProposal = {
     { objectiveKind: "process", objective: "分析数据。", task: "比较。", evidence: "表格。", assessment: "有据。" },
     { objectiveKind: "emotion", objective: "承担责任。", task: "建议。", evidence: "建议稿。", assessment: "可行。" },
   ],
+  sourceReferences: [
+    {
+      sourceId: "course-plan-2022",
+      sectionId: "course-plan-2022-section",
+      citationLabel: "《义务教育课程方案（2022年版）》· 基本原则",
+      href: "/teacher/knowledge?source=course-plan-2022&section=course-plan-2022-section",
+      reason: "用于校准跨学科任务的真实情境与实践要求。",
+    },
+  ],
   content: {},
 };
 
-function helpers(messages: unknown[] = []) {
+function helpers(
+  messages: unknown[] = [],
+  status: "ready" | "submitted" | "streaming" = "ready",
+) {
   return {
     messages,
     sendMessage: mocks.sendMessage,
-    status: "ready",
+    status,
     error: undefined,
     stop: mocks.stop,
     addToolApprovalResponse: mocks.addToolApprovalResponse,
@@ -174,10 +186,152 @@ describe("ActivityAssistant", () => {
     expect(markup).toContain("明确假设");
     expect(markup).toContain("跨学科必要性");
     expect(markup).toContain("目标—任务—证据—评价一致性链");
+    expect(markup).toContain("官方来源依据");
+    expect(markup).toContain("用于校准跨学科任务的真实情境与实践要求");
+    expect(markup).toContain("不代表活动已自动通过课程标准合规审查");
     expect(markup).toContain("确认理解并创建草稿");
     expect(markup).toContain("继续补充");
     expect(markup).not.toContain("draft-signed-but-never-rendered");
     expect(markup).not.toContain("draft_approval_1");
+  });
+
+  it("keeps the draft-progress copy only while the stream is still open", () => {
+    mocks.useChat.mockReturnValue(
+      helpers(
+        [
+          {
+            id: "assistant_draft_streaming",
+            role: "assistant",
+            parts: [
+              {
+                type: "tool-create_activity_draft",
+                toolCallId: "draft_streaming_1",
+                state: "input-streaming",
+              },
+            ],
+          },
+        ],
+        "streaming",
+      ),
+    );
+
+    expect(renderAssistant()).toContain("正在整理任务理解与设计建议…");
+  });
+
+  it("shows a terminal draft failure after the stream ends without a proposal", () => {
+    mocks.useChat.mockReturnValue(
+      helpers([
+        {
+          id: "assistant_draft_incomplete",
+          role: "assistant",
+          parts: [
+            {
+              type: "tool-create_activity_draft",
+              toolCallId: "draft_incomplete_1",
+              state: "input-streaming",
+            },
+          ],
+        },
+      ]),
+    );
+
+    const markup = renderAssistant();
+    expect(markup).toContain(
+      "草稿未创建。你可以补一句&quot;请重新创建草稿&quot;让助手重试，或改用手动表单。",
+    );
+    expect(markup).not.toContain("正在整理任务理解与设计建议…");
+  });
+
+  it("shows the same terminal copy when draft input validation fails without parsed input", () => {
+    mocks.useChat.mockReturnValue(
+      helpers([
+        {
+          id: "assistant_draft_input_error",
+          role: "assistant",
+          parts: [
+            {
+              type: "tool-create_activity_draft",
+              toolCallId: "draft_input_error_1",
+              state: "output-error",
+              errorText: "Invalid input for tool create_activity_draft",
+            },
+          ],
+        },
+      ]),
+    );
+
+    const markup = renderAssistant();
+    expect(markup).toContain(
+      "草稿未创建。你可以补一句&quot;请重新创建草稿&quot;让助手重试，或改用手动表单。",
+    );
+    expect(markup).not.toContain("正在整理任务理解与设计建议…");
+  });
+
+  it("renders official search and source-reading results as inspectable citations", () => {
+    const href =
+      "/teacher/knowledge?source=math-standard-2022&section=math-standard-2022-section";
+    mocks.useChat.mockReturnValue(
+      helpers([
+        {
+          id: "assistant_knowledge",
+          role: "assistant",
+          parts: [
+            {
+              type: "tool-search_knowledge",
+              toolCallId: "search_knowledge_1",
+              state: "output-available",
+              input: { query: "数据分析 评价" },
+              output: {
+                status: "FOUND",
+                results: [
+                  {
+                    sourceId: "math-standard-2022",
+                    sectionId: "math-standard-2022-section",
+                    sourceTitle: "义务教育数学课程标准（2022年版）",
+                    locator: "五、学业质量",
+                    citationLabel:
+                      "《义务教育数学课程标准（2022年版）》· 五、学业质量",
+                    excerpt: "能够进行简单的数据分析，形成数据观念。",
+                    href,
+                    sourceUrl: "https://www.moe.gov.cn/source",
+                  },
+                ],
+              },
+            },
+            {
+              type: "tool-read_source_section",
+              toolCallId: "read_knowledge_1",
+              state: "output-available",
+              input: {
+                sourceId: "math-standard-2022",
+                sectionId: "math-standard-2022-section",
+              },
+              output: {
+                status: "FOUND",
+                sourceId: "math-standard-2022",
+                sectionId: "math-standard-2022-section",
+                sourceTitle: "义务教育数学课程标准（2022年版）",
+                publisher: "中华人民共和国教育部",
+                version: "2022年版",
+                locator: "五、学业质量",
+                citationLabel:
+                  "《义务教育数学课程标准（2022年版）》· 五、学业质量",
+                content: "能够进行简单的数据分析，形成数据观念。",
+                href,
+                sourceUrl: "https://www.moe.gov.cn/source",
+              },
+            },
+          ],
+        },
+      ]),
+    );
+
+    const markup = renderAssistant();
+
+    expect(markup).toContain("已找到 1 个官方标准片段");
+    expect(markup).toContain("能够进行简单的数据分析");
+    expect(markup).toContain("已读取：");
+    expect(markup).toContain(`href="${href.replaceAll("&", "&amp;")}"`);
   });
 
   it("shows native approval controls with exact human-readable parameters", () => {
