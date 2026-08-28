@@ -1,9 +1,18 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
 import { createPublishedActivity } from "../../test/fixtures/published-activity";
-import { hashTeacherFeedbackBody } from "../../domain/feedback/teacher-feedback-intent";
+import {
+  createTeacherFeedbackPayload,
+  hashTeacherFeedbackBody,
+  hashTeacherFeedbackPayload,
+} from "../../domain/feedback/teacher-feedback-intent";
+import {
+  finishActivityAssistantRun,
+  startActivityAssistantRun,
+} from "../assistant/agent-run-lifecycle";
 import { createDatabaseClient } from "../db/client";
 import type { CommandContext, CommandSource } from "./command-context";
+import { completeTeacherFeedbackSuggestion } from "./complete-teacher-feedback-suggestion";
 import { decideActionIntent } from "./decide-action-intent";
 import {
   prepareTeacherFeedbackIntent,
@@ -254,6 +263,259 @@ describeWithDatabase("teacher feedback commands", () => {
         data: { body: "不得覆盖" },
       }),
     ).rejects.toThrow(/append-only/);
+  });
+
+  it("binds AI-assisted feedback to the exact suggestion audit and rejects unrelated provenance", async () => {
+    const fixture = await createFeedbackFixture();
+    const suggestionRun = await startActivityAssistantRun(
+      database!,
+      commandContext(fixture.teacherId, minutesAfter(fixture.baseTime, 1)),
+      { model: "deepseek-v4-flash" },
+    );
+    await completeTeacherFeedbackSuggestion(
+      database!,
+      commandContext(
+        fixture.teacherId,
+        minutesAfter(fixture.baseTime, 2),
+        "AGENT",
+      ),
+      {
+        agentRunId: suggestionRun.id,
+        submissionId: fixture.submissionId,
+        submissionRevisionId: fixture.submissionRevisionId,
+        submissionRevisionNumber: 1,
+        expectedFeedbackVersion: 0,
+      },
+    );
+
+    const prepareInput = {
+      submissionId: fixture.submissionId,
+      expectedSubmissionRevisionId: fixture.submissionRevisionId,
+      expectedSubmissionRevisionNumber: 1,
+      expectedFeedbackVersion: 0,
+      body: "教师核对并修改了 AI 起草的形成性反馈。",
+      nextStep: "REVISE" as const,
+      supportLevel: "FOUNDATION" as const,
+      suggestionAgentRunId: suggestionRun.id,
+      idempotencyKey: `prepare_ai_feedback_${randomUUID()}`,
+    };
+    const prepared = await prepareTeacherFeedbackIntent(
+      database!,
+      commandContext(fixture.teacherId, minutesAfter(fixture.baseTime, 3)),
+      prepareInput,
+    );
+    expect(
+      await prepareTeacherFeedbackIntent(
+        database!,
+        commandContext(fixture.teacherId, minutesAfter(fixture.baseTime, 3)),
+        prepareInput,
+      ),
+    ).toEqual(prepared);
+    await decideActionIntent(
+      database!,
+      commandContext(fixture.teacherId, minutesAfter(fixture.baseTime, 4)),
+      { actionIntentId: prepared.actionIntentId, decision: "CONFIRM" },
+    );
+    const saved = await saveTeacherFeedback(
+      database!,
+      commandContext(fixture.teacherId, minutesAfter(fixture.baseTime, 5)),
+      {
+        actionIntentId: prepared.actionIntentId,
+        idempotencyKey: `save_ai_feedback_${randomUUID()}`,
+      },
+    );
+    const revision = await database!.teacherFeedbackRevision.findUniqueOrThrow({
+      where: { id: saved.teacherFeedbackRevisionId },
+    });
+    expect(revision).toMatchObject({
+      source: "AI_ASSISTED",
+      agentRunId: suggestionRun.id,
+      body: "教师核对并修改了 AI 起草的形成性反馈。",
+    });
+    expect(
+      await database!.actionIntent.count({
+        where: {
+          actorId: fixture.teacherId,
+          agentRunId: suggestionRun.id,
+          actionName: "save_teacher_feedback",
+        },
+      }),
+    ).toBe(1);
+
+    const unboundRun = await startActivityAssistantRun(
+      database!,
+      commandContext(fixture.teacherId, minutesAfter(fixture.baseTime, 6)),
+      { model: "deepseek-v4-flash" },
+    );
+    await finishActivityAssistantRun(
+      database!,
+      commandContext(
+        fixture.teacherId,
+        minutesAfter(fixture.baseTime, 7),
+        "AGENT",
+      ),
+      {
+        agentRunId: unboundRun.id,
+        status: "SUCCEEDED",
+        failureCode: null,
+      },
+    );
+    await expect(
+      prepareTeacherFeedbackIntent(
+        database!,
+        commandContext(fixture.teacherId, minutesAfter(fixture.baseTime, 8)),
+        {
+          ...prepareInput,
+          expectedFeedbackVersion: 1,
+          body: "其他成功运行没有本修订的建议审计，不能冒充来源。",
+          suggestionAgentRunId: unboundRun.id,
+          idempotencyKey: `prepare_unbound_ai_feedback_${randomUUID()}`,
+        },
+      ),
+    ).rejects.toEqual(
+      new PrepareTeacherFeedbackIntentError("INVALID_AGENT_RUN"),
+    );
+    expect(
+      await database!.actionIntent.count({
+        where: { agentRunId: unboundRun.id },
+      }),
+    ).toBe(0);
+
+    const legacyPayload = createTeacherFeedbackPayload({
+      submissionId: fixture.submissionId,
+      submissionRevisionId: fixture.submissionRevisionId,
+      expectedSubmissionRevisionNumber: 1,
+      expectedFeedbackVersion: 1,
+      body: "旧版准备命令错误接受的 Run 也不能在修复后执行。",
+      nextStep: "CONTINUE",
+      supportLevel: "STANDARD",
+      suggestionAgentRunId: unboundRun.id,
+    });
+    const legacyIntent = await database!.actionIntent.create({
+      data: {
+        actorId: fixture.teacherId,
+        agentRunId: unboundRun.id,
+        actionName: "save_teacher_feedback",
+        payload: legacyPayload,
+        payloadHash: hashTeacherFeedbackPayload(legacyPayload),
+        targetType: "Submission",
+        targetId: fixture.submissionId,
+        expectedVersion: 1,
+        expiresAt: minutesAfter(fixture.baseTime, 20),
+        createdAt: minutesAfter(fixture.baseTime, 8),
+      },
+    });
+    await decideActionIntent(
+      database!,
+      commandContext(fixture.teacherId, minutesAfter(fixture.baseTime, 9)),
+      { actionIntentId: legacyIntent.id, decision: "CONFIRM" },
+    );
+    await expect(
+      saveTeacherFeedback(
+        database!,
+        commandContext(fixture.teacherId, minutesAfter(fixture.baseTime, 10)),
+        {
+          actionIntentId: legacyIntent.id,
+          idempotencyKey: `save_unbound_ai_feedback_${randomUUID()}`,
+        },
+      ),
+    ).rejects.toEqual(new SaveTeacherFeedbackError("INVALID_AGENT_RUN"));
+
+    await expect(
+      prepareTeacherFeedbackIntent(
+        database!,
+        commandContext(fixture.teacherId, minutesAfter(fixture.baseTime, 11)),
+        {
+          ...prepareInput,
+          expectedFeedbackVersion: 1,
+          body: "旧反馈版本的建议审计不能绑定到新反馈版本。",
+          idempotencyKey: `prepare_old_version_ai_feedback_${randomUUID()}`,
+        },
+      ),
+    ).rejects.toEqual(
+      new PrepareTeacherFeedbackIntentError("INVALID_AGENT_RUN"),
+    );
+
+    const failedRun = await startActivityAssistantRun(
+      database!,
+      commandContext(fixture.teacherId, minutesAfter(fixture.baseTime, 12)),
+      { model: "deepseek-v4-flash" },
+    );
+    await finishActivityAssistantRun(
+      database!,
+      commandContext(
+        fixture.teacherId,
+        minutesAfter(fixture.baseTime, 13),
+        "AGENT",
+      ),
+      {
+        agentRunId: failedRun.id,
+        status: "FAILED",
+        failureCode: "FEEDBACK_SUGGESTION_INVALID_OUTPUT",
+      },
+    );
+    await expect(
+      prepareTeacherFeedbackIntent(
+        database!,
+        commandContext(fixture.teacherId, minutesAfter(fixture.baseTime, 14)),
+        {
+          ...prepareInput,
+          expectedFeedbackVersion: 1,
+          body: "失败的建议运行不能绑定到教师反馈。",
+          suggestionAgentRunId: failedRun.id,
+          idempotencyKey: `prepare_failed_ai_feedback_${randomUUID()}`,
+        },
+      ),
+    ).rejects.toEqual(
+      new PrepareTeacherFeedbackIntentError("INVALID_AGENT_RUN"),
+    );
+
+    const started = await startSubmissionResubmission(
+      database!,
+      commandContext(fixture.studentId, minutesAfter(fixture.baseTime, 15)),
+      {
+        releaseId: fixture.releaseId,
+        expectedLatestRevisionNumber: 1,
+        idempotencyKey: `restart_${randomUUID()}`,
+      },
+    );
+    const workingCopy = await saveSubmissionWorkingCopy(
+      database!,
+      commandContext(fixture.studentId, minutesAfter(fixture.baseTime, 16)),
+      {
+        releaseId: fixture.releaseId,
+        expectedWorkingCopyId: started.workingCopyId,
+        expectedWorkingVersion: started.workingVersion,
+        textEvidence: "第二版证据，已经根据教师反馈完成修改。",
+        idempotencyKey: `save_${randomUUID()}`,
+      },
+    );
+    const secondRevision = await submitSubmissionRevision(
+      database!,
+      commandContext(fixture.studentId, minutesAfter(fixture.baseTime, 17)),
+      {
+        releaseId: fixture.releaseId,
+        expectedWorkingCopyId: workingCopy.workingCopyId,
+        expectedWorkingVersion: workingCopy.workingVersion,
+        idempotencyKey: `submit_${randomUUID()}`,
+      },
+    );
+    await expect(
+      prepareTeacherFeedbackIntent(
+        database!,
+        commandContext(fixture.teacherId, minutesAfter(fixture.baseTime, 18)),
+        {
+          ...prepareInput,
+          expectedSubmissionRevisionId: secondRevision.revisionId,
+          expectedSubmissionRevisionNumber: 2,
+          expectedFeedbackVersion: 0,
+          body: "上一正式修订的建议审计不能绑定到当前正式修订。",
+          idempotencyKey: `prepare_old_revision_ai_feedback_${randomUUID()}`,
+        },
+      ),
+    ).rejects.toEqual(
+      new PrepareTeacherFeedbackIntentError("INVALID_AGENT_RUN"),
+    );
   });
 
   it("rejects another teacher at prepare and execution time", async () => {
