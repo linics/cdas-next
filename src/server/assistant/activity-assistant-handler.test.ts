@@ -323,7 +323,7 @@ function successfulModel() {
   return retrievalProposalModel();
 }
 
-function retrievalProposalModel() {
+function retrievalProposalSteps(finalProposal: unknown = proposal) {
   const [firstReference, secondReference] = proposal.sourceReferences;
   if (!firstReference || !secondReference) {
     throw new Error("Expected two official proposal references");
@@ -345,8 +345,7 @@ function retrievalProposalModel() {
       ],
     }),
   });
-  return new MockLanguageModelV4({
-    doStream: [
+  return [
       toolStep("search_call_handler", "search_knowledge", {
         query: "初中跨学科实践 数据分析 评价",
         schoolStage: "MIDDLE",
@@ -361,9 +360,12 @@ function retrievalProposalModel() {
         sourceId: secondReference.sourceId,
         sectionId: secondReference.sectionId,
       }),
-      toolStep("draft_after_retrieval", "create_activity_draft", proposal),
-    ],
-  });
+      toolStep("draft_after_retrieval", "create_activity_draft", finalProposal),
+  ];
+}
+
+function retrievalProposalModel() {
+  return new MockLanguageModelV4({ doStream: retrievalProposalSteps() });
 }
 
 function dependencies(): ActivityAssistantHandlerDependencies {
@@ -975,6 +977,95 @@ describe("activity assistant route handler", () => {
     ).toHaveLength(1);
     expect(mocks.readDraft).not.toHaveBeenCalled();
     expect(mocks.saveDraft).not.toHaveBeenCalled();
+  });
+
+  it("repairs one invalid proposal payload and still requires approval", async () => {
+    const invalidProposal = {
+      ...proposal,
+      integratedDisciplineContributions: [
+        ...proposal.integratedDisciplineContributions,
+        ...proposal.integratedDisciplineContributions,
+      ],
+    };
+    const repairModel = new MockLanguageModelV4({
+      doStream: retrievalProposalSteps(invalidProposal),
+      doGenerate: async () => ({
+        content: [
+          {
+            type: "tool-call",
+            toolCallId: "draft_repaired",
+            toolName: "create_activity_draft",
+            input: JSON.stringify(proposal),
+          },
+        ],
+        finishReason: { unified: "tool-calls", raw: undefined },
+        usage,
+        warnings: [],
+      }),
+    });
+    mocks.createModel.mockReturnValue(repairModel);
+
+    const response = await handleActivityAssistantRequest(
+      userRequest("資料已完整，請直接整理成草稿提案"),
+      dependencies(),
+    );
+    const body = await response.text();
+
+    expect(response.status).toBe(200);
+    // The repaired call is presented for confirmation like any other, and the
+    // repair alone writes nothing.
+    expect(
+      sseEvents(body).filter(
+        (candidate) =>
+          candidate.type === "tool-approval-request" &&
+          candidate.isAutomatic !== true,
+      ),
+    ).toHaveLength(1);
+    expect(repairModel.doGenerateCalls).toHaveLength(1);
+    expect(mocks.saveDraft).not.toHaveBeenCalled();
+  });
+
+  it("attempts repair at most once and fails closed when it does not help", async () => {
+    const invalidProposal = {
+      ...proposal,
+      integratedDisciplineContributions: [
+        ...proposal.integratedDisciplineContributions,
+        ...proposal.integratedDisciplineContributions,
+      ],
+    };
+    const stubbornModel = new MockLanguageModelV4({
+      doStream: retrievalProposalSteps(invalidProposal),
+      doGenerate: async () => ({
+        content: [
+          {
+            type: "tool-call",
+            toolCallId: "draft_still_broken",
+            toolName: "create_activity_draft",
+            input: JSON.stringify(invalidProposal),
+          },
+        ],
+        finishReason: { unified: "tool-calls", raw: undefined },
+        usage,
+        warnings: [],
+      }),
+    });
+    mocks.createModel.mockReturnValue(stubbornModel);
+
+    const response = await handleActivityAssistantRequest(
+      userRequest("資料已完整，請直接整理成草稿提案"),
+      dependencies(),
+    );
+    const body = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(body).not.toContain("tool-approval-request");
+    expect(stubbornModel.doGenerateCalls).toHaveLength(1);
+    expect(mocks.saveDraft).not.toHaveBeenCalled();
+    expect(mocks.finishRun).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ source: "AGENT", actorId }),
+      expect.objectContaining({ status: "FAILED" }),
+    );
   });
 
   it("does not present or save a proposal that skipped official source reading", async () => {

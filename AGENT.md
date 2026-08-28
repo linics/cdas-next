@@ -71,6 +71,8 @@ D-033 起，`create_activity_draft` 是“理解确认后执行”的 L1 工具�
 
 D-049 起，提案只让模型给出它真正在决定的东西：官方引用只提交 `sourceId`、`sectionId` 与采用理由，`content.schemaVersion` 恒为 2、`content.integratedDisciplineCodes` 按融合学科贡献推导，标题与链接由服务端按同一份语料查出。语料、学段、学科、去重与"必须本轮通读"的校验一条不放宽。领域校验带稳定原因标记，`AgentRun.failureCode` 因此能区分内容错、格式错与长度截断，原因文本只来自本仓库的静态标记。
 
+D-050 起，`create_activity_draft` 与 `update_activity_draft` 的参数若未通过 schema 校验，每个请求允许一次修复重试：把上一次参数与校验报错交回同一模型，要求只重发一次调用。修复使用只含 schema、不含 execute 的工具注册表，因此修复过程本身不执行任何工具、不写任何数据；修复结果走与首次完全相同的校验、签名审批与领域命令。修复失败时与从未修复过一致地失败关闭。
+
 知识工具结果和提案引用均由服务端白名单校验。服务端按当前消息会话维护“检索命中—已读章节”账本：`read_source_section` 只能读取此前检索命中的章节，`create_activity_draft` 的每条引用都必须已在本次会话读过，审批续传时从重新校验后的消息历史恢复该账本。工具输入不接受文件路径、任意 URL、存储键或私有资源标识；客户端历史中的片段、标题、链接与 ID 必须能由相同输入在当前语料中精确重算。来源引用只说明当前提案使用了哪些依据，不是课程标准映射或合规结论，也不进入 ActivityDraft、Revision 或 Release snapshot。
 
 ### 高影响业务工具

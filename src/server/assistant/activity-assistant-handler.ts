@@ -4,11 +4,14 @@ import { randomUUID } from "node:crypto";
 import {
   convertToModelMessages,
   createUIMessageStreamResponse,
+  generateText,
   hasToolCall,
+  InvalidToolInputError,
   isStepCount,
   streamText,
   toUIMessageStream,
   type LanguageModel,
+  type ToolCallRepairFunction,
 } from "ai";
 import type { AppUser, PrismaClient } from "../../generated/prisma/client";
 import {
@@ -523,6 +526,67 @@ export async function handleActivityAssistantRequest(
       void settle("SUCCEEDED", null);
     },
   });
+  // The proposal and revision payloads are the only large structured inputs
+  // the model writes, and their failures are single-point schema mistakes. One
+  // repair attempt per request hands the exact error back and asks for a
+  // corrected call. Nothing downstream is relaxed: the repaired input is
+  // validated by the same schema, gated by the same approval, and still faces
+  // the read ledger and the domain command.
+  let repairAttempted = false;
+  const repairToolCall: ToolCallRepairFunction<typeof tools> = async ({
+    toolCall,
+    error,
+  }) => {
+    if (
+      repairAttempted ||
+      !InvalidToolInputError.isInstance(error) ||
+      (toolCall.toolName !== "create_activity_draft" &&
+        toolCall.toolName !== "update_activity_draft")
+    ) {
+      return null;
+    }
+    repairAttempted = true;
+    try {
+      const repair = await generateText({
+        model,
+        instructions:
+          "你在上一次工具调用里写错了参数。请只用同一个工具重新调用一次，" +
+          "修正报错指出的地方，其余内容逐字保留。中文不要用半角双引号，需要引用用「」。" +
+          "不要输出任何解释文字。",
+        prompt: `工具：${toolCall.toolName}
+
+上一次的参数：
+${toolCall.input}
+
+校验报错：
+${error.message}`,
+        // The schema-only registry. Repair must produce arguments, never run
+        // anything: these definitions have no execute functions, so a repaired
+        // call cannot write before the teacher has approved it.
+        tools: activityAssistantMessageValidationTools,
+        toolChoice: { type: "tool", toolName: toolCall.toolName },
+        providerOptions: deepSeekActivityAssistantProviderOptions,
+        maxOutputTokens: 16_000,
+        maxRetries: 0,
+        timeout: 90_000,
+        abortSignal: request.signal,
+      });
+      const repaired = repair.toolCalls.find(
+        (candidate) => candidate.toolName === toolCall.toolName,
+      );
+      if (!repaired) {
+        return null;
+      }
+      return {
+        ...toolCall,
+        input: JSON.stringify(repaired.input),
+      };
+    } catch {
+      // A failed repair must be indistinguishable from no repair at all.
+      return null;
+    }
+  };
+
   // A teacher who chose "continue supplementing" must get a conversational
   // follow-up, not another copy of the same proposal in that approval
   // continuation. A later ordinary user turn is a new attempt and can create
@@ -559,6 +623,7 @@ export async function handleActivityAssistantRequest(
       tools,
       toolChoice: selectActivityAssistantToolChoice(uiMessages),
       providerOptions: deepSeekActivityAssistantProviderOptions,
+      repairToolCall,
       toolApproval: {
         create_activity_draft: () => {
           if (createApprovalSelected) {
