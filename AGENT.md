@@ -44,12 +44,13 @@ D-045 首批只改变呈现位置，复用已经交付的官方依据检索、�
 - `list_my_activity_drafts`
 - `list_my_releases`
 - `get_activity_draft`
+- `get_process_insights`
 - `get_release_summary`
 - `list_release_submissions`
 
 D-046 交付当前上下文、本人班级、本人草稿和本人发布摘要。当前页面由客户端 `usePathname` 在每次发送时解析成白名单枚举和可选 UUID；服务端重新校验，动态资源还须出现在当前教师已经鉴权的工作台结果中。客户端路径从不授予权限，也不原样回传。续轮历史中的只读结果须按当前授权工作区重算，防止伪造标题、数量、ID 或 href 污染模型上下文。
 
-D-047 追加 `get_activity_draft`：它先在同一份已鉴权工作台结果中比对 `draftId`，命中后才用既有 `getTeacherActivityDraft` 再证一次 `ownerId`，只返回该草稿当前修订的 v2 任务书、状态、版本、更新时间、是否已发布和 canonical 链接。未命中一律资源级不存在且不发出查询；v1 快照只返回标题与链接。续轮历史里的草稿正文同样按当前授权重算，同一请求对同一草稿只作一次授权判定。它是只读工具：助手据此诊断和给改写文字，但不能改写教师已有草稿。`get_release_summary` 和 `list_release_submissions` 仍未开放，因为学生层明细需要独立的数据最小化决策。
+D-047 追加 `get_activity_draft`：它先在同一份已鉴权工作台结果中比对 `draftId`，命中后才用既有 `getTeacherActivityDraft` 再证一次 `ownerId`，只返回该草稿当前修订的 v2 任务书、状态、版本、更新时间、是否已发布和 canonical 链接。未命中一律资源级不存在且不发出查询；v1 快照只返回标题与链接。续轮历史里的草稿正文同样按当前授权重算，同一请求对同一草稿只作一次授权判定。它是只读工具：助手据此诊断和给改写文字，但不能改写教师已有草稿。D-051 再加 `get_process_insights`：先在同一份已鉴权工作台结果中比对 `releaseId`，命中后复用第一方过程诊断页的 `getTeacherInsights`，只返回阶段桶计数、量规各档分布与最弱维度、重交后上升/持平/下降的份数。全部是队列层面的计数，没有姓名、成员数、提交 ID 或任何正文，因此无法归因到个人；提示词要求把弱项读作任务书与教学安排的信号，不得当成对学生或对课程质量的结论。`get_release_summary` 和 `list_release_submissions` 仍未开放，因为学生层明细需要独立的数据最小化决策。
 
 ### 草稿工具
 

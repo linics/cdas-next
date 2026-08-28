@@ -127,6 +127,38 @@ type ActivityDraftRevisionProposal = {
   content: ActivityContentV2;
 };
 
+type ReleaseInsightsOutput =
+  | {
+      status: "FOUND";
+      releaseId: string;
+      title: string;
+      classroomName: string;
+      releaseStatus: "ACTIVE" | "CLOSED" | "ARCHIVED";
+      insightsHref: string;
+      audienceCount: number;
+      stageBuckets: Array<{ key: string; label: string; count: number }>;
+      rubricStatus: "no_rubric" | "no_evaluations" | "ready";
+      evaluatedCount: number;
+      rubricDimensions: Array<{
+        dimensionName: string;
+        excellent: number;
+        good: number;
+        pass: number;
+        improve: number;
+        insufficient: number;
+        weakest: boolean;
+      }>;
+      improvement: {
+        reviseCount: number;
+        resubmittedCount: number;
+        evaluationPairs: number;
+        rose: number;
+        unchanged: number;
+        fell: number;
+      };
+    }
+  | { status: "NOT_FOUND"; releaseId: string };
+
 const draftNotCreatedRetryText =
   '草稿未创建。你可以补一句"请重新创建草稿"让助手重试，或改用手动表单。';
 
@@ -215,6 +247,10 @@ type ActivityAssistantMessage = UIMessage<
     get_activity_draft: {
       input: { draftId: string };
       output: TeacherDraftDetailOutput;
+    };
+    get_process_insights: {
+      input: { releaseId: string };
+      output: ReleaseInsightsOutput;
     };
     update_activity_draft: {
       input: ActivityDraftRevisionProposal;
@@ -998,6 +1034,61 @@ export function ActivityAssistant({
                     return (
                       <p className={styles.toolProgress} key={part.toolCallId}>
                         正在核对来源章节…
+                      </p>
+                    );
+                  }
+
+                  if (part.type === "tool-get_process_insights") {
+                    if (part.state === "output-available") {
+                      if (part.output.status === "NOT_FOUND") {
+                        return (
+                          <p className={styles.errorText} key={part.toolCallId}>
+                            这次发布不在你的工作区，或你已无权查看。
+                          </p>
+                        );
+                      }
+                      const weakest = part.output.rubricDimensions.find(
+                        (dimension) => dimension.weakest,
+                      );
+                      return (
+                        <div className={styles.toolResult} key={part.toolCallId}>
+                          <strong>过程诊断 · {part.output.title}</strong>
+                          <p>
+                            {part.output.classroomName} ·{" "}
+                            {readOnlyReleaseStatusLabel[part.output.releaseStatus]} ·
+                            对象 {part.output.audienceCount}
+                          </p>
+                          <p>
+                            {part.output.stageBuckets
+                              .map((bucket) => `${bucket.label} ${bucket.count}`)
+                              .join(" · ")}
+                          </p>
+                          <p>
+                            {part.output.rubricStatus === "ready"
+                              ? `已评价 ${part.output.evaluatedCount} 份${weakest ? ` · 最弱维度：${weakest.dimensionName}` : ""}`
+                              : part.output.rubricStatus === "no_rubric"
+                                ? "这次发布没有冻结量规。"
+                                : "还没有量规评价可供统计。"}
+                          </p>
+                          <p>
+                            重交后：上升 {part.output.improvement.rose} · 持平{" "}
+                            {part.output.improvement.unchanged} · 下降{" "}
+                            {part.output.improvement.fell}
+                          </p>
+                          <Link href={part.output.insightsHref}>打开过程诊断</Link>
+                        </div>
+                      );
+                    }
+                    if (part.state === "output-error") {
+                      return (
+                        <p className={styles.errorText} key={part.toolCallId}>
+                          过程诊断读取失败；请直接打开过程诊断页查看。
+                        </p>
+                      );
+                    }
+                    return (
+                      <p className={styles.toolProgress} key={part.toolCallId}>
+                        正在统计这次发布的过程数据…
                       </p>
                     );
                   }

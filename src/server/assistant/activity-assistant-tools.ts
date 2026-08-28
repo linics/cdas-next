@@ -38,6 +38,10 @@ import {
   type TeacherDraftDetailReader,
 } from "./teacher-draft-detail";
 import {
+  releaseInsightsOutputSchema,
+  type TeacherReleaseInsightsReader,
+} from "./teacher-release-insights";
+import {
   getOfficialKnowledgeReference,
   officialKnowledgeSectionKey,
   type OfficialKnowledgeSectionIdentity,
@@ -404,6 +408,10 @@ export const activityDraftReadInputSchema = z
   .object({ draftId: z.uuid() })
   .strict();
 
+export const releaseInsightsInputSchema = z
+  .object({ releaseId: z.uuid() })
+  .strict();
+
 const revisionChangeSchema = z
   .object({
     area: taskBookAreaSchema,
@@ -642,6 +650,11 @@ export const activityAssistantMessageValidationTools = {
     outputSchema: teacherDraftDetailOutputSchema,
     strict: true,
   }),
+  get_process_insights: tool({
+    inputSchema: releaseInsightsInputSchema,
+    outputSchema: releaseInsightsOutputSchema,
+    strict: true,
+  }),
   update_activity_draft: tool({
     inputSchema: activityDraftRevisionProposalSchema,
     outputSchema: updatedDraftToolOutputSchema,
@@ -690,6 +703,7 @@ export type ActivityAssistantToolDependencies = Readonly<{
   pageContext: TeacherAgentPageContext;
   workspace: TeacherActivityDashboard;
   readDraftDetail: TeacherDraftDetailReader;
+  readReleaseInsights: TeacherReleaseInsightsReader;
   /**
    * Draft versions the model has been shown, shared with the caller so the
    * approval gate and the tool agree on one ledger. The tools write to it.
@@ -732,6 +746,7 @@ export function createActivityAssistantTools({
   pageContext,
   workspace,
   readDraftDetail,
+  readReleaseInsights,
   draftReads,
   agentRunId,
   onToolFailure,
@@ -903,6 +918,15 @@ export function createActivityAssistantTools({
           throw new Error(`ACTIVITY_DRAFT_${code}`);
         }
       },
+    }),
+
+    get_process_insights: tool({
+      description:
+        "读取当前教师某一次发布的过程诊断：各阶段有多少对象、冻结量规各维度的档位分布与最弱维度、以及重交后评价上升/持平/下降的计数。releaseId 必须来自 list_my_releases 的结果。只返回人数与计数，不含任何学生、小组、提交、证据、反馈或评价正文，因此无法也不应据此判断某个学生。",
+      inputSchema: releaseInsightsInputSchema,
+      outputSchema: releaseInsightsOutputSchema,
+      strict: true,
+      execute: ({ releaseId }) => readReleaseInsights(releaseId),
     }),
 
     update_activity_draft: tool({

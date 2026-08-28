@@ -124,6 +124,7 @@ const mocks = {
   onToolFailure: vi.fn(),
   onBusinessWriteSuccess: vi.fn(),
   readDraftDetail: vi.fn(),
+  readReleaseInsights: vi.fn(),
 };
 
 function database(): PrismaClient {
@@ -150,6 +151,7 @@ function tools({ seedReadSections = true, draftReads }: {
     pageContext: { kind: "ACTIVITY_DRAFT", resourceId: draftId },
     workspace,
     readDraftDetail: mocks.readDraftDetail,
+    readReleaseInsights: mocks.readReleaseInsights,
     agentRunId: runId,
     onToolFailure: mocks.onToolFailure,
     onBusinessWriteSuccess: mocks.onBusinessWriteSuccess,
@@ -317,6 +319,7 @@ describe("activity assistant tools", () => {
         pageContext: { kind: "TEACHER_DASHBOARD" },
         workspace: revokedWorkspace,
         readDraftDetail: mocks.readDraftDetail,
+        readReleaseInsights: mocks.readReleaseInsights,
         agentRunId: runId,
         onToolFailure: mocks.onToolFailure,
         onBusinessWriteSuccess: mocks.onBusinessWriteSuccess,

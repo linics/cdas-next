@@ -11,10 +11,12 @@ import {
   teacherInsightsDashboardSchema,
 } from "./teacher-insights";
 
-function context(): CommandContext {
+function context(
+  source: CommandContext["source"] = "UI",
+): CommandContext {
   return {
     actorId: "50000000-0000-4000-8000-000000000005",
-    source: "UI",
+    source,
     traceId: "teacher-insights-trace",
     clock: () => new Date("2026-08-27T04:00:00.000Z"),
   };
@@ -65,5 +67,28 @@ describe("teacher insights query boundary", () => {
         },
       }).success,
     ).toBe(false);
+  });
+});
+
+describe("teacher insights source boundary", () => {
+  it("keeps the same role boundary for Agent reads and refuses other sources", async () => {
+    const database = {
+      appUser: {
+        findUnique: vi.fn().mockResolvedValue({
+          role: "STUDENT",
+          displayName: "陈同学",
+        }),
+      },
+      activityRelease: { findMany: vi.fn() },
+    } as unknown as PrismaClient;
+
+    await expect(
+      getTeacherInsights(database, context("AGENT"), {}),
+    ).rejects.toEqual(
+      new TeacherActivityQueryError("WRONG_ROLE", "陈同学"),
+    );
+    await expect(
+      getTeacherInsights(database, context("SYSTEM"), {}),
+    ).rejects.toThrow(TypeError);
   });
 });

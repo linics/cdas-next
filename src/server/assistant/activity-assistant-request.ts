@@ -21,6 +21,7 @@ import {
 } from "./activity-assistant-tools";
 import type { TeacherActivityDashboard } from "../queries/teacher-activity-workspace";
 import type { TeacherDraftDetailReader } from "./teacher-draft-detail";
+import type { TeacherReleaseInsightsReader } from "./teacher-release-insights";
 import {
   officialKnowledgeSectionKey,
   readOfficialKnowledgeSection,
@@ -113,6 +114,7 @@ function assertSafeMessageHistory(
         part.type !== "tool-list_my_activity_drafts" &&
         part.type !== "tool-list_my_releases" &&
         part.type !== "tool-get_activity_draft" &&
+        part.type !== "tool-get_process_insights" &&
         part.type !== "tool-update_activity_draft" &&
         part.type !== "tool-search_knowledge" &&
         part.type !== "tool-read_source_section" &&
@@ -142,7 +144,8 @@ function assertSafeMessageHistory(
           part.type === "tool-list_my_classrooms" ||
           part.type === "tool-list_my_activity_drafts" ||
           part.type === "tool-list_my_releases" ||
-          part.type === "tool-get_activity_draft") &&
+          part.type === "tool-get_activity_draft" ||
+          part.type === "tool-get_process_insights") &&
         part.state !== "output-available"
       ) {
         throw new ActivityAssistantRequestError("INVALID_MESSAGES");
@@ -324,11 +327,16 @@ export type ParsedActivityAssistantRequest = Readonly<{
  * renamed, rewritten, deleted, or handed to another teacher between turns
  * cannot survive in the conversation as its stale self.
  */
+export type ActivityAssistantReaders = Readonly<{
+  readDraftDetail: TeacherDraftDetailReader;
+  readReleaseInsights: TeacherReleaseInsightsReader;
+}>;
+
 export async function canonicalizeActivityAssistantReadOnlyHistory(
   messages: ActivityAssistantMessage[],
   workspace: TeacherActivityDashboard,
   pageContext: TeacherAgentPageContext,
-  readDraftDetail: TeacherDraftDetailReader,
+  readers: ActivityAssistantReaders,
 ): Promise<ActivityAssistantMessage[]> {
   return Promise.all(messages.map(async (message) => {
     if (message.role !== "assistant") return message;
@@ -337,7 +345,19 @@ export async function canonicalizeActivityAssistantReadOnlyHistory(
         part.type === "tool-get_activity_draft" &&
         part.state === "output-available"
       ) {
-        return { ...part, output: await readDraftDetail(part.input.draftId) };
+        return {
+          ...part,
+          output: await readers.readDraftDetail(part.input.draftId),
+        };
+      }
+      if (
+        part.type === "tool-get_process_insights" &&
+        part.state === "output-available"
+      ) {
+        return {
+          ...part,
+          output: await readers.readReleaseInsights(part.input.releaseId),
+        };
       }
       return part;
     }));

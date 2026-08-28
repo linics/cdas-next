@@ -188,7 +188,10 @@ export async function getTeacherInsights(
   rawInput: unknown,
 ): Promise<TeacherInsightsDashboard> {
   const input = queryInputSchema.parse(rawInput);
-  const context = resolveCommandContext(commandContext, ["UI"]);
+  // The process diagnostics page and the global Agent read the same aggregate
+  // through this one query. It is scoped to releases this teacher published and
+  // returns counts only, so widening the source does not widen what is visible.
+  const context = resolveCommandContext(commandContext, ["UI", "AGENT"]);
   const actor = await requireTeacher(database, context.actorId);
   const rows = await database.activityRelease.findMany({
     where: { publisherId: context.actorId },

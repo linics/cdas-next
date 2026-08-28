@@ -51,7 +51,9 @@ import {
   getTeacherActivityDraft,
   type TeacherActivityDashboard,
 } from "../queries/teacher-activity-workspace";
+import { getTeacherInsights } from "../queries/teacher-insights";
 import { createTeacherDraftDetailReader } from "./teacher-draft-detail";
+import { createTeacherReleaseInsightsReader } from "./teacher-release-insights";
 
 type StartedRun = Awaited<ReturnType<typeof startActivityAssistantRun>>;
 
@@ -67,6 +69,7 @@ export type ActivityAssistantHandlerDependencies = Readonly<{
     input: unknown,
   ) => Promise<TeacherActivityDashboard>;
   readDraft: typeof getTeacherActivityDraft;
+  readInsights: typeof getTeacherInsights;
   startRun: typeof startActivityAssistantRun;
   finishRun: typeof finishActivityAssistantRun;
   createTraceId: () => string;
@@ -81,6 +84,7 @@ const defaultDependencies: ActivityAssistantHandlerDependencies = {
   createTools: createActivityAssistantTools,
   getWorkspace: getTeacherActivityDashboard,
   readDraft: getTeacherActivityDraft,
+  readInsights: getTeacherInsights,
   startRun: startActivityAssistantRun,
   finishRun: finishActivityAssistantRun,
   createTraceId: randomUUID,
@@ -269,6 +273,12 @@ export function buildActivityAssistantInstructions(
 0. 可以识别当前教师页面，并查询当前教师有权查看的班级、活动草稿、发布摘要与待办。只使用只读工具返回的结构化结果；不得猜测其他资源、学生或评阅详情。工具返回的站内链接必须留给教师点击，不得声称已经自动跳转。
 0.1 教师要你看、评、改某一份已有草稿时，先用 get_activity_draft 读它的完整任务书，再依据上面的逆向设计和情境叙事标准逐条指出问题并给出可直接替换的改写文字。draftId 只能取自 list_my_activity_drafts 或 get_current_context 的结果；教师只说标题时先列草稿再确认是哪一份。返回 NOT_FOUND 就如实说这份草稿不在你的工作区，不要改用记忆或猜测内容作答。返回 LEGACY_SNAPSHOT 表示这是旧版快照，你读不到正文，请教师打开草稿页处理。get_activity_draft 本身只读，不会改动任何内容。
 0.2 教师明确要你把修改落到草稿上时，用 update_activity_draft 改写同一份草稿的新版本。前提是你已经在本轮对话里用 get_activity_draft 读到它，且 expectedVersion 就是你读到的那个版本号；没读过、版本对不上或草稿已封存都不要尝试。content 必须是改写后的完整任务书，不是片段：教师没要求改的部分要逐字保留原文，不要顺手润色。changes 要如实写清你动了哪几个区域、改成什么、为什么；服务端会拿它和真实差异逐条核对，多报或漏报都会失败，所以不要为了显得改得多而虚报，也不要把顺带改动藏起来。这个工具会暂停等待教师确认，教师拒绝后不要重试；每次请求最多改写一份草稿。原版本会作为历史修订保留，改写不会抹掉教师之前的内容。
+0.3 教师问某次发布的学生卡在哪、量规哪一维最弱、重交后有没有进步时，用 get_process_insights
+读那次发布的过程诊断，releaseId 取自 list_my_releases。它只返回人数与计数：各阶段有多少对象、
+量规各档分布、重交前后评价上升/持平/下降的份数。这里没有任何学生、小组或提交的身份，你也不
+可以据此推断某个学生怎么样——教师要看具体是谁，请他打开提交页。解读时把弱项当成任务书或教学
+安排的信号（证据要求是不是太模糊、支架够不够、阶段是不是断层），提出可以改的地方；这不是对
+学生的评判，也不是课程质量或达标结论。
 1. 根据教师自然语言，整理 schema v2 的完整跨学科任务书。必须使用原版 CTS 的学段/年级、稳定学科目录、主学科加至少一个融合学科、实践性/探究性/项目式作业及其条件子类型、探究深度、提交模式和 1–16 周周期。作业类型只能用 practical、inquiry、project。子类型必须与类型匹配且只用这些代码：practical 配 visit、simulation、observation；inquiry 配 literature、survey、experiment；project 的 assignmentSubtype 必须为 null，不得填其他字串。探究深度只用 basic、intermediate、deep。提交模式只用 phased、once、mixed；教师说过程性提交时用 phased。学科代码必须用目录中的英文 code，信息科技是 infoTech。另需具体背景、知识与技能/过程与方法/情感态度三维目标、三到四个连续阶段（每阶段一个明确行动、情境、支架、类型化证据、评价要点、课时）及四档量规。可选 0–2 个跨学科概念：物质与能量、结构与功能、系统与模型、稳定与变化。
 2. 只有缺少会改变年级、学科、真实任务、成果、证据或评价结构的资料时，才每轮问一个必要问题；不要因可选润饰、措辞或补充背景而阻塞，也不得把缺失事实当成已知资料。资料足够时立刻调用 create_activity_draft。
 
@@ -427,12 +437,20 @@ export async function handleActivityAssistantRequest(
     return jsonError(503, "ASSISTANT_UNAVAILABLE");
   }
 
-  const readDraftDetail = createTeacherDraftDetailReader({
-    database,
-    agentContext,
-    workspace,
-    getDraft: dependencies.readDraft,
-  });
+  const readers = {
+    readDraftDetail: createTeacherDraftDetailReader({
+      database,
+      agentContext,
+      workspace,
+      getDraft: dependencies.readDraft,
+    }),
+    readReleaseInsights: createTeacherReleaseInsightsReader({
+      database,
+      agentContext,
+      workspace,
+      getInsights: dependencies.readInsights,
+    }),
+  };
 
   let uiMessages: ActivityAssistantMessage[];
   try {
@@ -440,7 +458,7 @@ export async function handleActivityAssistantRequest(
       parsedRequest.messages,
       workspace,
       parsedRequest.pageContext,
-      readDraftDetail,
+      readers,
     );
   } catch {
     return jsonError(503, "ASSISTANT_UNAVAILABLE");
@@ -510,7 +528,7 @@ export async function handleActivityAssistantRequest(
     approvalContext,
     pageContext: parsedRequest.pageContext,
     workspace,
-    readDraftDetail,
+    ...readers,
     draftReads,
     agentRunId: run.id,
     initialKnowledgeSearchResults: knowledgeLedger.searchResults,

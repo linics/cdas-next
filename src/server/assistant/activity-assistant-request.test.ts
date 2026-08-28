@@ -199,7 +199,13 @@ describe("activity assistant request validation", () => {
       parsed.messages,
       workspace,
       parsed.pageContext,
-      async (draftId) => ({ status: "NOT_FOUND", draftId }),
+      {
+        readDraftDetail: async (draftId) => ({ status: "NOT_FOUND", draftId }),
+        readReleaseInsights: async (releaseId) => ({
+          status: "NOT_FOUND",
+          releaseId,
+        }),
+      },
     );
     expect(JSON.stringify(canonical)).toContain("七年一班");
     expect(JSON.stringify(canonical)).toContain("28");
@@ -260,7 +266,13 @@ describe("activity assistant request validation", () => {
       parsed.messages,
       workspace,
       parsed.pageContext,
-      readDraftDetail,
+      {
+        readDraftDetail,
+        readReleaseInsights: async (releaseId: string) => ({
+          status: "NOT_FOUND" as const,
+          releaseId,
+        }),
+      },
     );
 
     expect(readDraftDetail).toHaveBeenCalledWith(historyDraftId);
@@ -355,7 +367,12 @@ describe("activity assistant request validation", () => {
       parsed.messages,
       workspace,
       parsed.pageContext,
-      async (draftId) =>
+      {
+        readReleaseInsights: async (releaseId: string) => ({
+          status: "NOT_FOUND" as const,
+          releaseId,
+        }),
+        readDraftDetail: async (draftId: string) =>
         draftId === firstDraftId
           ? {
               status: "FOUND",
@@ -368,7 +385,8 @@ describe("activity assistant request validation", () => {
               previewHref: `/teacher/activities/${draftId}/preview`,
               content: waterConservationTaskBook,
             }
-          : { status: "NOT_FOUND", draftId },
+          : { status: "NOT_FOUND" as const, draftId },
+      },
     );
 
     expect([...getActivityAssistantDraftReadLedger(canonical)]).toEqual([
@@ -420,6 +438,68 @@ describe("activity assistant request validation", () => {
     );
 
     expect(parsed.messages).toHaveLength(2);
+  });
+
+  it("recomputes a quoted process-insights result from current authorization", async () => {
+    const historyReleaseId = "60000000-0000-4000-8000-000000000006";
+    const parsed = await parseActivityAssistantRequestEnvelope(
+      request({
+        messages: [
+          {
+            id: "message_1",
+            role: "user",
+            parts: [{ type: "text", text: "这次发布学生卡在哪" }],
+          },
+          {
+            id: "assistant_1",
+            role: "assistant",
+            parts: [
+              {
+                type: "tool-get_process_insights",
+                toolCallId: "insights_1",
+                state: "output-available",
+                input: { releaseId: historyReleaseId },
+                output: {
+                  status: "NOT_FOUND",
+                  releaseId: historyReleaseId,
+                },
+              },
+            ],
+          },
+          {
+            id: "message_2",
+            role: "user",
+            parts: [{ type: "text", text: "那量规哪一维最弱" }],
+          },
+        ],
+        pageContext: { kind: "TEACHER_DASHBOARD" },
+      }),
+    );
+    const workspace: TeacherActivityDashboard = {
+      actor: { displayName: "林老师" },
+      drafts: [],
+      releases: [],
+      classrooms: [],
+    };
+    const readReleaseInsights = vi.fn(async (releaseId: string) => ({
+      status: "NOT_FOUND" as const,
+      releaseId,
+    }));
+
+    await canonicalizeActivityAssistantReadOnlyHistory(
+      parsed.messages,
+      workspace,
+      parsed.pageContext,
+      {
+        readDraftDetail: async (draftId: string) => ({
+          status: "NOT_FOUND" as const,
+          draftId,
+        }),
+        readReleaseInsights,
+      },
+    );
+
+    expect(readReleaseInsights).toHaveBeenCalledWith(historyReleaseId);
   });
 
   it("rejects a structurally invalid revision in history", async () => {
