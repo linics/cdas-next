@@ -1,6 +1,11 @@
 import "server-only";
 
-import { generateText, Output, type LanguageModel } from "ai";
+import {
+  generateText,
+  NoObjectGeneratedError,
+  Output,
+  type LanguageModel,
+} from "ai";
 import { z } from "zod";
 import type { ActivityContentV2 } from "../../domain/activity/activity-content";
 import {
@@ -267,6 +272,9 @@ function failureFor(error: unknown): Readonly<{
   if (
     error instanceof z.ZodError ||
     (error instanceof Error && error.name === "ZodError") ||
+    // The provider answered; its JSON just did not match the schema. Reporting
+    // that as an outage would send the teacher to wait instead of retrying.
+    NoObjectGeneratedError.isInstance(error) ||
     (error instanceof TeacherEvaluationSuggestionError &&
       error.code === "INVALID_OUTPUT")
   ) {

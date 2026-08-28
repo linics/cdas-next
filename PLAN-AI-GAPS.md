@@ -1,6 +1,7 @@
 # AI 功能缺口与整改指令
 
-状态：待执行。本文来自 2026-08-29 对 `codex/ai-features` 分支（D-044 ~ D-053）的第一性原理审阅。
+状态：**第一节（立即整改）已于 2026-08-29 全部执行完毕，见每条下的「执行结果」；第二节仍未立项，
+不得开工。** 本文来自 2026-08-29 对 `codex/ai-features` 分支（D-044 ~ D-053）的第一性原理审阅。
 每一条都写成可独立执行的指令：读到本文件的会话不需要那次审阅的上下文即可动手。
 
 关联：`PLAN-AI-DEEPENING.md`（原始计划）、`DECISIONS.md`（D-044 ~ D-053）、`AGENT.md`（工具边界）。
@@ -36,12 +37,45 @@ memory 中的 deepseek-json-object-mode），这层合同天然脆，必须有�
 
 **验收**：同一套合成数据上连续通过；把任一起草提示词中的字段名删掉后冒烟必须失败。
 
+**执行结果（2026-08-29）**：已完成，冒烟连续 3 次通过。
+
+- 冒烟现在在模型提案建草稿之后，由教师经第一方 UI 发布手写草稿、学生正式提交，然后依次跑
+  D-052 反馈起草 → 教师确认、D-044 评价起草 → 教师确认、D-051 过程诊断，最后核对
+  `/teacher/insights` 也认得这次发布。
+- verifier 从 5 个 AgentRun 扩到 8 个，并新增断言：两个起草 run 各自 `SUCCEEDED`、各自落到
+  `source = AI_ASSISTED` 且 `agentRunId` 精确绑定的业务修订、各自有一条 `SUCCEEDED` 的
+  `suggest_teacher_*` 审计；过程诊断那一轮一个字都没写。
+- 「审计不含建议正文」用浏览器落盘的建议原文做实证：ActionAudit 与 AgentRun 行都不得包含它，
+  而教师确认后的 TeacherFeedbackRevision 必须包含它（那是教师保存的反馈，本就该在）。
+- 冒烟不再断言 `releaseCount === 0`（教师现在会发布），改为断言**没有任何 agent 驱动的发布
+  意图**，模型仍然不能自己发布。
+- 反向验收已实测：把 `body` 从反馈提示词里去掉后，起草 run 以
+  `FEEDBACK_SUGGESTION_PROVIDER_FAILED` 失败、成功提示不出现、冒烟红灯。
+
+**顺带修掉的三个真实缺陷**（都不改边界）：
+
+1. `isStepCount(6)` 太紧。真实运行会走 3 次检索 + 3 次通读＝正好 6 步，`create_activity_draft`
+   连一步都不剩，于是 run 以 `SUCCEEDED` 结束却只在文字里说「现在调用工具」。这正是过去把它当成
+   「模型不听话」的那个偶发红灯的根因。已放宽到 10。
+2. 「调用工具就是在请求确认」那段只点了 `create_activity_draft` 与 `publish_activity_release`，
+   漏了 `update_activity_draft`，改写步因此也会只写散文不出确认卡。已补齐并加测试钉住三者。
+3. `search_knowledge` 的 `query` 上限 400 字从未写进提示词，模型偶尔把整段要求当查询导致
+   `..._QUERY` 校验失败。已在提示词里写明。
+
+另外把 `NoObjectGeneratedError`（供应商答了、但 JSON 不合 schema）从 `PROVIDER_FAILED`
+改判为 `INVALID_OUTPUT`：前者会让教师以为要等服务恢复，后者才提示可以重试或继续手写。
+
 ### 指令 2：给两个起草提示词的字段名合同补上反馈侧遗漏检查
 
 **现状**：字段名合同测试已存在（`teacher-evaluation-suggestion.test.ts` 的
 "names every output field" 与反馈侧对应测试）。执行指令 1 时顺带核对两份测试列出的字段
 与各自 zod schema 的字段是否**自动**保持同步（当前是手抄清单）；若不同步，改为从 schema 键名派生断言，
 防止将来给 schema 加字段时忘改提示词。
+
+**执行结果（2026-08-29）**：当时确实是手抄清单。已新增 `src/test/zod-field-names.ts`
+递归收集 schema 的全部属性名（含数组元素与判别联合分支），两份合同测试改为遍历派生结果断言
+提示词逐个包含；手抄清单只保留为「这几个必须在里面」的下限。给 schema 加字段而忘了改提示词，
+现在会在单测就红。
 
 ### 指令 3：历史重算补标题一致性（低风险，可延后）
 
@@ -51,12 +85,23 @@ memory 中的 deepseek-json-object-mode），这层合同天然脆，必须有�
 草稿在两轮之间被改名时，模型可能拿旧标题配新内容。链接是服务端规范生成的，无授权风险，
 只是模型上下文可能混淆。修法：列表工具重算时连标题/状态一起以当前查询结果覆盖历史值。
 
+**执行结果（2026-08-29）：这条的前提不成立，没有改代码。**
+`canonicalizeActivityAssistantReadOnlyHistory` 对 `list_my_*` 并不是「只按 ID 重算存在性」——
+它直接用 `mapTeacherClassroomList/DraftList/ReleaseList(workspace)` 把**整个 output 换掉**，
+标题、状态、版本、href 全部来自当前已鉴权工作区。已补一条测试：草稿在两轮之间改名后，
+历史里的旧标题不出现、新标题与新状态出现。行为已被钉住，不需要改动。
+
 ### 指令 4：部署红线写进部署文档
 
 `src/server/auth/clickthrough-auth.ts` 是本地演示用认证绕过，门禁正确
 （要求 `NODE_ENV=development`、非 Vercel、非 E2E/staging、显式配置 `DEV_TEST_*_CLERK_ID`）。
 需要落成一行部署检查：**任何部署环境（含 staging）不得设置 `DEV_TEST_TEACHER_CLERK_ID` /
 `DEV_TEST_STUDENT_CLERK_ID`**，staging 必须走真实 Clerk。
+
+**执行结果（2026-08-29）**：没有只写成文档，落成了真正的门禁。staging preflight 新增
+`NO_CLICKTHROUGH_AUTH_IDENTITIES` 检查，两个变量中任一存在即 FAIL 并给出 `NO_GO`，
+`scripts/staging/contracts.test.ts` 有对应的 fail-closed 用例；`STAGING.md` 同步写明这是
+配置错误而非可用回退。
 
 ---
 

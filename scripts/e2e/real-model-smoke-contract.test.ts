@@ -50,8 +50,35 @@ describe("real-model smoke D-033 contract", () => {
     ).toBeLessThan(realModelFlowSource.indexOf("草稿已改写 · 版本 1 → 2"));
   });
 
+  it("drives both drafters and the process diagnostics through the real model", () => {
+    expect(realModelFlowSource).toContain("让助手起草这一版反馈");
+    expect(realModelFlowSource).toContain("让助手起草这一版评价");
+    expect(realModelFlowSource).toContain("确认并保存最终反馈");
+    expect(realModelFlowSource).toContain("确认并保存量规评价");
+    expect(realModelFlowSource).toContain("AI 建议 · 教师已确认");
+    expect(realModelFlowSource).toContain("drafted-feedback.txt");
+    expect(realModelFlowSource).toContain("过程诊断 · ");
+    expect(realModelFlowSource).toContain("已评价 1 份");
+    expect(realModelFlowSource).toContain("REAL_MODEL_INSIGHTS_COUNT_MISMATCH");
+  });
+
+  it("requires both suggestion runs to reach a confirmed AI_ASSISTED revision", () => {
+    expect(verifierSource).toContain("suggest_teacher_feedback");
+    expect(verifierSource).toContain("suggest_teacher_evaluation");
+    expect(verifierSource).toContain('feedbackRevision?.source === "AI_ASSISTED"');
+    expect(verifierSource).toContain('evaluationRevision?.source === "AI_ASSISTED"');
+    expect(verifierSource).toContain(
+      "E2E_REAL_MODEL_SUGGESTION_BODY_PERSISTED_IN_AUDIT",
+    );
+    expect(verifierSource).toContain("E2E_REAL_MODEL_AGENT_PUBLISHED_RELEASE");
+    expect(verifierSource).toContain("insightsRun.auditEntries.length === 0");
+    expect(verifierSource).toContain(
+      "E2E_REAL_MODEL_CONFIRMED_FEEDBACK_BODY_MISMATCH",
+    );
+  });
+
   it("requires exactly a no-write proposal run followed by the draft execution run", () => {
-    expect(verifierSource).toContain("runs.length === 5");
+    expect(verifierSource).toContain("runs.length === 8");
     expect(verifierSource).toContain("readRun.draftRevision === null");
     expect(verifierSource).toContain("readRun.intents.length === 0");
     expect(verifierSource).toContain("readRun.auditEntries.length === 0");
@@ -59,11 +86,11 @@ describe("real-model smoke D-033 contract", () => {
     expect(verifierSource).toContain("proposalRun.intents.length === 0");
     expect(verifierSource).toContain("proposalRun.auditEntries.length === 0");
     expect(verifierSource).toContain("run.id === revision.agentRunId");
-    expect(verifierSource).toContain("runCount === 5");
+    expect(verifierSource).toContain("runCount === 8");
     expect(verifierSource).toContain("revisionProposalRun.draftRevision === null");
     expect(verifierSource).toContain("revisionRun.id === agentRevision?.agentRunId");
     expect(verifierSource).toContain("E2E_REAL_MODEL_REVISION_HISTORY_MISMATCH");
-    expect(verifierSource).toContain("intentCount === 0");
-    expect(verifierSource).toContain("releaseCount === 0");
+    expect(verifierSource).toContain("intentCount > 0");
+    expect(verifierSource).toContain("releaseCount === 1");
   });
 });

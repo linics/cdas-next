@@ -400,6 +400,25 @@ function dependencies(): ActivityAssistantHandlerDependencies {
 }
 
 describe("buildActivityAssistantInstructions", () => {
+  it("tells the model that every pausing tool call is itself the confirmation", () => {
+    const text = buildActivityAssistantInstructions([]);
+
+    // A tool that pauses for approval renders its own confirmation card. A
+    // model that narrates the parameters first and promises to call the tool
+    // leaves the teacher with prose and nothing to confirm, which is how the
+    // revision step silently produced no card at all.
+    for (const tool of [
+      "create_activity_draft",
+      "update_activity_draft",
+      "publish_activity_release",
+    ]) {
+      expect(text).toContain(tool);
+      expect(
+        text.slice(text.indexOf("关于「要不要先问一句」")),
+      ).toContain(tool);
+    }
+  });
+
   it("keeps ordinary conversation readable in the plain-text panel", () => {
     const text = buildActivityAssistantInstructions([]);
 

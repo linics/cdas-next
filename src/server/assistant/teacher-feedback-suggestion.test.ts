@@ -8,8 +8,10 @@ import type { PrismaClient } from "../../generated/prisma/client";
 import type { CommandContext } from "../commands/command-context";
 import { FeedbackWorkspaceQueryError } from "../queries/feedback-workspace";
 import { ActivityAssistantConfigError } from "./assistant-config";
+import { zodFieldNames } from "../../test/zod-field-names";
 import {
   buildTeacherFeedbackSuggestionPrompt,
+  teacherFeedbackSuggestionModelOutputSchema,
   suggestTeacherFeedback,
   TeacherFeedbackSuggestionError,
   type TeacherFeedbackSuggestionDependencies,
@@ -164,7 +166,13 @@ describe("teacher feedback suggestion prompt", () => {
       attachmentCount: 0,
     });
 
-    for (const field of ["body", "nextStep", "supportLevel"]) {
+    // Derived from the schema, so adding a field without naming it in the
+    // prompt fails here instead of failing every real model call.
+    const fields = zodFieldNames(teacherFeedbackSuggestionModelOutputSchema);
+    expect(fields).toEqual(
+      expect.arrayContaining(["body", "nextStep", "supportLevel"]),
+    );
+    for (const field of fields) {
       expect(prompt).toContain(field);
     }
     // The provider requires the word JSON to accept json_object responses.
@@ -367,6 +375,44 @@ describe("teacher feedback suggestion boundary", () => {
       expect.objectContaining({
         status: "FAILED",
         failureCode: "FEEDBACK_SUGGESTION_STALE_REVISION",
+      }),
+    );
+  });
+
+  it("reports a schema mismatch as invalid output, not as a provider outage", async () => {
+    const { NoObjectGeneratedError } = await import("ai");
+    mocks.generateSuggestion.mockRejectedValue(
+      new NoObjectGeneratedError({
+        message: "No object generated: response did not match schema.",
+        text: '{"draftFeedback":"..."}',
+        response: { id: "r1", timestamp: now, modelId: "deepseek-v4-flash" },
+        usage: {
+          inputTokens: 1,
+          outputTokens: 1,
+          totalTokens: 2,
+          inputTokenDetails: {
+            noCacheTokens: undefined,
+            cacheReadTokens: undefined,
+            cacheWriteTokens: undefined,
+          },
+          outputTokenDetails: {
+            textTokens: undefined,
+            reasoningTokens: undefined,
+          },
+        },
+        finishReason: "stop",
+      }),
+    );
+
+    await expect(
+      suggestTeacherFeedback(database, context, input(), dependencies()),
+    ).rejects.toEqual(new TeacherFeedbackSuggestionError("INVALID_OUTPUT"));
+    expect(mocks.finishRun).toHaveBeenCalledWith(
+      database,
+      expect.objectContaining({ source: "AGENT" }),
+      expect.objectContaining({
+        status: "FAILED",
+        failureCode: "FEEDBACK_SUGGESTION_INVALID_OUTPUT",
       }),
     );
   });

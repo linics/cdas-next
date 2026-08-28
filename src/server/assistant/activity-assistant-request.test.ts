@@ -314,6 +314,91 @@ describe("activity assistant request validation", () => {
     ).rejects.toEqual(new ActivityAssistantRequestError("INVALID_MESSAGES"));
   });
 
+  it("replaces a stale draft title in history, not only its identifier", async () => {
+    const staleDraftId = "30000000-0000-4000-8000-000000000003";
+    const parsed = await parseActivityAssistantRequestEnvelope(
+      request({
+        messages: [
+          {
+            id: "message_1",
+            role: "user",
+            parts: [{ type: "text", text: "列出我的草稿" }],
+          },
+          {
+            id: "assistant_1",
+            role: "assistant",
+            parts: [
+              {
+                type: "tool-list_my_activity_drafts",
+                toolCallId: "drafts_1",
+                state: "output-available",
+                input: {},
+                output: {
+                  drafts: [
+                    {
+                      id: staleDraftId,
+                      title: "改名前的旧标题",
+                      status: "EDITING",
+                      version: 1,
+                      updatedAt: "2026-08-28T04:00:00.000Z",
+                      editHref: `/teacher/activities/${staleDraftId}`,
+                      previewHref: `/teacher/activities/${staleDraftId}/preview`,
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+          {
+            id: "message_2",
+            role: "user",
+            parts: [{ type: "text", text: "第一份叫什么" }],
+          },
+        ],
+        pageContext: { kind: "TEACHER_DASHBOARD" },
+      }),
+    );
+    const workspace: TeacherActivityDashboard = {
+      actor: { displayName: "林老师" },
+      drafts: [
+        {
+          id: staleDraftId,
+          title: "改名后的新标题",
+          status: "READY_FOR_PREVIEW",
+          version: 4,
+          updatedAt: "2026-08-29T04:00:00.000Z",
+          releaseId: null,
+        },
+      ],
+      releases: [],
+      classrooms: [],
+    };
+
+    const canonical = await canonicalizeActivityAssistantReadOnlyHistory(
+      parsed.messages,
+      workspace,
+      parsed.pageContext,
+      {
+        readDraftDetail: async (draftId: string) => ({
+          status: "NOT_FOUND" as const,
+          draftId,
+        }),
+        readReleaseInsights: async (releaseId: string) => ({
+          status: "NOT_FOUND" as const,
+          releaseId,
+        }),
+      },
+    );
+
+    // A draft renamed between turns must not reach the model under its old
+    // title paired with its new content.
+    const serialized = JSON.stringify(canonical);
+    expect(serialized).not.toContain("改名前的旧标题");
+    expect(serialized).toContain("改名后的新标题");
+    expect(serialized).toContain("READY_FOR_PREVIEW");
+    expect(serialized).toContain('"version":4');
+  });
+
   it("builds the draft read ledger from recomputed history only", async () => {
     const firstDraftId = "30000000-0000-4000-8000-000000000003";
     const secondDraftId = "40000000-0000-4000-8000-000000000004";

@@ -62,6 +62,8 @@ describe("evaluateStagingPreflight", () => {
     ["custom staging domain in protected mode", { STAGING_DEPLOYMENT_PROTECTION_REQUIRED: "1" }, "STAGING_BASE_URL_HTTPS_REMOTE"],
     ["wrong Vercel project in protected mode", { STAGING_DEPLOYMENT_PROTECTION_REQUIRED: "1", STAGING_VERCEL_PROJECT_NAME: "cdas-next", STAGING_BASE_URL: "https://other-preview.vercel.app" }, "STAGING_BASE_URL_HTTPS_REMOTE"],
     ["invalid deployment protection mode", { STAGING_DEPLOYMENT_PROTECTION_REQUIRED: "true" }, "STAGING_DEPLOYMENT_PROTECTION_REQUIRED"],
+    ["a clickthrough teacher identity", { DEV_TEST_TEACHER_CLERK_ID: "user_devteacher" }, "NO_CLICKTHROUGH_AUTH_IDENTITIES"],
+    ["a clickthrough student identity", { DEV_TEST_STUDENT_CLERK_ID: "user_devstudent" }, "NO_CLICKTHROUGH_AUTH_IDENTITIES"],
   ])("fails closed for %s", (_name, override, code) => {
     const result = evaluateStagingPreflight({ ...validEnvironment, ...override });
 

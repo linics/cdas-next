@@ -8,8 +8,10 @@ import type { PrismaClient } from "../../generated/prisma/client";
 import type { CommandContext } from "../commands/command-context";
 import { FeedbackWorkspaceQueryError } from "../queries/feedback-workspace";
 import { ActivityAssistantConfigError } from "./assistant-config";
+import { zodFieldNames } from "../../test/zod-field-names";
 import {
   buildTeacherEvaluationSuggestionPrompt,
+  teacherEvaluationSuggestionModelOutputSchema,
   suggestTeacherEvaluation,
   TeacherEvaluationSuggestionError,
   type TeacherEvaluationSuggestionDependencies,
@@ -161,14 +163,20 @@ describe("teacher evaluation suggestion prompt", () => {
       checkpoints: [],
     });
 
-    for (const field of [
-      "outcomes",
-      "summary",
-      "dimensionIndex",
-      "dimensionName",
-      "citations",
-      "evidenceIndex",
-    ]) {
+    // Derived from the schema, so adding a field without naming it in the
+    // prompt fails here instead of failing every real model call.
+    const fields = zodFieldNames(teacherEvaluationSuggestionModelOutputSchema);
+    expect(fields).toEqual(
+      expect.arrayContaining([
+        "outcomes",
+        "summary",
+        "dimensionIndex",
+        "dimensionName",
+        "citations",
+        "evidenceIndex",
+      ]),
+    );
+    for (const field of fields) {
       expect(prompt).toContain(field);
     }
     // The provider requires the word JSON to accept json_object responses.

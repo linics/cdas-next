@@ -185,6 +185,15 @@ export function evaluateStagingPreflight(
       value(environment, "STAGING_DATA_ACK") === stagingDataAcknowledgement,
     ),
     check("NODE_ENV_PRODUCTION", value(environment, "NODE_ENV") === "production"),
+    // The local clickthrough sign-in bypass keys off these two ids. It already
+    // refuses to run outside NODE_ENV=development, but a deployed environment
+    // has no reason to carry them at all: staging authenticates through real
+    // Clerk. Their presence is a configuration mistake, not a fallback.
+    check(
+      "NO_CLICKTHROUGH_AUTH_IDENTITIES",
+      value(environment, "DEV_TEST_TEACHER_CLERK_ID") === "" &&
+        value(environment, "DEV_TEST_STUDENT_CLERK_ID") === "",
+    ),
   ];
 
   const baseUrl = value(environment, "STAGING_BASE_URL");
