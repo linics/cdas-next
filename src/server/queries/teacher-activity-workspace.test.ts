@@ -11,10 +11,10 @@ import {
   TeacherActivityQueryError,
 } from "./teacher-activity-workspace";
 
-function context(): CommandContext {
+function context(source: CommandContext["source"] = "UI"): CommandContext {
   return {
     actorId: randomUUID(),
-    source: "UI",
+    source,
     traceId: randomUUID(),
     clock: () => new Date("2026-08-18T12:00:00.000Z"),
   };
@@ -50,6 +50,19 @@ describe("teacher workspace root role boundary", () => {
 
     await expect(
       getTeacherActivityDashboard(fake.database, context(), {}),
+    ).rejects.toEqual(
+      new TeacherActivityQueryError("WRONG_ROLE", "陈同学"),
+    );
+    expect(fake.activityDraftFindMany).not.toHaveBeenCalled();
+    expect(fake.activityReleaseFindMany).not.toHaveBeenCalled();
+    expect(fake.classroomFindMany).not.toHaveBeenCalled();
+  });
+
+  it("keeps the same root role boundary for Agent reads", async () => {
+    const fake = studentDatabaseDouble();
+
+    await expect(
+      getTeacherActivityDashboard(fake.database, context("AGENT"), {}),
     ).rejects.toEqual(
       new TeacherActivityQueryError("WRONG_ROLE", "陈同学"),
     );

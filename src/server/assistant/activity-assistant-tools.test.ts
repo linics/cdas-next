@@ -8,8 +8,10 @@ import { searchOfficialKnowledge } from "../knowledge/official-corpus";
 import {
   activityDraftProposalSchema,
   createActivityAssistantTools,
+  mapCurrentTeacherContext,
   type ActivityDraftProposal,
 } from "./activity-assistant-tools";
+import type { TeacherActivityDashboard } from "../queries/teacher-activity-workspace";
 
 vi.mock("server-only", () => ({}));
 
@@ -21,6 +23,39 @@ const intentId = "50000000-0000-4000-8000-000000000005";
 const releaseId = "60000000-0000-4000-8000-000000000006";
 const revisionId = "70000000-0000-4000-8000-000000000007";
 const now = new Date("2026-08-20T04:00:00.000Z");
+const workspace: TeacherActivityDashboard = {
+  actor: { displayName: "林老师" },
+  classrooms: [
+    { id: classroomId, name: "七年一班", currentMemberCount: 28 },
+  ],
+  drafts: [
+    {
+      id: draftId,
+      title: "校园节水行动",
+      status: "READY_FOR_PREVIEW",
+      version: 3,
+      updatedAt: now.toISOString(),
+      releaseId: null,
+    },
+  ],
+  releases: [
+    {
+      id: releaseId,
+      title: "校园节水行动",
+      classroomName: "七年一班",
+      status: "ACTIVE",
+      publishedAt: now.toISOString(),
+      dueAt: null,
+      canViewSubmissions: true,
+      progress: { submittedCount: 10, cohortSize: 28 },
+      attention: {
+        pendingFeedbackCount: 2,
+        pendingEvaluationCount: 3,
+        awaitingResubmissionCount: 1,
+      },
+    },
+  ],
+};
 
 const agentContext: CommandContext = {
   actorId,
@@ -108,6 +143,8 @@ function tools({ seedReadSections = true } = {}) {
     database: database(),
     agentContext,
     approvalContext,
+    pageContext: { kind: "ACTIVITY_DRAFT", resourceId: draftId },
+    workspace,
     agentRunId: runId,
     onToolFailure: mocks.onToolFailure,
     onBusinessWriteSuccess: mocks.onBusinessWriteSuccess,
@@ -152,6 +189,124 @@ describe("activity assistant tools", () => {
       releaseId,
       snapshotHash: "b".repeat(64),
       publishedAt: now.toISOString(),
+    });
+  });
+
+  it("maps current context and read-only workspace tools to canonical links", async () => {
+    const registry = tools();
+
+    expect(
+      registry.get_current_context.execute!({}, options("context_call")),
+    ).toEqual({
+      status: "AVAILABLE",
+      kind: "ACTIVITY_DRAFT",
+      label: "活动草稿：校园节水行动",
+      href: `/teacher/activities/${draftId}`,
+    });
+    expect(
+      registry.list_my_classrooms.execute!({}, options("classrooms_call")),
+    ).toMatchObject({
+      classrooms: [
+        {
+          id: classroomId,
+          currentMemberCount: 28,
+          href: `/teacher/classrooms/${classroomId}/members`,
+        },
+      ],
+    });
+    expect(
+      registry.list_my_activity_drafts.execute!({}, options("drafts_call")),
+    ).toMatchObject({
+      drafts: [
+        {
+          id: draftId,
+          version: 3,
+          previewHref: `/teacher/activities/${draftId}/preview`,
+        },
+      ],
+    });
+    expect(
+      registry.list_my_releases.execute!({}, options("releases_call")),
+    ).toMatchObject({
+      releases: [
+        {
+          id: releaseId,
+          attention: { pendingFeedbackCount: 2 },
+          submissionsHref: `/teacher/releases/${releaseId}/submissions`,
+        },
+      ],
+    });
+    expect(mocks.saveDraft).not.toHaveBeenCalled();
+  });
+
+  it("does not reflect an unauthorized dynamic page resource", () => {
+    expect(
+      mapCurrentTeacherContext(
+        {
+          kind: "ACTIVITY_DRAFT",
+          resourceId: "90000000-0000-4000-8000-000000000009",
+        },
+        workspace,
+      ),
+    ).toEqual({
+      status: "UNAVAILABLE",
+      kind: "ACTIVITY_DRAFT",
+      label: "当前页面资源不可用或你已无权查看",
+      href: null,
+    });
+  });
+
+  it("removes release links and attention after classroom management is lost", () => {
+    const revokedWorkspace: TeacherActivityDashboard = {
+      ...workspace,
+      releases: workspace.releases.map((release) => ({
+        ...release,
+        canViewSubmissions: false,
+        progress: null,
+        attention: null,
+      })),
+    };
+
+    expect(
+      tools().list_my_releases.execute!({}, options("revoked_releases")),
+    ).toMatchObject({
+      releases: [
+        {
+          submissionsHref: `/teacher/releases/${releaseId}/submissions`,
+        },
+      ],
+    });
+    expect(
+      mapCurrentTeacherContext(
+        { kind: "RELEASE_SUBMISSIONS", resourceId: releaseId },
+        revokedWorkspace,
+      ),
+    ).toMatchObject({ status: "UNAVAILABLE", href: null });
+    expect(
+      createActivityAssistantTools({
+        database: database(),
+        agentContext,
+        approvalContext,
+        pageContext: { kind: "TEACHER_DASHBOARD" },
+        workspace: revokedWorkspace,
+        agentRunId: runId,
+        onToolFailure: mocks.onToolFailure,
+        onBusinessWriteSuccess: mocks.onBusinessWriteSuccess,
+        commands: {
+          saveDraft: mocks.saveDraft,
+          preparePublish: mocks.preparePublish,
+          decideIntent: mocks.decideIntent,
+          publishRelease: mocks.publishRelease,
+        },
+      }).list_my_releases.execute!({}, options("revoked_list")),
+    ).toMatchObject({
+      releases: [
+        {
+          attention: null,
+          progress: null,
+          submissionsHref: null,
+        },
+      ],
     });
   });
 

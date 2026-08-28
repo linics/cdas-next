@@ -136,11 +136,18 @@ const publishInput = {
   dueAt: null,
 };
 
+const workspace = {
+  actor: { displayName: "林老师" },
+  drafts: [],
+  releases: [],
+  classrooms: [],
+};
+
 const mocks = {
   authenticate: vi.fn(),
   getConfig: vi.fn(),
   createModel: vi.fn(),
-  getClassrooms: vi.fn(),
+  getWorkspace: vi.fn(),
   startRun: vi.fn<typeof startActivityAssistantRun>(),
   finishRun: vi.fn<typeof finishActivityAssistantRun>(),
   saveDraft: vi.fn(),
@@ -366,7 +373,7 @@ function dependencies(): ActivityAssistantHandlerDependencies {
     authenticate: mocks.authenticate,
     getConfig: mocks.getConfig,
     createModel: mocks.createModel,
-    getClassrooms: mocks.getClassrooms,
+    getWorkspace: mocks.getWorkspace,
     startRun: mocks.startRun,
     finishRun: mocks.finishRun,
     createTraceId: vi
@@ -470,7 +477,7 @@ describe("activity assistant route handler", () => {
       approvalSecret: "s".repeat(32),
     });
     mocks.createModel.mockReturnValue(successfulModel());
-    mocks.getClassrooms.mockResolvedValue([]);
+    mocks.getWorkspace.mockResolvedValue(workspace);
     mocks.startRun.mockResolvedValue({
       id: runId,
       actorId,

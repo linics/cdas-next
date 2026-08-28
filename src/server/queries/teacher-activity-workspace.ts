@@ -305,7 +305,7 @@ export async function getTeacherActivityDashboard(
   rawInput: unknown,
 ): Promise<TeacherActivityDashboard> {
   emptyInputSchema.parse(rawInput);
-  const context = resolveCommandContext(commandContext, ["UI"]);
+  const context = resolveCommandContext(commandContext, ["UI", "AGENT"]);
   const actor = await requireTeacher(
     database,
     context.actorId,

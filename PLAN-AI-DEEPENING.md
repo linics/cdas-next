@@ -1,6 +1,6 @@
 # AI 深度融合计划：评价建议与全局助手
 
-状态：**切片 A 已按 D-044 完成本地开发门禁；切片 B 的全局呈现层已按 D-045 接受并进入开发，新增职责仍需逐档决策**。
+状态：**切片 A 已按 D-044 交付；切片 B 的全局呈现层已按 D-045 交付，首批页面上下文与工作区只读职责按 D-046 进入开发**。
 
 日期：2026-08-28
 关联：`SPRINT-0901.md`（冲刺后再说 1、4）、`ROADMAP.md`（依赖顺序 8）、`DECISIONS.md`（D-018、D-023、D-024、D-033、D-035）
@@ -91,12 +91,12 @@ AI 建议与教师终审的差异统计（那需要独立的研究设计，见 R
 
 ## 2. 切片 B：全局侧边栏助手
 
-> 2026-08-28 更新：D-045 已接受“教师端悬浮入口 + 非模态独立会话面板 + provider 上提”。首批只复用既有四个活动助手工具，不顺带扩充下表的导航或只读查询工具；后续每档仍需独立验收。
+> 2026-08-28 更新：D-045 已交付“教师端悬浮入口 + 非模态独立会话面板 + provider 上提”。D-046 接受首批请求级页面上下文与本人班级、草稿、发布/待办摘要；只返回 canonical href 并由教师点击，学生明细、完整正文和评价数据仍不进入全局 Agent。
 
 ### 现状
 
-`ActivityAssistantSessionProvider` 只包在 `/teacher/activities` 的 layout 上（D-023）。
-session 只存在于内存，不进 URL、localStorage、cookie 或数据库；离开该子树对话即丢失。
+`ActivityAssistantSessionProvider` 已由 D-045 上提到 `/teacher` layout。
+session 只存在于内存，不进 URL、localStorage、cookie 或数据库；离开教师子树或刷新即丢失。
 现有工具四个：`search_knowledge`、`read_source_section`（只读）、`create_activity_draft`、
 `publish_activity_release`（写，走签名 approval + ActionIntent）。
 

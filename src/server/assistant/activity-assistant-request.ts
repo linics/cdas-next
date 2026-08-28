@@ -7,9 +7,18 @@ import {
 } from "ai";
 import { z } from "zod";
 import {
+  teacherAgentPageContextSchema,
+  type TeacherAgentPageContext,
+} from "../../domain/assistant/teacher-agent-page-context";
+import {
   activityAssistantMessageValidationTools,
   activityDraftProposalSchema,
+  mapCurrentTeacherContext,
+  mapTeacherClassroomList,
+  mapTeacherDraftList,
+  mapTeacherReleaseList,
 } from "./activity-assistant-tools";
+import type { TeacherActivityDashboard } from "../queries/teacher-activity-workspace";
 import {
   officialKnowledgeSectionKey,
   readOfficialKnowledgeSection,
@@ -26,6 +35,7 @@ const MAX_TOOL_PARTS = 24;
 const requestBodySchema = z
   .object({
     messages: z.array(z.unknown()).min(1).max(MAX_MESSAGES),
+    pageContext: teacherAgentPageContextSchema.optional(),
   })
   .strict();
 
@@ -96,6 +106,10 @@ function assertSafeMessageHistory(
       }
 
       if (
+        part.type !== "tool-get_current_context" &&
+        part.type !== "tool-list_my_classrooms" &&
+        part.type !== "tool-list_my_activity_drafts" &&
+        part.type !== "tool-list_my_releases" &&
         part.type !== "tool-search_knowledge" &&
         part.type !== "tool-read_source_section" &&
         part.type !== "tool-create_activity_draft" &&
@@ -118,6 +132,16 @@ function assertSafeMessageHistory(
         throw new ActivityAssistantRequestError("INVALID_MESSAGES");
       }
       toolCallIds.add(part.toolCallId);
+
+      if (
+        (part.type === "tool-get_current_context" ||
+          part.type === "tool-list_my_classrooms" ||
+          part.type === "tool-list_my_activity_drafts" ||
+          part.type === "tool-list_my_releases") &&
+        part.state !== "output-available"
+      ) {
+        throw new ActivityAssistantRequestError("INVALID_MESSAGES");
+      }
 
       if (part.type === "tool-search_knowledge") {
         if (part.state !== "output-available") {
@@ -243,9 +267,57 @@ export function getActivityAssistantKnowledgeLedger(
   };
 }
 
-export async function parseActivityAssistantRequest(
+export type ParsedActivityAssistantRequest = Readonly<{
+  messages: ActivityAssistantMessage[];
+  pageContext: TeacherAgentPageContext;
+}>;
+
+export function canonicalizeActivityAssistantReadOnlyHistory(
+  messages: ActivityAssistantMessage[],
+  workspace: TeacherActivityDashboard,
+  pageContext: TeacherAgentPageContext,
+): ActivityAssistantMessage[] {
+  return messages.map((message) => {
+    if (message.role !== "assistant") return message;
+    return {
+      ...message,
+      parts: message.parts.map((part) => {
+        if (
+          part.type === "tool-get_current_context" &&
+          part.state === "output-available"
+        ) {
+          return {
+            ...part,
+            output: mapCurrentTeacherContext(pageContext, workspace),
+          };
+        }
+        if (
+          part.type === "tool-list_my_classrooms" &&
+          part.state === "output-available"
+        ) {
+          return { ...part, output: mapTeacherClassroomList(workspace) };
+        }
+        if (
+          part.type === "tool-list_my_activity_drafts" &&
+          part.state === "output-available"
+        ) {
+          return { ...part, output: mapTeacherDraftList(workspace) };
+        }
+        if (
+          part.type === "tool-list_my_releases" &&
+          part.state === "output-available"
+        ) {
+          return { ...part, output: mapTeacherReleaseList(workspace) };
+        }
+        return part;
+      }),
+    };
+  });
+}
+
+export async function parseActivityAssistantRequestEnvelope(
   request: Request,
-): Promise<ActivityAssistantMessage[]> {
+): Promise<ParsedActivityAssistantRequest> {
   const declaredLength = Number(request.headers.get("content-length"));
   if (
     Number.isFinite(declaredLength) &&
@@ -284,5 +356,16 @@ export async function parseActivityAssistantRequest(
     throw new ActivityAssistantRequestError("INVALID_MESSAGES");
   }
   assertSafeMessageHistory(messages);
-  return messages;
+  return {
+    messages,
+    pageContext: body.data.pageContext ?? {
+      kind: "UNKNOWN_TEACHER_PAGE",
+    },
+  };
+}
+
+export async function parseActivityAssistantRequest(
+  request: Request,
+): Promise<ActivityAssistantMessage[]> {
+  return (await parseActivityAssistantRequestEnvelope(request)).messages;
 }

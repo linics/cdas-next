@@ -7,6 +7,8 @@ const mocks = vi.hoisted(() => ({
   sendMessage: vi.fn(),
   stop: vi.fn(),
   addToolApprovalResponse: vi.fn(),
+  pathname: "/teacher",
+  transportOptions: [] as unknown[],
 }));
 
 vi.mock("@ai-sdk/react", () => ({
@@ -14,9 +16,14 @@ vi.mock("@ai-sdk/react", () => ({
 }));
 vi.mock("ai", () => ({
   DefaultChatTransport: class DefaultChatTransport {
-    constructor() {}
+    constructor(options: unknown) {
+      mocks.transportOptions.push(options);
+    }
   },
   lastAssistantMessageIsCompleteWithApprovalResponses: vi.fn(),
+}));
+vi.mock("next/navigation", () => ({
+  usePathname: () => mocks.pathname,
 }));
 vi.mock("next/link", () => ({
   default: ({
@@ -95,6 +102,8 @@ function renderAssistant(
 describe("ActivityAssistant", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.pathname = "/teacher";
+    mocks.transportOptions.length = 0;
     mocks.useChat.mockReturnValue(helpers());
   });
 
@@ -120,9 +129,99 @@ describe("ActivityAssistant", () => {
     );
 
     expect(markup).toContain('data-surface="panel"');
-    expect(markup).toContain("活动设计与课程依据");
+    expect(markup).toContain("教师工作区与活动设计");
     expect(markup).toContain("可分配职责");
-    expect(markup).toContain("没有明确确认不会写入");
+    expect(markup).toContain("所有站内跳转都由你点击");
+  });
+
+  it("sends only an allowlisted current page context with each request", () => {
+    mocks.pathname = `/teacher/activities/${draftId}/preview`;
+    renderAssistant();
+    const options = mocks.transportOptions.at(-1) as {
+      prepareSendMessagesRequest: (input: { messages: unknown[] }) => {
+        body: unknown;
+      };
+    };
+
+    expect(
+      options.prepareSendMessagesRequest({ messages: [{ id: "message_1" }] }),
+    ).toEqual({
+      body: {
+        messages: [{ id: "message_1" }],
+        pageContext: { kind: "ACTIVITY_PREVIEW", resourceId: draftId },
+      },
+    });
+  });
+
+  it("renders read-only workspace results as exact user-clicked links", () => {
+    mocks.useChat.mockReturnValue(
+      helpers([
+        {
+          id: "assistant_workspace",
+          role: "assistant",
+          parts: [
+            {
+              type: "tool-get_current_context",
+              toolCallId: "context_1",
+              state: "output-available",
+              input: {},
+              output: {
+                status: "AVAILABLE",
+                kind: "TEACHER_DASHBOARD",
+                label: "教师工作台",
+                href: "/teacher",
+              },
+            },
+            {
+              type: "tool-list_my_classrooms",
+              toolCallId: "classrooms_1",
+              state: "output-available",
+              input: {},
+              output: {
+                classrooms: [
+                  {
+                    id: classroomId,
+                    name: "七年一班",
+                    currentMemberCount: 28,
+                    href: `/teacher/classrooms/${classroomId}/members`,
+                  },
+                ],
+              },
+            },
+            {
+              type: "tool-list_my_activity_drafts",
+              toolCallId: "drafts_1",
+              state: "output-available",
+              input: {},
+              output: {
+                drafts: [
+                  {
+                    id: draftId,
+                    title: "校园节水行动",
+                    status: "READY_FOR_PREVIEW",
+                    version: 3,
+                    updatedAt: "2026-08-28T08:00:00.000Z",
+                    editHref: `/teacher/activities/${draftId}`,
+                    previewHref: `/teacher/activities/${draftId}/preview`,
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ]),
+    );
+
+    const markup = renderAssistant();
+    expect(markup).toContain('href="/teacher"');
+    expect(markup).toContain(
+      `href="/teacher/classrooms/${classroomId}/members"`,
+    );
+    expect(markup).toContain(`href="/teacher/activities/${draftId}"`);
+    expect(markup).toContain(
+      `href="/teacher/activities/${draftId}/preview"`,
+    );
+    expect(markup).not.toContain("router.push");
   });
 
   it("renders exact draft edit and preview destinations", () => {

@@ -7,6 +7,7 @@ import {
   type UIMessage,
 } from "ai";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   createContext,
   useContext,
@@ -20,6 +21,7 @@ import {
   LocalizedDateTime,
 } from "../../_components/localized-date-time";
 import type { ActivityContentV2 } from "../../../domain/activity/activity-content";
+import { getTeacherAgentPageContext } from "../../../domain/assistant/teacher-agent-page-context";
 import styles from "./activity-assistant.module.css";
 
 type CreatedDraftOutput = {
@@ -35,6 +37,62 @@ type PublishInput = {
   expectedDraftVersion: number;
   classroomId: string;
   dueAt: string | null;
+};
+
+type CurrentTeacherContextOutput = {
+  status: "AVAILABLE" | "UNAVAILABLE";
+  kind:
+    | "TEACHER_DASHBOARD"
+    | "ACTIVITY_NEW"
+    | "ACTIVITY_DRAFT"
+    | "ACTIVITY_PREVIEW"
+    | "RELEASE_SUBMISSIONS"
+    | "SUBMISSION_REVIEW"
+    | "TEACHER_INSIGHTS"
+    | "TEACHER_KNOWLEDGE"
+    | "CLASSROOM_MEMBERS"
+    | "UNKNOWN_TEACHER_PAGE";
+  label: string;
+  href: string | null;
+};
+
+type TeacherClassroomListOutput = {
+  classrooms: Array<{
+    id: string;
+    name: string;
+    currentMemberCount: number;
+    href: string;
+  }>;
+};
+
+type TeacherDraftListOutput = {
+  drafts: Array<{
+    id: string;
+    title: string;
+    status: "EDITING" | "READY_FOR_PREVIEW" | "SEALED";
+    version: number;
+    updatedAt: string;
+    editHref: string;
+    previewHref: string;
+  }>;
+};
+
+type TeacherReleaseListOutput = {
+  releases: Array<{
+    id: string;
+    title: string;
+    classroomName: string;
+    status: "ACTIVE" | "CLOSED" | "ARCHIVED";
+    publishedAt: string;
+    dueAt: string | null;
+    progress: { submittedCount: number; cohortSize: number } | null;
+    attention: {
+      pendingFeedbackCount: number;
+      pendingEvaluationCount: number;
+      awaitingResubmissionCount: number;
+    } | null;
+    submissionsHref: string | null;
+  }>;
 };
 
 const draftNotCreatedRetryText =
@@ -108,6 +166,22 @@ type ActivityAssistantMessage = UIMessage<
   undefined,
   never,
   {
+    get_current_context: {
+      input: Record<string, never>;
+      output: CurrentTeacherContextOutput;
+    };
+    list_my_classrooms: {
+      input: Record<string, never>;
+      output: TeacherClassroomListOutput;
+    };
+    list_my_activity_drafts: {
+      input: Record<string, never>;
+      output: TeacherDraftListOutput;
+    };
+    list_my_releases: {
+      input: Record<string, never>;
+      output: TeacherReleaseListOutput;
+    };
     search_knowledge: {
       input: {
         query: string;
@@ -167,15 +241,23 @@ export function ActivityAssistantSessionProvider({
   children: ReactNode;
   api?: string;
 }>) {
+  const pathname = usePathname();
+  const pageContext = useMemo(
+    () => getTeacherAgentPageContext(pathname),
+    [pathname],
+  );
   const transport = useMemo(
     () =>
       new DefaultChatTransport<ActivityAssistantMessage>({
         api,
         prepareSendMessagesRequest: ({ messages }) => ({
-          body: { messages },
+          body: {
+            messages,
+            pageContext,
+          },
         }),
       }),
-    [api],
+    [api, pageContext],
   );
   const session = useChat<ActivityAssistantMessage>({
     transport,
@@ -214,6 +296,18 @@ const objectiveKindLabel = {
   knowledge: "知识与技能",
   process: "过程与方法",
   emotion: "情感态度",
+} as const;
+
+const readOnlyDraftStatusLabel = {
+  EDITING: "编辑中",
+  READY_FOR_PREVIEW: "可预览",
+  SEALED: "已封存",
+} as const;
+
+const readOnlyReleaseStatusLabel = {
+  ACTIVE: "开放中",
+  CLOSED: "已关闭",
+  ARCHIVED: "已封存",
 } as const;
 
 function ActivityDraftProposalCard({
@@ -438,7 +532,7 @@ export function ActivityAssistant({
           </p>
           <h2 id={assistantTitleId}>
             {surface === "panel"
-              ? "活动设计与课程依据"
+              ? "教师工作区与活动设计"
               : continuationOnly
                 ? "继续核对活动并准备发布"
                 : "把活动构想整理成可编辑草稿"}
@@ -454,7 +548,7 @@ export function ActivityAssistant({
       <p className={styles.boundaryNote}>
         {surface === "panel" ? (
           <>
-            可检索官方课程依据、设计活动，并经你确认后创建草稿或发布。没有明确确认不会写入；刷新会话即清空，手动流程不受影响。
+            可识别当前页面，查询你的班级、草稿、发布与待办，也可检索课程依据、设计活动，并经你确认后创建草稿或发布。所有站内跳转都由你点击；刷新会话即清空，手动流程不受影响。
           </>
         ) : (
           <>
@@ -480,6 +574,168 @@ export function ActivityAssistant({
                 {message.parts.map((part, index) => {
                   if (part.type === "text") {
                     return part.text ? <p key={index}>{part.text}</p> : null;
+                  }
+
+                  if (part.type === "tool-get_current_context") {
+                    if (part.state === "output-available") {
+                      return (
+                        <div className={styles.toolResult} key={part.toolCallId}>
+                          <strong>当前页面</strong>
+                          <p>{part.output.label}</p>
+                          {part.output.href ? (
+                            <Link href={part.output.href}>打开当前页面</Link>
+                          ) : null}
+                        </div>
+                      );
+                    }
+                    if (part.state === "output-error") {
+                      return (
+                        <p className={styles.errorText} key={part.toolCallId}>
+                          当前页面识别失败；你仍可使用原页面导航。
+                        </p>
+                      );
+                    }
+                    return (
+                      <p className={styles.toolProgress} key={part.toolCallId}>
+                        正在安全识别当前页面…
+                      </p>
+                    );
+                  }
+
+                  if (part.type === "tool-list_my_classrooms") {
+                    if (part.state === "output-available") {
+                      return (
+                        <div className={styles.toolResult} key={part.toolCallId}>
+                          <strong>我的班级 · {part.output.classrooms.length}</strong>
+                          {part.output.classrooms.length > 0 ? (
+                            <ul className={styles.referenceList}>
+                              {part.output.classrooms.map((classroom) => (
+                                <li key={classroom.id}>
+                                  <Link href={classroom.href}>{classroom.name}</Link>
+                                  <p>当前成员 {classroom.currentMemberCount} 人</p>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p>当前没有你管理的班级。</p>
+                          )}
+                        </div>
+                      );
+                    }
+                    if (part.state === "output-error") {
+                      return (
+                        <p className={styles.errorText} key={part.toolCallId}>
+                          班级摘要查询失败；请回到教师工作台查看。
+                        </p>
+                      );
+                    }
+                    return (
+                      <p className={styles.toolProgress} key={part.toolCallId}>
+                        正在查询你的班级…
+                      </p>
+                    );
+                  }
+
+                  if (part.type === "tool-list_my_activity_drafts") {
+                    if (part.state === "output-available") {
+                      return (
+                        <div className={styles.toolResult} key={part.toolCallId}>
+                          <strong>我的草稿 · {part.output.drafts.length}</strong>
+                          {part.output.drafts.length > 0 ? (
+                            <ul className={styles.referenceList}>
+                              {part.output.drafts.map((draft) => (
+                                <li key={draft.id}>
+                                  <Link href={draft.editHref}>{draft.title}</Link>
+                                  <p>
+                                    版本 {draft.version} · {readOnlyDraftStatusLabel[draft.status]}
+                                  </p>
+                                  <Link href={draft.previewHref}>查看预览</Link>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p>当前没有活动草稿。</p>
+                          )}
+                        </div>
+                      );
+                    }
+                    if (part.state === "output-error") {
+                      return (
+                        <p className={styles.errorText} key={part.toolCallId}>
+                          草稿摘要查询失败；请回到教师工作台查看。
+                        </p>
+                      );
+                    }
+                    return (
+                      <p className={styles.toolProgress} key={part.toolCallId}>
+                        正在查询你的活动草稿…
+                      </p>
+                    );
+                  }
+
+                  if (part.type === "tool-list_my_releases") {
+                    if (part.state === "output-available") {
+                      return (
+                        <div className={styles.toolResult} key={part.toolCallId}>
+                          <strong>我的发布与待办 · {part.output.releases.length}</strong>
+                          {part.output.releases.length > 0 ? (
+                            <ul className={styles.referenceList}>
+                              {part.output.releases.map((release) => {
+                                const attention = release.attention;
+                                const todo = attention
+                                  ? [
+                                      attention.pendingFeedbackCount > 0
+                                        ? `待反馈 ${attention.pendingFeedbackCount}`
+                                        : null,
+                                      attention.pendingEvaluationCount > 0
+                                        ? `待评价 ${attention.pendingEvaluationCount}`
+                                        : null,
+                                      attention.awaitingResubmissionCount > 0
+                                        ? `待重交 ${attention.awaitingResubmissionCount}`
+                                        : null,
+                                    ].filter(Boolean)
+                                  : [];
+                                return (
+                                  <li key={release.id}>
+                                    {release.submissionsHref ? (
+                                      <Link href={release.submissionsHref}>
+                                        {release.title}
+                                      </Link>
+                                    ) : (
+                                      <strong>{release.title}</strong>
+                                    )}
+                                    <p>
+                                      {release.classroomName} · {readOnlyReleaseStatusLabel[release.status]}
+                                      {release.progress
+                                        ? ` · 已提交 ${release.progress.submittedCount}/${release.progress.cohortSize}`
+                                        : ""}
+                                    </p>
+                                    <p>
+                                      发布于 <LocalizedDateTime dateTime={release.publishedAt} />
+                                    </p>
+                                    <p>{todo.length > 0 ? todo.join(" · ") : "当前无待办"}</p>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          ) : (
+                            <p>当前没有活动发布。</p>
+                          )}
+                        </div>
+                      );
+                    }
+                    if (part.state === "output-error") {
+                      return (
+                        <p className={styles.errorText} key={part.toolCallId}>
+                          发布与待办查询失败；请回到教师工作台查看。
+                        </p>
+                      );
+                    }
+                    return (
+                      <p className={styles.toolProgress} key={part.toolCallId}>
+                        正在查询你的发布与待办…
+                      </p>
+                    );
                   }
 
                   if (part.type === "tool-search_knowledge") {
@@ -744,7 +1000,7 @@ export function ActivityAssistant({
       ) : (
         <p className={styles.emptyPrompt}>
           {surface === "panel"
-            ? "可分配职责：检索课程依据、整理活动设计、创建可编辑草稿，或核对版本后准备发布。例如：帮我设计一个七年级校园节水活动。"
+            ? "可分配职责：告诉我当前页面，列出我的班级、草稿、发布和待办；也可检索课程依据、整理活动设计、创建草稿或准备发布。"
             : "例如：「帮我设计一个七年级校园节水活动，学生要记录两次水表读数，并用证据提出改善建议。」"}
         </p>
       )}
