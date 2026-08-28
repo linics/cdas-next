@@ -114,17 +114,18 @@ function ReleaseBrief({
           发布快照 · 版本 {snapshot.sourceDraftVersion}
         </span>
       </summary>
-
-      {content.schemaVersion === 2 ? <>
-        <section><h3>总体任务</h3><p>{content.taskInstructions}</p></section>
-        <section><h3>任务链</h3><ol>{content.phases.map((phase) => <li key={phase.name}><strong>{phase.name}</strong><br />要完成：{phase.action}<br />情境：{phase.context}<br />可以怎么做：{phase.support}<br />要交：{phase.evidence.map((evidence) => `${evidenceTypeLabel(evidence.type)}：${evidence.description}`).join("；")}<br />老师会看什么：{phase.evaluationFocus}</li>)}</ol></section>
-        <section><h3>评价标准</h3><ul>{content.rubricDimensions.map((dimension) => <li key={dimension.name}><strong>{dimension.name}</strong><br />优秀：{dimension.excellent}<br />良好：{dimension.good}<br />合格：{dimension.pass}<br />需改进：{dimension.improve}</li>)}</ul></section>
-      </> : <>
-        <section><h3>任务说明</h3><p>{content.taskInstructions}</p></section>
-        <section><h3>学习目标</h3><ol>{content.learningObjectives.map((objective) => <li key={objective}>{objective}</li>)}</ol></section>
-        <section><h3>提交证据</h3><ul>{content.evidenceRequirements.map((requirement) => <li key={requirement}>{requirement}</li>)}</ul></section>
-        <section><h3>教师反馈将关注</h3><ul>{content.feedbackCriteria.map((criterion) => <li key={criterion}>{criterion}</li>)}</ul></section>
-      </>}
+      <div className={styles.briefBody}>
+        {content.schemaVersion === 2 ? <>
+          <section><h3>总体任务</h3><p>{content.taskInstructions}</p></section>
+          <section><h3>任务链</h3><ol>{content.phases.map((phase) => <li key={phase.name}><strong>{phase.name}</strong><br />要完成：{phase.action}<br />情境：{phase.context}<br />可以怎么做：{phase.support}<br />要交：{phase.evidence.map((evidence) => `${evidenceTypeLabel(evidence.type)}：${evidence.description}`).join("；")}<br />老师会看什么：{phase.evaluationFocus}</li>)}</ol></section>
+          <section><h3>评价标准</h3><ul>{content.rubricDimensions.map((dimension) => <li key={dimension.name}><strong>{dimension.name}</strong><br />优秀：{dimension.excellent}<br />良好：{dimension.good}<br />合格：{dimension.pass}<br />需改进：{dimension.improve}</li>)}</ul></section>
+        </> : <>
+          <section><h3>任务说明</h3><p>{content.taskInstructions}</p></section>
+          <section><h3>学习目标</h3><ol>{content.learningObjectives.map((objective) => <li key={objective}>{objective}</li>)}</ol></section>
+          <section><h3>提交证据</h3><ul>{content.evidenceRequirements.map((requirement) => <li key={requirement}>{requirement}</li>)}</ul></section>
+          <section><h3>教师反馈将关注</h3><ul>{content.feedbackCriteria.map((criterion) => <li key={criterion}>{criterion}</li>)}</ul></section>
+        </>}
+      </div>
     </details>
   );
 }

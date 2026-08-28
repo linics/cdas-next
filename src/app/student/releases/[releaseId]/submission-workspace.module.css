@@ -537,19 +537,47 @@
 .evaluationOutcomeList span { color: var(--color-accent-700); font-size: var(--text-meta); font-weight: var(--font-heading-weight); }
 .evaluationOutcomeList small { color: var(--color-neutral-700); font-size: var(--text-meta); }
 
-/* 发布快照是一块实底小卡：Classical 里唯一可以填色的表面。 */
+/* 完整任务书：二级入口，默认收起。不要再用右栏时代的 sticky，
+   Chrome 里 details 一展开会粘在视口上，盖住下面的阶段和提交区。 */
 .releaseBrief {
-  position: sticky;
-  top: calc(var(--toolbar-height) + var(--space-4));
+  margin-bottom: var(--space-6);
   border: 1px solid var(--color-divider);
   border-radius: var(--radius-md);
   background: var(--color-surface);
-  padding: var(--space-4);
+  padding: 0;
 }
 
-.briefHeading { align-items: baseline; padding-bottom: var(--space-2); }
-.briefHeading > span { color: var(--color-neutral-700); font-size: var(--text-meta); font-variant-numeric: tabular-nums; }
-.releaseBrief section { border-top: 1px solid var(--color-divider); padding: var(--space-3) 0; }
+.releaseBrief > summary.briefHeading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  cursor: pointer;
+  list-style: none;
+  font-family: var(--font-heading);
+  font-size: var(--text-section);
+  font-weight: var(--font-heading-weight);
+}
+
+.releaseBrief > summary.briefHeading::-webkit-details-marker { display: none; }
+.releaseBrief[open] > summary.briefHeading { border-bottom: 1px solid var(--color-divider); }
+.briefVersion {
+  color: var(--color-neutral-700);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+  font-variant-numeric: tabular-nums;
+}
+
+.releaseBrief[open] .briefBody {
+  max-height: min(60svh, 36rem);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-bottom: var(--space-3);
+}
+
+.releaseBrief section { border-top: 1px solid var(--color-divider); padding: var(--space-3) var(--space-4); }
 .releaseBrief h3 { margin: 0; font-family: var(--font-heading); font-size: var(--text-subhead); }
 
 .releaseBrief section p,
@@ -584,7 +612,6 @@
 
 @media (max-width: 860px) {
   .workspaceGrid { grid-template-columns: 1fr; }
-  .releaseBrief { position: static; }
 }
 
 @media (max-width: 620px) {
@@ -630,37 +657,6 @@
   text-align: justify;
   text-justify: inter-character;
 }
-
-/* 完整任务书：二级入口，默认收起。位置在阶段步进器之上，不再压到页尾。 */
-.releaseBrief {
-  margin-bottom: var(--space-6);
-  border: 1px solid var(--color-divider);
-  border-radius: var(--radius-md);
-  padding: 0;
-  background: transparent;
-}
-
-.releaseBrief > summary.briefHeading {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-3);
-  padding: var(--space-3) var(--space-4);
-  cursor: pointer;
-  font-family: var(--font-heading);
-  font-size: var(--text-section);
-  font-weight: var(--font-heading-weight);
-}
-
-.releaseBrief[open] > summary.briefHeading { border-bottom: 1px solid var(--color-divider); }
-.briefVersion {
-  color: var(--color-neutral-700);
-  font-family: var(--font-ui);
-  font-size: var(--text-label);
-  font-variant-numeric: tabular-nums;
-}
-.releaseBrief > section,
-.releaseBrief > p { margin-inline: var(--space-4); }
 
 /* 每个正式版本一个条目，默认只展开最新一条。 */
 .revision > summary {

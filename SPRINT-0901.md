@@ -128,9 +128,9 @@
 
 ## 冲刺后再说
 
-- AI 评价建议（AI 起草量规评价 → 教师逐维度终审）
+- AI 评价建议（AI 起草量规评价 → 教师逐维度终审）—— 方案见 `PLAN-AI-DEEPENING.md` 切片 A
 - main 分支合并与里程碑 tag（若 9/1 未做）
 - 恢复常规验收流程，补记冲刺期变更的决策记录
-- 全局侧边栏助手：把现有活动助手 handler 挂到全局入口，工具注册表按"导航（返回 href）→ 只读查询 → ActionIntent 写操作"三档逐步扩充
+- 全局侧边栏助手：把现有活动助手 handler 挂到全局入口，工具注册表按"导航（返回 href）→ 只读查询 → ActionIntent 写操作"三档逐步扩充 —— 方案见 `PLAN-AI-DEEPENING.md` 切片 B
 - 多模态课本入库管道：教师上传课本照片 → Vision 模型一次性识别（原文转录 + 插图教学含义）→ 持久化为 KnowledgeChunk（sourceType: TEXTBOOK），对话运行时始终读文本
 - 教师样例上传进语料：复用同一条入库管道（sourceType: TEACHER_EXEMPLAR），准入门槛为"教师确认此样例可作参考"的显式动作；AI 生成的历史产物一律不得进语料
