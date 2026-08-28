@@ -111,8 +111,6 @@ const proposal: ActivityDraftProposal = {
     .map((result) => ({
       sourceId: result.sourceId,
       sectionId: result.sectionId,
-      citationLabel: result.citationLabel,
-      href: result.href,
       reason: "用于校准活动目标、证据与评价。",
     })),
   content,
@@ -373,6 +371,18 @@ describe("activity assistant tools", () => {
         sourceReferences: [],
       }).success,
     ).toBe(false);
+    // The model no longer supplies wording, so the fabrication that matters is
+    // pointing at a section the corpus does not have.
+    expect(
+      activityDraftProposalSchema.safeParse({
+        ...proposal,
+        sourceReferences: proposal.sourceReferences.map((reference, index) =>
+          index === 0
+            ? { ...reference, sectionId: "invented-section-id" }
+            : reference,
+        ),
+      }).success,
+    ).toBe(false);
     expect(
       activityDraftProposalSchema.safeParse({
         ...proposal,
@@ -381,6 +391,43 @@ describe("activity assistant tools", () => {
             ? { ...reference, citationLabel: "伪造的课程标准章节" }
             : reference,
         ),
+      }).success,
+    ).toBe(false);
+  });
+
+  it("fills in the constants the model should not have to restate", async () => {
+    const partialContent: Record<string, unknown> = { ...proposal.content };
+    delete partialContent.schemaVersion;
+    delete partialContent.integratedDisciplineCodes;
+
+    const parsed = activityDraftProposalSchema.safeParse({
+      ...proposal,
+      content: partialContent,
+    });
+
+    expect(parsed.success).toBe(true);
+    expect(parsed.data?.content.schemaVersion).toBe(2);
+    expect(parsed.data?.content.integratedDisciplineCodes).toEqual(
+      proposal.integratedDisciplineContributions.map(
+        (item) => item.disciplineCode,
+      ),
+    );
+  });
+
+  it("still rejects contributions that disagree with a supplied discipline list", async () => {
+    expect(
+      activityDraftProposalSchema.safeParse({
+        ...proposal,
+        content: { ...proposal.content, integratedDisciplineCodes: ["chinese"] },
+      }).success,
+    ).toBe(false);
+    expect(
+      activityDraftProposalSchema.safeParse({
+        ...proposal,
+        integratedDisciplineContributions: [
+          ...proposal.integratedDisciplineContributions,
+          { disciplineCode: "chinese", necessaryContribution: "公开表达建议。" },
+        ],
       }).success,
     ).toBe(false);
   });

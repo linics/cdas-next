@@ -752,11 +752,11 @@ def run_real_model_browser_flow(
                 "明确假设",
                 "跨学科必要性",
                 "目标—任务—证据—评价一致性链",
-                "官方来源依据",
+                "本次设计参考了哪些依据",
             ):
                 proposal.get_by_text(label, exact=True).wait_for()
             if proposal.locator(
-                'section[aria-label="官方来源依据"] a[href^="/teacher/knowledge?source="]'
+                'section[aria-label="本次设计参考了哪些依据"] a[href^="/teacher/knowledge?source="]'
             ).count() < 2:
                 raise E2eFailure("REAL_MODEL_OFFICIAL_REFERENCES_MISSING")
             if page.locator(
@@ -767,7 +767,11 @@ def run_real_model_browser_flow(
             proposal.get_by_text("chinese", exact=True).wait_for()
             proposal.get_by_text("知识与技能", exact=True).wait_for()
             screenshot(page, artifacts, "03-real-model-draft-proposal")
-            wait_for_text(page, "可使用")
+            # The idle badge this used to wait for no longer exists; the panel
+            # now only marks the busy state. Wait for that to clear instead.
+            page.get_by_role("button", name="停止", exact=True).wait_for(
+                state="detached", timeout=120_000
+            )
             proposal.get_by_role(
                 "button", name="确认理解并创建草稿", exact=True
             ).click()

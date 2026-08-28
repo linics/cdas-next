@@ -327,10 +327,10 @@ def main() -> None:
             teacher.get_by_role("button", name="交给助手整理").click()
             draft_approval = teacher.locator('[role="group"][aria-label="任务理解确认"]')
             draft_approval.get_by_role("button", name="确认理解并创建草稿", exact=True).wait_for(timeout=120_000)
-            for label in ("教师已提供要求", "明确假设", "跨学科必要性", "目标—任务—证据—评价一致性链", "官方来源依据"):
+            for label in ("教师已提供要求", "明确假设", "跨学科必要性", "目标—任务—证据—评价一致性链", "本次设计参考了哪些依据"):
                 draft_approval.get_by_text(label, exact=True).wait_for()
             official_references = draft_approval.locator(
-                'section[aria-label="官方来源依据"] a[href^="/teacher/knowledge?source="]'
+                'section[aria-label="本次设计参考了哪些依据"] a[href^="/teacher/knowledge?source="]'
             )
             if official_references.count() < 2:
                 raise AcceptanceFailure("STAGING_AGENT_ACCEPTANCE_OFFICIAL_REFERENCES_MISSING")

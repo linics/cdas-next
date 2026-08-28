@@ -326,20 +326,6 @@ export function officialKnowledgeSectionKey(
   return `${section.sourceId}:${section.sectionId}`;
 }
 
-export const officialKnowledgeReferenceSchema = z
-  .object({
-    sourceId: sourceIdSchema,
-    sectionId: sectionIdSchema,
-    citationLabel: z.string().trim().min(1).max(700),
-    href: z
-      .string()
-      .regex(
-        /^\/teacher\/knowledge\?source=[a-z0-9-]{3,80}&section=[a-z0-9-]{8,120}$/,
-      ),
-    reason: z.string().trim().min(1).max(500),
-  })
-  .strict();
-
 function citationFor(source: CorpusSource, section: CorpusSection) {
   return {
     sourceId: source.id,

@@ -187,8 +187,6 @@ type ActivityDraftProposal = {
   sourceReferences: Array<{
     sourceId: string;
     sectionId: string;
-    citationLabel: string;
-    href: string;
     reason: string;
   }>;
   content: ActivityContentV2;
@@ -357,6 +355,16 @@ const readOnlyReleaseStatusLabel = {
   ARCHIVED: "已封存",
 } as const;
 
+/** The canonical wording of a section the assistant read in this conversation. */
+type ReadSection = Readonly<{
+  sourceTitle: string;
+  locator: string;
+  content: string;
+  sourceUrl: string;
+  citationLabel: string;
+  href: string;
+}>;
+
 function ActivityDraftProposalCard({
   proposal,
   readSections,
@@ -365,10 +373,7 @@ function ActivityDraftProposalCard({
   onRespond,
 }: Readonly<{
   proposal: ActivityDraftProposal;
-  readSections: ReadonlyMap<
-    string,
-    { sourceTitle: string; locator: string; content: string; sourceUrl: string }
-  >;
+  readSections: ReadonlyMap<string, ReadSection>;
   toolCallId: string;
   approval: { id: string; isAutomatic?: boolean };
   onRespond: (response: {
@@ -448,13 +453,18 @@ function ActivityDraftProposalCard({
         {proposal.sourceReferences.length > 0 ? (
           <ul className={styles.referenceList}>
             {proposal.sourceReferences.map((reference) => {
+              // Every reference in a valid proposal was read in this same
+              // conversation, so its canonical wording is already on screen.
               const section = readSections.get(
                 `${reference.sourceId}:${reference.sectionId}`,
               );
               return (
                 <li key={`${reference.sourceId}:${reference.sectionId}`}>
                   <details>
-                    <summary>{reference.citationLabel}</summary>
+                    <summary>
+                      {section?.citationLabel ??
+                        `${reference.sourceId} · ${reference.sectionId}`}
+                    </summary>
                     <p>{reference.reason}</p>
                     {section ? (
                       <>
@@ -466,7 +476,9 @@ function ActivityDraftProposalCard({
                         </blockquote>
                       </>
                     ) : null}
-                    <Link href={reference.href}>在课程依据页打开这一节</Link>
+                    {section ? (
+                      <Link href={section.href}>在课程依据页打开这一节</Link>
+                    ) : null}
                   </details>
                 </li>
               );
@@ -604,10 +616,7 @@ export function ActivityAssistant({
   // 提案里的每条引用都必须先经 read_source_section 通读（工具会拒绝未通读的引用），
   // 所以原文一定已经在这段对话的消息流里 —— 就地展开，不必把教师带离对话。
   const readSections = useMemo(() => {
-    const sections = new Map<
-      string,
-      { sourceTitle: string; locator: string; content: string; sourceUrl: string }
-    >();
+    const sections = new Map<string, ReadSection>();
     for (const message of messages) {
       for (const part of message.parts) {
         if (
@@ -620,6 +629,8 @@ export function ActivityAssistant({
             locator: part.output.locator,
             content: part.output.content,
             sourceUrl: part.output.sourceUrl,
+            citationLabel: part.output.citationLabel,
+            href: part.output.href,
           });
         }
       }

@@ -72,8 +72,6 @@ const proposal: ActivityDraftProposal = {
     .map((result) => ({
       sourceId: result.sourceId,
       sectionId: result.sectionId,
-      citationLabel: result.citationLabel,
-      href: result.href,
       reason: "用于校准活动目标、证据与评价。",
     })),
   content,
@@ -412,7 +410,9 @@ describe("buildActivityAssistantInstructions", () => {
     expect(text).toContain("read_source_section 已返回 FOUND");
     expect(text).toContain("引用数量不得超过已通读章节数");
     expect(text).toContain("优先只引用 2 条已通读来源");
-    expect(text).toContain("content.schemaVersion 为 2");
+    expect(text).toContain(
+      "content.schemaVersion 与 content.integratedDisciplineCodes 不用你填",
+    );
   });
 
   it("pins the assistant to 简体中文 and to backward design", () => {
@@ -679,7 +679,7 @@ describe("activity assistant route handler", () => {
     expect(languageModel.doStreamCalls[0]?.providerOptions).toEqual({
       deepseek: { thinking: { type: "disabled" } },
     });
-    expect(languageModel.doStreamCalls[0]?.maxOutputTokens).toBe(8_000);
+    expect(languageModel.doStreamCalls[0]?.maxOutputTokens).toBe(16_000);
   });
 
   it("runs search and source reading before presenting the signed proposal", async () => {
@@ -1015,7 +1015,8 @@ describe("activity assistant route handler", () => {
       {
         agentRunId: runId,
         status: "FAILED",
-        failureCode: "TOOL_INPUT_OR_EXECUTION_FAILED_SOURCEREFERENCES_0",
+        failureCode:
+          "TOOL_INPUT_OR_EXECUTION_FAILED_SOURCEREFERENCES_0_SOURCE_NOT_READ",
       },
     );
   });

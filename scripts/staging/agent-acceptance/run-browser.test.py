@@ -35,7 +35,7 @@ class HostTests(unittest.TestCase):
     self.assertIn("教师已提供要求", source)
     self.assertIn("跨学科必要性", source)
     self.assertIn("目标—任务—证据—评价一致性链", source)
-    self.assertIn("官方来源依据", source)
+    self.assertIn("本次设计参考了哪些依据", source)
     self.assertIn("STAGING_AGENT_ACCEPTANCE_OFFICIAL_REFERENCES_MISSING", source)
     self.assertIn("STAGING_AGENT_ACCEPTANCE_SOURCE_READING_MISSING", source)
     self.assertIn('has_text="已读取："', source)

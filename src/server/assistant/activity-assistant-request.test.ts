@@ -49,8 +49,6 @@ const draftProposal = {
     .map((result) => ({
       sourceId: result.sourceId,
       sectionId: result.sectionId,
-      citationLabel: result.citationLabel,
-      href: result.href,
       reason: "用于校准活动目标、证据与评价。",
     })),
   content: waterConservationTaskBook,
