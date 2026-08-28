@@ -23,7 +23,7 @@ class HostTests(unittest.TestCase):
     self.assertEqual(source.count('#activity-assistant-prompt[data-hydrated="true"]'), 2)
     self.assertIn("交给助手整理", source)
     self.assertIn("打开 CDAS Agent 独立会话", source)
-    self.assertEqual(source.count("活动设计与课程依据"), 2)
+    self.assertEqual(source.count("教师工作区与活动设计"), 2)
     self.assertIn("D-033 结构化任务理解与设计建议", source)
     self.assertIn("等待教师确认后再创建草稿", source)
     self.assertIn("search_knowledge", source)

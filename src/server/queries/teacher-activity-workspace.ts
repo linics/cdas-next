@@ -442,13 +442,19 @@ export async function getTeacherActivityDashboard(
   });
 }
 
+/**
+ * The teacher draft page and the global Agent read the same owned draft
+ * through this one query. AGENT is allowed as a source, but ownership is
+ * still proved here on every call: a draft owned by another teacher stays
+ * resource-level absent regardless of who asks.
+ */
 export async function getTeacherActivityDraft(
   database: PrismaClient,
   commandContext: CommandContext,
   rawInput: unknown,
 ): Promise<{ actor: TeacherIdentity; draft: TeacherActivityDraft }> {
   const input = draftInputSchema.parse(rawInput);
-  const context = resolveCommandContext(commandContext, ["UI"]);
+  const context = resolveCommandContext(commandContext, ["UI", "AGENT"]);
   const [actor, draft] = await Promise.all([
     requireTeacher(database, context.actorId),
     database.activityDraft.findUnique({

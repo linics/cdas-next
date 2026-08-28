@@ -44,8 +44,10 @@ import {
 import type { AssistantClassroom } from "./teacher-assistant-context";
 import {
   getTeacherActivityDashboard,
+  getTeacherActivityDraft,
   type TeacherActivityDashboard,
 } from "../queries/teacher-activity-workspace";
+import { createTeacherDraftDetailReader } from "./teacher-draft-detail";
 
 type StartedRun = Awaited<ReturnType<typeof startActivityAssistantRun>>;
 
@@ -60,6 +62,7 @@ export type ActivityAssistantHandlerDependencies = Readonly<{
     context: CommandContext,
     input: unknown,
   ) => Promise<TeacherActivityDashboard>;
+  readDraft: typeof getTeacherActivityDraft;
   startRun: typeof startActivityAssistantRun;
   finishRun: typeof finishActivityAssistantRun;
   createTraceId: () => string;
@@ -73,6 +76,7 @@ const defaultDependencies: ActivityAssistantHandlerDependencies = {
   createModel: createDeepSeekModel,
   createTools: createActivityAssistantTools,
   getWorkspace: getTeacherActivityDashboard,
+  readDraft: getTeacherActivityDraft,
   startRun: startActivityAssistantRun,
   finishRun: finishActivityAssistantRun,
   createTraceId: randomUUID,
@@ -221,6 +225,7 @@ export function buildActivityAssistantInstructions(
 
 你的唯一业务范围是：
 0. 可以识别当前教师页面，并查询当前教师有权查看的班级、活动草稿、发布摘要与待办。只使用只读工具返回的结构化结果；不得猜测其他资源、学生或评阅详情。工具返回的站内链接必须留给教师点击，不得声称已经自动跳转。
+0.1 教师要你看、评、改某一份已有草稿时，先用 get_activity_draft 读它的完整任务书，再依据上面的逆向设计和情境叙事标准逐条指出问题并给出可直接替换的改写文字。draftId 只能取自 list_my_activity_drafts 或 get_current_context 的结果；教师只说标题时先列草稿再确认是哪一份。返回 NOT_FOUND 就如实说这份草稿不在你的工作区，不要改用记忆或猜测内容作答。返回 LEGACY_SNAPSHOT 表示这是旧版快照，你读不到正文，请教师打开草稿页处理。这个工具只读：你不能改写教师已有的草稿，也不要假装已经改好；教师要落地修改就请他在草稿页编辑，或明确要求你按新要求另建一份草稿。
 1. 根据教师自然语言，整理 schema v2 的完整跨学科任务书。必须使用原版 CTS 的学段/年级、稳定学科目录、主学科加至少一个融合学科、实践性/探究性/项目式作业及其条件子类型、探究深度、提交模式和 1–16 周周期。作业类型只能用 practical、inquiry、project。子类型必须与类型匹配且只用这些代码：practical 配 visit、simulation、observation；inquiry 配 literature、survey、experiment；project 的 assignmentSubtype 必须为 null，不得填其他字串。探究深度只用 basic、intermediate、deep。提交模式只用 phased、once、mixed；教师说过程性提交时用 phased。学科代码必须用目录中的英文 code，信息科技是 infoTech。另需具体背景、知识与技能/过程与方法/情感态度三维目标、三到四个连续阶段（每阶段一个明确行动、情境、支架、类型化证据、评价要点、课时）及四档量规。可选 0–2 个跨学科概念：物质与能量、结构与功能、系统与模型、稳定与变化。
 2. 只有缺少会改变年级、学科、真实任务、成果、证据或评价结构的资料时，才每轮问一个必要问题；不要因可选润饰、措辞或补充背景而阻塞，也不得把缺失事实当成已知资料。资料足够时立刻调用 create_activity_draft，不要先在普通文字中重述完整方案。
 3. 资料足够后，先调用 search_knowledge，按学段和主学科／融合学科检索教育部官方课程方案与课程标准；根据结果改写查询可以再检索。首版白名单只有课程方案、语文、数学、物理、信息科技，不包含 UbD、C-POTE、团体标准、教材、教师案例或任何 AI 生成内容。不得声称检索到了白名单之外的资料。
@@ -370,11 +375,24 @@ export async function handleActivityAssistantRequest(
     return jsonError(503, "ASSISTANT_UNAVAILABLE");
   }
 
-  const uiMessages = canonicalizeActivityAssistantReadOnlyHistory(
-    parsedRequest.messages,
+  const readDraftDetail = createTeacherDraftDetailReader({
+    database,
+    agentContext,
     workspace,
-    parsedRequest.pageContext,
-  );
+    getDraft: dependencies.readDraft,
+  });
+
+  let uiMessages: ActivityAssistantMessage[];
+  try {
+    uiMessages = await canonicalizeActivityAssistantReadOnlyHistory(
+      parsedRequest.messages,
+      workspace,
+      parsedRequest.pageContext,
+      readDraftDetail,
+    );
+  } catch {
+    return jsonError(503, "ASSISTANT_UNAVAILABLE");
+  }
   let classrooms: AssistantClassroom[];
   let modelMessages;
   try {
@@ -435,6 +453,7 @@ export async function handleActivityAssistantRequest(
     approvalContext,
     pageContext: parsedRequest.pageContext,
     workspace,
+    readDraftDetail,
     agentRunId: run.id,
     initialKnowledgeSearchResults: knowledgeLedger.searchResults,
     initialKnowledgeReadSections: knowledgeLedger.readSections,

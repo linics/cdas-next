@@ -47,9 +47,12 @@ async function main(): Promise<void> {
         feedbackRevisions: true,
       },
     });
-    invariant(runs.length === 2, "E2E_REAL_MODEL_RUN_COUNT_MISMATCH");
-    const [proposalRun, run] = runs;
-    invariant(proposalRun && run, "E2E_REAL_MODEL_RUN_COUNT_MISMATCH");
+    // D-047 read, D-033 proposal, then the confirmed draft execution. The
+    // read run must look exactly like the proposal run in provenance terms:
+    // a successful model turn that wrote nothing.
+    invariant(runs.length === 3, "E2E_REAL_MODEL_RUN_COUNT_MISMATCH");
+    const [readRun, proposalRun, run] = runs;
+    invariant(readRun && proposalRun && run, "E2E_REAL_MODEL_RUN_COUNT_MISMATCH");
     invariant(
       runs.every(
         (candidate) =>
@@ -59,6 +62,10 @@ async function main(): Promise<void> {
           candidate.completedAt !== null &&
           candidate.failureCode === null,
       ) &&
+        readRun.draftRevision === null &&
+        readRun.intents.length === 0 &&
+        readRun.auditEntries.length === 0 &&
+        readRun.feedbackRevisions.length === 0 &&
         proposalRun.draftRevision === null &&
         proposalRun.intents.length === 0 &&
         proposalRun.auditEntries.length === 0 &&
@@ -100,7 +107,7 @@ async function main(): Promise<void> {
         database.activityRelease.count(),
       ]);
     invariant(idempotencyCount === 1, "E2E_REAL_MODEL_IDEMPOTENCY_MISSING");
-    invariant(runCount === 2, "E2E_REAL_MODEL_RUN_COUNT_MISMATCH");
+    invariant(runCount === 3, "E2E_REAL_MODEL_RUN_COUNT_MISMATCH");
     invariant(intentCount === 0, "E2E_REAL_MODEL_CREATED_ACTION_INTENT");
     invariant(releaseCount === 0, "E2E_REAL_MODEL_CREATED_RELEASE");
 
@@ -111,6 +118,7 @@ async function main(): Promise<void> {
           marker,
           evidence: {
             model: run.model,
+            draftReadAgentRunStatus: readRun.status,
             proposalAgentRunStatus: proposalRun.status,
             executionAgentRunStatus: run.status,
             successfulAgentRuns: runCount,

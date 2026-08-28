@@ -124,6 +124,7 @@ const mocks = {
   publishRelease: vi.fn(),
   onToolFailure: vi.fn(),
   onBusinessWriteSuccess: vi.fn(),
+  readDraftDetail: vi.fn(),
 };
 
 function database(): PrismaClient {
@@ -145,6 +146,7 @@ function tools({ seedReadSections = true } = {}) {
     approvalContext,
     pageContext: { kind: "ACTIVITY_DRAFT", resourceId: draftId },
     workspace,
+    readDraftDetail: mocks.readDraftDetail,
     agentRunId: runId,
     onToolFailure: mocks.onToolFailure,
     onBusinessWriteSuccess: mocks.onBusinessWriteSuccess,
@@ -239,6 +241,28 @@ describe("activity assistant tools", () => {
     expect(mocks.saveDraft).not.toHaveBeenCalled();
   });
 
+  it("reads one owned draft only through the authorized detail reader", async () => {
+    mocks.readDraftDetail.mockResolvedValue({
+      status: "NOT_FOUND",
+      draftId: "90000000-0000-4000-8000-000000000009",
+    });
+    const registry = tools();
+
+    await expect(
+      registry.get_activity_draft.execute!(
+        { draftId: "90000000-0000-4000-8000-000000000009" },
+        options("draft_read_call"),
+      ),
+    ).resolves.toEqual({
+      status: "NOT_FOUND",
+      draftId: "90000000-0000-4000-8000-000000000009",
+    });
+    expect(mocks.readDraftDetail).toHaveBeenCalledWith(
+      "90000000-0000-4000-8000-000000000009",
+    );
+    expect(mocks.saveDraft).not.toHaveBeenCalled();
+  });
+
   it("does not reflect an unauthorized dynamic page resource", () => {
     expect(
       mapCurrentTeacherContext(
@@ -289,6 +313,7 @@ describe("activity assistant tools", () => {
         approvalContext,
         pageContext: { kind: "TEACHER_DASHBOARD" },
         workspace: revokedWorkspace,
+        readDraftDetail: mocks.readDraftDetail,
         agentRunId: runId,
         onToolFailure: mocks.onToolFailure,
         onBusinessWriteSuccess: mocks.onBusinessWriteSuccess,

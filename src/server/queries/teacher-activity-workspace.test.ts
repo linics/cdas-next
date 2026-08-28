@@ -7,6 +7,7 @@ vi.mock("server-only", () => ({}));
 
 import {
   getTeacherActivityDashboard,
+  getTeacherActivityDraft,
   getTeacherIdentity,
   TeacherActivityQueryError,
 } from "./teacher-activity-workspace";
@@ -77,5 +78,53 @@ describe("teacher workspace root role boundary", () => {
     await expect(
       getTeacherIdentity(fake.database, context(), {}),
     ).rejects.toEqual(new TeacherActivityQueryError("NOT_FOUND"));
+  });
+});
+
+function teacherDraftDatabaseDouble(ownerId: string) {
+  const activityDraftFindUnique = vi.fn().mockResolvedValue({
+    id: randomUUID(),
+    ownerId,
+    status: "READY_FOR_PREVIEW",
+    version: 1,
+    updatedAt: new Date("2026-08-18T12:00:00.000Z"),
+    sealedAt: null,
+    release: null,
+    revisions: [],
+  });
+  const database = {
+    appUser: {
+      findUnique: vi.fn().mockResolvedValue({
+        role: "TEACHER",
+        displayName: "林老师",
+      }),
+    },
+    activityDraft: { findUnique: activityDraftFindUnique },
+  } as unknown as PrismaClient;
+
+  return { database, activityDraftFindUnique };
+}
+
+describe("teacher activity draft read boundary", () => {
+  it("keeps a draft owned by another teacher absent for Agent reads", async () => {
+    const agentContext = context("AGENT");
+    const fake = teacherDraftDatabaseDouble(randomUUID());
+
+    await expect(
+      getTeacherActivityDraft(fake.database, agentContext, {
+        draftId: randomUUID(),
+      }),
+    ).rejects.toEqual(new TeacherActivityQueryError("NOT_FOUND"));
+  });
+
+  it("still refuses sources other than the teacher UI and Agent", async () => {
+    const fake = teacherDraftDatabaseDouble(randomUUID());
+
+    await expect(
+      getTeacherActivityDraft(fake.database, context("SYSTEM"), {
+        draftId: randomUUID(),
+      }),
+    ).rejects.toThrow(TypeError);
+    expect(fake.activityDraftFindUnique).not.toHaveBeenCalled();
   });
 });

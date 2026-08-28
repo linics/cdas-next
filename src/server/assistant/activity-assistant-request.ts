@@ -19,6 +19,7 @@ import {
   mapTeacherReleaseList,
 } from "./activity-assistant-tools";
 import type { TeacherActivityDashboard } from "../queries/teacher-activity-workspace";
+import type { TeacherDraftDetailReader } from "./teacher-draft-detail";
 import {
   officialKnowledgeSectionKey,
   readOfficialKnowledgeSection,
@@ -110,6 +111,7 @@ function assertSafeMessageHistory(
         part.type !== "tool-list_my_classrooms" &&
         part.type !== "tool-list_my_activity_drafts" &&
         part.type !== "tool-list_my_releases" &&
+        part.type !== "tool-get_activity_draft" &&
         part.type !== "tool-search_knowledge" &&
         part.type !== "tool-read_source_section" &&
         part.type !== "tool-create_activity_draft" &&
@@ -137,7 +139,8 @@ function assertSafeMessageHistory(
         (part.type === "tool-get_current_context" ||
           part.type === "tool-list_my_classrooms" ||
           part.type === "tool-list_my_activity_drafts" ||
-          part.type === "tool-list_my_releases") &&
+          part.type === "tool-list_my_releases" ||
+          part.type === "tool-get_activity_draft") &&
         part.state !== "output-available"
       ) {
         throw new ActivityAssistantRequestError("INVALID_MESSAGES");
@@ -272,16 +275,33 @@ export type ParsedActivityAssistantRequest = Readonly<{
   pageContext: TeacherAgentPageContext;
 }>;
 
-export function canonicalizeActivityAssistantReadOnlyHistory(
+/**
+ * Client-supplied history is never trusted as a record of what the teacher is
+ * allowed to see. Every read-only result is recomputed from the current
+ * authorized workspace before it reaches the model, so a draft that was
+ * renamed, rewritten, deleted, or handed to another teacher between turns
+ * cannot survive in the conversation as its stale self.
+ */
+export async function canonicalizeActivityAssistantReadOnlyHistory(
   messages: ActivityAssistantMessage[],
   workspace: TeacherActivityDashboard,
   pageContext: TeacherAgentPageContext,
-): ActivityAssistantMessage[] {
-  return messages.map((message) => {
+  readDraftDetail: TeacherDraftDetailReader,
+): Promise<ActivityAssistantMessage[]> {
+  return Promise.all(messages.map(async (message) => {
     if (message.role !== "assistant") return message;
+    const parts = await Promise.all(message.parts.map(async (part) => {
+      if (
+        part.type === "tool-get_activity_draft" &&
+        part.state === "output-available"
+      ) {
+        return { ...part, output: await readDraftDetail(part.input.draftId) };
+      }
+      return part;
+    }));
     return {
       ...message,
-      parts: message.parts.map((part) => {
+      parts: parts.map((part) => {
         if (
           part.type === "tool-get_current_context" &&
           part.state === "output-available"
@@ -312,7 +332,7 @@ export function canonicalizeActivityAssistantReadOnlyHistory(
         return part;
       }),
     };
-  });
+  }));
 }
 
 export async function parseActivityAssistantRequestEnvelope(

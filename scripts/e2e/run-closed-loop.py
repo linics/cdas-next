@@ -641,6 +641,61 @@ def run_real_model_browser_flow(
 
         try:
             switch_account(page, base_url, "teacher", broker_secret)
+
+            # D-047 is verified against a draft the teacher wrote by hand, so
+            # the read-back evidence does not depend on the model's ability to
+            # author a whole task book in the later proposal step.
+            read_title = f"E2E AI 讀取 {marker}"
+            page.goto(
+                f"{base_url}/teacher/activities/new",
+                wait_until="domcontentloaded",
+            )
+            fill_activity_form(
+                page,
+                read_title,
+                "供助手只读回看的手工草稿。",
+            )
+            page.get_by_role("button", name="保存为编辑中", exact=True).click()
+            page.wait_for_url(
+                re.compile(
+                    rf"{re.escape(base_url)}/teacher/activities/[0-9a-f-]+$"
+                )
+            )
+            draft_url = page.url
+            page.get_by_role(
+                "button", name="打开 CDAS Agent 独立会话", exact=True
+            ).click()
+            page.get_by_role(
+                "heading", name="教师工作区与活动设计", exact=True
+            ).wait_for()
+            page.locator(
+                '#activity-assistant-prompt[data-hydrated="true"]'
+            ).fill(
+                "请先确认我当前所在的页面，再读取这份草稿的完整任务书，"
+                "然后只用一句话说明第二个阶段在情境承接上还差什么。"
+                "只读取，不要建立新草稿，也不要发布。"
+            )
+            page.get_by_role("button", name="交给助手整理", exact=True).click()
+            page.get_by_text(f"读取草稿 · {read_title}", exact=True).wait_for(
+                timeout=120_000
+            )
+            if page.get_by_role("link", name="打开草稿", exact=True).count() == 0:
+                raise E2eFailure("REAL_MODEL_DRAFT_READ_LINK_MISSING")
+            if page.url != draft_url:
+                raise E2eFailure("REAL_MODEL_DRAFT_READ_NAVIGATED")
+            # Let the read turn settle before reloading. Navigating mid-stream
+            # would abort it and leave a CANCELLED AgentRun that says nothing
+            # about the read itself.
+            page.get_by_role("button", name="停止", exact=True).wait_for(
+                state="detached", timeout=120_000
+            )
+            # The transcript scrolls inside the panel, so bring the result the
+            # assertions just proved into frame before capturing evidence.
+            page.get_by_text(f"读取草稿 · {read_title}", exact=True).scroll_into_view_if_needed()
+            screenshot(page, artifacts, "00-real-model-draft-read")
+
+            # A full reload clears the in-memory session, so the proposal step
+            # below starts from an empty conversation exactly as before.
             page.goto(
                 f"{base_url}/teacher/activities/new",
                 wait_until="domcontentloaded",
@@ -649,7 +704,7 @@ def run_real_model_browser_flow(
                 "button", name="打开 CDAS Agent 独立会话", exact=True
             ).click()
             page.get_by_role(
-                "heading", name="活动设计与课程依据", exact=True
+                "heading", name="教师工作区与活动设计", exact=True
             ).wait_for()
             textarea = page.locator("#activity-assistant-prompt")
             submit = page.get_by_role("button", name="交给助手整理", exact=True)
@@ -707,6 +762,18 @@ def run_real_model_browser_flow(
             screenshot(page, artifacts, "02-real-model-draft-preview")
         except Exception:
             screenshot(page, artifacts, "failure")
+            # The transcript is what the model actually did. Without it a
+            # timeout only says "no approval appeared", which is the same
+            # evidence for a refusal, a clarifying question and a truncated
+            # tool call. Synthetic data only; no credentials are rendered here.
+            try:
+                transcript = page.locator("article[data-role]").all_inner_texts()
+            except PlaywrightError:
+                transcript = []
+            (artifacts / "transcript.txt").write_text(
+                redact_sensitive_text("\n\n---\n\n".join(transcript)),
+                encoding="utf-8",
+            )
             raise
         finally:
             context.close()

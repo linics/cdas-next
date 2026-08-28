@@ -148,6 +148,7 @@ const mocks = {
   getConfig: vi.fn(),
   createModel: vi.fn(),
   getWorkspace: vi.fn(),
+  readDraft: vi.fn(),
   startRun: vi.fn<typeof startActivityAssistantRun>(),
   finishRun: vi.fn<typeof finishActivityAssistantRun>(),
   saveDraft: vi.fn(),
@@ -374,6 +375,7 @@ function dependencies(): ActivityAssistantHandlerDependencies {
     getConfig: mocks.getConfig,
     createModel: mocks.createModel,
     getWorkspace: mocks.getWorkspace,
+    readDraft: mocks.readDraft,
     startRun: mocks.startRun,
     finishRun: mocks.finishRun,
     createTraceId: vi
@@ -537,6 +539,59 @@ describe("activity assistant route handler", () => {
     expect(mocks.startRun).not.toHaveBeenCalled();
     expect(mocks.saveDraft).not.toHaveBeenCalled();
     expect(mocks.publishRelease).not.toHaveBeenCalled();
+  });
+
+  it("fails a quoted draft read closed before provider and AgentRun creation", async () => {
+    mocks.getWorkspace.mockResolvedValue({
+      ...workspace,
+      drafts: [
+        {
+          id: draftId,
+          title: "校園節水行動",
+          status: "READY_FOR_PREVIEW",
+          version: 1,
+          updatedAt: now.toISOString(),
+          releaseId: null,
+        },
+      ],
+    });
+    mocks.readDraft.mockRejectedValue(new Error("database unavailable"));
+
+    const response = await handleActivityAssistantRequest(
+      messageRequest([
+        {
+          id: "message_1",
+          role: "user",
+          parts: [{ type: "text", text: "看看這份草稿" }],
+        },
+        {
+          id: "assistant_1",
+          role: "assistant",
+          parts: [
+            {
+              type: "tool-get_activity_draft",
+              toolCallId: "draft_read_handler_1",
+              state: "output-available",
+              input: { draftId },
+              output: { status: "NOT_FOUND", draftId },
+            },
+          ],
+        },
+        {
+          id: "message_2",
+          role: "user",
+          parts: [{ type: "text", text: "第二階段還能怎麼改" }],
+        },
+      ]),
+      dependencies(),
+    );
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toEqual({
+      error: "ASSISTANT_UNAVAILABLE",
+    });
+    expect(mocks.startRun).not.toHaveBeenCalled();
+    expect(mocks.saveDraft).not.toHaveBeenCalled();
   });
 
   it("rejects invalid messages before provider and AgentRun creation", async () => {

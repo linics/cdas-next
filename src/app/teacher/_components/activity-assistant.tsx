@@ -95,6 +95,27 @@ type TeacherReleaseListOutput = {
   }>;
 };
 
+type TeacherDraftDetailOutput =
+  | {
+      status: "FOUND";
+      draftId: string;
+      draftStatus: "EDITING" | "READY_FOR_PREVIEW" | "SEALED";
+      version: number;
+      updatedAt: string;
+      published: boolean;
+      editHref: string;
+      previewHref: string;
+      content: ActivityContentV2;
+    }
+  | {
+      status: "LEGACY_SNAPSHOT";
+      draftId: string;
+      title: string;
+      editHref: string;
+      previewHref: string;
+    }
+  | { status: "NOT_FOUND"; draftId: string };
+
 const draftNotCreatedRetryText =
   '草稿未创建。你可以补一句"请重新创建草稿"让助手重试，或改用手动表单。';
 
@@ -181,6 +202,10 @@ type ActivityAssistantMessage = UIMessage<
     list_my_releases: {
       input: Record<string, never>;
       output: TeacherReleaseListOutput;
+    };
+    get_activity_draft: {
+      input: { draftId: string };
+      output: TeacherDraftDetailOutput;
     };
     search_knowledge: {
       input: {
@@ -734,6 +759,58 @@ export function ActivityAssistant({
                     return (
                       <p className={styles.toolProgress} key={part.toolCallId}>
                         正在查询你的发布与待办…
+                      </p>
+                    );
+                  }
+
+                  if (part.type === "tool-get_activity_draft") {
+                    if (part.state === "output-available") {
+                      if (part.output.status === "NOT_FOUND") {
+                        return (
+                          <p className={styles.errorText} key={part.toolCallId}>
+                            这份草稿不在你的工作区，或你已无权查看。
+                          </p>
+                        );
+                      }
+                      if (part.output.status === "LEGACY_SNAPSHOT") {
+                        return (
+                          <div className={styles.toolResult} key={part.toolCallId}>
+                            <strong>读取草稿 · {part.output.title}</strong>
+                            <p>这是旧版快照草稿，助手不读取其正文。</p>
+                            <Link href={part.output.editHref}>打开草稿</Link>
+                          </div>
+                        );
+                      }
+                      return (
+                        <div className={styles.toolResult} key={part.toolCallId}>
+                          <strong>读取草稿 · {part.output.content.title}</strong>
+                          <p>
+                            版本 {part.output.version} ·{" "}
+                            {readOnlyDraftStatusLabel[part.output.draftStatus]}
+                            {part.output.published ? " · 已发布" : ""}
+                          </p>
+                          <p>
+                            {part.output.content.phases.length} 个阶段 ·{" "}
+                            {part.output.content.rubricDimensions.length} 个量规维度 · 更新于{" "}
+                            <LocalizedDateTime dateTime={part.output.updatedAt} />
+                          </p>
+                          <div className={styles.inlineActions}>
+                            <Link href={part.output.editHref}>打开草稿</Link>
+                            <Link href={part.output.previewHref}>查看预览</Link>
+                          </div>
+                        </div>
+                      );
+                    }
+                    if (part.state === "output-error") {
+                      return (
+                        <p className={styles.errorText} key={part.toolCallId}>
+                          草稿读取失败；请直接打开草稿页查看。
+                        </p>
+                      );
+                    }
+                    return (
+                      <p className={styles.toolProgress} key={part.toolCallId}>
+                        正在读取这份草稿…
                       </p>
                     );
                   }

@@ -319,7 +319,7 @@ def main() -> None:
                 "button", name="打开 CDAS Agent 独立会话", exact=True
             ).click()
             teacher.get_by_role(
-                "heading", name="活动设计与课程依据", exact=True
+                "heading", name="教师工作区与活动设计", exact=True
             ).wait_for()
             teacher.locator('#activity-assistant-prompt[data-hydrated="true"]').fill(
                 CREATE_PROMPT.format(title=title)
@@ -370,7 +370,7 @@ def main() -> None:
             teacher.get_by_text("草稿修订 2", exact=True).wait_for()
             teacher.get_by_text(EDITED_SUMMARY, exact=True).wait_for()
             teacher.get_by_role(
-                "heading", name="活动设计与课程依据", exact=True
+                "heading", name="教师工作区与活动设计", exact=True
             ).wait_for()
             teacher.locator('#activity-assistant-prompt[data-hydrated="true"]').fill(
                 PUBLISH_PROMPT.format(classroom=classroom)

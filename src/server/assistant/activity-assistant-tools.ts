@@ -29,6 +29,10 @@ import {
 import type { CommandContext } from "../commands/command-context";
 import type { TeacherActivityDashboard } from "../queries/teacher-activity-workspace";
 import {
+  teacherDraftDetailOutputSchema,
+  type TeacherDraftDetailReader,
+} from "./teacher-draft-detail";
+import {
   getOfficialKnowledgeReference,
   officialKnowledgeSectionKey,
   type OfficialKnowledgeSectionIdentity,
@@ -331,6 +335,10 @@ export const teacherReleaseListOutputSchema = z
   })
   .strict();
 
+export const activityDraftReadInputSchema = z
+  .object({ draftId: z.uuid() })
+  .strict();
+
 export type CurrentTeacherContextOutput = z.infer<
   typeof currentTeacherContextOutputSchema
 >;
@@ -514,6 +522,11 @@ export const activityAssistantMessageValidationTools = {
     outputSchema: teacherReleaseListOutputSchema,
     strict: true,
   }),
+  get_activity_draft: tool({
+    inputSchema: activityDraftReadInputSchema,
+    outputSchema: teacherDraftDetailOutputSchema,
+    strict: true,
+  }),
   search_knowledge: tool({
     inputSchema: officialKnowledgeSearchInputSchema,
     outputSchema: officialKnowledgeSearchOutputSchema,
@@ -556,6 +569,7 @@ export type ActivityAssistantToolDependencies = Readonly<{
   approvalContext: CommandContext;
   pageContext: TeacherAgentPageContext;
   workspace: TeacherActivityDashboard;
+  readDraftDetail: TeacherDraftDetailReader;
   agentRunId: string;
   onToolFailure: (failureCode: string) => void;
   onBusinessWriteSuccess: (
@@ -589,6 +603,7 @@ export function createActivityAssistantTools({
   approvalContext,
   pageContext,
   workspace,
+  readDraftDetail,
   agentRunId,
   onToolFailure,
   onBusinessWriteSuccess,
@@ -653,6 +668,15 @@ export function createActivityAssistantTools({
       outputSchema: teacherReleaseListOutputSchema,
       strict: true,
       execute: () => mapTeacherReleaseList(workspace),
+    }),
+
+    get_activity_draft: tool({
+      description:
+        "读取当前教师本人某一份活动草稿的完整任务书，用于回答、诊断或改写建议。draftId 必须来自 list_my_activity_drafts 或 get_current_context 的结果，不得猜测。不属于本人工作区的草稿一律返回 NOT_FOUND；旧版快照只返回标题与链接。本工具只读，不修改草稿，也不读取学生、提交、反馈或评价数据。",
+      inputSchema: activityDraftReadInputSchema,
+      outputSchema: teacherDraftDetailOutputSchema,
+      strict: true,
+      execute: ({ draftId }) => readDraftDetail(draftId),
     }),
 
     search_knowledge: tool({

@@ -25,16 +25,30 @@ describe("real-model smoke D-033 contract", () => {
     expect(realModelFlowSource).toContain("02-real-model-draft-preview");
     expect(
       realModelFlowSource.indexOf("01-real-model-draft-proposal"),
-    ).toBeLessThan(realModelFlowSource.indexOf("page.wait_for_url("));
+    ).toBeLessThan(realModelFlowSource.indexOf("preview_link.click()"));
+  });
+
+  it("reads back a hand-written draft before the model authors one", () => {
+    expect(realModelFlowSource).toContain("fill_activity_form(");
+    expect(realModelFlowSource).toContain("读取草稿 · ");
+    expect(realModelFlowSource).toContain("REAL_MODEL_DRAFT_READ_LINK_MISSING");
+    expect(realModelFlowSource).toContain("REAL_MODEL_DRAFT_READ_NAVIGATED");
+    expect(realModelFlowSource).toContain("00-real-model-draft-read");
+    expect(
+      realModelFlowSource.indexOf("00-real-model-draft-read"),
+    ).toBeLessThan(realModelFlowSource.indexOf("01-real-model-draft-proposal"));
   });
 
   it("requires exactly a no-write proposal run followed by the draft execution run", () => {
-    expect(verifierSource).toContain("runs.length === 2");
+    expect(verifierSource).toContain("runs.length === 3");
+    expect(verifierSource).toContain("readRun.draftRevision === null");
+    expect(verifierSource).toContain("readRun.intents.length === 0");
+    expect(verifierSource).toContain("readRun.auditEntries.length === 0");
     expect(verifierSource).toContain("proposalRun.draftRevision === null");
     expect(verifierSource).toContain("proposalRun.intents.length === 0");
     expect(verifierSource).toContain("proposalRun.auditEntries.length === 0");
     expect(verifierSource).toContain("run.id === revision.agentRunId");
-    expect(verifierSource).toContain("runCount === 2");
+    expect(verifierSource).toContain("runCount === 3");
     expect(verifierSource).toContain("intentCount === 0");
     expect(verifierSource).toContain("releaseCount === 0");
   });
