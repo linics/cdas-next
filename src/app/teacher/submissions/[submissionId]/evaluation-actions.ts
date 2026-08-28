@@ -10,6 +10,10 @@ import {
   teacherEvaluationPayloadSchema,
 } from "../../../../domain/evaluation/teacher-evaluation-intent";
 import { AuthenticationError } from "../../../../server/auth/current-actor";
+import {
+  suggestTeacherEvaluation,
+  TeacherEvaluationSuggestionError,
+} from "../../../../server/assistant/teacher-evaluation-suggestion";
 import { createUiCommandContext } from "../../../../server/commands/create-ui-command-context";
 import {
   decideActionIntent,
@@ -28,6 +32,7 @@ import type {
   EvaluationActionOperation,
   EvaluationActionState,
 } from "./evaluation-action-state";
+import type { EvaluationSuggestionActionState } from "./evaluation-suggestion-action-state";
 
 const idempotencyKeySchema = z.string().trim().min(8).max(200);
 const positiveFormIntegerSchema = z.preprocess(
@@ -44,6 +49,18 @@ const nonnegativeFormIntegerSchema = z.preprocess(
       : Number.NaN,
   z.coerce.number().int().nonnegative(),
 );
+const nullableAgentRunIdFormSchema = z.preprocess(
+  (value) => (value === "" ? null : value),
+  z.uuid().nullable(),
+);
+
+const suggestionFormSchema = z
+  .object({
+    submissionId: z.uuid(),
+    submissionRevisionId: z.uuid(),
+    submissionRevisionNumber: positiveFormIntegerSchema,
+  })
+  .strict();
 
 const prepareFormSchema = z
   .object({
@@ -53,6 +70,7 @@ const prepareFormSchema = z
     expectedEvaluationVersion: nonnegativeFormIntegerSchema,
     summary: z.string(),
     outcomes: z.string(),
+    suggestionAgentRunId: nullableAgentRunIdFormSchema,
     idempotencyKey: idempotencyKeySchema,
   })
   .strict();
@@ -79,7 +97,13 @@ const prepareFormFields = new Set([
   "expectedEvaluationVersion",
   "summary",
   "outcomes",
+  "suggestionAgentRunId",
   "idempotencyKey",
+]);
+const suggestionFormFields = new Set([
+  "submissionId",
+  "submissionRevisionId",
+  "submissionRevisionNumber",
 ]);
 const confirmationFormFields = new Set([
   "actionIntentId",
@@ -323,6 +347,123 @@ function parseOutcomesJson(raw: string) {
   return z.array(teacherEvaluationOutcomeSchema).min(4).max(8).parse(parsed);
 }
 
+function suggestionState(options: {
+  status: EvaluationSuggestionActionState["status"];
+  message: string;
+  suggestion?: EvaluationSuggestionActionState["suggestion"];
+}): EvaluationSuggestionActionState {
+  return {
+    status: options.status,
+    message: options.message,
+    suggestion: options.suggestion ?? null,
+  };
+}
+
+export async function suggestTeacherEvaluationAction(
+  _previousState: EvaluationSuggestionActionState,
+  formData: FormData,
+): Promise<EvaluationSuggestionActionState> {
+  if (!formContainsExactly(formData, suggestionFormFields)) {
+    return suggestionState({
+      status: "error",
+      message: "起草请求格式不正确。当前表单没有被修改，请刷新后再试。",
+    });
+  }
+
+  let input: z.infer<typeof suggestionFormSchema>;
+  try {
+    input = suggestionFormSchema.parse({
+      submissionId: formData.get("submissionId"),
+      submissionRevisionId: formData.get("submissionRevisionId"),
+      submissionRevisionNumber: formData.get("submissionRevisionNumber"),
+    });
+  } catch {
+    return suggestionState({
+      status: "error",
+      message: "起草请求格式不正确。当前表单没有被修改，请刷新后再试。",
+    });
+  }
+
+  try {
+    const database = getDatabaseClient();
+    const context = await createUiCommandContext(database);
+    const suggestion = await suggestTeacherEvaluation(
+      database,
+      context,
+      input,
+    );
+    return suggestionState({
+      status: "suggested",
+      message:
+        "AI 建议已填入当前表单。请逐维核对、修改后，再准备评价确认。",
+      suggestion,
+    });
+  } catch (error) {
+    if (error instanceof AuthenticationError) {
+      return suggestionState({
+        status:
+          error.code === "UNAUTHENTICATED"
+            ? "unauthenticated"
+            : "unauthorized",
+        message:
+          error.code === "UNAUTHENTICATED"
+            ? "登录状态已失效，未起草评价。请重新登录后再试。"
+            : "当前账号不能为这份提交起草评价。手写表单仍可使用。",
+      });
+    }
+
+    if (error instanceof TeacherEvaluationSuggestionError) {
+      if (error.code === "STALE_SUBMISSION_REVISION") {
+        return suggestionState({
+          status: "stale",
+          message:
+            "学生已重交或当前评价版本已变化，没有应用这次建议。请刷新后查看最新版本。",
+        });
+      }
+      if (error.code === "NOT_FOUND") {
+        return suggestionState({
+          status: "unauthorized",
+          message:
+            "当前无法读取这份提交。请确认你仍是活动发布者和班级管理者。",
+        });
+      }
+      if (
+        error.code === "AI_UNAVAILABLE" ||
+        error.code === "PROVIDER_FAILED"
+      ) {
+        return suggestionState({
+          status: "unavailable",
+          message:
+            "AI 评价建议暂时不可用。当前手写内容已保留，你仍可直接完成评价。",
+        });
+      }
+      if (error.code === "RUBRIC_UNAVAILABLE") {
+        return suggestionState({
+          status: "error",
+          message:
+            "当前发布快照没有可用的四档量规，因此不能起草评价建议。",
+        });
+      }
+      if (error.code === "INVALID_OUTPUT") {
+        return suggestionState({
+          status: "error",
+          message:
+            "AI 返回的建议没有通过量规与证据校验，当前表单未被修改。你可以重试或继续手写。",
+        });
+      }
+    }
+
+    console.error("Teacher evaluation suggestion action failed", {
+      errorName: error instanceof Error ? error.name : "UnknownError",
+    });
+    return suggestionState({
+      status: "error",
+      message:
+        "服务器暂时无法起草评价建议。当前手写内容已保留，请稍后再试。",
+    });
+  }
+}
+
 export async function prepareTeacherEvaluationAction(
   _previousState: EvaluationActionState,
   formData: FormData,
@@ -341,6 +482,7 @@ export async function prepareTeacherEvaluationAction(
       expectedEvaluationVersion: formData.get("expectedEvaluationVersion"),
       summary: formData.get("summary"),
       outcomes: formData.get("outcomes"),
+      suggestionAgentRunId: formData.get("suggestionAgentRunId"),
       idempotencyKey: formData.get("idempotencyKey"),
     });
     payload = teacherEvaluationPayloadSchema.parse({
@@ -351,7 +493,7 @@ export async function prepareTeacherEvaluationAction(
       expectedEvaluationVersion: input.expectedEvaluationVersion,
       summary: normalizeTeacherEvaluationSummary(input.summary),
       outcomes: parseOutcomesJson(input.outcomes),
-      suggestionAgentRunId: null,
+      suggestionAgentRunId: input.suggestionAgentRunId,
     });
   } catch (error) {
     return failedActionState("prepare", error);
@@ -371,7 +513,7 @@ export async function prepareTeacherEvaluationAction(
         expectedEvaluationVersion: payload.expectedEvaluationVersion,
         summary: payload.summary,
         outcomes: payload.outcomes,
-        suggestionAgentRunId: null,
+        suggestionAgentRunId: payload.suggestionAgentRunId,
         idempotencyKey: input.idempotencyKey,
       },
     );

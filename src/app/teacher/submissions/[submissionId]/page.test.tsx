@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   getDatabaseClient: vi.fn(),
   createUiCommandContext: vi.fn(),
   getTeacherFeedbackWorkspace: vi.fn(),
+  isActivityAssistantEnabled: vi.fn(),
   notFound: vi.fn(() => {
     throw new Error("NEXT_NOT_FOUND");
   }),
@@ -53,6 +54,9 @@ vi.mock("../../../../server/auth/current-actor", () => ({
     }
   },
 }));
+vi.mock("../../../../server/assistant/assistant-config", () => ({
+  isActivityAssistantEnabled: mocks.isActivityAssistantEnabled,
+}));
 vi.mock("../../../../server/queries/feedback-workspace", () => ({
   FeedbackWorkspaceQueryError: class FeedbackWorkspaceQueryError extends Error {
     constructor(public readonly code: string) {
@@ -85,16 +89,19 @@ vi.mock("./evaluation-composer", () => ({
     submissionRevisionNumber,
     expectedEvaluationVersion,
     initialSummary,
+    assistantEnabled,
   }: {
     submissionRevisionNumber: number;
     expectedEvaluationVersion: number;
     initialSummary: string;
+    assistantEnabled: boolean;
   }) => (
     <div
       data-evaluation-composer="true"
       data-revision={submissionRevisionNumber}
       data-evaluation-version={expectedEvaluationVersion}
       data-initial-summary={initialSummary}
+      data-assistant-enabled={assistantEnabled}
     />
   ),
 }));
@@ -195,6 +202,7 @@ describe("teacher feedback page access boundary", () => {
     mocks.getDatabaseClient.mockReturnValue(mocks.database);
     mocks.createUiCommandContext.mockResolvedValue(trustedContext);
     mocks.getTeacherFeedbackWorkspace.mockResolvedValue(workspace);
+    mocks.isActivityAssistantEnabled.mockReturnValue(false);
   });
 
   it("does not query or render student data and write controls when auth is not configured", async () => {
@@ -335,10 +343,34 @@ describe("teacher feedback page access boundary", () => {
 
     expect(markup).toContain("data-evaluation-composer");
     expect(markup).toContain('data-evaluation-version="1"');
+    expect(markup).toContain('data-assistant-enabled="false"');
     expect(markup).toContain("按冻结量规给出综评。");
     expect(markup).toContain("证据不足");
     expect(markup).toContain("优秀");
     expect(markup).not.toContain("这份发布快照是 schema v1");
+  });
+
+  it("enables the optional AI draft affordance without changing the evaluation layout", async () => {
+    mocks.isActivityAssistantEnabled.mockReturnValue(true);
+    mocks.getTeacherFeedbackWorkspace.mockResolvedValue({
+      ...workspace,
+      submission: {
+        ...workspace.submission,
+        release: {
+          ...workspace.submission.release,
+          snapshot: {
+            ...workspace.submission.release.snapshot,
+            content: waterConservationTaskBook,
+          },
+        },
+      },
+    });
+
+    const markup = await renderPage();
+
+    expect(markup).toContain('data-evaluation-composer="true"');
+    expect(markup).toContain('data-assistant-enabled="true"');
+    expect(markup).toContain('data-feedback-composer="true"');
   });
 
   it("labels shared group feedback with every member and role", async () => {

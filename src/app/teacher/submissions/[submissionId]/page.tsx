@@ -14,6 +14,7 @@ import {
 } from "../../../../domain/evaluation/teacher-evaluation-policy";
 import { LocalizedDateTime } from "../../../_components/localized-date-time";
 import { AuthenticationError } from "../../../../server/auth/current-actor";
+import { isActivityAssistantEnabled } from "../../../../server/assistant/assistant-config";
 import { createUiCommandContext } from "../../../../server/commands/create-ui-command-context";
 import { getDatabaseClient } from "../../../../server/db/client";
 import {
@@ -315,6 +316,7 @@ export default async function TeacherSubmissionPage({
   const latestFeedbackRevision = currentRevision.feedback?.revisions.at(-1);
   const latestEvaluationRevision = currentRevision.evaluation?.revisions.at(-1);
   const content = submission.release.snapshot.content;
+  const assistantEnabled = isActivityAssistantEnabled();
   const phase =
     content.schemaVersion === 2 && submission.phaseIndex > 0
       ? (content.phases[submission.phaseIndex - 1] ?? null)
@@ -460,6 +462,7 @@ export default async function TeacherSubmissionPage({
                 }
                 initialSummary={latestEvaluationRevision?.summary ?? ""}
                 prepareIdempotencySeed={`prepare_teacher_evaluation_${randomUUID()}`}
+                assistantEnabled={assistantEnabled}
               />
             ) : (
               <div className={styles.railNote} role="note">

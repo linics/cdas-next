@@ -346,6 +346,9 @@
   font-size: var(--text-meta);
 }
 
+.suggestionAction { flex: 0 0 auto; }
+.suggestionAction .secondaryButton { white-space: nowrap; }
+
 .prepareButton,
 .confirmButton,
 .cancelButton,
@@ -595,6 +598,8 @@
   .revisionHeading,
   .composerHeading,
   .prepareRow { display: grid; }
+  .suggestionAction,
+  .suggestionAction .secondaryButton { width: 100%; }
   .feedbackVersions article { grid-template-columns: 1fr; }
   .feedbackVersions article > .feedbackBody { grid-column: 1; }
   .feedbackStructure,

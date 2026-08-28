@@ -1,6 +1,12 @@
 "use client";
 
-import { useActionState, useMemo, useRef, useState } from "react";
+import {
+  useActionState,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import { useRouter } from "next/navigation";
 import { LocalizedDateTime } from "../../../_components/localized-date-time";
 import { ConfirmDialog, InlineAlert } from "../../../_components/ui";
@@ -17,12 +23,17 @@ import { hasMeaningfulTextEvidence } from "../../../../domain/submission/text-ev
 import {
   decideTeacherEvaluationAction,
   prepareTeacherEvaluationAction,
+  suggestTeacherEvaluationAction,
 } from "./evaluation-actions";
 import {
   initialEvaluationActionState,
   type EvaluationActionState,
   type PendingEvaluationConfirmation,
 } from "./evaluation-action-state";
+import {
+  initialEvaluationSuggestionActionState,
+  type EvaluationSuggestionActionState,
+} from "./evaluation-suggestion-action-state";
 import styles from "./feedback-workspace.module.css";
 
 type RubricDimension = Readonly<{
@@ -44,6 +55,7 @@ type EvaluationComposerProps = Readonly<{
   checkpoints: ReadonlyArray<{ evidenceIndex: number; description: string }>;
   initialSummary: string;
   prepareIdempotencySeed: string;
+  assistantEnabled: boolean;
 }>;
 
 type DimensionDraft = Readonly<{
@@ -107,6 +119,36 @@ function ActionNotice({
       </span>
       <p>{state.message}</p>
       {isConflict && state.status !== "concurrent" ? (
+        <button type="button" onClick={onRefresh}>
+          刷新
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+function SuggestionNotice({
+  state,
+  onRefresh,
+}: {
+  state: EvaluationSuggestionActionState;
+  onRefresh: () => void;
+}) {
+  if (state.status === "idle") return null;
+  const isSuccess = state.status === "suggested";
+  const isConflict = state.status === "stale";
+  return (
+    <div
+      className={styles.actionNotice}
+      data-tone={isSuccess ? "success" : isConflict ? "conflict" : "error"}
+      role={isSuccess ? "status" : "alert"}
+      aria-live="polite"
+    >
+      <span aria-hidden="true">
+        {isSuccess ? "✓" : isConflict ? "↻" : "!"}
+      </span>
+      <p>{state.message}</p>
+      {isConflict ? (
         <button type="button" onClick={onRefresh}>
           刷新
         </button>
@@ -267,12 +309,21 @@ export function EvaluationComposer({
   checkpoints,
   initialSummary,
   prepareIdempotencySeed,
+  assistantEnabled,
 }: EvaluationComposerProps) {
   const router = useRouter();
   const [draftSummary, setDraftSummary] = useState(initialSummary);
   const [dimensionDrafts, setDimensionDrafts] = useState<DimensionDraft[]>(() =>
     rubricDimensions.map(() => emptyDimensionDraft()),
   );
+  const [suggestionAgentRunId, setSuggestionAgentRunId] = useState<string | null>(
+    null,
+  );
+  const [suggestionState, setSuggestionState] =
+    useState<EvaluationSuggestionActionState>(
+      initialEvaluationSuggestionActionState,
+    );
+  const [suggestionPending, startSuggestionTransition] = useTransition();
   const [prepareState, prepareAction, preparePending] = useActionState(
     prepareTeacherEvaluationAction,
     initialEvaluationActionState,
@@ -301,7 +352,7 @@ export function EvaluationComposer({
   const summaryOverLimit =
     codePointCount > TEACHER_EVALUATION_SUMMARY_MAX_LENGTH;
   const summaryHasVisibleText = hasMeaningfulTextEvidence(draftSummary);
-  const anyPending = preparePending || decisionPending;
+  const anyPending = preparePending || decisionPending || suggestionPending;
   const relatedDecisionState =
     activeConfirmation &&
     decisionState.resolvedIntentId === activeConfirmation.actionIntentId
@@ -339,6 +390,44 @@ export function EvaluationComposer({
     return citationsFromDraft(draft).length > 0;
   });
 
+  const requestSuggestion = (formData: FormData) => {
+    startSuggestionTransition(async () => {
+      const nextState = await suggestTeacherEvaluationAction(
+        initialEvaluationSuggestionActionState,
+        formData,
+      );
+      setSuggestionState(nextState);
+      const suggestion = nextState.suggestion;
+      if (!suggestion) return;
+
+      setDraftSummary(suggestion.summary);
+      setSuggestionAgentRunId(suggestion.agentRunId);
+      setDimensionDrafts(
+        rubricDimensions.map((_, index) => {
+          const outcome = suggestion.outcomes[index];
+          if (!outcome) return emptyDimensionDraft();
+          if (outcome.status === "INSUFFICIENT_EVIDENCE") {
+            return {
+              ...emptyDimensionDraft(),
+              status: "INSUFFICIENT_EVIDENCE",
+            };
+          }
+          return {
+            status: "LEVEL",
+            level: outcome.level,
+            citeText: outcome.citations.some(
+              (citation) => citation.kind === "text",
+            ),
+            attachmentIds: [],
+            evidenceIndexes: outcome.citations.flatMap((citation) =>
+              citation.kind === "checkpoint" ? [citation.evidenceIndex] : [],
+            ),
+          };
+        }),
+      );
+    });
+  };
+
   if (activeConfirmation) {
     return (
       <ConfirmationPanel
@@ -356,7 +445,7 @@ export function EvaluationComposer({
     <section
       className={styles.composer}
       aria-labelledby="evaluation-editor-title"
-      aria-busy={preparePending}
+      aria-busy={preparePending || suggestionPending}
     >
       <header className={styles.composerHeading}>
         <div>
@@ -367,7 +456,9 @@ export function EvaluationComposer({
               : "撰写量规评价"}
           </h2>
         </div>
-        <span className={styles.manualMode}>手写模式 · 不呼叫 AI</span>
+        <span className={styles.manualMode}>
+          {assistantEnabled ? "教师终审 · AI 可选" : "手写模式 · 不呼叫 AI"}
+        </span>
       </header>
 
       <p className={styles.composerLead}>
@@ -377,6 +468,41 @@ export function EvaluationComposer({
           : "第一版评价"}
         。每个维度必须给出等级并引用本版证据，或明确标记证据不足。准备后仍需在独立面板明确确认。
       </p>
+
+      {assistantEnabled ? (
+        <>
+          <div className={styles.prepareRow}>
+            <p>
+              这是 AI 建议，未经你确认不会保存。助手只读取本版文字和已确认检查点；附件内容不会交给模型。
+            </p>
+            <form className={styles.suggestionAction} action={requestSuggestion}>
+              <input type="hidden" name="submissionId" value={submissionId} />
+              <input
+                type="hidden"
+                name="submissionRevisionId"
+                value={submissionRevisionId}
+              />
+              <input
+                type="hidden"
+                name="submissionRevisionNumber"
+                value={submissionRevisionNumber}
+              />
+              <button
+                className={styles.secondaryButton}
+                type="submit"
+                disabled={anyPending}
+                aria-label="让助手起草这一版评价"
+              >
+                {suggestionPending ? "起草中…" : "AI 起草建议"}
+              </button>
+            </form>
+          </div>
+          <SuggestionNotice
+            state={suggestionState}
+            onRefresh={() => router.refresh()}
+          />
+        </>
+      ) : null}
 
       <ActionNotice state={prepareState} onRefresh={() => router.refresh()} />
       {decisionState.status === "rejected" ||
@@ -405,6 +531,11 @@ export function EvaluationComposer({
           value={expectedEvaluationVersion}
         />
         <input type="hidden" name="outcomes" value={outcomesJson} />
+        <input
+          type="hidden"
+          name="suggestionAgentRunId"
+          value={suggestionAgentRunId ?? ""}
+        />
         <input
           type="hidden"
           name="idempotencyKey"
