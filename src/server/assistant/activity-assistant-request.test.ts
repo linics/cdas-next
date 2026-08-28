@@ -7,6 +7,7 @@ import {
   ACTIVITY_ASSISTANT_MAX_REQUEST_BYTES,
   ActivityAssistantRequestError,
   canonicalizeActivityAssistantReadOnlyHistory,
+  getActivityAssistantDraftReadLedger,
   parseActivityAssistantRequest,
   parseActivityAssistantRequestEnvelope,
 } from "./activity-assistant-request";
@@ -295,6 +296,211 @@ describe("activity assistant request validation", () => {
               id: "message_2",
               role: "user",
               parts: [{ type: "text", text: "继续" }],
+            },
+          ],
+          pageContext: { kind: "TEACHER_DASHBOARD" },
+        }),
+      ),
+    ).rejects.toEqual(new ActivityAssistantRequestError("INVALID_MESSAGES"));
+  });
+
+  it("builds the draft read ledger from recomputed history only", async () => {
+    const firstDraftId = "30000000-0000-4000-8000-000000000003";
+    const secondDraftId = "40000000-0000-4000-8000-000000000004";
+    const parsed = await parseActivityAssistantRequestEnvelope(
+      request({
+        messages: [
+          {
+            id: "message_1",
+            role: "user",
+            parts: [{ type: "text", text: "看看这两份草稿" }],
+          },
+          {
+            id: "assistant_1",
+            role: "assistant",
+            parts: [
+              {
+                type: "tool-get_activity_draft",
+                toolCallId: "draft_read_1",
+                state: "output-available",
+                input: { draftId: firstDraftId },
+                output: { status: "NOT_FOUND", draftId: firstDraftId },
+              },
+              {
+                type: "tool-get_activity_draft",
+                toolCallId: "draft_read_2",
+                state: "output-available",
+                input: { draftId: secondDraftId },
+                output: { status: "NOT_FOUND", draftId: secondDraftId },
+              },
+            ],
+          },
+          {
+            id: "message_2",
+            role: "user",
+            parts: [{ type: "text", text: "改第一份" }],
+          },
+        ],
+        pageContext: { kind: "TEACHER_DASHBOARD" },
+      }),
+    );
+    const workspace: TeacherActivityDashboard = {
+      actor: { displayName: "林老师" },
+      drafts: [],
+      releases: [],
+      classrooms: [],
+    };
+
+    // Only the first draft is still readable; the second was lost between
+    // turns and must not remain in the ledger as if the model had seen it.
+    const canonical = await canonicalizeActivityAssistantReadOnlyHistory(
+      parsed.messages,
+      workspace,
+      parsed.pageContext,
+      async (draftId) =>
+        draftId === firstDraftId
+          ? {
+              status: "FOUND",
+              draftId,
+              draftStatus: "EDITING",
+              version: 7,
+              updatedAt: "2026-08-28T04:00:00.000Z",
+              published: false,
+              editHref: `/teacher/activities/${draftId}`,
+              previewHref: `/teacher/activities/${draftId}/preview`,
+              content: waterConservationTaskBook,
+            }
+          : { status: "NOT_FOUND", draftId },
+    );
+
+    expect([...getActivityAssistantDraftReadLedger(canonical)]).toEqual([
+      [firstDraftId, 7],
+    ]);
+  });
+
+  it("accepts a signed revision approval continuation", async () => {
+    const parsed = await parseActivityAssistantRequestEnvelope(
+      request({
+        messages: [
+          {
+            id: "message_1",
+            role: "user",
+            parts: [{ type: "text", text: "改一下第二阶段" }],
+          },
+          {
+            id: "assistant_1",
+            role: "assistant",
+            parts: [
+              {
+                type: "tool-update_activity_draft",
+                toolCallId: "revise_1",
+                state: "approval-responded",
+                input: {
+                  draftId: "30000000-0000-4000-8000-000000000003",
+                  expectedVersion: 3,
+                  changes: [
+                    {
+                      area: "PHASES",
+                      change: "改写第二阶段情境。",
+                      reason: "阶段之间读起来不连贯。",
+                    },
+                  ],
+                  content: waterConservationTaskBook,
+                },
+                approval: {
+                  id: "approval_1",
+                  signature: "s".repeat(64),
+                  isAutomatic: false,
+                  approved: true,
+                },
+              },
+            ],
+          },
+        ],
+        pageContext: { kind: "TEACHER_DASHBOARD" },
+      }),
+    );
+
+    expect(parsed.messages).toHaveLength(2);
+  });
+
+  it("rejects a structurally invalid revision in history", async () => {
+    await expect(
+      parseActivityAssistantRequestEnvelope(
+        request({
+          messages: [
+            {
+              id: "message_1",
+              role: "user",
+              parts: [{ type: "text", text: "改一下第二阶段" }],
+            },
+            {
+              id: "assistant_1",
+              role: "assistant",
+              parts: [
+                {
+                  type: "tool-update_activity_draft",
+                  toolCallId: "revise_1",
+                  state: "approval-requested",
+                  input: {
+                    draftId: "30000000-0000-4000-8000-000000000003",
+                    expectedVersion: 3,
+                    changes: [],
+                    content: waterConservationTaskBook,
+                  },
+                  approval: { id: "approval_1", signature: "s".repeat(64) },
+                },
+              ],
+            },
+            {
+              id: "message_2",
+              role: "user",
+              parts: [{ type: "text", text: "继续" }],
+            },
+          ],
+          pageContext: { kind: "TEACHER_DASHBOARD" },
+        }),
+      ),
+    ).rejects.toEqual(new ActivityAssistantRequestError("INVALID_MESSAGES"));
+  });
+
+  it("rejects a revision approval that carries no signature", async () => {
+    await expect(
+      parseActivityAssistantRequestEnvelope(
+        request({
+          messages: [
+            {
+              id: "message_1",
+              role: "user",
+              parts: [{ type: "text", text: "改一下第二阶段" }],
+            },
+            {
+              id: "assistant_1",
+              role: "assistant",
+              parts: [
+                {
+                  type: "tool-update_activity_draft",
+                  toolCallId: "revise_1",
+                  state: "approval-responded",
+                  input: {
+                    draftId: "30000000-0000-4000-8000-000000000003",
+                    expectedVersion: 3,
+                    changes: [
+                      {
+                        area: "PHASES",
+                        change: "改写第二阶段情境。",
+                        reason: "阶段之间读起来不连贯。",
+                      },
+                    ],
+                    content: waterConservationTaskBook,
+                  },
+                  approval: {
+                    id: "approval_1",
+                    isAutomatic: false,
+                    approved: true,
+                  },
+                },
+              ],
             },
           ],
           pageContext: { kind: "TEACHER_DASHBOARD" },

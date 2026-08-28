@@ -694,6 +694,37 @@ def run_real_model_browser_flow(
             page.get_by_text(f"读取草稿 · {read_title}", exact=True).scroll_into_view_if_needed()
             screenshot(page, artifacts, "00-real-model-draft-read")
 
+            # D-048: the teacher asks for the change to be applied. The
+            # revision must pause for confirmation, and version 1 must survive
+            # as history once it is confirmed.
+            page.locator(
+                '#activity-assistant-prompt[data-hydrated="true"]'
+            ).fill(
+                "就按你说的改：只改第二个阶段的情境承接，让它接住第一个阶段的产出，"
+                "其他部分一个字都不要动。改完写回这份草稿。"
+            )
+            page.get_by_role("button", name="交给助手整理", exact=True).click()
+            revision = page.locator('[role="group"][aria-label="草稿改写确认"]')
+            revision.get_by_role(
+                "button", name="确认并改写草稿", exact=True
+            ).wait_for(timeout=120_000)
+            revision.get_by_text("任务链阶段", exact=True).wait_for()
+            revision.scroll_into_view_if_needed()
+            screenshot(page, artifacts, "01-real-model-draft-revision")
+            revision.get_by_role(
+                "button", name="确认并改写草稿", exact=True
+            ).click()
+            page.get_by_text("草稿已改写 · 版本 1 → 2", exact=True).wait_for(
+                timeout=120_000
+            )
+            if page.url != draft_url:
+                raise E2eFailure("REAL_MODEL_DRAFT_REVISION_NAVIGATED")
+            page.get_by_role("button", name="停止", exact=True).wait_for(
+                state="detached", timeout=120_000
+            )
+            page.get_by_text("草稿已改写 · 版本 1 → 2", exact=True).scroll_into_view_if_needed()
+            screenshot(page, artifacts, "02-real-model-draft-revised")
+
             # A full reload clears the in-memory session, so the proposal step
             # below starts from an empty conversation exactly as before.
             page.goto(
@@ -735,7 +766,7 @@ def run_real_model_browser_flow(
             proposal.get_by_text("math", exact=True).wait_for()
             proposal.get_by_text("chinese", exact=True).wait_for()
             proposal.get_by_text("知识与技能", exact=True).wait_for()
-            screenshot(page, artifacts, "01-real-model-draft-proposal")
+            screenshot(page, artifacts, "03-real-model-draft-proposal")
             wait_for_text(page, "可使用")
             proposal.get_by_role(
                 "button", name="确认理解并创建草稿", exact=True
@@ -759,7 +790,7 @@ def run_real_model_browser_flow(
                 "link", name="查看发布与学生提交", exact=True
             ).count() != 0:
                 raise E2eFailure("REAL_MODEL_SMOKE_CREATED_RELEASE")
-            screenshot(page, artifacts, "02-real-model-draft-preview")
+            screenshot(page, artifacts, "04-real-model-draft-preview")
         except Exception:
             screenshot(page, artifacts, "failure")
             # The transcript is what the model actually did. Without it a

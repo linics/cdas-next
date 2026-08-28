@@ -38,6 +38,7 @@ import {
   type ActivityAssistantMessage,
   ActivityAssistantRequestError,
   canonicalizeActivityAssistantReadOnlyHistory,
+  getActivityAssistantDraftReadLedger,
   getActivityAssistantKnowledgeLedger,
   parseActivityAssistantRequestEnvelope,
 } from "./activity-assistant-request";
@@ -225,7 +226,8 @@ export function buildActivityAssistantInstructions(
 
 你的唯一业务范围是：
 0. 可以识别当前教师页面，并查询当前教师有权查看的班级、活动草稿、发布摘要与待办。只使用只读工具返回的结构化结果；不得猜测其他资源、学生或评阅详情。工具返回的站内链接必须留给教师点击，不得声称已经自动跳转。
-0.1 教师要你看、评、改某一份已有草稿时，先用 get_activity_draft 读它的完整任务书，再依据上面的逆向设计和情境叙事标准逐条指出问题并给出可直接替换的改写文字。draftId 只能取自 list_my_activity_drafts 或 get_current_context 的结果；教师只说标题时先列草稿再确认是哪一份。返回 NOT_FOUND 就如实说这份草稿不在你的工作区，不要改用记忆或猜测内容作答。返回 LEGACY_SNAPSHOT 表示这是旧版快照，你读不到正文，请教师打开草稿页处理。这个工具只读：你不能改写教师已有的草稿，也不要假装已经改好；教师要落地修改就请他在草稿页编辑，或明确要求你按新要求另建一份草稿。
+0.1 教师要你看、评、改某一份已有草稿时，先用 get_activity_draft 读它的完整任务书，再依据上面的逆向设计和情境叙事标准逐条指出问题并给出可直接替换的改写文字。draftId 只能取自 list_my_activity_drafts 或 get_current_context 的结果；教师只说标题时先列草稿再确认是哪一份。返回 NOT_FOUND 就如实说这份草稿不在你的工作区，不要改用记忆或猜测内容作答。返回 LEGACY_SNAPSHOT 表示这是旧版快照，你读不到正文，请教师打开草稿页处理。get_activity_draft 本身只读，不会改动任何内容。
+0.2 教师明确要你把修改落到草稿上时，用 update_activity_draft 改写同一份草稿的新版本。前提是你已经在本轮对话里用 get_activity_draft 读到它，且 expectedVersion 就是你读到的那个版本号；没读过、版本对不上或草稿已封存都不要尝试。content 必须是改写后的完整任务书，不是片段：教师没要求改的部分要逐字保留原文，不要顺手润色。changes 要如实写清你动了哪几个区域、改成什么、为什么；服务端会拿它和真实差异逐条核对，多报或漏报都会失败，所以不要为了显得改得多而虚报，也不要把顺带改动藏起来。这个工具会暂停等待教师确认，教师拒绝后不要重试；每次请求最多改写一份草稿。原版本会作为历史修订保留，改写不会抹掉教师之前的内容。
 1. 根据教师自然语言，整理 schema v2 的完整跨学科任务书。必须使用原版 CTS 的学段/年级、稳定学科目录、主学科加至少一个融合学科、实践性/探究性/项目式作业及其条件子类型、探究深度、提交模式和 1–16 周周期。作业类型只能用 practical、inquiry、project。子类型必须与类型匹配且只用这些代码：practical 配 visit、simulation、observation；inquiry 配 literature、survey、experiment；project 的 assignmentSubtype 必须为 null，不得填其他字串。探究深度只用 basic、intermediate、deep。提交模式只用 phased、once、mixed；教师说过程性提交时用 phased。学科代码必须用目录中的英文 code，信息科技是 infoTech。另需具体背景、知识与技能/过程与方法/情感态度三维目标、三到四个连续阶段（每阶段一个明确行动、情境、支架、类型化证据、评价要点、课时）及四档量规。可选 0–2 个跨学科概念：物质与能量、结构与功能、系统与模型、稳定与变化。
 2. 只有缺少会改变年级、学科、真实任务、成果、证据或评价结构的资料时，才每轮问一个必要问题；不要因可选润饰、措辞或补充背景而阻塞，也不得把缺失事实当成已知资料。资料足够时立刻调用 create_activity_draft，不要先在普通文字中重述完整方案。
 3. 资料足够后，先调用 search_knowledge，按学段和主学科／融合学科检索教育部官方课程方案与课程标准；根据结果改写查询可以再检索。首版白名单只有课程方案、语文、数学、物理、信息科技，不包含 UbD、C-POTE、团体标准、教材、教师案例或任何 AI 生成内容。不得声称检索到了白名单之外的资料。
@@ -447,6 +449,11 @@ export async function handleActivityAssistantRequest(
   };
 
   const knowledgeLedger = getActivityAssistantKnowledgeLedger(uiMessages);
+  // One ledger for the whole request. The tools add to it when the model reads
+  // a draft, and the approval gate below reads it, so a revision aimed at a
+  // draft this teacher was never shown is refused before it can be dressed up
+  // as a confirmation card about their own work.
+  const draftReads = getActivityAssistantDraftReadLedger(uiMessages);
   const tools = dependencies.createTools({
     database,
     agentContext,
@@ -454,6 +461,7 @@ export async function handleActivityAssistantRequest(
     pageContext: parsedRequest.pageContext,
     workspace,
     readDraftDetail,
+    draftReads,
     agentRunId: run.id,
     initialKnowledgeSearchResults: knowledgeLedger.searchResults,
     initialKnowledgeReadSections: knowledgeLedger.readSections,
@@ -478,6 +486,14 @@ export async function handleActivityAssistantRequest(
     lastMessage.parts.some(
       (part) =>
         part.type === "tool-create_activity_draft" &&
+        part.state === "approval-responded" &&
+        part.approval.approved === false,
+    );
+  let updateApprovalSelected =
+    lastMessage?.role === "assistant" &&
+    lastMessage.parts.some(
+      (part) =>
+        part.type === "tool-update_activity_draft" &&
         part.state === "approval-responded" &&
         part.approval.approved === false,
     );
@@ -507,6 +523,22 @@ export async function handleActivityAssistantRequest(
           createApprovalSelected = true;
           return "user-approval";
         },
+        update_activity_draft: (input) => {
+          if (draftReads.get(input.draftId) !== input.expectedVersion) {
+            return {
+              type: "denied",
+              reason: "请先读取这份草稿的当前版本再提出改写",
+            };
+          }
+          if (updateApprovalSelected) {
+            return {
+              type: "denied",
+              reason: "每次请求只能改写一次草稿",
+            };
+          }
+          updateApprovalSelected = true;
+          return "user-approval";
+        },
         publish_activity_release: () => {
           if (publishApprovalSelected) {
             return {
@@ -527,6 +559,7 @@ export async function handleActivityAssistantRequest(
       // and cannot become a dependency of the human-confirmed business result.
       stopWhen: [
         hasToolCall("create_activity_draft"),
+        hasToolCall("update_activity_draft"),
         hasToolCall("publish_activity_release"),
         isStepCount(6),
       ],

@@ -13,6 +13,7 @@ import {
 import {
   activityAssistantMessageValidationTools,
   activityDraftProposalSchema,
+  activityDraftRevisionProposalSchema,
   mapCurrentTeacherContext,
   mapTeacherClassroomList,
   mapTeacherDraftList,
@@ -112,6 +113,7 @@ function assertSafeMessageHistory(
         part.type !== "tool-list_my_activity_drafts" &&
         part.type !== "tool-list_my_releases" &&
         part.type !== "tool-get_activity_draft" &&
+        part.type !== "tool-update_activity_draft" &&
         part.type !== "tool-search_knowledge" &&
         part.type !== "tool-read_source_section" &&
         part.type !== "tool-create_activity_draft" &&
@@ -190,8 +192,19 @@ function assertSafeMessageHistory(
         }
       }
 
+      // Structure only. Whether this revision may be applied depends on the
+      // draft's current version and content, which are re-established from the
+      // database once the history has been canonicalized.
+      if (
+        part.type === "tool-update_activity_draft" &&
+        !activityDraftRevisionProposalSchema.safeParse(part.input).success
+      ) {
+        throw new ActivityAssistantRequestError("INVALID_MESSAGES");
+      }
+
       if (
         (part.type === "tool-create_activity_draft" ||
+          part.type === "tool-update_activity_draft" ||
           part.type === "tool-publish_activity_release") &&
         (part.state === "approval-requested" ||
           part.state === "approval-responded")
@@ -227,6 +240,7 @@ function assertSafeMessageHistory(
   const hasApprovalResponse = lastMessage.parts.some(
     (part) =>
       (part.type === "tool-create_activity_draft" ||
+        part.type === "tool-update_activity_draft" ||
         part.type === "tool-publish_activity_release") &&
       part.state === "approval-responded" &&
       part.approval.isAutomatic !== true,
@@ -268,6 +282,34 @@ export function getActivityAssistantKnowledgeLedger(
     searchResults: [...searchResults.values()],
     readSections: [...readSections.values()],
   };
+}
+
+/**
+ * Draft versions the model has genuinely been shown in this conversation,
+ * taken from canonicalized history so a forged read cannot unlock a revision.
+ * A later read of the same draft wins: it is the version the model saw last.
+ */
+export function getActivityAssistantDraftReadLedger(
+  messages: ActivityAssistantMessage[],
+): Map<string, number> {
+  const reads = new Map<string, number>();
+  for (const message of messages) {
+    if (message.role !== "assistant") continue;
+    for (const part of message.parts) {
+      if (
+        part.type !== "tool-get_activity_draft" ||
+        part.state !== "output-available"
+      ) {
+        continue;
+      }
+      if (part.output.status === "FOUND") {
+        reads.set(part.output.draftId, part.output.version);
+      } else {
+        reads.delete(part.output.draftId);
+      }
+    }
+  }
+  return reads;
 }
 
 export type ParsedActivityAssistantRequest = Readonly<{

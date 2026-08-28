@@ -3,6 +3,7 @@ import type { ActivityContentV2 } from "../../domain/activity/activity-content";
 import type { PrismaClient } from "../../generated/prisma/client";
 import { DecideActionIntentError } from "../commands/decide-action-intent";
 import { PreparePublishActivityIntentError } from "../commands/prepare-publish-activity-intent";
+import { SaveActivityDraftError } from "../commands/save-activity-draft";
 import type { CommandContext } from "../commands/command-context";
 import { searchOfficialKnowledge } from "../knowledge/official-corpus";
 import {
@@ -139,8 +140,12 @@ function options(toolCallId: string) {
   };
 }
 
-function tools({ seedReadSections = true } = {}) {
+function tools({ seedReadSections = true, draftReads }: {
+  seedReadSections?: boolean;
+  draftReads?: Map<string, number>;
+} = {}) {
   return createActivityAssistantTools({
+    ...(draftReads ? { draftReads } : {}),
     database: database(),
     agentContext,
     approvalContext,
@@ -640,5 +645,222 @@ describe("activity assistant tools", () => {
     ).rejects.toThrow(`ACTIVITY_PUBLISH_${error.code}`);
     expect(mocks.decideIntent).not.toHaveBeenCalled();
     expect(mocks.publishRelease).not.toHaveBeenCalled();
+  });
+});
+
+const currentDraftDetail = {
+  status: "FOUND" as const,
+  draftId,
+  draftStatus: "READY_FOR_PREVIEW" as const,
+  version: 3,
+  updatedAt: now.toISOString(),
+  published: false,
+  editHref: `/teacher/activities/${draftId}`,
+  previewHref: `/teacher/activities/${draftId}/preview`,
+  content,
+};
+
+function revisedPhases() {
+  return content.phases.map((phase, index) =>
+    index === 1
+      ? { ...phase, context: "你們在上一階段發現了讀數差異，現在總務處希望你們解釋它。" }
+      : phase,
+  );
+}
+
+function revision(overrides: Record<string, unknown> = {}) {
+  return {
+    draftId,
+    expectedVersion: 3,
+    changes: [
+      {
+        area: "PHASES" as const,
+        change: "把第二階段的情境改成承接第一階段的發現。",
+        reason: "原本三個階段讀起來像三道並列的題。",
+      },
+    ],
+    content: { ...content, phases: revisedPhases() },
+    ...overrides,
+  };
+}
+
+describe("activity assistant draft revision", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.readDraftDetail.mockResolvedValue(currentDraftDetail);
+    mocks.saveDraft.mockResolvedValue({
+      draftId,
+      revisionId,
+      version: 4,
+      status: "READY_FOR_PREVIEW",
+      savedAt: now.toISOString(),
+    });
+  });
+
+  it("writes a new version of the draft it just read", async () => {
+    const registry = tools();
+    await registry.get_activity_draft.execute!(
+      { draftId },
+      options("read_before_revise"),
+    );
+
+    await expect(
+      registry.update_activity_draft.execute!(revision(), options("revise_1")),
+    ).resolves.toEqual({
+      draftId,
+      previousVersion: 3,
+      version: 4,
+      status: "READY_FOR_PREVIEW",
+      editHref: `/teacher/activities/${draftId}`,
+      previewHref: `/teacher/activities/${draftId}/preview`,
+    });
+    expect(mocks.saveDraft).toHaveBeenCalledWith(
+      expect.anything(),
+      agentContext,
+      expect.objectContaining({
+        draftId,
+        expectedVersion: 3,
+        desiredStatus: "READY_FOR_PREVIEW",
+        agentRunId: runId,
+      }),
+    );
+    expect(mocks.onBusinessWriteSuccess).toHaveBeenCalledWith("DRAFT_UPDATED");
+  });
+
+  it("refuses to revise a draft that was never read in this conversation", async () => {
+    const registry = tools();
+
+    await expect(
+      registry.update_activity_draft.execute!(revision(), options("revise_1")),
+    ).rejects.toThrow("ACTIVITY_REVISE_DRAFT_NOT_READ");
+    expect(mocks.saveDraft).not.toHaveBeenCalled();
+    expect(mocks.readDraftDetail).not.toHaveBeenCalled();
+  });
+
+  it("accepts a read recovered from earlier turns of the same conversation", async () => {
+    const registry = tools({ draftReads: new Map([[draftId, 3]]) });
+
+    await expect(
+      registry.update_activity_draft.execute!(revision(), options("revise_1")),
+    ).resolves.toMatchObject({ version: 4 });
+  });
+
+  it("refuses a revision aimed at a version the model did not see", async () => {
+    const registry = tools({ draftReads: new Map([[draftId, 2]]) });
+
+    await expect(
+      registry.update_activity_draft.execute!(revision(), options("revise_1")),
+    ).rejects.toThrow("ACTIVITY_REVISE_STALE_READ");
+    expect(mocks.saveDraft).not.toHaveBeenCalled();
+  });
+
+  it("refuses when the draft moved on between the read and the write", async () => {
+    mocks.readDraftDetail.mockResolvedValue({
+      ...currentDraftDetail,
+      version: 4,
+    });
+    const registry = tools({ draftReads: new Map([[draftId, 3]]) });
+
+    await expect(
+      registry.update_activity_draft.execute!(revision(), options("revise_1")),
+    ).rejects.toThrow("ACTIVITY_REVISE_STALE_READ");
+    expect(mocks.saveDraft).not.toHaveBeenCalled();
+  });
+
+  it("refuses when the draft is no longer readable at write time", async () => {
+    mocks.readDraftDetail.mockResolvedValue({ status: "NOT_FOUND", draftId });
+    const registry = tools({ draftReads: new Map([[draftId, 3]]) });
+
+    await expect(
+      registry.update_activity_draft.execute!(revision(), options("revise_1")),
+    ).rejects.toThrow("ACTIVITY_REVISE_DRAFT_UNAVAILABLE");
+    expect(mocks.saveDraft).not.toHaveBeenCalled();
+  });
+
+  it("refuses a revision that quietly reaches past the areas it declared", async () => {
+    const registry = tools({ draftReads: new Map([[draftId, 3]]) });
+
+    await expect(
+      registry.update_activity_draft.execute!(
+        revision({
+          content: {
+            ...content,
+            phases: revisedPhases(),
+            rubricDimensions: content.rubricDimensions.map((dimension) => ({
+              ...dimension,
+              improve: "需要更多證據支持。",
+            })),
+          },
+        }),
+        options("revise_1"),
+      ),
+    ).rejects.toThrow("ACTIVITY_REVISE_UNDECLARED_CHANGE");
+    expect(mocks.saveDraft).not.toHaveBeenCalled();
+  });
+
+  it("refuses a revision that claims an area it did not touch", async () => {
+    const registry = tools({ draftReads: new Map([[draftId, 3]]) });
+
+    await expect(
+      registry.update_activity_draft.execute!(
+        revision({
+          changes: [
+            {
+              area: "PHASES" as const,
+              change: "把第二階段的情境改成承接第一階段的發現。",
+              reason: "原本三個階段讀起來像三道並列的題。",
+            },
+            {
+              area: "RUBRIC" as const,
+              change: "重寫四檔描述。",
+              reason: "教師說量規太籠統。",
+            },
+          ],
+        }),
+        options("revise_1"),
+      ),
+    ).rejects.toThrow("ACTIVITY_REVISE_UNDECLARED_CHANGE");
+    expect(mocks.saveDraft).not.toHaveBeenCalled();
+  });
+
+  it("refuses a revision that changes nothing", async () => {
+    const registry = tools({ draftReads: new Map([[draftId, 3]]) });
+
+    await expect(
+      registry.update_activity_draft.execute!(
+        revision({ content }),
+        options("revise_1"),
+      ),
+    ).rejects.toThrow("ACTIVITY_REVISE_NO_CHANGE");
+    expect(mocks.saveDraft).not.toHaveBeenCalled();
+  });
+
+  it("allows only one revision per request", async () => {
+    const registry = tools({ draftReads: new Map([[draftId, 3]]) });
+    await registry.update_activity_draft.execute!(
+      revision(),
+      options("revise_1"),
+    );
+
+    await expect(
+      registry.update_activity_draft.execute!(
+        revision({ expectedVersion: 4 }),
+        options("revise_2"),
+      ),
+    ).rejects.toThrow("ACTIVITY_REVISE_MULTIPLE_UPDATE_ATTEMPTS");
+    expect(mocks.saveDraft).toHaveBeenCalledTimes(1);
+  });
+
+  it("reports the underlying command refusal without writing", async () => {
+    mocks.saveDraft.mockRejectedValue(
+      new SaveActivityDraftError("STALE_VERSION"),
+    );
+    const registry = tools({ draftReads: new Map([[draftId, 3]]) });
+
+    await expect(
+      registry.update_activity_draft.execute!(revision(), options("revise_1")),
+    ).rejects.toThrow("ACTIVITY_REVISE_STALE_VERSION");
+    expect(mocks.onToolFailure).toHaveBeenCalledWith("REVISE_STALE_VERSION");
+    expect(mocks.onBusinessWriteSuccess).not.toHaveBeenCalled();
   });
 });

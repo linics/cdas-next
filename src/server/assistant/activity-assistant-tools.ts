@@ -8,6 +8,10 @@ import {
   type DisciplineCode,
 } from "../../domain/activity/activity-content";
 import type { TeacherAgentPageContext } from "../../domain/assistant/teacher-agent-page-context";
+import {
+  changedTaskBookAreas,
+  taskBookAreaSchema,
+} from "../../domain/activity/task-book-areas";
 import { publishDueAtSchema } from "../../domain/activity/prepare-publish-intent";
 import type { PrismaClient } from "../../generated/prisma/client";
 import {
@@ -339,6 +343,55 @@ export const activityDraftReadInputSchema = z
   .object({ draftId: z.uuid() })
   .strict();
 
+const revisionChangeSchema = z
+  .object({
+    area: taskBookAreaSchema,
+    change: proposalText,
+    reason: proposalText,
+  })
+  .strict();
+
+/**
+ * A revision proposal names the areas it touches. The server checks that claim
+ * against the real difference before the teacher is asked to approve, so
+ * "我只改了第二阶段" cannot quietly arrive with a rewritten rubric attached.
+ */
+export const activityDraftRevisionProposalSchema = z
+  .object({
+    draftId: z.uuid(),
+    expectedVersion: z.int().positive(),
+    changes: z.array(revisionChangeSchema).min(1).max(8),
+    content: activityContentV2Schema,
+  })
+  .strict()
+  .superRefine((proposal, context) => {
+    const areas = proposal.changes.map((item) => item.area);
+    if (new Set(areas).size !== areas.length) {
+      context.addIssue({
+        code: "custom",
+        path: ["changes"],
+        message: "Each task book area may be described at most once",
+      });
+    }
+  });
+
+export type ActivityDraftRevisionProposal = z.infer<
+  typeof activityDraftRevisionProposalSchema
+>;
+
+export const updatedDraftToolOutputSchema = z
+  .object({
+    draftId: z.uuid(),
+    previousVersion: z.int().positive(),
+    version: z.int().positive(),
+    status: z.literal("READY_FOR_PREVIEW"),
+    editHref: z.string().regex(/^\/teacher\/activities\/[0-9a-f-]{36}$/),
+    previewHref: z
+      .string()
+      .regex(/^\/teacher\/activities\/[0-9a-f-]{36}\/preview$/),
+  })
+  .strict();
+
 export type CurrentTeacherContextOutput = z.infer<
   typeof currentTeacherContextOutputSchema
 >;
@@ -527,6 +580,11 @@ export const activityAssistantMessageValidationTools = {
     outputSchema: teacherDraftDetailOutputSchema,
     strict: true,
   }),
+  update_activity_draft: tool({
+    inputSchema: activityDraftRevisionProposalSchema,
+    outputSchema: updatedDraftToolOutputSchema,
+    strict: true,
+  }),
   search_knowledge: tool({
     inputSchema: officialKnowledgeSearchInputSchema,
     outputSchema: officialKnowledgeSearchOutputSchema,
@@ -570,17 +628,25 @@ export type ActivityAssistantToolDependencies = Readonly<{
   pageContext: TeacherAgentPageContext;
   workspace: TeacherActivityDashboard;
   readDraftDetail: TeacherDraftDetailReader;
+  /**
+   * Draft versions the model has been shown, shared with the caller so the
+   * approval gate and the tool agree on one ledger. The tools write to it.
+   */
+  draftReads?: Map<string, number>;
   agentRunId: string;
   onToolFailure: (failureCode: string) => void;
   onBusinessWriteSuccess: (
-    result: "DRAFT_SAVED" | "RELEASE_PUBLISHED",
+    result: "DRAFT_SAVED" | "DRAFT_UPDATED" | "RELEASE_PUBLISHED",
   ) => void;
   initialKnowledgeSearchResults?: readonly OfficialKnowledgeSectionIdentity[];
   initialKnowledgeReadSections?: readonly OfficialKnowledgeSectionIdentity[];
   commands?: ActivityAssistantCommands;
 }>;
 
-function idempotencyKey(kind: "draft" | "prepare" | "publish", callId: string) {
+function idempotencyKey(
+  kind: "draft" | "revise" | "prepare" | "publish",
+  callId: string,
+) {
   const digest = createHash("sha256").update(callId).digest("hex");
   return `assistant_${kind}_${digest.slice(0, 40)}`;
 }
@@ -604,6 +670,7 @@ export function createActivityAssistantTools({
   pageContext,
   workspace,
   readDraftDetail,
+  draftReads,
   agentRunId,
   onToolFailure,
   onBusinessWriteSuccess,
@@ -612,6 +679,10 @@ export function createActivityAssistantTools({
   commands = defaultCommands,
 }: ActivityAssistantToolDependencies) {
   let createToolCallId: string | null = null;
+  let updateToolCallId: string | null = null;
+  // Version the model has actually seen, per draft. A revision may only be
+  // proposed against a task book that was read in this same conversation.
+  const readDraftVersions = draftReads ?? new Map<string, number>();
   const searchedSectionKeys = new Set(
     initialKnowledgeSearchResults.map(officialKnowledgeSectionKey),
   );
@@ -676,7 +747,15 @@ export function createActivityAssistantTools({
       inputSchema: activityDraftReadInputSchema,
       outputSchema: teacherDraftDetailOutputSchema,
       strict: true,
-      execute: ({ draftId }) => readDraftDetail(draftId),
+      execute: async ({ draftId }) => {
+        const detail = await readDraftDetail(draftId);
+        if (detail.status === "FOUND") {
+          readDraftVersions.set(detail.draftId, detail.version);
+        } else {
+          readDraftVersions.delete(draftId);
+        }
+        return detail;
+      },
     }),
 
     search_knowledge: tool({
@@ -759,6 +838,88 @@ export function createActivityAssistantTools({
           const code = stableCommandFailure(error);
           onToolFailure(`DRAFT_${code}`);
           throw new Error(`ACTIVITY_DRAFT_${code}`);
+        }
+      },
+    }),
+
+    update_activity_draft: tool({
+      description:
+        "把教师要求的修改写成这份已有草稿的新版本。只能改写本人的、未封存的草稿，且必须先用 get_activity_draft 读过同一版本。content 必须是改写后的完整 schema v2 任务书，不是片段；未被要求改动的部分必须逐字保留教师原文。changes 必须如实列出你改动的每一个区域及理由；服务端会把它与真实差异逐一核对，谎报或漏报会直接失败。此操作会暂停并展示你声明的改动，只有教师明确确认后才写入，且原版本作为历史修订保留。",
+      inputSchema: activityDraftRevisionProposalSchema,
+      outputSchema: updatedDraftToolOutputSchema,
+      strict: true,
+      execute: async (proposal, { toolCallId }) => {
+        if (updateToolCallId !== null && updateToolCallId !== toolCallId) {
+          onToolFailure("REVISE_MULTIPLE_UPDATE_ATTEMPTS");
+          throw new Error("ACTIVITY_REVISE_MULTIPLE_UPDATE_ATTEMPTS");
+        }
+        updateToolCallId = toolCallId;
+
+        const readVersion = readDraftVersions.get(proposal.draftId);
+        if (readVersion === undefined) {
+          onToolFailure("REVISE_DRAFT_NOT_READ");
+          throw new Error("ACTIVITY_REVISE_DRAFT_NOT_READ");
+        }
+        if (readVersion !== proposal.expectedVersion) {
+          onToolFailure("REVISE_STALE_READ");
+          throw new Error("ACTIVITY_REVISE_STALE_READ");
+        }
+
+        // Re-read rather than trusting the conversation: the current task book
+        // is both the base of the diff and the proof that authorization still
+        // holds at execution time, not only when the model read it.
+        const current = await readDraftDetail(proposal.draftId);
+        if (current.status !== "FOUND") {
+          onToolFailure("REVISE_DRAFT_UNAVAILABLE");
+          throw new Error("ACTIVITY_REVISE_DRAFT_UNAVAILABLE");
+        }
+        if (current.version !== proposal.expectedVersion) {
+          onToolFailure("REVISE_STALE_READ");
+          throw new Error("ACTIVITY_REVISE_STALE_READ");
+        }
+
+        const actuallyChanged = changedTaskBookAreas(
+          current.content,
+          proposal.content,
+        );
+        if (actuallyChanged.length === 0) {
+          onToolFailure("REVISE_NO_CHANGE");
+          throw new Error("ACTIVITY_REVISE_NO_CHANGE");
+        }
+        const declared = new Set(proposal.changes.map((item) => item.area));
+        if (
+          actuallyChanged.some((area) => !declared.has(area)) ||
+          [...declared].some((area) => !actuallyChanged.includes(area))
+        ) {
+          onToolFailure("REVISE_UNDECLARED_CHANGE");
+          throw new Error("ACTIVITY_REVISE_UNDECLARED_CHANGE");
+        }
+
+        try {
+          const result = await commands.saveDraft(database, agentContext, {
+            draftId: proposal.draftId,
+            expectedVersion: proposal.expectedVersion,
+            desiredStatus: "READY_FOR_PREVIEW",
+            content: proposal.content,
+            agentRunId,
+            idempotencyKey: idempotencyKey("revise", toolCallId),
+          });
+          onBusinessWriteSuccess("DRAFT_UPDATED");
+          // The stored task book moved on; a later revision in the same
+          // conversation must read the new version before it may propose one.
+          readDraftVersions.set(proposal.draftId, result.version);
+          return updatedDraftToolOutputSchema.parse({
+            draftId: result.draftId,
+            previousVersion: proposal.expectedVersion,
+            version: result.version,
+            status: result.status,
+            editHref: `/teacher/activities/${result.draftId}`,
+            previewHref: `/teacher/activities/${result.draftId}/preview`,
+          });
+        } catch (error) {
+          const code = stableCommandFailure(error);
+          onToolFailure(`REVISE_${code}`);
+          throw new Error(`ACTIVITY_REVISE_${code}`);
         }
       },
     }),

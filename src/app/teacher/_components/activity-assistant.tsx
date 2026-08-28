@@ -21,6 +21,10 @@ import {
   LocalizedDateTime,
 } from "../../_components/localized-date-time";
 import type { ActivityContentV2 } from "../../../domain/activity/activity-content";
+import {
+  taskBookAreaLabels,
+  type TaskBookArea,
+} from "../../../domain/activity/task-book-areas";
 import { getTeacherAgentPageContext } from "../../../domain/assistant/teacher-agent-page-context";
 import styles from "./activity-assistant.module.css";
 
@@ -116,6 +120,13 @@ type TeacherDraftDetailOutput =
     }
   | { status: "NOT_FOUND"; draftId: string };
 
+type ActivityDraftRevisionProposal = {
+  draftId: string;
+  expectedVersion: number;
+  changes: Array<{ area: TaskBookArea; change: string; reason: string }>;
+  content: ActivityContentV2;
+};
+
 const draftNotCreatedRetryText =
   '草稿未创建。你可以补一句"请重新创建草稿"让助手重试，或改用手动表单。';
 
@@ -206,6 +217,17 @@ type ActivityAssistantMessage = UIMessage<
     get_activity_draft: {
       input: { draftId: string };
       output: TeacherDraftDetailOutput;
+    };
+    update_activity_draft: {
+      input: ActivityDraftRevisionProposal;
+      output: {
+        draftId: string;
+        previousVersion: number;
+        version: number;
+        status: "READY_FOR_PREVIEW";
+        editHref: string;
+        previewHref: string;
+      };
     };
     search_knowledge: {
       input: {
@@ -479,6 +501,76 @@ function ActivityDraftProposalCard({
           }
         >
           继续补充
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ActivityDraftRevisionCard({
+  proposal,
+  toolCallId,
+  approval,
+  onRespond,
+}: Readonly<{
+  proposal: ActivityDraftRevisionProposal;
+  toolCallId: string;
+  approval: { id: string };
+  onRespond: (response: {
+    id: string;
+    approved: boolean;
+    reason?: string;
+  }) => void;
+}>) {
+  return (
+    <div
+      className={styles.approval}
+      key={toolCallId}
+      role="group"
+      aria-label="草稿改写确认"
+    >
+      <strong>先确认这次改写</strong>
+      <p>
+        《{proposal.content.title}》版本 {proposal.expectedVersion} →{" "}
+        {proposal.expectedVersion + 1}。原版本会作为历史修订保留；未确认前不会写入。
+      </p>
+      <section className={styles.proposalSection} aria-label="本次改动">
+        <h3>本次改动</h3>
+        <dl>
+          {proposal.changes.map((item) => (
+            <div key={item.area}>
+              <dt>{taskBookAreaLabels[item.area]}</dt>
+              <dd>
+                改动：{item.change}
+                <br />
+                理由：{item.reason}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+      <p className={styles.referenceCaveat}>
+        这些区域已与草稿当前内容逐一核对；其余部分保持教师原文。确认后仍可在草稿页继续修改。
+      </p>
+      <div className={styles.inlineActions}>
+        <button
+          type="button"
+          onClick={() => onRespond({ id: approval.id, approved: true })}
+        >
+          确认并改写草稿
+        </button>
+        <button
+          type="button"
+          data-tone="quiet"
+          onClick={() =>
+            onRespond({
+              id: approval.id,
+              approved: false,
+              reason: "教师选择不改写这份草稿",
+            })
+          }
+        >
+          先不改写
         </button>
       </div>
     </div>
@@ -895,6 +987,58 @@ export function ActivityAssistant({
                     return (
                       <p className={styles.toolProgress} key={part.toolCallId}>
                         正在核对来源章节…
+                      </p>
+                    );
+                  }
+
+                  if (part.type === "tool-update_activity_draft") {
+                    if (
+                      part.state === "approval-requested" &&
+                      part.input &&
+                      !part.approval.isAutomatic
+                    ) {
+                      return (
+                        <ActivityDraftRevisionCard
+                          key={part.toolCallId}
+                          proposal={part.input}
+                          toolCallId={part.toolCallId}
+                          approval={part.approval}
+                          onRespond={addToolApprovalResponse}
+                        />
+                      );
+                    }
+                    if (part.state === "output-available") {
+                      return (
+                        <div className={styles.toolResult} key={part.toolCallId}>
+                          <strong>
+                            草稿已改写 · 版本 {part.output.previousVersion} →{" "}
+                            {part.output.version}
+                          </strong>
+                          <p>原版本仍保留在草稿历史中，可以先检查或继续编辑。</p>
+                          <div className={styles.inlineActions}>
+                            <Link href={part.output.previewHref}>查看预览</Link>
+                            <Link href={part.output.editHref}>继续编辑</Link>
+                          </div>
+                        </div>
+                      );
+                    }
+                    if (part.state === "output-error") {
+                      return (
+                        <p className={styles.errorText} key={part.toolCallId}>
+                          草稿未改写，原内容一个字都没变。你可以让助手重新读取这份草稿后再试，或直接在草稿页修改。
+                        </p>
+                      );
+                    }
+                    if (part.state === "output-denied") {
+                      return (
+                        <p className={styles.toolProgress} key={part.toolCallId}>
+                          已保留这次改写建议，草稿未改动。
+                        </p>
+                      );
+                    }
+                    return (
+                      <p className={styles.toolProgress} key={part.toolCallId}>
+                        正在整理这次改写…
                       </p>
                     );
                   }

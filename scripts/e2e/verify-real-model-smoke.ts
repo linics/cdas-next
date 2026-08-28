@@ -47,12 +47,37 @@ async function main(): Promise<void> {
         feedbackRevisions: true,
       },
     });
-    // D-047 read, D-033 proposal, then the confirmed draft execution. The
-    // read run must look exactly like the proposal run in provenance terms:
-    // a successful model turn that wrote nothing.
-    invariant(runs.length === 3, "E2E_REAL_MODEL_RUN_COUNT_MISMATCH");
-    const [readRun, proposalRun, run] = runs;
-    invariant(readRun && proposalRun && run, "E2E_REAL_MODEL_RUN_COUNT_MISMATCH");
+    // The hand-written draft the assistant read (D-047) and then revised on
+    // confirmation (D-048). Version 1 must still exist as history.
+    const readDraft = await database.activityDraft.findFirst({
+      where: { title: { startsWith: "E2E AI 讀取 " } },
+      include: { revisions: { orderBy: { version: "asc" } } },
+    });
+    invariant(readDraft, "E2E_REAL_MODEL_READ_DRAFT_NOT_FOUND");
+    invariant(
+      readDraft.version === 2 &&
+        readDraft.revisions.length === 2 &&
+        readDraft.revisions[0]?.source === "MANUAL" &&
+        readDraft.revisions[0]?.version === 1 &&
+        readDraft.revisions[1]?.source === "AGENT" &&
+        readDraft.revisions[1]?.version === 2,
+      "E2E_REAL_MODEL_REVISION_HISTORY_MISMATCH",
+    );
+    const agentRevision = readDraft.revisions[1];
+
+    // D-047 read, D-048 revision proposal, its confirmed execution, then the
+    // D-033 proposal and its confirmed draft execution. Every run that only
+    // proposed must have written nothing at all.
+    invariant(runs.length === 5, "E2E_REAL_MODEL_RUN_COUNT_MISMATCH");
+    const [readRun, revisionProposalRun, revisionRun, proposalRun, run] = runs;
+    invariant(
+      readRun && revisionProposalRun && revisionRun && proposalRun && run,
+      "E2E_REAL_MODEL_RUN_COUNT_MISMATCH",
+    );
+    invariant(
+      revisionRun.id === agentRevision?.agentRunId,
+      "E2E_REAL_MODEL_REVISION_PROVENANCE_MISSING",
+    );
     invariant(
       runs.every(
         (candidate) =>
@@ -66,6 +91,11 @@ async function main(): Promise<void> {
         readRun.intents.length === 0 &&
         readRun.auditEntries.length === 0 &&
         readRun.feedbackRevisions.length === 0 &&
+        revisionProposalRun.draftRevision === null &&
+        revisionProposalRun.intents.length === 0 &&
+        revisionProposalRun.auditEntries.length === 0 &&
+        revisionProposalRun.feedbackRevisions.length === 0 &&
+        revisionRun.intents.length === 0 &&
         proposalRun.draftRevision === null &&
         proposalRun.intents.length === 0 &&
         proposalRun.auditEntries.length === 0 &&
@@ -107,7 +137,7 @@ async function main(): Promise<void> {
         database.activityRelease.count(),
       ]);
     invariant(idempotencyCount === 1, "E2E_REAL_MODEL_IDEMPOTENCY_MISSING");
-    invariant(runCount === 3, "E2E_REAL_MODEL_RUN_COUNT_MISMATCH");
+    invariant(runCount === 5, "E2E_REAL_MODEL_RUN_COUNT_MISMATCH");
     invariant(intentCount === 0, "E2E_REAL_MODEL_CREATED_ACTION_INTENT");
     invariant(releaseCount === 0, "E2E_REAL_MODEL_CREATED_RELEASE");
 
@@ -119,6 +149,11 @@ async function main(): Promise<void> {
           evidence: {
             model: run.model,
             draftReadAgentRunStatus: readRun.status,
+            draftRevisionAgentRunStatus: revisionRun.status,
+            revisedDraftVersion: readDraft.version,
+            revisedDraftRevisionSources: readDraft.revisions.map(
+              (candidate) => candidate.source,
+            ),
             proposalAgentRunStatus: proposalRun.status,
             executionAgentRunStatus: run.status,
             successfulAgentRuns: runCount,
