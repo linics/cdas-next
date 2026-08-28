@@ -6,6 +6,71 @@
   padding: var(--space-1) var(--space-8) var(--space-8);
 }
 
+.assistant[data-surface="panel"] {
+  grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  gap: var(--space-3);
+  margin: 0;
+  padding: var(--space-3) var(--space-4) var(--space-4);
+}
+
+.assistant[data-surface="panel"] .header {
+  align-items: center;
+  border-top: 0;
+  padding-top: 0;
+}
+
+.assistant[data-surface="panel"] .header h2 { font-size: var(--text-subhead); }
+
+.assistant[data-surface="panel"] .boundaryNote,
+.assistant[data-surface="panel"] .emptyPrompt {
+  padding: var(--space-3);
+  line-height: 1.6;
+}
+
+.assistant[data-surface="panel"] .emptyPrompt {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.assistant[data-surface="panel"] .transcript {
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: var(--space-1);
+}
+
+.assistant[data-surface="panel"] .turn {
+  grid-template-columns: 1fr;
+  gap: var(--space-2);
+  padding: var(--space-3) 0;
+}
+
+.assistant[data-surface="panel"] .approval dl,
+.assistant[data-surface="panel"] .approval .proposalSummary {
+  grid-template-columns: 1fr;
+}
+
+.assistant[data-surface="panel"] .inlineActions,
+.assistant[data-surface="panel"] .composerFooter {
+  align-items: stretch;
+  flex-direction: column;
+}
+
+.assistant[data-surface="panel"] .inlineActions button,
+.assistant[data-surface="panel"] .composerFooter button { width: 100%; }
+
+.assistant[data-surface="panel"] .composer {
+  gap: var(--space-2);
+  padding-top: var(--space-3);
+}
+
+.assistant[data-surface="panel"] .composer textarea { min-height: 84px; }
+
 .header {
   display: flex;
   align-items: flex-end;
@@ -279,7 +344,7 @@
 .composerFooter > span { color: var(--color-neutral-700); font-size: var(--text-meta); }
 
 @media (max-width: 767px) {
-  .assistant { padding: 0 var(--space-4) var(--space-6); }
+  .assistant:not([data-surface="panel"]) { padding: 0 var(--space-4) var(--space-6); }
   .header { display: grid; align-items: start; }
   .turn { grid-template-columns: 1fr; gap: var(--space-2); }
   .approval dl,

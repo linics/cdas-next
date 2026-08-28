@@ -315,6 +315,12 @@ def main() -> None:
             checks.append({"code": "VERCEL_PROTECTION_BYPASS_SCOPED", "status": "PASS"})
             teacher.goto(f"{base}/teacher/activities/new", wait_until="domcontentloaded")
             assert_origin(teacher.url, base)
+            teacher.get_by_role(
+                "button", name="打开 CDAS Agent 独立会话", exact=True
+            ).click()
+            teacher.get_by_role(
+                "heading", name="活动设计与课程依据", exact=True
+            ).wait_for()
             teacher.locator('#activity-assistant-prompt[data-hydrated="true"]').fill(
                 CREATE_PROMPT.format(title=title)
             )
@@ -341,6 +347,9 @@ def main() -> None:
             screenshot(teacher, directory, SCREENSHOTS[0])
             teacher.get_by_text("可使用", exact=True).wait_for(timeout=120_000)
             draft_approval.get_by_role("button", name="确认理解并创建草稿", exact=True).click()
+            preview_link = teacher.get_by_role("link", name="查看预览", exact=True)
+            preview_link.wait_for(timeout=120_000)
+            preview_link.click()
             teacher.wait_for_url(re.compile(r"/teacher/activities/.+/preview"), timeout=120_000)
             assert_origin(teacher.url, base)
             teacher.get_by_role("heading", name=title, level=1, exact=True).wait_for()
@@ -360,7 +369,9 @@ def main() -> None:
             teacher.get_by_role("heading", name=title, level=1, exact=True).wait_for()
             teacher.get_by_text("草稿修订 2", exact=True).wait_for()
             teacher.get_by_text(EDITED_SUMMARY, exact=True).wait_for()
-            teacher.get_by_role("heading", name="继续核对活动并准备发布").wait_for()
+            teacher.get_by_role(
+                "heading", name="活动设计与课程依据", exact=True
+            ).wait_for()
             teacher.locator('#activity-assistant-prompt[data-hydrated="true"]').fill(
                 PUBLISH_PROMPT.format(classroom=classroom)
             )

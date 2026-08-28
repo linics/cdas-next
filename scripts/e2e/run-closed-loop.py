@@ -645,7 +645,12 @@ def run_real_model_browser_flow(
                 f"{base_url}/teacher/activities/new",
                 wait_until="domcontentloaded",
             )
-            wait_for_text(page, "AI 活动助手 · 试行")
+            page.get_by_role(
+                "button", name="打开 CDAS Agent 独立会话", exact=True
+            ).click()
+            page.get_by_role(
+                "heading", name="活动设计与课程依据", exact=True
+            ).wait_for()
             textarea = page.locator("#activity-assistant-prompt")
             submit = page.get_by_role("button", name="交给助手整理", exact=True)
             textarea.fill(prompt)
@@ -680,6 +685,11 @@ def run_real_model_browser_flow(
             proposal.get_by_role(
                 "button", name="确认理解并创建草稿", exact=True
             ).click()
+            preview_link = page.get_by_role(
+                "link", name="查看预览", exact=True
+            )
+            preview_link.wait_for(timeout=120_000)
+            preview_link.click()
             page.wait_for_url(
                 re.compile(
                     rf"{re.escape(base_url)}/teacher/activities/[0-9a-f-]+/preview$"

@@ -12,12 +12,6 @@ import {
   submissionModes,
 } from "../../../../../domain/activity/activity-content";
 import { AuthenticationError } from "../../../../../server/auth/current-actor";
-import { isActivityAssistantEnabled } from "../../../../../server/assistant/assistant-config";
-import {
-  getTeacherAssistantClassrooms,
-  TeacherAssistantContextError,
-  type AssistantClassroom,
-} from "../../../../../server/assistant/teacher-assistant-context";
 import { createUiCommandContext } from "../../../../../server/commands/create-ui-command-context";
 import { getDatabaseClient } from "../../../../../server/db/client";
 import {
@@ -28,7 +22,6 @@ import {
   TeacherAccessGate,
   TeacherPage,
 } from "../../../_components/teacher-shell";
-import { ActivityAssistant } from "../../../_components/activity-assistant";
 import styles from "../../../teacher-workspace.module.css";
 import { PublishPanel } from "./publish-panel";
 
@@ -39,18 +32,10 @@ export default async function TeacherActivityPreviewPage({
 }) {
   const { draftId } = await params;
   let workspace;
-  let assistantEnabled = false;
-  let assistantClassrooms: AssistantClassroom[] = [];
   try {
     const context = await createUiCommandContext();
     const database = getDatabaseClient();
-    assistantEnabled = isActivityAssistantEnabled();
-    [workspace, assistantClassrooms] = await Promise.all([
-      getTeacherActivityPreview(database, context, { draftId }),
-      assistantEnabled
-        ? getTeacherAssistantClassrooms(database, context)
-        : Promise.resolve([]),
-    ]);
+    workspace = await getTeacherActivityPreview(database, context, { draftId });
   } catch (error) {
     if (error instanceof AuthenticationError) {
       return (
@@ -62,7 +47,6 @@ export default async function TeacherActivityPreviewPage({
     }
     if (
       error instanceof TeacherActivityQueryError ||
-      error instanceof TeacherAssistantContextError ||
       error instanceof ZodError
     ) {
       notFound();
@@ -144,12 +128,6 @@ export default async function TeacherActivityPreviewPage({
             }}
           />
         </div>
-        {assistantEnabled ? (
-          <ActivityAssistant
-            classrooms={assistantClassrooms}
-            continuationOnly
-          />
-        ) : null}
       </div>
     </TeacherPage>
   );

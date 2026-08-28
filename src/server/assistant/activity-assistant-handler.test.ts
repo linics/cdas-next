@@ -389,6 +389,13 @@ function dependencies(): ActivityAssistantHandlerDependencies {
 }
 
 describe("buildActivityAssistantInstructions", () => {
+  it("keeps ordinary conversation readable in the plain-text panel", () => {
+    const text = buildActivityAssistantInstructions([]);
+
+    expect(text).toContain("不要输出 Markdown 标题");
+    expect(text).toContain("不要列举 schema 字段名、工具函数名");
+  });
+
   it("lists legal assignment subtypes and the unread-citation rule", () => {
     const text = buildActivityAssistantInstructions([]);
     expect(text).toContain("inquiry 配 literature、survey、experiment");

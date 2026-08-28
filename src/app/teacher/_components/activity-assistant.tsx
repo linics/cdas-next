@@ -7,12 +7,10 @@ import {
   type UIMessage,
 } from "ai";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   createContext,
   useContext,
   useMemo,
-  useRef,
   useState,
   useSyncExternalStore,
   type ReactNode,
@@ -147,6 +145,7 @@ export type ActivityAssistantClassroom = Readonly<{
 export type ActivityAssistantProps = Readonly<{
   classrooms: ActivityAssistantClassroom[];
   continuationOnly?: boolean;
+  surface?: "inline" | "panel";
 }>;
 
 type ActivityAssistantSession = ReturnType<
@@ -168,8 +167,6 @@ export function ActivityAssistantSessionProvider({
   children: ReactNode;
   api?: string;
 }>) {
-  const router = useRouter();
-  const navigatedToolCalls = useRef(new Set<string>());
   const transport = useMemo(
     () =>
       new DefaultChatTransport<ActivityAssistantMessage>({
@@ -184,28 +181,6 @@ export function ActivityAssistantSessionProvider({
     transport,
     sendAutomaticallyWhen:
       lastAssistantMessageIsCompleteWithApprovalResponses,
-    onFinish: ({ message }) => {
-      for (const part of message.parts) {
-        if (
-          part.type !== "tool-create_activity_draft" ||
-          part.state !== "output-available" ||
-          navigatedToolCalls.current.has(part.toolCallId)
-        ) {
-          continue;
-        }
-        const base = `/teacher/activities/${part.output.draftId}`;
-        const expectedEditHref = base;
-        const expectedPreviewHref = `${base}/preview`;
-        if (
-          part.output.status === "READY_FOR_PREVIEW" &&
-          part.output.editHref === expectedEditHref &&
-          part.output.previewHref === expectedPreviewHref
-        ) {
-          navigatedToolCalls.current.add(part.toolCallId);
-          router.push(expectedPreviewHref);
-        }
-      }
-    },
   });
 
   return (
@@ -394,6 +369,7 @@ function ActivityDraftProposalCard({
 export function ActivityAssistant({
   classrooms,
   continuationOnly = false,
+  surface = "inline",
 }: ActivityAssistantProps) {
   const hydrated = useSyncExternalStore(
     subscribeToHydration,
@@ -444,13 +420,28 @@ export function ActivityAssistant({
     return null;
   }
 
+  const assistantTitleId =
+    surface === "panel"
+      ? "activity-assistant-panel-title"
+      : "activity-assistant-title";
+
   return (
-    <section className={styles.assistant} aria-labelledby="activity-assistant-title">
+    <section
+      className={styles.assistant}
+      data-surface={surface}
+      aria-labelledby={assistantTitleId}
+    >
       <header className={styles.header}>
         <div>
-          <p className={styles.eyebrow}>AI 活动助手 · 试行</p>
-          <h2 id="activity-assistant-title">
-            {continuationOnly ? "继续核对活动并准备发布" : "把活动构想整理成可编辑草稿"}
+          <p className={styles.eyebrow}>
+            {surface === "panel" ? "当前职责" : "AI 活动助手 · 试行"}
+          </p>
+          <h2 id={assistantTitleId}>
+            {surface === "panel"
+              ? "活动设计与课程依据"
+              : continuationOnly
+                ? "继续核对活动并准备发布"
+                : "把活动构想整理成可编辑草稿"}
           </h2>
         </div>
         {busy ? (
@@ -461,9 +452,17 @@ export function ActivityAssistant({
       </header>
 
       <p className={styles.boundaryNote}>
-        助手只会创建「可预览」草稿；你仍可进入编辑页逐项修改。发布前会另行列出草稿版本、班级与截止时间，没有你的明确确认就不会发布。
-        助手不可用时，手动创建与编辑活动仍可正常使用。你也可以
-        <Link href="/teacher/knowledge">直接检索首版官方课程标准</Link>。
+        {surface === "panel" ? (
+          <>
+            可检索官方课程依据、设计活动，并经你确认后创建草稿或发布。没有明确确认不会写入；刷新会话即清空，手动流程不受影响。
+          </>
+        ) : (
+          <>
+            这是独立的教师会话，可检索官方课程依据、设计活动，并在你确认后创建「可预览」草稿。发布前会另行列出草稿版本、班级与截止时间，没有你的明确确认就不会发布。
+            助手不可用时，手动创建与编辑活动仍可正常使用。你也可以
+            <Link href="/teacher/knowledge">直接检索首版官方课程标准</Link>。
+          </>
+        )}
       </p>
 
       {messages.length > 0 ? (
@@ -744,7 +743,9 @@ export function ActivityAssistant({
         </div>
       ) : (
         <p className={styles.emptyPrompt}>
-          例如：「帮我设计一个七年级校园节水活动，学生要记录两次水表读数，并用证据提出改善建议。」
+          {surface === "panel"
+            ? "可分配职责：检索课程依据、整理活动设计、创建可编辑草稿，或核对版本后准备发布。例如：帮我设计一个七年级校园节水活动。"
+            : "例如：「帮我设计一个七年级校园节水活动，学生要记录两次水表读数，并用证据提出改善建议。」"}
         </p>
       )}
 

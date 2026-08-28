@@ -3,14 +3,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ZodError } from "zod";
 import { AuthenticationError } from "../../../../server/auth/current-actor";
-import {
-  isActivityAssistantEnabled,
-} from "../../../../server/assistant/assistant-config";
-import {
-  getTeacherAssistantClassrooms,
-  TeacherAssistantContextError,
-  type AssistantClassroom,
-} from "../../../../server/assistant/teacher-assistant-context";
 import { createUiCommandContext } from "../../../../server/commands/create-ui-command-context";
 import { getDatabaseClient } from "../../../../server/db/client";
 import {
@@ -21,25 +13,16 @@ import {
   TeacherAccessGate,
   TeacherPage,
 } from "../../_components/teacher-shell";
-import { ActivityAssistant } from "../../_components/activity-assistant";
 import { ActivityDraftForm } from "../activity-draft-form";
 import { emptyActivityDraftValues } from "../activity-draft-action-state";
 import styles from "../../teacher-workspace.module.css";
 
 export default async function NewTeacherActivityPage() {
   let actor;
-  let assistantEnabled = false;
-  let assistantClassrooms: AssistantClassroom[] = [];
   try {
     const context = await createUiCommandContext();
     const database = getDatabaseClient();
-    assistantEnabled = isActivityAssistantEnabled();
-    [actor, assistantClassrooms] = await Promise.all([
-      getTeacherIdentity(database, context, {}),
-      assistantEnabled
-        ? getTeacherAssistantClassrooms(database, context)
-        : Promise.resolve([]),
-    ]);
+    actor = await getTeacherIdentity(database, context, {});
   } catch (error) {
     if (error instanceof AuthenticationError) {
       return (
@@ -51,7 +34,6 @@ export default async function NewTeacherActivityPage() {
     }
     if (
       error instanceof TeacherActivityQueryError ||
-      error instanceof TeacherAssistantContextError ||
       error instanceof ZodError
     ) {
       notFound();
@@ -76,9 +58,6 @@ export default async function NewTeacherActivityPage() {
             </Link>
           </div>
         </header>
-        {assistantEnabled ? (
-          <ActivityAssistant classrooms={assistantClassrooms} />
-        ) : null}
         <ActivityDraftForm
           initialState={{
             status: "idle",

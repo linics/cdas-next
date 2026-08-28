@@ -4,29 +4,19 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   useChat: vi.fn(),
-  push: vi.fn(),
   sendMessage: vi.fn(),
   stop: vi.fn(),
   addToolApprovalResponse: vi.fn(),
-  capturedOptions: null as null | {
-    onFinish?: (options: { message: { parts: unknown[] } }) => void;
-  },
 }));
 
 vi.mock("@ai-sdk/react", () => ({
-  useChat: (options: unknown) => {
-    mocks.capturedOptions = options as typeof mocks.capturedOptions;
-    return mocks.useChat();
-  },
+  useChat: () => mocks.useChat(),
 }));
 vi.mock("ai", () => ({
   DefaultChatTransport: class DefaultChatTransport {
     constructor() {}
   },
   lastAssistantMessageIsCompleteWithApprovalResponses: vi.fn(),
-}));
-vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: mocks.push }),
 }));
 vi.mock("next/link", () => ({
   default: ({
@@ -105,7 +95,6 @@ function renderAssistant(
 describe("ActivityAssistant", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.capturedOptions = null;
     mocks.useChat.mockReturnValue(helpers());
   });
 
@@ -121,6 +110,19 @@ describe("ActivityAssistant", () => {
     );
     expect(markup).toContain("手动创建与编辑活动仍可正常使用");
     expect(markup).not.toContain("AI_TOOL_APPROVAL_SECRET");
+  });
+
+  it("renders the bounded global-panel responsibility copy", () => {
+    const markup = renderToStaticMarkup(
+      <ActivityAssistantSessionProvider>
+        <ActivityAssistant classrooms={[]} surface="panel" />
+      </ActivityAssistantSessionProvider>,
+    );
+
+    expect(markup).toContain('data-surface="panel"');
+    expect(markup).toContain("活动设计与课程依据");
+    expect(markup).toContain("可分配职责");
+    expect(markup).toContain("没有明确确认不会写入");
   });
 
   it("renders exact draft edit and preview destinations", () => {
@@ -373,56 +375,6 @@ describe("ActivityAssistant", () => {
     expect(markup).toContain("取消");
     expect(markup).not.toContain("signed-but-never-rendered");
     expect(markup).not.toContain("approval_1");
-  });
-
-  it("navigates only when the server output matches the exact tool input", () => {
-    renderAssistant();
-    const onFinish = mocks.capturedOptions?.onFinish;
-    expect(onFinish).toBeTypeOf("function");
-
-    onFinish?.({
-      message: {
-        parts: [
-          {
-            type: "tool-create_activity_draft",
-            toolCallId: "open_exact_1",
-            state: "output-available",
-            input: {},
-            output: {
-              draftId,
-              version: 1,
-              status: "READY_FOR_PREVIEW",
-              editHref: `/teacher/activities/${draftId}`,
-              previewHref: `/teacher/activities/${draftId}/preview`,
-            },
-          },
-        ],
-      },
-    });
-    onFinish?.({
-      message: {
-        parts: [
-          {
-            type: "tool-create_activity_draft",
-            toolCallId: "open_tampered_2",
-            state: "output-available",
-            input: {},
-            output: {
-              draftId,
-              version: 1,
-              status: "READY_FOR_PREVIEW",
-              editHref: `/teacher/activities/${draftId}`,
-              previewHref: `/teacher/activities/${draftId}`,
-            },
-          },
-        ],
-      },
-    });
-
-    expect(mocks.push).toHaveBeenCalledTimes(1);
-    expect(mocks.push).toHaveBeenCalledWith(
-      `/teacher/activities/${draftId}/preview`,
-    );
   });
 
   it("does not render a continuation surface for a fresh direct preview", () => {
