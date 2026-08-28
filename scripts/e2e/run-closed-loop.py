@@ -290,17 +290,51 @@ def fill_activity_form(page: Page, title: str, summary: str) -> None:
         rubric.get_by_label("需改进", exact=True).fill("证据或解释仍需补充。")
 
 
-def fill_feedback_when_ready(page: Page, body: str) -> None:
-    """Fill after hydration and prove React enabled the confirmation action."""
+def expand_submission_history(page: Page) -> None:
+    """Open every collapsed section.
+
+    After a resubmission the student page keeps only the newest revision
+    expanded, so older feedback is present but not readable until a reader
+    opens it. Historical readability is what these assertions are about.
+    """
+    for _ in range(12):
+        closed = page.locator("details:not([open]) > summary")
+        if closed.count() == 0:
+            return
+        closed.first.click()
+
+
+def fill_feedback_when_ready(
+    page: Page,
+    body: str,
+    next_step: str = "REVISE",
+    support_level: str = "FOUNDATION",
+) -> None:
+    """Fill after hydration and prove React enabled the confirmation action.
+
+    The structured next step and support level are frozen with the body, so
+    the confirmation stays disabled until both are chosen.
+    """
     textarea = page.locator("#teacher-feedback-body")
+    next_step_select = page.locator("#teacher-feedback-next-step")
+    support_level_select = page.locator("#teacher-feedback-support-level")
     button = page.get_by_role("button", name="准备确认", exact=True)
     textarea.wait_for(state="visible")
+    next_step_select.wait_for(state="visible")
+    support_level_select.wait_for(state="visible")
     button.wait_for(state="visible")
 
     deadline = time.monotonic() + 30
     while time.monotonic() < deadline:
         textarea.fill(body)
-        if textarea.input_value() == body and button.is_enabled():
+        next_step_select.select_option(next_step)
+        support_level_select.select_option(support_level)
+        if (
+            textarea.input_value() == body
+            and next_step_select.input_value() == next_step
+            and support_level_select.input_value() == support_level
+            and button.is_enabled()
+        ):
             return
         page.wait_for_timeout(250)
 
@@ -509,6 +543,7 @@ def run_browser_flow(
                     "button", name=action_label, exact=True
                 ).count() != 0:
                     raise E2eFailure("HISTORICAL_MEMBER_WRITE_ACTION_VISIBLE")
+            expand_submission_history(page)
             wait_for_text(page, first_feedback)
             wait_for_text(page, second_feedback)
             screenshot(page, artifacts, "05-historical-member-readonly")
@@ -541,6 +576,7 @@ def run_browser_flow(
             ):
                 if page.get_by_role("button", name=action_label, exact=True).count() != 0:
                     raise E2eFailure("CLOSED_RELEASE_WRITE_ACTION_VISIBLE")
+            expand_submission_history(page)
             wait_for_text(page, first_feedback)
             wait_for_text(page, second_feedback)
             screenshot(page, artifacts, "07-closed-student-history-readonly")

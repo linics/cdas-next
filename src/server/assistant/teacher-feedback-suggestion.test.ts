@@ -9,11 +9,11 @@ import type { CommandContext } from "../commands/command-context";
 import { FeedbackWorkspaceQueryError } from "../queries/feedback-workspace";
 import { ActivityAssistantConfigError } from "./assistant-config";
 import {
-  buildTeacherEvaluationSuggestionPrompt,
-  suggestTeacherEvaluation,
-  TeacherEvaluationSuggestionError,
-  type TeacherEvaluationSuggestionDependencies,
-} from "./teacher-evaluation-suggestion";
+  buildTeacherFeedbackSuggestionPrompt,
+  suggestTeacherFeedback,
+  TeacherFeedbackSuggestionError,
+  type TeacherFeedbackSuggestionDependencies,
+} from "./teacher-feedback-suggestion";
 
 const actorId = "10000000-0000-4000-8000-000000000001";
 const submissionId = "20000000-0000-4000-8000-000000000002";
@@ -21,12 +21,12 @@ const revisionId = "30000000-0000-4000-8000-000000000003";
 const runId = "40000000-0000-4000-8000-000000000004";
 const hiddenAttachmentId = "50000000-0000-4000-8000-000000000005";
 const now = new Date("2026-08-28T05:00:00.000Z");
-const database = { kind: "evaluation-suggestion-database" } as unknown as PrismaClient;
+const database = { kind: "feedback-suggestion-database" } as unknown as PrismaClient;
 const model = { specificationVersion: "v4" } as unknown as LanguageModel;
 const context: CommandContext = {
   actorId,
   source: "UI",
-  traceId: "evaluation-suggestion-test",
+  traceId: "feedback-suggestion-test",
   clock: () => now,
 };
 
@@ -50,6 +50,7 @@ function workspace(overrides?: {
   completedEvidenceIndexes?: number[];
   content?: unknown;
   evaluationVersion?: number;
+  feedbackVersion?: number;
 }) {
   const revisionNumber = overrides?.revisionNumber ?? 1;
   return {
@@ -100,19 +101,20 @@ function workspace(overrides?: {
           ],
           feedback: {
             id: "90000000-0000-4000-8000-000000000009",
-            currentVersion: 1,
+            currentVersion: overrides?.feedbackVersion ?? 1,
             teacher: { id: actorId, displayName: "林老师" },
-            revisions: [
-              {
-                id: "a0000000-0000-4000-8000-00000000000a",
-                version: 1,
+            revisions: Array.from(
+              { length: overrides?.feedbackVersion ?? 1 },
+              (_, index) => ({
+                id: `a0000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
+                version: index + 1,
                 body: "不得发送给模型的旧反馈",
                 nextStep: "CONTINUE",
                 supportLevel: "STANDARD",
                 source: "MANUAL",
                 confirmedAt: "2026-08-28T04:40:00.000Z",
-              },
-            ],
+              }),
+            ),
           },
           evaluation:
             overrides?.evaluationVersion === undefined
@@ -149,26 +151,20 @@ const mocks = {
   generateSuggestion: vi.fn(),
 };
 
-function dependencies(): TeacherEvaluationSuggestionDependencies {
-  return mocks as unknown as TeacherEvaluationSuggestionDependencies;
+function dependencies(): TeacherFeedbackSuggestionDependencies {
+  return mocks as unknown as TeacherFeedbackSuggestionDependencies;
 }
 
-describe("teacher evaluation suggestion prompt", () => {
+describe("teacher feedback suggestion prompt", () => {
   it("names every output field, because the schema is not enforced by the provider", () => {
-    const prompt = buildTeacherEvaluationSuggestionPrompt({
-      rubricDimensions: waterConservationTaskBook.rubricDimensions,
+    const prompt = buildTeacherFeedbackSuggestionPrompt({
+      phase: null,
       textEvidence: "我记录了三次用水读数。",
-      checkpoints: [],
+      confirmedCheckpoints: [],
+      attachmentCount: 0,
     });
 
-    for (const field of [
-      "outcomes",
-      "summary",
-      "dimensionIndex",
-      "dimensionName",
-      "citations",
-      "evidenceIndex",
-    ]) {
+    for (const field of ["body", "nextStep", "supportLevel"]) {
       expect(prompt).toContain(field);
     }
     // The provider requires the word JSON to accept json_object responses.
@@ -176,7 +172,7 @@ describe("teacher evaluation suggestion prompt", () => {
   });
 });
 
-describe("teacher evaluation suggestion boundary", () => {
+describe("teacher feedback suggestion boundary", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.getConfig.mockReturnValue({
@@ -204,53 +200,55 @@ describe("teacher evaluation suggestion boundary", () => {
       agentRunId: runId,
       submissionRevisionId: revisionId,
       submissionRevisionNumber: 1,
-      expectedEvaluationVersion: 0,
+      expectedFeedbackVersion: 1,
       completedAt: now.toISOString(),
     });
     mocks.generateSuggestion.mockResolvedValue({
-      outcomes: validOutcomes(),
-      summary: "现有文字和检查点支持部分量规判断，仍请教师逐维核对。",
+      body: "你记录了三次用水读数并比较了变化，这一步的证据是清楚的。下一步请说明这些差异说明了什么问题，再据此提出一条可执行的节水建议。",
+      nextStep: "REVISE",
+      supportLevel: "STANDARD",
     });
   });
 
-  it("uses only current readable evidence and closes a valid run as succeeded", async () => {
-    const result = await suggestTeacherEvaluation(
+  function input(overrides?: Partial<{ submissionRevisionNumber: number }>) {
+    return {
+      submissionId,
+      submissionRevisionId: revisionId,
+      submissionRevisionNumber: overrides?.submissionRevisionNumber ?? 1,
+    };
+  }
+
+  it("sends only this revision's own visible evidence and closes the run", async () => {
+    const result = await suggestTeacherFeedback(
       database,
       context,
-      {
-        submissionId,
-        submissionRevisionId: revisionId,
-        submissionRevisionNumber: 1,
-      },
+      input(),
       dependencies(),
     );
 
     expect(result).toMatchObject({
       agentRunId: runId,
       submissionRevisionId: revisionId,
-      submissionRevisionNumber: 1,
+      nextStep: "REVISE",
+      supportLevel: "STANDARD",
     });
-    expect(mocks.getWorkspace).toHaveBeenCalledTimes(2);
-    const safeInput = mocks.generateSuggestion.mock.calls[0]?.[1];
-    const serializedInput = JSON.stringify(safeInput);
-    expect(serializedInput).toContain("三次用水读数");
-    expect(serializedInput).toContain("evidenceIndex");
-    expect(serializedInput).not.toContain("不得发送给模型的附件名");
-    expect(serializedInput).not.toContain(hiddenAttachmentId);
-    expect(serializedInput).not.toContain("不得发送给模型的旧反馈");
-    expect(serializedInput).not.toContain("不得发送给模型的旧评价");
+    const [, modelInput] = mocks.generateSuggestion.mock.calls[0] ?? [];
+    const serialized = JSON.stringify(modelInput);
+    expect(serialized).toContain("我记录了三次用水读数");
+    // Prior feedback, attachment names and the student identity never leave.
+    expect(serialized).not.toContain("不得发送给模型的附件名");
+    expect(serialized).not.toContain("不得发送给模型的旧反馈");
+    expect(serialized).not.toContain("陈同学");
+    expect(serialized).toContain('"attachmentCount":1');
     expect(mocks.completeRun).toHaveBeenCalledWith(
       database,
-      { ...context, source: "AGENT" },
-      {
+      expect.objectContaining({ source: "AGENT", actorId }),
+      expect.objectContaining({
         agentRunId: runId,
         submissionId,
-        submissionRevisionId: revisionId,
-        submissionRevisionNumber: 1,
-        expectedEvaluationVersion: 0,
-      },
+        expectedFeedbackVersion: 1,
+      }),
     );
-    expect(mocks.finishRun).not.toHaveBeenCalled();
   });
 
   it("fails before provider construction or AgentRun creation when AI is disabled", async () => {
@@ -259,206 +257,133 @@ describe("teacher evaluation suggestion boundary", () => {
     });
 
     await expect(
-      suggestTeacherEvaluation(
-        database,
-        context,
-        {
-          submissionId,
-          submissionRevisionId: revisionId,
-          submissionRevisionNumber: 1,
-        },
-        dependencies(),
-      ),
-    ).rejects.toEqual(new TeacherEvaluationSuggestionError("AI_UNAVAILABLE"));
-    expect(mocks.getWorkspace).not.toHaveBeenCalled();
+      suggestTeacherFeedback(database, context, input(), dependencies()),
+    ).rejects.toEqual(new TeacherFeedbackSuggestionError("AI_UNAVAILABLE"));
     expect(mocks.createModel).not.toHaveBeenCalled();
     expect(mocks.startRun).not.toHaveBeenCalled();
+    expect(mocks.generateSuggestion).not.toHaveBeenCalled();
   });
 
   it("preserves resource-level not-found before provider or run creation", async () => {
-    mocks.getWorkspace.mockRejectedValue(new FeedbackWorkspaceQueryError("NOT_FOUND"));
+    mocks.getWorkspace.mockRejectedValue(
+      new FeedbackWorkspaceQueryError("NOT_FOUND"),
+    );
 
     await expect(
-      suggestTeacherEvaluation(
-        database,
-        context,
-        {
-          submissionId,
-          submissionRevisionId: revisionId,
-          submissionRevisionNumber: 1,
-        },
-        dependencies(),
-      ),
-    ).rejects.toEqual(new TeacherEvaluationSuggestionError("NOT_FOUND"));
+      suggestTeacherFeedback(database, context, input(), dependencies()),
+    ).rejects.toEqual(new TeacherFeedbackSuggestionError("NOT_FOUND"));
     expect(mocks.createModel).not.toHaveBeenCalled();
     expect(mocks.startRun).not.toHaveBeenCalled();
   });
 
-  it("rejects v1 and stale pages before opening an AgentRun", async () => {
-    mocks.getWorkspace.mockResolvedValueOnce(
+  it("refuses a stale page before opening an AgentRun", async () => {
+    await expect(
+      suggestTeacherFeedback(
+        database,
+        context,
+        input({ submissionRevisionNumber: 2 }),
+        dependencies(),
+      ),
+    ).rejects.toEqual(
+      new TeacherFeedbackSuggestionError("STALE_SUBMISSION_REVISION"),
+    );
+    expect(mocks.startRun).not.toHaveBeenCalled();
+    expect(mocks.generateSuggestion).not.toHaveBeenCalled();
+  });
+
+  it("still drafts against a v1 snapshot without inventing phase requirements", async () => {
+    mocks.getWorkspace.mockResolvedValue(
       workspace({
         content: {
           schemaVersion: 1,
-          title: "旧活动",
-          summary: "旧摘要",
-          learningObjectives: ["旧目标"],
-          taskInstructions: "旧任务",
-          evidenceRequirements: ["旧证据"],
-          feedbackCriteria: ["旧标准"],
+          title: "旧版活动",
+          summary: "旧版摘要",
+          learningObjectives: ["理解用水"],
+          taskInstructions: "记录用水",
+          evidenceRequirements: ["读数"],
+          feedbackCriteria: ["资料完整"],
         },
       }),
     );
-    await expect(
-      suggestTeacherEvaluation(
-        database,
-        context,
-        {
-          submissionId,
-          submissionRevisionId: revisionId,
-          submissionRevisionNumber: 1,
-        },
-        dependencies(),
-      ),
-    ).rejects.toEqual(new TeacherEvaluationSuggestionError("RUBRIC_UNAVAILABLE"));
 
-    mocks.getWorkspace.mockResolvedValueOnce(workspace({ revisionNumber: 2 }));
     await expect(
-      suggestTeacherEvaluation(
-        database,
-        context,
-        {
-          submissionId,
-          submissionRevisionId: revisionId,
-          submissionRevisionNumber: 1,
-        },
-        dependencies(),
-      ),
-    ).rejects.toEqual(
-      new TeacherEvaluationSuggestionError("STALE_SUBMISSION_REVISION"),
-    );
-    expect(mocks.startRun).not.toHaveBeenCalled();
+      suggestTeacherFeedback(database, context, input(), dependencies()),
+    ).resolves.toMatchObject({ agentRunId: runId });
+    const [, modelInput] = mocks.generateSuggestion.mock.calls[0] ?? [];
+    expect((modelInput as { phase: unknown }).phase).toBeNull();
+    expect(
+      (modelInput as { confirmedCheckpoints: unknown[] }).confirmedCheckpoints,
+    ).toEqual([]);
   });
 
-  it("rejects attachment citations and closes the run as invalid output", async () => {
+  it("closes the run as invalid output when the draft breaks the feedback contract", async () => {
     mocks.generateSuggestion.mockResolvedValue({
-      outcomes: validOutcomes().map((outcome, index) =>
-        index === 0
-          ? {
-              ...outcome,
-              citations: [{ kind: "attachment", attachmentId: hiddenAttachmentId }],
-            }
-          : outcome,
-      ),
-      summary: "模型不得引用附件。",
+      body: "太短",
+      nextStep: "REVISE",
+      supportLevel: "STANDARD",
     });
 
     await expect(
-      suggestTeacherEvaluation(
-        database,
-        context,
-        {
-          submissionId,
-          submissionRevisionId: revisionId,
-          submissionRevisionNumber: 1,
-        },
-        dependencies(),
-      ),
-    ).rejects.toEqual(new TeacherEvaluationSuggestionError("INVALID_OUTPUT"));
+      suggestTeacherFeedback(database, context, input(), dependencies()),
+    ).rejects.toEqual(new TeacherFeedbackSuggestionError("INVALID_OUTPUT"));
     expect(mocks.finishRun).toHaveBeenCalledWith(
       database,
-      { ...context, source: "AGENT" },
-      {
-        agentRunId: runId,
-        status: "FAILED",
-        failureCode: "EVALUATION_SUGGESTION_INVALID_OUTPUT",
-      },
-    );
-  });
-
-  it("requires insufficient evidence when no readable evidence exists", async () => {
-    mocks.getWorkspace.mockResolvedValue(
-      workspace({ textEvidence: " \n ", completedEvidenceIndexes: [] }),
-    );
-
-    await expect(
-      suggestTeacherEvaluation(
-        database,
-        context,
-        {
-          submissionId,
-          submissionRevisionId: revisionId,
-          submissionRevisionNumber: 1,
-        },
-        dependencies(),
-      ),
-    ).rejects.toEqual(new TeacherEvaluationSuggestionError("INVALID_OUTPUT"));
-    expect(mocks.finishRun).toHaveBeenCalledWith(
-      database,
-      { ...context, source: "AGENT" },
+      expect.objectContaining({ source: "AGENT" }),
       expect.objectContaining({
         status: "FAILED",
-        failureCode: "EVALUATION_SUGGESTION_INVALID_OUTPUT",
+        failureCode: "FEEDBACK_SUGGESTION_INVALID_OUTPUT",
       }),
     );
+    expect(mocks.completeRun).not.toHaveBeenCalled();
   });
 
-  it("fails a completed model result when the current revision changes before return", async () => {
+  it("rejects an unknown next step instead of coercing it", async () => {
+    mocks.generateSuggestion.mockResolvedValue({
+      body: "你记录了三次用水读数并比较了变化，请再说明这些差异说明了什么问题。",
+      nextStep: "APPROVE",
+      supportLevel: "STANDARD",
+    });
+
+    await expect(
+      suggestTeacherFeedback(database, context, input(), dependencies()),
+    ).rejects.toEqual(new TeacherFeedbackSuggestionError("INVALID_OUTPUT"));
+    expect(mocks.completeRun).not.toHaveBeenCalled();
+  });
+
+  it("fails a completed draft when the feedback version moved before return", async () => {
     mocks.getWorkspace
       .mockResolvedValueOnce(workspace())
-      .mockResolvedValueOnce(
-        workspace({
-          revisionId: "d0000000-0000-4000-8000-00000000000d",
-          revisionNumber: 2,
-        }),
-      );
+      .mockResolvedValueOnce(workspace({ feedbackVersion: 2 }));
 
     await expect(
-      suggestTeacherEvaluation(
-        database,
-        context,
-        {
-          submissionId,
-          submissionRevisionId: revisionId,
-          submissionRevisionNumber: 1,
-        },
-        dependencies(),
-      ),
+      suggestTeacherFeedback(database, context, input(), dependencies()),
     ).rejects.toEqual(
-      new TeacherEvaluationSuggestionError("STALE_SUBMISSION_REVISION"),
+      new TeacherFeedbackSuggestionError("STALE_SUBMISSION_REVISION"),
     );
+    expect(mocks.completeRun).not.toHaveBeenCalled();
     expect(mocks.finishRun).toHaveBeenCalledWith(
       database,
-      { ...context, source: "AGENT" },
+      expect.objectContaining({ source: "AGENT" }),
       expect.objectContaining({
         status: "FAILED",
-        failureCode: "EVALUATION_SUGGESTION_STALE_REVISION",
+        failureCode: "FEEDBACK_SUGGESTION_STALE_REVISION",
       }),
     );
   });
 
-  it("closes provider failures without creating an evaluation intent", async () => {
-    mocks.generateSuggestion.mockRejectedValue(new Error("provider secret detail"));
+  it("closes provider failures without writing any feedback", async () => {
+    mocks.generateSuggestion.mockRejectedValue(new Error("provider down"));
 
     await expect(
-      suggestTeacherEvaluation(
-        database,
-        context,
-        {
-          submissionId,
-          submissionRevisionId: revisionId,
-          submissionRevisionNumber: 1,
-        },
-        dependencies(),
-      ),
-    ).rejects.toEqual(
-      new TeacherEvaluationSuggestionError("PROVIDER_FAILED"),
-    );
+      suggestTeacherFeedback(database, context, input(), dependencies()),
+    ).rejects.toEqual(new TeacherFeedbackSuggestionError("PROVIDER_FAILED"));
+    expect(mocks.completeRun).not.toHaveBeenCalled();
     expect(mocks.finishRun).toHaveBeenCalledWith(
       database,
-      { ...context, source: "AGENT" },
+      expect.objectContaining({ source: "AGENT" }),
       expect.objectContaining({
         status: "FAILED",
-        failureCode: "EVALUATION_SUGGESTION_PROVIDER_FAILED",
+        failureCode: "FEEDBACK_SUGGESTION_PROVIDER_FAILED",
       }),
     );
   });

@@ -45,7 +45,7 @@ D-044 只在这套已验证 UI 上增加次操作，不另起视觉方向：
 suggestionAgentRunId: null,   // evaluation-actions.ts:354
 ```
 
-反馈侧（`save-teacher-feedback.ts`）结构完全对称，本切片先只做评价，反馈留到之后。
+反馈侧（`save-teacher-feedback.ts`）结构完全对称；反馈建议已按 D-052 补齐。
 
 ### 核心约束：只起草，不写入
 

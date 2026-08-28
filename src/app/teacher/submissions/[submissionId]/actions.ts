@@ -26,10 +26,18 @@ import {
   SaveTeacherFeedbackError,
 } from "../../../../server/commands/save-teacher-feedback";
 import { getDatabaseClient } from "../../../../server/db/client";
+import {
+  suggestTeacherFeedback,
+  TeacherFeedbackSuggestionError,
+} from "../../../../server/assistant/teacher-feedback-suggestion";
 import type {
   FeedbackActionOperation,
   FeedbackActionState,
 } from "./feedback-action-state";
+import {
+  type FeedbackSuggestionActionState,
+  type FeedbackSuggestionActionStatus,
+} from "./feedback-suggestion-action-state";
 
 const idempotencyKeySchema = z.string().trim().min(8).max(200);
 const positiveFormIntegerSchema = z.preprocess(
@@ -47,6 +55,19 @@ const nonnegativeFormIntegerSchema = z.preprocess(
   z.coerce.number().int().nonnegative(),
 );
 
+const nullableAgentRunIdFormSchema = z.preprocess(
+  (value) => (value === "" ? null : value),
+  z.uuid().nullable(),
+);
+
+const suggestionFormSchema = z
+  .object({
+    submissionId: z.uuid(),
+    submissionRevisionId: z.uuid(),
+    submissionRevisionNumber: positiveFormIntegerSchema,
+  })
+  .strict();
+
 const prepareFormSchema = z
   .object({
     submissionId: z.uuid(),
@@ -56,6 +77,7 @@ const prepareFormSchema = z
     body: z.string(),
     nextStep: z.enum(teacherFeedbackNextSteps),
     supportLevel: z.enum(teacherFeedbackSupportLevels),
+    suggestionAgentRunId: nullableAgentRunIdFormSchema,
     idempotencyKey: idempotencyKeySchema,
   })
   .strict();
@@ -83,7 +105,13 @@ const prepareFormFields = new Set([
   "body",
   "nextStep",
   "supportLevel",
+  "suggestionAgentRunId",
   "idempotencyKey",
+]);
+const suggestionFormFields = new Set([
+  "submissionId",
+  "submissionRevisionId",
+  "submissionRevisionNumber",
 ]);
 const confirmationFormFields = new Set([
   "actionIntentId",
@@ -280,6 +308,7 @@ export async function prepareTeacherFeedbackAction(
       body: formData.get("body"),
       nextStep: formData.get("nextStep"),
       supportLevel: formData.get("supportLevel"),
+      suggestionAgentRunId: formData.get("suggestionAgentRunId"),
       idempotencyKey: formData.get("idempotencyKey"),
     });
     payload = createTeacherFeedbackPayload({
@@ -290,7 +319,7 @@ export async function prepareTeacherFeedbackAction(
       body: input.body,
       nextStep: input.nextStep,
       supportLevel: input.supportLevel,
-      suggestionAgentRunId: null,
+      suggestionAgentRunId: input.suggestionAgentRunId,
     });
   } catch (error) {
     return failedActionState("prepare", error);
@@ -311,7 +340,7 @@ export async function prepareTeacherFeedbackAction(
         body: payload.body,
         nextStep: payload.nextStep,
         supportLevel: payload.supportLevel,
-        suggestionAgentRunId: null,
+        suggestionAgentRunId: payload.suggestionAgentRunId,
         idempotencyKey: input.idempotencyKey,
       },
     );
@@ -446,5 +475,106 @@ export async function decideTeacherFeedbackAction(
     });
   } catch (error) {
     return failedActionState("confirm", error, input.actionIntentId);
+  }
+}
+
+function suggestionState(
+  options: Readonly<{
+    status: FeedbackSuggestionActionStatus;
+    message: string;
+    suggestion?: FeedbackSuggestionActionState["suggestion"];
+  }>,
+): FeedbackSuggestionActionState {
+  return {
+    status: options.status,
+    message: options.message,
+    suggestion: options.suggestion ?? null,
+  };
+}
+
+export async function suggestTeacherFeedbackAction(
+  _previousState: FeedbackSuggestionActionState,
+  formData: FormData,
+): Promise<FeedbackSuggestionActionState> {
+  if (!formContainsExactly(formData, suggestionFormFields)) {
+    return suggestionState({
+      status: "error",
+      message: "起草请求格式不正确。当前表单没有被修改，请刷新后再试。",
+    });
+  }
+
+  let input: z.infer<typeof suggestionFormSchema>;
+  try {
+    input = suggestionFormSchema.parse({
+      submissionId: formData.get("submissionId"),
+      submissionRevisionId: formData.get("submissionRevisionId"),
+      submissionRevisionNumber: formData.get("submissionRevisionNumber"),
+    });
+  } catch {
+    return suggestionState({
+      status: "error",
+      message: "起草请求格式不正确。当前表单没有被修改，请刷新后再试。",
+    });
+  }
+
+  try {
+    const database = getDatabaseClient();
+    const context = await createUiCommandContext(database);
+    const suggestion = await suggestTeacherFeedback(database, context, input);
+    return suggestionState({
+      status: "suggested",
+      message: "AI 建议已填入当前表单。请核对、修改后，再准备反馈确认。",
+      suggestion,
+    });
+  } catch (error) {
+    if (error instanceof AuthenticationError) {
+      return suggestionState({
+        status:
+          error.code === "UNAUTHENTICATED" ? "unauthenticated" : "unauthorized",
+        message:
+          error.code === "UNAUTHENTICATED"
+            ? "登录状态已失效，未起草反馈。请重新登录后再试。"
+            : "当前账号不能为这份提交起草反馈。手写表单仍可使用。",
+      });
+    }
+
+    if (error instanceof TeacherFeedbackSuggestionError) {
+      if (error.code === "STALE_SUBMISSION_REVISION") {
+        return suggestionState({
+          status: "stale",
+          message:
+            "学生已重交或当前反馈版本已变化，没有应用这次建议。请刷新后查看最新版本。",
+        });
+      }
+      if (error.code === "NOT_FOUND") {
+        return suggestionState({
+          status: "unauthorized",
+          message:
+            "当前无法读取这份提交。请确认你仍是活动发布者和班级管理者。",
+        });
+      }
+      if (error.code === "AI_UNAVAILABLE" || error.code === "PROVIDER_FAILED") {
+        return suggestionState({
+          status: "unavailable",
+          message:
+            "AI 反馈建议暂时不可用。当前手写内容已保留，你仍可直接完成反馈。",
+        });
+      }
+      if (error.code === "INVALID_OUTPUT") {
+        return suggestionState({
+          status: "error",
+          message:
+            "AI 返回的建议没有通过反馈校验，当前表单未被修改。你可以重试或继续手写。",
+        });
+      }
+    }
+
+    console.error("Teacher feedback suggestion action failed", {
+      errorName: error instanceof Error ? error.name : "UnknownError",
+    });
+    return suggestionState({
+      status: "error",
+      message: "服务器暂时无法起草反馈建议。当前手写内容已保留，请稍后再试。",
+    });
   }
 }

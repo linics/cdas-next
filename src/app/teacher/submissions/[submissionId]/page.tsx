@@ -425,6 +425,7 @@ export default async function TeacherSubmissionPage({
               }
               initialBody={latestFeedbackRevision?.body ?? ""}
               prepareIdempotencySeed={`prepare_teacher_feedback_${randomUUID()}`}
+              assistantEnabled={assistantEnabled}
             />
             {content.schemaVersion === 2 ? (
               <EvaluationComposer

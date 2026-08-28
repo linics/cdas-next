@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useRef, useState } from "react";
+import { useActionState, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { LocalizedDateTime } from "../../../_components/localized-date-time";
 import { ConfirmDialog, InlineAlert } from "../../../_components/ui";
@@ -15,12 +15,17 @@ import { hasMeaningfulTextEvidence } from "../../../../domain/submission/text-ev
 import {
   decideTeacherFeedbackAction,
   prepareTeacherFeedbackAction,
+  suggestTeacherFeedbackAction,
 } from "./actions";
 import {
   initialFeedbackActionState,
   type FeedbackActionState,
   type PendingFeedbackConfirmation,
 } from "./feedback-action-state";
+import {
+  initialFeedbackSuggestionActionState,
+  type FeedbackSuggestionActionState,
+} from "./feedback-suggestion-action-state";
 import styles from "./feedback-workspace.module.css";
 
 type FeedbackComposerProps = Readonly<{
@@ -30,7 +35,38 @@ type FeedbackComposerProps = Readonly<{
   expectedFeedbackVersion: number;
   initialBody: string;
   prepareIdempotencySeed: string;
+  assistantEnabled: boolean;
 }>;
+
+function SuggestionNotice({
+  state,
+  onRefresh,
+}: {
+  state: FeedbackSuggestionActionState;
+  onRefresh: () => void;
+}) {
+  if (state.status === "idle") return null;
+  const isSuccess = state.status === "suggested";
+  const isConflict = state.status === "stale";
+  return (
+    <div
+      className={styles.actionNotice}
+      data-tone={isSuccess ? "success" : isConflict ? "conflict" : "error"}
+      role={isSuccess ? "status" : "alert"}
+      aria-live="polite"
+    >
+      <span aria-hidden="true">
+        {isSuccess ? "✓" : isConflict ? "↻" : "!"}
+      </span>
+      <p>{state.message}</p>
+      {isConflict ? (
+        <button type="button" onClick={onRefresh}>
+          刷新
+        </button>
+      ) : null}
+    </div>
+  );
+}
 
 function ActionNotice({
   state,
@@ -128,6 +164,7 @@ export function FeedbackComposer({
   expectedFeedbackVersion,
   initialBody,
   prepareIdempotencySeed,
+  assistantEnabled,
 }: FeedbackComposerProps) {
   const router = useRouter();
   const [draftBody, setDraftBody] = useState(initialBody);
@@ -137,6 +174,14 @@ export function FeedbackComposer({
   const [draftSupportLevel, setDraftSupportLevel] = useState<
     TeacherFeedbackSupportLevel | ""
   >("");
+  const [suggestionAgentRunId, setSuggestionAgentRunId] = useState<
+    string | null
+  >(null);
+  const [suggestionState, setSuggestionState] =
+    useState<FeedbackSuggestionActionState>(
+      initialFeedbackSuggestionActionState,
+    );
+  const [suggestionPending, startSuggestionTransition] = useTransition();
   const [prepareState, prepareAction, preparePending] = useActionState(
     prepareTeacherFeedbackAction,
     initialFeedbackActionState,
@@ -165,7 +210,23 @@ export function FeedbackComposer({
   const bodyOverLimit =
     codePointCount > TEACHER_FEEDBACK_BODY_MAX_LENGTH;
   const bodyHasVisibleText = hasMeaningfulTextEvidence(draftBody);
-  const anyPending = preparePending || decisionPending;
+  const anyPending = preparePending || decisionPending || suggestionPending;
+
+  const requestSuggestion = (formData: FormData) => {
+    startSuggestionTransition(async () => {
+      const nextState = await suggestTeacherFeedbackAction(
+        initialFeedbackSuggestionActionState,
+        formData,
+      );
+      setSuggestionState(nextState);
+      const suggestion = nextState.suggestion;
+      if (!suggestion) return;
+      setDraftBody(suggestion.body);
+      setDraftNextStep(suggestion.nextStep);
+      setDraftSupportLevel(suggestion.supportLevel);
+      setSuggestionAgentRunId(suggestion.agentRunId);
+    });
+  };
   const relatedDecisionState =
     activeConfirmation &&
     decisionState.resolvedIntentId === activeConfirmation.actionIntentId
@@ -196,7 +257,9 @@ export function FeedbackComposer({
             {expectedFeedbackVersion > 0 ? "修改教师反馈" : "撰写教师反馈"}
           </h2>
         </div>
-        <span className={styles.manualMode}>手写模式 · 不呼叫 AI</span>
+        <span className={styles.manualMode}>
+          {assistantEnabled ? "教师终审 · AI 可选" : "手写模式 · 不呼叫 AI"}
+        </span>
       </header>
 
       <p className={styles.composerLead}>
@@ -206,6 +269,41 @@ export function FeedbackComposer({
           : "第一版反馈"}
         。准备后仍需在独立面板明确确认。
       </p>
+
+      {assistantEnabled ? (
+        <>
+          <div className={styles.prepareRow}>
+            <p>
+              这是 AI 建议，未经你确认不会保存。助手只读取本版文字和已确认检查点；附件内容不会交给模型。
+            </p>
+            <form className={styles.suggestionAction} action={requestSuggestion}>
+              <input type="hidden" name="submissionId" value={submissionId} />
+              <input
+                type="hidden"
+                name="submissionRevisionId"
+                value={submissionRevisionId}
+              />
+              <input
+                type="hidden"
+                name="submissionRevisionNumber"
+                value={submissionRevisionNumber}
+              />
+              <button
+                className={styles.secondaryButton}
+                type="submit"
+                disabled={anyPending}
+                aria-label="让助手起草这一版反馈"
+              >
+                {suggestionPending ? "起草中…" : "AI 起草建议"}
+              </button>
+            </form>
+          </div>
+          <SuggestionNotice
+            state={suggestionState}
+            onRefresh={() => router.refresh()}
+          />
+        </>
+      ) : null}
 
       <ActionNotice state={prepareState} onRefresh={() => router.refresh()} />
       {decisionState.status === "rejected" ||
@@ -229,6 +327,11 @@ export function FeedbackComposer({
           type="hidden"
           name="expectedFeedbackVersion"
           value={expectedFeedbackVersion}
+        />
+        <input
+          type="hidden"
+          name="suggestionAgentRunId"
+          value={suggestionAgentRunId ?? ""}
         />
         <input
           type="hidden"
