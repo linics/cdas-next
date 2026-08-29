@@ -18,6 +18,8 @@ pnpm dev
 
 打开 [http://localhost:3000](http://localhost:3000)。本地运行 `next dev` 且没有 Clerk 密钥时，会使用 Clerk 官方临时测试登录；正式构建仍要求真实密钥。登录后还必须由初始化命令把 Clerk 用户绑定为教师或学生，未绑定账号不会读取业务数据或显示写入入口。模型默认关闭，普通教师与学生流程不依赖 AI。
 
+国内小机器自托管（替换该主机上的旧服务、本机 PostgreSQL + nginx，不改 Vercel 开发门禁）见 [SELF-HOST.md](SELF-HOST.md)，一键脚本为 `pnpm self-host:deploy`。
+
 ## 验证
 
 ```bash
