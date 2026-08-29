@@ -242,6 +242,24 @@ def switch_account(
     raise E2eFailure("CLERK_SWITCH_RETRY_EXHAUSTED")
 
 
+def settle_assistant_stream(page: Page) -> None:
+    """Wait for the assistant turn to finish before navigating away.
+
+    Navigating mid-stream aborts the request and leaves a CANCELLED AgentRun
+    that says nothing about what the turn actually did.
+
+    Waits for the stop control to appear first, then to go. Waiting only for it
+    to detach is what made this guard useless: it was looking for a button named
+    「停止」 while the button is named 「停止生成」, and a locator that matches
+    nothing is already detached, so every one of these waits returned instantly
+    and the script navigated straight through a live stream. Requiring it to
+    appear means a future rename times out loudly instead of passing silently.
+    """
+    stop = page.get_by_role("button", name="停止生成", exact=True)
+    stop.wait_for(state="attached", timeout=30_000)
+    stop.wait_for(state="detached", timeout=120_000)
+
+
 def screenshot(page: Page, artifacts: Path, name: str) -> None:
     page.screenshot(path=artifacts / f"{name}.png", full_page=True)
 
@@ -724,9 +742,7 @@ def run_real_model_browser_flow(
             # Let the read turn settle before reloading. Navigating mid-stream
             # would abort it and leave a CANCELLED AgentRun that says nothing
             # about the read itself.
-            page.get_by_role("button", name="停止", exact=True).wait_for(
-                state="detached", timeout=120_000
-            )
+            settle_assistant_stream(page)
             # The transcript scrolls inside the panel, so bring the result the
             # assertions just proved into frame before capturing evidence.
             page.get_by_text(f"读取草稿 · {read_title}", exact=True).scroll_into_view_if_needed()
@@ -757,9 +773,7 @@ def run_real_model_browser_flow(
             )
             if page.url != draft_url:
                 raise E2eFailure("REAL_MODEL_DRAFT_REVISION_NAVIGATED")
-            page.get_by_role("button", name="停止", exact=True).wait_for(
-                state="detached", timeout=120_000
-            )
+            settle_assistant_stream(page)
             page.get_by_text("草稿已改写 · 版本 1 → 2", exact=True).scroll_into_view_if_needed()
             screenshot(page, artifacts, "02-real-model-draft-revised")
 
@@ -807,9 +821,7 @@ def run_real_model_browser_flow(
             screenshot(page, artifacts, "03-real-model-draft-proposal")
             # The idle badge this used to wait for no longer exists; the panel
             # now only marks the busy state. Wait for that to clear instead.
-            page.get_by_role("button", name="停止", exact=True).wait_for(
-                state="detached", timeout=120_000
-            )
+            settle_assistant_stream(page)
             proposal.get_by_role(
                 "button", name="确认理解并创建草稿", exact=True
             ).click()
@@ -989,9 +1001,7 @@ def run_real_model_browser_flow(
             for expected in ("对象 1", "已评价 1 份"):
                 if expected not in insights_text:
                     raise E2eFailure("REAL_MODEL_INSIGHTS_COUNT_MISMATCH")
-            page.get_by_role("button", name="停止", exact=True).wait_for(
-                state="detached", timeout=120_000
-            )
+            settle_assistant_stream(page)
             insights.scroll_into_view_if_needed()
             screenshot(page, artifacts, "08-real-model-process-insights")
 
@@ -1022,9 +1032,7 @@ def run_real_model_browser_flow(
                 raise E2eFailure("REAL_MODEL_ROSTER_LEAKED_STUDENT_NAME")
             if page.get_by_role("link", name=re.compile("阶段|整项提交")).count() == 0:
                 raise E2eFailure("REAL_MODEL_ROSTER_REVIEW_LINK_MISSING")
-            page.get_by_role("button", name="停止", exact=True).wait_for(
-                state="detached", timeout=120_000
-            )
+            settle_assistant_stream(page)
             roster.scroll_into_view_if_needed()
             screenshot(page, artifacts, "09-real-model-release-roster")
 
