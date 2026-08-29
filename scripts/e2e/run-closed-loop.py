@@ -925,6 +925,10 @@ def run_real_model_browser_flow(
             screenshot(page, artifacts, "05-real-model-feedback-draft")
             page.get_by_role("button", name="准备确认", exact=True).click()
             confirm_dialog(page, "确认并保存最终反馈", "确认并保存最终反馈")
+            # Confirmed records live in a native <details> that CLASSICAL.md
+            # requires to start collapsed, so the provenance line is in the DOM
+            # but not visible. Open it the way a teacher would, then assert.
+            page.locator("summary").filter(has_text="已确认记录").click()
             page.get_by_text("AI 建议 · 教师已确认").first.wait_for(
                 timeout=120_000
             )
