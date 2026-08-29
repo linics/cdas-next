@@ -14,7 +14,8 @@ WorkingDirectory=/opt/cdas-next/current
 Environment=NODE_ENV=production
 Environment=HOST=127.0.0.1
 Environment=PORT=3000
-Environment=HOSTNAME=127.0.0.1
+# Do not set HOSTNAME=127.0.0.1 — Clerk middleware then rewrites to
+# https://localhost:3000 and self-proxy TLS fails against the HTTP listener.
 Environment=NODE_OPTIONS=--max-old-space-size=768
 EnvironmentFile=-/opt/cdas-next/shared/.env
 ExecStart=/opt/cdas-next/node/bin/node /opt/cdas-next/current/server.js

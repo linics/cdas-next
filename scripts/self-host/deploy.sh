@@ -15,6 +15,10 @@ cd "$ROOT"
 
 HOST="${CDAS_VPS_HOST:-122.51.77.121}"
 USER_NAME="${CDAS_VPS_USER:-ubuntu}"
+# Default public entry is HTTP on the VPS IP. Tencent blocks unfiled domains
+# (sslip webblock) and often drops inbound TLS ClientHello before nginx.
+DOMAIN="${CDAS_VPS_DOMAIN:-}"
+PUBLIC_ORIGIN="${CDAS_PUBLIC_ORIGIN:-http://${HOST}}"
 SSH_KEY_FILE="${CDAS_VPS_SSH_KEY_FILE:-}"
 RELEASE_ID="$(date -u +%Y%m%d-%H%M%S)-$(git rev-parse --short HEAD)"
 STAGING_DIR="$(mktemp -d "${TMPDIR:-/tmp}/cdas-release.XXXXXX")"
@@ -94,6 +98,7 @@ fi
 
 cp deploy/self-host/cdas-next.service "$STAGING_DIR/shared/"
 cp deploy/self-host/nginx-cdas-next.conf "$STAGING_DIR/shared/"
+cp deploy/self-host/nginx-cdas-next-http.conf "$STAGING_DIR/shared/"
 cp deploy/self-host/nginx-cdas-next-map.conf "$STAGING_DIR/shared/"
 cp deploy/self-host/postgresql-cdas.conf "$STAGING_DIR/shared/"
 cp scripts/self-host/remove-score-my-lover.sh "$STAGING_DIR/shared/"
@@ -107,7 +112,16 @@ rsync -az -e "$RSYNC_RSH" "$STAGING_DIR/shared/" "$REMOTE:/tmp/cdas-self-host-sh
 
 echo "==> Uploading release"
 "${SSH[@]}" "$REMOTE" "sudo install -d -m 0755 -o ${USER_NAME} -g ${USER_NAME} /opt/cdas-next/releases/${RELEASE_ID}"
-rsync -az --delete -e "$RSYNC_RSH" "$STAGING_DIR/app/" "$REMOTE:/opt/cdas-next/releases/${RELEASE_ID}/"
+# Each deploy lands in a fresh release directory, so rsync has no delta base and
+# would re-send the whole ~77MB bundle. Hard-link unchanged files from the last
+# release instead; only what actually changed crosses the wire.
+PREVIOUS_RELEASE="$("${SSH[@]}" "$REMOTE" "ls -1 /opt/cdas-next/releases 2>/dev/null | grep -v '^${RELEASE_ID}$' | sort | tail -1" || true)"
+LINK_DEST=()
+if [[ -n "$PREVIOUS_RELEASE" ]]; then
+  echo "    reusing unchanged files from ${PREVIOUS_RELEASE}"
+  LINK_DEST=(--link-dest "/opt/cdas-next/releases/${PREVIOUS_RELEASE}")
+fi
+rsync -az --delete "${LINK_DEST[@]}" -e "$RSYNC_RSH" "$STAGING_DIR/app/" "$REMOTE:/opt/cdas-next/releases/${RELEASE_ID}/"
 "${SSH[@]}" "$REMOTE" "sudo ln -sfn /opt/cdas-next/releases/${RELEASE_ID} /opt/cdas-next/current && sudo chown -R ${USER_NAME}:${USER_NAME} /opt/cdas-next/releases/${RELEASE_ID}"
 
 echo "==> Merging runtime env overrides"
@@ -119,6 +133,8 @@ OVERRIDES="$(mktemp)"
   [[ -n "${AI_TOOL_APPROVAL_SECRET:-}" ]] && printf 'AI_TOOL_APPROVAL_SECRET=%s\n' "$AI_TOOL_APPROVAL_SECRET"
   [[ -n "${AI_MODEL:-}" ]] && printf 'AI_MODEL=%s\n' "$AI_MODEL"
   printf 'AI_PROVIDER_DISABLED=%s\n' "${AI_PROVIDER_DISABLED:-1}"
+  printf 'CDAS_PUBLIC_ORIGIN=%s\n' "$PUBLIC_ORIGIN"
+  [[ -n "${DOMAIN}" ]] && printf 'CDAS_VPS_DOMAIN=%s\n' "$DOMAIN"
 } >"$OVERRIDES"
 rsync -az -e "$RSYNC_RSH" "$OVERRIDES" "$REMOTE:/tmp/cdas-env-overrides.env"
 rm -f "$OVERRIDES"
@@ -158,7 +174,8 @@ rm -f /tmp/cdas-env-overrides.env'
 echo "==> Installing Prisma CLI on VPS (once) and migrating"
 "${SSH[@]}" "$REMOTE" 'export PATH=/opt/cdas-next/node/bin:$PATH
 if ! command -v prisma >/dev/null 2>&1; then
-  npm install -g prisma@7.9.1 dotenv@16
+  # Node under /opt is root-owned; global installs need sudo.
+  sudo env PATH="/opt/cdas-next/node/bin:$PATH" npm install -g prisma@7.9.1 dotenv@16
 fi
 set -a
 . /opt/cdas-next/shared/.env
@@ -170,14 +187,29 @@ if [[ ! -d node_modules/dotenv ]]; then
 fi
 prisma migrate deploy'
 
-echo "==> Restarting cdas-next"
-"${SSH[@]}" "$REMOTE" 'sudo cp /opt/cdas-next/shared/cdas-next.service /etc/systemd/system/cdas-next.service
+echo "==> nginx for ${PUBLIC_ORIGIN}"
+"${SSH[@]}" "$REMOTE" 'bash -s' <<'REMOTE_NGINX'
+set -euo pipefail
+sudo mkdir -p /var/www/html/.well-known/acme-challenge
+sudo cp /opt/cdas-next/shared/cdas-next.service /etc/systemd/system/cdas-next.service
 sudo cp /opt/cdas-next/shared/nginx-cdas-next-map.conf /etc/nginx/conf.d/cdas-next-map.conf
-sudo cp /opt/cdas-next/shared/nginx-cdas-next.conf /etc/nginx/sites-available/cdas-next
+sudo rm -f /etc/nginx/sites-enabled/default
+# Prefer the HTTP IP site. Optional TLS site is only installed when the operator
+# has already placed certs (ICP domain + working LE) at the expected path.
+if [[ -f /etc/letsencrypt/live/cdas.122.51.77.121.sslip.io/fullchain.pem ]] \
+  && [[ -f /opt/cdas-next/shared/nginx-cdas-next-http.conf ]] \
+  && [[ "${CDAS_FORCE_TLS:-0}" == "1" ]]; then
+  sudo cp /opt/cdas-next/shared/nginx-cdas-next-http.conf /etc/nginx/sites-available/cdas-next
+else
+  sudo cp /opt/cdas-next/shared/nginx-cdas-next.conf /etc/nginx/sites-available/cdas-next
+fi
 sudo ln -sfn /etc/nginx/sites-available/cdas-next /etc/nginx/sites-enabled/cdas-next
 sudo nginx -t
 sudo systemctl reload nginx
-sudo systemctl daemon-reload
+REMOTE_NGINX
+
+echo "==> Restarting cdas-next"
+"${SSH[@]}" "$REMOTE" 'sudo systemctl daemon-reload
 sudo systemctl enable --now cdas-next.service
 sudo systemctl restart cdas-next.service
 sleep 2
@@ -185,8 +217,11 @@ sudo systemctl --no-pager --full status cdas-next.service | head -40'
 
 echo "==> Smoke"
 "${SSH[@]}" "$REMOTE" 'curl -sS -o /tmp/cdas-health.json -w "%{http_code}" http://127.0.0.1:3000/api/health; echo; head -c 400 /tmp/cdas-health.json; echo'
-curl -sS -o /tmp/cdas-public-health.json -w "public_http=%{http_code}\n" "http://${HOST}/api/health" || true
+curl -sS -o /tmp/cdas-public-health.json -w "public_http=%{http_code}\n" "${PUBLIC_ORIGIN}/api/health" || true
 head -c 400 /tmp/cdas-public-health.json 2>/dev/null || true
 echo
+curl -sS -o /tmp/cdas-teacher-head.txt -w "teacher_http=%{http_code}\n" "${PUBLIC_ORIGIN}/teacher" || true
+head -c 200 /tmp/cdas-teacher-head.txt 2>/dev/null || true
+echo
 
-echo "Deployed ${RELEASE_ID} to ${HOST}"
+echo "Deployed ${RELEASE_ID} to ${PUBLIC_ORIGIN} (host ${HOST})"

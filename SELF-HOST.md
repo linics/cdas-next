@@ -10,6 +10,27 @@ Default target: `122.51.77.121` (Tencent SA3.MEDIUM2, 2C/2G). The previous
 - Keep `AI_PROVIDER_DISABLED=1` and leave attachments off on 2GB RAM.
 - Never run `pnpm build` on the VPS; build on a workstation or CI, then upload the standalone release.
 
+## Public entry (Tencent without ICP)
+
+On this Tencent instance **without ICP备案**:
+
+| Path | Result |
+| --- | --- |
+| `http://122.51.77.121` | Works (nginx → app). **Use this.** |
+| Custom / sslip.io domain on :80 | DNSPod webblock redirect (unfiled domain) |
+| Inbound TLS on :443 / :8443 | Often TCP-accept then drop ClientHello before nginx |
+
+So the supported public origin today is:
+
+`http://122.51.77.121`
+
+Set Clerk **development** instance `development_origin` + `allowed_origins` to that URL
+(API: `PATCH https://api.clerk.com/v1/instance`). Do **not** set systemd
+`HOSTNAME=127.0.0.1` — that makes Clerk rewrite to `https://localhost:3000` and hang.
+
+When you have an ICP-filed domain pointing at this IP, issue Let's Encrypt, put
+TLS nginx in place, and point Clerk at `https://your.domain`.
+
 ## One-shot deploy
 
 From the repo root on a machine that can SSH to the VPS:
@@ -19,6 +40,7 @@ export CDAS_VPS_SSH_KEY_FILE=~/.ssh/yunservice.pem
 # or: export CDAS_VPS_SSH_PRIVATE_KEY="$(cat ~/.ssh/yunservice.pem)"
 export NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_...
 export CLERK_SECRET_KEY=sk_...
+export CDAS_PUBLIC_ORIGIN=http://122.51.77.121
 # optional:
 # export DEEPSEEK_API_KEY=...
 # export AI_TOOL_APPROVAL_SECRET=...
@@ -35,7 +57,23 @@ The script:
 3. Installs PostgreSQL 17, nginx, and `cdas-next.service`
 4. Uploads the release under `/opt/cdas-next/releases/<id>`
 5. Runs `prisma migrate deploy`
-6. Restarts the app and curls `/api/health`
+6. Restarts the app and curls `/api/health` + `/teacher`
+
+## Demo seed (after first deploy)
+
+From the laptop (SSH tunnel to Postgres):
+
+```bash
+ssh -i ~/.ssh/yunservice.pem -N -L 15432:127.0.0.1:5432 ubuntu@122.51.77.121 &
+# DATABASE_URL from /opt/cdas-next/shared/.env with host 127.0.0.1:15432
+export DATABASE_URL=postgresql://cdas:...@127.0.0.1:15432/cdas_next
+export DIRECT_URL="$DATABASE_URL"
+# plus DEV_TEST_TEACHER_CLERK_ID / DEV_TEST_STUDENT_CLERK_ID from .env.local
+pnpm demo:seed -- --confirm-database cdas_next --reset
+```
+
+Open `http://122.51.77.121/teacher` or `/student` and sign in with the Clerk
+users that match those IDs.
 
 ## Layout on the VPS
 
@@ -46,16 +84,6 @@ The script:
 | `/opt/cdas-next/node` | Node 24 tree |
 | `/etc/systemd/system/cdas-next.service` | Process manager |
 | `/etc/nginx/sites-enabled/cdas-next` | HTTP reverse proxy to `127.0.0.1:3000` |
-
-## Clerk / DNS
-
-Clerk production login needs a real HTTPS origin. After DNS `A` → `122.51.77.121`:
-
-1. Add the origin and redirect URLs in the Clerk Dashboard
-2. Issue a certificate (for example `certbot --nginx -d your.domain`)
-3. Point `server_name` in the nginx site at that domain
-
-Until then the app still answers on `http://122.51.77.121` for process/database smoke checks; browser login may be limited.
 
 ## What stays on Vercel
 

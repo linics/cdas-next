@@ -103,7 +103,10 @@ fi
 
 install -m 0644 /opt/cdas-next/shared/cdas-next.service /etc/systemd/system/cdas-next.service 2>/dev/null || true
 install -m 0644 /opt/cdas-next/shared/nginx-cdas-next-map.conf /etc/nginx/conf.d/cdas-next-map.conf 2>/dev/null || true
-install -m 0644 /opt/cdas-next/shared/nginx-cdas-next.conf /etc/nginx/sites-available/cdas-next 2>/dev/null || true
+# Default public site is HTTP on the VPS IP (see SELF-HOST.md for ICP/TLS notes).
+if [[ -f /opt/cdas-next/shared/nginx-cdas-next.conf ]]; then
+  install -m 0644 /opt/cdas-next/shared/nginx-cdas-next.conf /etc/nginx/sites-available/cdas-next
+fi
 ln -sfn /etc/nginx/sites-available/cdas-next /etc/nginx/sites-enabled/cdas-next
 rm -f /etc/nginx/sites-enabled/default
 

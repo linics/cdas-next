@@ -21,6 +21,12 @@ export default function proxy(
   request: NextRequest,
   event: Parameters<typeof clerkProxy>[1],
 ) {
+  // Health must stay outside Clerk. Development instances rewrite missing
+  // __clerk_db_jwt into a self-proxy loop that hangs curl /api/health.
+  if (request.nextUrl.pathname === "/api/health") {
+    return withPathname(request);
+  }
+
   if (isClickthroughAuthEnabled()) {
     return withPathname(request);
   }
@@ -33,5 +39,5 @@ export default function proxy(
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|.*\\..*).*)"],
+  matcher: ["/((?!_next/static|_next/image|api/health|.*\\..*).*)"],
 };
