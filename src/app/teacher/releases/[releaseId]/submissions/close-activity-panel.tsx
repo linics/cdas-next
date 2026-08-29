@@ -69,9 +69,9 @@ export function CloseActivityPanel({
     return (
       <section className={styles.closeActivityPanel} aria-labelledby="close-release-title">
         <p className={styles.eyebrow}>活动控制</p>
-        <h2 id="close-release-title">停止新的学生提交</h2>
+        <h2 id="close-release-title">关闭活动，停止接收新提交</h2>
         <p>
-          关闭后不能重新打开；学生仍可查看现有工作与正式修订，教师仍可反馈。
+          关闭后不可重新开放；学生仍可查看已有内容，教师仍可继续反馈。
         </p>
         <ActionNotice state={prepareState} />
         <form action={prepareAction}>
@@ -109,7 +109,7 @@ export function CloseActivityPanel({
 
   return (
     <section className={styles.closeActivityPanel} aria-label="关闭活动确认">
-      <InlineAlert tone="warning">关闭确认已准备。取消弹窗不会写入或关闭活动。</InlineAlert>
+      <InlineAlert tone="warning">关闭确认已准备；在最终确认前，活动不会被关闭。</InlineAlert>
       <button className={styles.secondaryButton} onClick={() => setDismissedConfirmationId(null)} type="button">查看关闭确认</button>
       <form action={decideAction} className={styles.visuallyHidden} ref={closeFormRef}>
         <input type="hidden" name="actionIntentId" value={confirmation.actionIntentId} />
@@ -119,7 +119,7 @@ export function CloseActivityPanel({
       <ConfirmDialog
         open={isConfirmDialogOpen}
         title="确认关闭这个活动"
-        detail={<div className={styles.dialogDetail}><p>将停止 {confirmation.classroomName || classroomName} 的新学生提交。关闭后不能重新打开，但教师仍可查看并反馈已有正式提交。</p><p>{confirmation.impact}</p><p>确认有效至 <LocalizedDateTime dateTime={confirmation.expiresAt} includeSeconds />。</p><p>参数摘要：<code>{confirmation.payloadHash}</code></p></div>}
+        detail={<div className={styles.dialogDetail}><p>将停止接收 {confirmation.classroomName || classroomName} 的新提交。关闭后不可重新开放，但仍可查看并反馈已有提交。</p><p>{confirmation.impact}</p><p>确认有效至 <LocalizedDateTime dateTime={confirmation.expiresAt} includeSeconds />。</p><p>参数摘要：<code>{confirmation.payloadHash}</code></p></div>}
         confirmLabel="确认并关闭活动"
         tone="danger"
         pending={decisionPending}

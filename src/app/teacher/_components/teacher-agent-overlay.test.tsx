@@ -33,7 +33,7 @@ describe("TeacherAgentOverlay", () => {
     );
 
     expect(markup).toContain("独立会话");
-    expect(markup).toContain("教师工作区与活动设计");
+    expect(markup).toContain("教师工作台与活动设计");
     expect(markup).toContain('data-agent-conversation="true"');
   });
 });

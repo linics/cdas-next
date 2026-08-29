@@ -418,7 +418,7 @@ def run_browser_flow(
 
             preview_link.click()
             page.get_by_role(
-                "button", name="准备精确发布确认", exact=True
+                "button", name="准备发布确认", exact=True
             ).click()
             confirm_dialog(page, "确认发布活动", "确认并发布")
             wait_for_text(page, "活动已发布")
@@ -521,10 +521,10 @@ def run_browser_flow(
                 f"{base_url}{student_release_href}",
                 wait_until="domcontentloaded",
             )
-            wait_for_text(page, "历史成员 · 唯读")
+            wait_for_text(page, "历史成员 · 只读")
             wait_for_text(
                 page,
-                "你当前保留这份活动与自己提交的唯读权限",
+                "你已不是该班级的当前成员",
             )
             historical_textarea = page.locator("#text-evidence")
             historical_textarea.wait_for(state="visible")
@@ -559,8 +559,8 @@ def run_browser_flow(
 
             switch_account(page, base_url, "student", broker_secret)
             page.goto(f"{base_url}{student_release_href}", wait_until="domcontentloaded")
-            wait_for_text(page, "已关闭 · 唯读")
-            wait_for_text(page, "活动已关闭，现有工作草稿与正式修订仍可查看")
+            wait_for_text(page, "已关闭 · 只读")
+            wait_for_text(page, "活动已关闭，草稿与已提交内容仍可查看")
             closed_textarea = page.locator("#text-evidence")
             closed_textarea.wait_for(state="visible")
             if (
@@ -602,7 +602,7 @@ def run_browser_flow(
             concurrency_draft_path = urlparse(page.url).path
             page.get_by_role("link", name=re.compile("查看发布预览")).click()
             page.get_by_role(
-                "button", name="准备精确发布确认", exact=True
+                "button", name="准备发布确认", exact=True
             ).click()
             page.get_by_role("dialog").filter(
                 has_text="确认发布活动"
@@ -702,7 +702,7 @@ def run_real_model_browser_flow(
                 "button", name="打开 CDAS Agent 独立会话", exact=True
             ).click()
             page.get_by_role(
-                "heading", name="教师工作区与活动设计", exact=True
+                "heading", name="教师工作台与活动设计", exact=True
             ).wait_for()
             page.locator(
                 '#activity-assistant-prompt[data-hydrated="true"]'
@@ -771,7 +771,7 @@ def run_real_model_browser_flow(
                 "button", name="打开 CDAS Agent 独立会话", exact=True
             ).click()
             page.get_by_role(
-                "heading", name="教师工作区与活动设计", exact=True
+                "heading", name="教师工作台与活动设计", exact=True
             ).wait_for()
             textarea = page.locator("#activity-assistant-prompt")
             submit = page.get_by_role("button", name="交给助手整理", exact=True)
@@ -839,7 +839,7 @@ def run_real_model_browser_flow(
             # model chose to author.
             page.goto(f"{draft_url}/preview", wait_until="domcontentloaded")
             page.get_by_role(
-                "button", name="准备精确发布确认", exact=True
+                "button", name="准备发布确认", exact=True
             ).click()
             confirm_dialog(page, "确认发布活动", "确认并发布")
             wait_for_text(page, "活动已发布")
@@ -939,7 +939,7 @@ def run_real_model_browser_flow(
                 "button", name="打开 CDAS Agent 独立会话", exact=True
             ).click()
             page.get_by_role(
-                "heading", name="教师工作区与活动设计", exact=True
+                "heading", name="教师工作台与活动设计", exact=True
             ).wait_for()
             page.locator(
                 '#activity-assistant-prompt[data-hydrated="true"]'

@@ -746,7 +746,7 @@ describeWithDatabase("teacher feedback commands", () => {
 
     try {
       const prepared = await prepareAndConfirm(fixture, {
-        body: "这是教师手写反馈，不依赖模型。",
+        body: "这是教师撰写反馈，不依赖模型。",
       });
       const result = await saveTeacherFeedback(
         database!,

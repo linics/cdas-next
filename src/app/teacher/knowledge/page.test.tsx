@@ -72,12 +72,12 @@ describe("teacher official knowledge page", () => {
       }),
     );
 
-    expect(initial).toContain("当前 5 份官方来源");
+    expect(initial).toContain("已收录的官方来源");
     expect(initial).toContain("义务教育课程方案（2022年版）");
     expect(initial).toContain("义务教育信息科技课程标准（2022年版）");
     expect(initial).not.toContain("UbD");
-    expect(searched).toContain("确定性词法检索");
-    expect(searched).toContain("检索不调用模型");
+    expect(searched).toContain("检索结果");
+    expect(searched).toContain("不依赖 AI");
     expect(searched).toContain('href="/teacher/knowledge?source=');
   });
 

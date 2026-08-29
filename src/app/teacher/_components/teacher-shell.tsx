@@ -64,14 +64,14 @@ export function TeacherAccessGate({
           eyebrow: "登录服务未设置",
           title: "教师工作台当前没有开放",
           detail:
-            "系统无法验证教师身份，因此不会读取草稿、班级、发布记录或显示任何写入按钮。设置 Clerk 后再存取。",
+            "系统当前无法验证教师身份，不会读取任何草稿、班级或发布记录。完成登录服务配置后即可使用。",
         }
       : code === "USER_NOT_PROVISIONED"
         ? {
             eyebrow: "教师账号尚未创建",
             title: "找不到对应的工作台身份",
             detail:
-              "当前 Clerk 账号尚未关联 CDAS Next 教师。请先完成账号预先设置与班级归属设置。",
+              "当前登录账号尚未关联教师身份。请联系管理员完成账号与班级配置。",
           }
         : {
             eyebrow: "需要登录",
@@ -106,7 +106,7 @@ export function TeacherAccessGate({
             <span>02</span>确认发布
           </li>
           <li>
-            <span>03</span>学生交证据
+            <span>03</span>学生提交证据
           </li>
           <li>
             <span>04</span>反馈与评价
@@ -136,7 +136,7 @@ export function TeacherAccessGate({
           <Link className={gateStyles.backLink} href="/">返回首页</Link>
         </div>
         <p className={gateStyles.gateNote}>
-          教师工作区 · 未通过身份确认前不会读取任何草稿、班级与提交数据。
+          教师工作台 · 身份确认前不会读取任何草稿、班级与提交数据。
         </p>
       </main>
     </div>

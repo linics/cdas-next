@@ -43,7 +43,7 @@ export default async function TeacherClassroomMembersPage({
           <div>
             <p className={styles.eyebrow}>教师工作台 / 班级成员</p>
             <h1>{roster.classroom.name}</h1>
-            <p>通过预配置名单码管理既有学生账号；每次变更都需确认并保留历史区间。</p>
+            <p>通过名单码管理班级学生；每次变更都需确认，历史记录会保留。</p>
           </div>
           <Link className={styles.rowLink} href="/teacher">返回教师工作台</Link>
         </header>

@@ -131,7 +131,7 @@ function ConfirmationPanel({
 
   return (
     <section className={styles.confirmationPanel} aria-label="最终反馈确认">
-      <InlineAlert tone="warning">反馈已准备。取消弹窗不会写入反馈；学生重交会使本确认失效。</InlineAlert>
+      <InlineAlert tone="warning">反馈已准备待确认；确认前不会保存，学生重新提交会使该确认失效。</InlineAlert>
       <button className={styles.secondaryButton} onClick={() => setConfirmDialogOpen(true)} type="button">查看最终反馈确认</button>
       <form action={decisionAction} className={styles.visuallyHidden} ref={feedbackFormRef}>
         <input type="hidden" name="actionIntentId" value={confirmation.actionIntentId} />
@@ -264,7 +264,7 @@ export function FeedbackComposer({
         </div>
         <div className={styles.composerActions}>
           <span className={styles.manualMode}>
-            {assistantEnabled ? "教师终审 · AI 可选" : "手写模式 · 不呼叫 AI"}
+            {assistantEnabled ? "教师终审 · AI 可选" : "手动撰写 · 未启用 AI"}
           </span>
           {assistantEnabled ? (
             <form className={styles.suggestionAction} action={requestSuggestion}>
@@ -294,7 +294,7 @@ export function FeedbackComposer({
 
       {assistantEnabled ? (
         <p className={styles.aiNote} role="note">
-          这是 AI 建议，未经你确认不会保存。只读本版文字与检查点。
+          这是 AI 建议，未经你确认不会保存。助手只读取本版文字与已确认检查点，不读取附件内容。
         </p>
       ) : null}
       {assistantEnabled ? (
@@ -358,7 +358,7 @@ export function FeedbackComposer({
           disabled={anyPending}
         />
         <p id="teacher-feedback-help" className={styles.visuallyHidden}>
-          正文会统一为 NFC 与 LF；只有完成下一步确认才会保存。
+          反馈内容需经确认后才会保存。
         </p>
 
         <fieldset className={styles.structuredFeedbackFields}>
@@ -405,7 +405,7 @@ export function FeedbackComposer({
             </div>
           </div>
           <p className={styles.fieldHint}>
-            与正文一起冻结，只提供行动建议，不改变活动阶段。
+            与正文一同保存，仅作为对学生的行动建议。
           </p>
         </fieldset>
 

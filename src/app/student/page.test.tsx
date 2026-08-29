@@ -199,7 +199,7 @@ describe("student dashboard page", () => {
     const markup = await renderPage();
 
     expect(markup).toContain("学生工作台当前没有开放");
-    expect(markup).toContain("接到活动，交出证据，看清老师怎么说");
+    expect(markup).toContain("查看活动、提交证据、获得教师反馈");
     expect(markup).toContain("返回首页");
     expect(markup).not.toContain("学生工作台导航");
     expect(markup).not.toContain("data-clerk-sign-in");
@@ -237,9 +237,10 @@ describe("student dashboard page", () => {
     const markup = await renderPage();
 
     // 三组：要重交 → 进行中 → 已关闭。每条活动自己的状态标签不变。
-    expect(markup).toContain("要重交");
+    expect(markup).toContain("待重交");
     expect(markup).toContain("进行中");
     expect(markup).toContain("已关闭");
+    expect(markup).toContain("已有评价");
     expect(markup).toContain("当前版已有量规评价");
     expect(markup).toContain("仍可迟交");
     expect(markup).toContain(`/student/releases/${pendingReleaseId}`);

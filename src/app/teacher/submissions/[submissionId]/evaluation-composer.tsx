@@ -208,7 +208,7 @@ function ConfirmationPanel({
   return (
     <section className={styles.confirmationPanel} aria-label="最终量规评价确认">
       <InlineAlert tone="warning">
-        量规评价已准备。取消弹窗不会写入评价；学生重交会使本确认失效。
+        量规评价已准备待确认；确认前不会保存，学生重新提交会使该确认失效。
       </InlineAlert>
       <button
         className={styles.secondaryButton}
@@ -459,12 +459,12 @@ export function EvaluationComposer({
             {expectedEvaluationVersion > 0
               ? `第 ${expectedEvaluationVersion + 1} 版评价`
               : "第一版评价"}
-            · 每维须等级并引用证据，或标证据不足
+            · 每个维度需给出等级并引用证据，或标记证据不足
           </p>
         </div>
         <div className={styles.composerActions}>
           <span className={styles.manualMode}>
-            {assistantEnabled ? "教师终审 · AI 可选" : "手写模式 · 不呼叫 AI"}
+            {assistantEnabled ? "教师终审 · AI 可选" : "手动撰写 · 未启用 AI"}
           </span>
           {assistantEnabled ? (
             <form className={styles.suggestionAction} action={requestSuggestion}>
@@ -494,7 +494,7 @@ export function EvaluationComposer({
 
       {assistantEnabled ? (
         <p className={styles.aiNote} role="note">
-          这是 AI 建议，未经你确认不会保存。只读本版文字与检查点。
+          这是 AI 建议，未经你确认不会保存。助手只读取本版文字、已确认检查点与当前量规，不读取附件内容。
         </p>
       ) : null}
       {assistantEnabled ? (
@@ -755,7 +755,7 @@ export function EvaluationComposer({
           disabled={anyPending}
         />
         <p id="teacher-evaluation-help" className={styles.visuallyHidden}>
-          综评会统一为 NFC 与 LF；只有完成下一步确认才会保存。形成性继续/重交建议仍在上方反馈中单独确认。
+          评价内容需经确认后才会保存；形成性下一步在上方反馈中单独确认。
         </p>
 
         <div className={styles.prepareRow}>

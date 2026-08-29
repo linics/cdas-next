@@ -762,7 +762,7 @@ export function ActivityAssistant({
       className={styles.assistant}
       data-surface={surface}
       {...(surface === "panel"
-        ? { "aria-label": "教师工作区与活动设计" }
+        ? { "aria-label": "教师工作台与活动设计" }
         : { "aria-labelledby": assistantTitleId })}
     >
       {surface === "panel" ? null : (
@@ -982,7 +982,7 @@ export function ActivityAssistant({
                       if (part.output.status === "NOT_FOUND") {
                         return (
                           <p className={styles.errorText} key={part.toolCallId}>
-                            这份草稿不在你的工作区，或你已无权查看。
+                            这份草稿不在你的工作台，或你已无权查看。
                           </p>
                         );
                       }
@@ -1118,7 +1118,7 @@ export function ActivityAssistant({
                       if (part.output.status === "NOT_FOUND") {
                         return (
                           <p className={styles.errorText} key={part.toolCallId}>
-                            这次发布不在你的工作区，或你已无权查看提交。
+                            这次发布不在你的工作台，或你已无权查看提交。
                           </p>
                         );
                       }
@@ -1206,7 +1206,7 @@ export function ActivityAssistant({
                       if (part.output.status === "NOT_FOUND") {
                         return (
                           <p className={styles.errorText} key={part.toolCallId}>
-                            这次发布不在你的工作区，或你已无权查看。
+                            这次发布不在你的工作台，或你已无权查看。
                           </p>
                         );
                       }
@@ -1386,7 +1386,7 @@ export function ActivityAssistant({
                       (part.input.classroomId
                         ? classroomNames.get(part.input.classroomId)
                         : undefined) ??
-                      "无权辨识的班级";
+                      "无权限识别的班级";
                     if (
                       part.state === "approval-requested" &&
                       !part.approval.isAutomatic

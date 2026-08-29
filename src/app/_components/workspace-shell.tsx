@@ -76,7 +76,7 @@ export function WorkspaceShell({
   const crumbs =
     breadcrumb && breadcrumb.length > 0
       ? breadcrumb
-      : [{ label: `${audience}工作区` }];
+      : [{ label: `${audience}工作台` }];
 
   return (
     <div
@@ -97,7 +97,7 @@ export function WorkspaceShell({
           </Link>
           <WorkspaceNavigation audience={audience} items={navigation} />
           <p className={styles.sidebarNote}>
-            AI 负责准备与说明，正式发布和评价始终由教师确认。
+            AI 仅辅助准备内容，发布与评价均由教师确认。
           </p>
         </aside>
       ) : null}
@@ -159,8 +159,8 @@ export function WorkspaceRoleGate({
         <p>账号角色不匹配</p>
         <h1>当前登录的是{currentAudience}账号</h1>
         <p>
-          {requestedAudience}工作台不会读取或显示任何业务数据。请返回你的
-          {currentAudience}工作台，或退出后改用{requestedAudience}账号登录。
+          {requestedAudience}工作台仅对{requestedAudience}账号开放。请返回
+          {currentAudience}工作台，或退出后使用{requestedAudience}账号登录。
         </p>
         <div className={styles.roleGateActions}>
           <Link href={currentWorkspaceHref}>

@@ -120,7 +120,7 @@ export function RosterManager({
         <header className={styles.sectionHeader}>
           <div>
             <p className={styles.eyebrow}>当前名单</p>
-            <h2 id="current-roster-title">正在班成员</h2>
+            <h2 id="current-roster-title">当前成员</h2>
           </div>
           <span>{currentMemberships.length} 名</span>
         </header>
@@ -151,7 +151,7 @@ export function RosterManager({
       <section className={styles.rosterImportPanel} aria-labelledby="roster-import-title">
         <p className={styles.eyebrow}>受控批量加入</p>
         <h2 id="roster-import-title">粘贴学生名单码</h2>
-        <p>每行一个或用逗号分隔，最多 50 个。系统只精确匹配 operator 已配置的既有学生账号。</p>
+        <p>每行一个或用逗号分隔，最多 50 个；仅匹配已由管理员配置的学生账号。</p>
         <textarea
           aria-label="学生名单码"
           disabled={busy}
@@ -202,8 +202,8 @@ export function RosterManager({
         <section className={styles.dashboardSection} aria-labelledby="historical-roster-title">
           <header className={styles.sectionHeader}>
             <div>
-              <p className={styles.eyebrow}>不可删除历史</p>
-              <h2 id="historical-roster-title">历史成员区间</h2>
+              <p className={styles.eyebrow}>历史记录</p>
+              <h2 id="historical-roster-title">历史成员</h2>
             </div>
             <span>{historicalMemberships.length} 条</span>
           </header>
@@ -213,7 +213,7 @@ export function RosterManager({
                 <div>
                   <h3>{membership.studentName}</h3>
                   <p>
-                    <LocalizedDateTime dateTime={membership.joinedAt} /> 至 {membership.endedAt ? <LocalizedDateTime dateTime={membership.endedAt} /> : "尚未开始"}
+                    <LocalizedDateTime dateTime={membership.joinedAt} /> 至 {membership.endedAt ? <LocalizedDateTime dateTime={membership.endedAt} /> : "今"}
                   </p>
                 </div>
                 <span className={styles.statusBadge} data-tone="sealed">已保留</span>
@@ -230,7 +230,7 @@ export function RosterManager({
           <div className={styles.dialogDetail}>
             <p>班级：{confirmation.classroomName}</p>
             <p>学生：{confirmationStudents}</p>
-            <p>{confirmation.operation === "ADD" ? "将追加新的当前成员区间。" : "将结束当前区间；旧活动与本人提交历史不会删除。"}</p>
+            <p>{confirmation.operation === "ADD" ? "将把以上学生加入当前成员名单。" : "将结束该学生的当前成员关系；其历史活动与提交记录会保留。"}</p>
             <p>确认有效至 <LocalizedDateTime dateTime={confirmation.expiresAt} includeSeconds />。</p>
             <p>参数摘要：<code>{confirmation.payloadHash}</code></p>
           </div>

@@ -634,7 +634,7 @@ def run() -> None:
             for heading in ("基本设置", "背景设定", "三维目标", "总体任务", "任务链", "评价标准"):
                 teacher.get_by_role("heading", name=heading, level=3, exact=True).wait_for()
             teacher.locator("select[name=classroomId]").select_option(label=f"{classroom_name} · 2 名当前成员")
-            teacher.get_by_role("button", name="准备精确发布确认", exact=True).click()
+            teacher.get_by_role("button", name="准备发布确认", exact=True).click()
             confirm(teacher, "确认发布活动", "确认并发布")
             wait_text(teacher, "活动已发布")
             assert_origin(teacher.url, remote)
@@ -962,7 +962,7 @@ def run() -> None:
             checks.append({"code": "STALE_STUDENT_WRITE_REJECTED_AFTER_CLOSE", "status": "PASS"})
             student.reload(wait_until="domcontentloaded")
             assert_origin(student.url, remote)
-            wait_text(student, "已关闭 · 唯读")
+            wait_text(student, "已关闭 · 只读")
             readonly = student.locator("#text-evidence")
             readonly.wait_for(state="visible")
             if readonly.input_value() != evidence or readonly.is_editable() or any(student.get_by_role("button", name=label, exact=True).count() for label in ("保存草稿", "正式提交", "正式迟交", "开始重交")):
@@ -990,7 +990,7 @@ def run() -> None:
             wait_text(teacher, "班级成员关系已更新，历史区间已保留。")
             teacher.reload(wait_until="domcontentloaded")
             teacher.locator('#classroom-roster-manager[data-hydrated="true"]').wait_for(state="visible")
-            teacher.get_by_text("历史成员区间", exact=True).wait_for(state="visible")
+            teacher.get_by_text("历史成员", exact=True).wait_for(state="visible")
             teacher.get_by_label("学生名单码", exact=True).fill(other_student_roster_key)
             teacher.get_by_role("button", name="预览名单", exact=True).click()
             teacher.get_by_text(f"{other_name} · 可加入", exact=True).wait_for(state="visible")

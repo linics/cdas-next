@@ -25,8 +25,9 @@ describe("public workspace entry", () => {
 
     expect(markup).toContain('href="/teacher"');
     expect(markup).toContain('href="/student"');
-    expect(markup).toContain("选择工作区");
-    expect(markup).toContain("当前支持的教学闭环");
+    expect(markup).toContain("选择工作台");
+    expect(markup).toContain("完整的教学闭环");
+    expect(markup).toContain("关闭活动");
     expect(markup).not.toContain("版本 7 · 已保存");
     expect(markup).not.toContain("七年一班");
   });

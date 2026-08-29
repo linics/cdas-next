@@ -1,5 +1,9 @@
+/* 首页排成一册摊开的书：左页是序 —— 主题句与教学闭环；中缝一条竖排书脊；
+   右页是两扇门 —— 教师与学生工作台。与门禁页的整屏分栏同族。 */
 .home {
+  display: grid;
   min-height: 100svh;
+  grid-template-rows: auto 1fr;
   background: var(--color-bg);
 }
 
@@ -36,131 +40,206 @@
   text-transform: uppercase;
 }
 
-.toolbar p {
+.toolbar > p {
   margin: 0;
   color: var(--color-neutral-700);
+  font-family: var(--font-ui);
   font-size: var(--text-meta);
+  letter-spacing: .1em;
 }
 
 .main {
-  width: min(100% - 40px, 900px);
-  margin: 0 auto;
-  padding: var(--space-8) 0 calc(var(--space-8) * 1.5);
+  display: grid;
+  min-height: 0;
+  grid-template-columns: minmax(0, 1.15fr) auto minmax(0, 1fr);
 }
 
-.kicker {
-  margin: 0 0 var(--space-2);
-  color: var(--color-accent-700);
-  font-family: var(--font-ui);
-  font-size: var(--text-kicker);
-  letter-spacing: .1em;
-  text-transform: uppercase;
+/* ── 左页：序 ─────────────────────────────────────────────────────── */
+.preface {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: calc(var(--space-8) * 1.5) calc(var(--space-8) * 1.2);
 }
 
-.main h1 {
-  max-width: 16em;
-  margin: 0 0 var(--space-3);
+.prefaceBody {
+  width: 100%;
+  max-width: 34em;
+  margin-inline: auto;
+}
+
+.preface h1 {
+  max-width: 12em;
+  margin: 0 0 var(--space-4);
   font-size: var(--text-display);
   font-weight: 400;
-  line-height: 1.12;
+  line-height: 1.14;
   text-wrap: balance;
 }
 
 .lead {
-  max-width: 46em;
-  margin: 0 0 var(--space-8);
+  max-width: 30em;
+  margin: 0 0 calc(var(--space-8) * 1.25);
+  color: var(--color-neutral-800);
   font-size: var(--text-body);
-  line-height: 1.7;
+  line-height: 1.8;
   text-align: justify;
   text-justify: inter-character;
 }
 
-/* 两个入口共用一条上下发丝线，中间一根竖线分栏 —— 不填色、不加卡片。 */
-.workspaceList {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  border-top: 1px solid var(--color-divider);
-  border-bottom: 1px solid var(--color-divider);
-}
-
-.workspaceLink {
-  display: flex;
-  color: var(--color-text);
-  flex-direction: column;
-  gap: var(--space-2);
-  padding: var(--space-6);
-  transition: background var(--motion-fast);
-}
-
-.workspaceLink + .workspaceLink { border-left: 1px solid var(--color-divider); }
-.workspaceLink:hover { background: color-mix(in srgb, var(--color-accent) 8%, transparent); }
-.workspaceLink:active { background: color-mix(in srgb, var(--color-accent) 16%, transparent); }
-
-.workspaceLink h2 {
-  margin: 0;
-  font-size: var(--text-card);
-  line-height: 1.15;
-}
-
-.workspaceLink p {
-  margin: 0;
-  color: var(--color-neutral-800);
-  font-size: var(--text-body);
-  line-height: 1.6;
-}
-
-.workspaceAction {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--color-accent-700);
+/* 闭环五步排成一页账目：序号一列，步骤一列，行间发丝线。
+   这里的编号不是装饰 —— 它就是产品里正式动作发生的顺序。 */
+.loop h2 {
+  margin: 0 0 var(--space-3);
+  color: var(--color-neutral-700);
   font-family: var(--font-ui);
-  font-size: var(--text-meta);
+  font-size: var(--text-label);
+  font-weight: 400;
+  letter-spacing: .18em;
 }
 
-.flow {
-  max-width: 46em;
-  margin: var(--space-6) 0 0;
+.loopList {
+  margin: 0;
+  border-top: 1px solid var(--color-divider);
+  padding: 0;
+  list-style: none;
+}
+
+.loopList li {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-4);
+  border-bottom: 1px solid var(--color-divider);
+  padding: calc(var(--space-2) * 1.25) 0;
+  font-size: var(--text-ui);
+}
+
+.loopList span {
+  color: var(--color-accent-600);
+  font-family: var(--font-heading);
+  font-size: var(--text-meta);
+  font-variant-numeric: var(--figure-ui);
+}
+
+.loopNote {
+  margin: var(--space-3) 0 0;
   color: var(--color-neutral-700);
   font-size: var(--text-meta);
 }
 
-.note {
-  display: grid;
-  grid-template-columns: 130px minmax(0, 1fr);
-  gap: var(--space-6);
-  margin-top: calc(var(--space-8) * 1.5);
-  border-top: 1px solid var(--color-divider);
-  padding-top: var(--space-4);
+/* ── 中缝：书脊 ───────────────────────────────────────────────────── */
+.spine {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-inline: 1px solid var(--color-divider);
+  padding: var(--space-6) calc(var(--space-2) * 1.25);
 }
 
-.noteIndex {
-  margin: 3px 0 0;
+.spine span {
+  color: var(--color-neutral-600);
+  writing-mode: vertical-rl;
+  font-family: var(--font-ui);
+  font-size: var(--text-kicker);
+  letter-spacing: .6em;
+}
+
+/* ── 右页：两扇门 ─────────────────────────────────────────────────── */
+.doors {
+  display: grid;
+  grid-template-rows: 1fr 1fr;
+}
+
+.door {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-2);
+  color: var(--color-text);
+  padding: var(--space-8) calc(var(--space-8) * 1.2);
+  transition: background var(--motion-medium);
+}
+
+.door + .door { border-top: 1px solid var(--color-divider); }
+.door:hover { background: color-mix(in srgb, var(--color-accent) 8%, transparent); }
+.door:active { background: color-mix(in srgb, var(--color-accent) 16%, transparent); }
+
+.doorEyebrow {
+  margin: 0;
   color: var(--color-accent-700);
   font-family: var(--font-ui);
   font-size: var(--text-kicker);
-  letter-spacing: .1em;
-  text-transform: uppercase;
+  letter-spacing: .3em;
 }
 
-.note h2 {
+.door h2 {
   margin: 0;
-  font-size: var(--text-section);
-  line-height: 1.2;
+  font-size: var(--text-title);
+  font-weight: var(--font-heading-weight);
+  line-height: 1.15;
 }
 
-.note div p {
-  max-width: 760px;
-  margin: var(--space-2) 0 0;
+.doorDetail {
+  max-width: 24em;
+  margin: 0;
   color: var(--color-neutral-800);
-  font-size: var(--text-ui);
+  font-size: var(--text-body);
   line-height: 1.7;
 }
 
-@media (max-width: 640px) {
-  .main { width: min(100% - 32px, 900px); padding-top: var(--space-6); }
-  .workspaceList { grid-template-columns: 1fr; }
-  .workspaceLink + .workspaceLink { border-top: 1px solid var(--color-divider); border-left: 0; }
-  .note { grid-template-columns: 1fr; gap: var(--space-2); }
-  .toolbar p { display: none; }
+.doorAction {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  color: var(--color-accent-700);
+  font-family: var(--font-ui);
+  font-size: var(--text-meta);
+}
+
+.doorAction svg { transition: transform var(--motion-fast); }
+.door:hover .doorAction svg { transform: translateX(4px); }
+
+/* ── 开场：左页与两扇门依次浮现，幅度收在一行以内 ───────────────────── */
+@media (prefers-reduced-motion: no-preference) {
+  .prefaceBody,
+  .door {
+    animation: rise 480ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
+  }
+
+  .door:nth-of-type(1) { animation-delay: 90ms; }
+  .door:nth-of-type(2) { animation-delay: 180ms; }
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+/* ── 窄屏：合上书，按序—门堆叠 ─────────────────────────────────────── */
+@media (max-width: 880px) {
+  .main { grid-template-columns: 1fr; }
+  .spine { display: none; }
+
+  .preface {
+    justify-content: flex-start;
+    padding: var(--space-8) var(--space-4) var(--space-6);
+  }
+
+  .prefaceBody { max-width: none; }
+  .lead { margin-bottom: var(--space-8); }
+
+  .doors {
+    border-top: 1px solid var(--color-divider);
+    grid-template-rows: none;
+  }
+
+  .door { padding: var(--space-6) var(--space-4); }
+  .toolbar > p { display: none; }
 }

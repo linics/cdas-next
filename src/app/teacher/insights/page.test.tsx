@@ -117,7 +117,7 @@ describe("teacher insights page", () => {
     });
 
     const markup = await renderPage();
-    expect(markup).toContain("还没有可查看的发布");
+    expect(markup).toContain("暂无可查看的发布");
     expect(markup).not.toContain("NaN");
   });
 
@@ -157,9 +157,9 @@ describe("teacher insights page", () => {
     });
 
     const markup = await renderPage();
-    expect(markup).toContain("还没有已确认的量规评价");
-    expect(markup).toContain("当前班级没有可统计的学生或小组");
-    expect(markup).toContain("还没有要求修改并重交的反馈");
+    expect(markup).toContain("暂无已确认的量规评价");
+    expect(markup).toContain("当前班级暂无可统计的学生或小组");
+    expect(markup).toContain("暂无要求重交的反馈");
     expect(markup).not.toContain("NaN");
   });
 

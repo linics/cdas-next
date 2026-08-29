@@ -76,7 +76,7 @@ export default async function TeacherReleaseSubmissionsPage({
               {workspace.release.classroomName} · 发布{" "}
               {shortResourceId(workspace.release.id)} ·{" "}
               <LocalizedDateTime dateTime={workspace.release.publishedAt} />{" "}
-              发布。阶段进度只读取容器与正式修订状态，不读取学生工作草稿正文或附件元数据。
+              发布
             </p>
           </div>
           <div className={styles.pageHeaderActions}>
@@ -146,7 +146,7 @@ export default async function TeacherReleaseSubmissionsPage({
                                   }`,
                               )
                               .join("、")}`
-                          : `个人提交 · 学生识别 ${shortResourceId(progress.student.id)}`}
+                          : `个人提交 · 学生编号 ${shortResourceId(progress.student.id)}`}
                       </p>
                     </div>
                     <div className={styles.submissionMeta}>
@@ -218,7 +218,7 @@ export default async function TeacherReleaseSubmissionsPage({
 
           {workspace.submissions.length === 0 ? (
             <p className={styles.emptyState}>
-              尚无正式提交。未正式提交的学生工作草稿不会出现在教师列表中。
+              尚无正式提交。学生未提交的草稿不会显示在这里。
             </p>
           ) : (
             <div className={styles.submissionList}>
@@ -239,7 +239,7 @@ export default async function TeacherReleaseSubmissionsPage({
                         ? ` · 小组共享 · ${submission.group.members
                             .map((member) => member.student.displayName)
                             .join("、")}`
-                        : ` · 学生识别 ${shortResourceId(submission.student.id)}`}
+                        : ` · 学生编号 ${shortResourceId(submission.student.id)}`}
                     </p>
                   </div>
                   <div className={styles.submissionMeta}>
