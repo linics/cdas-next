@@ -39,6 +39,7 @@ import {
   ActivityAssistant,
   ActivityAssistantSessionProvider,
   isComposerSubmitKey,
+  isFollowingTranscriptBottom,
 } from "./activity-assistant";
 
 const draftId = "10000000-0000-4000-8000-000000000001";
@@ -544,5 +545,47 @@ describe("ActivityAssistant", () => {
     expect(markup).toContain("继续核对活动并准备发布");
     expect(markup).toContain("确认发布这个精确版本");
     expect(markup).toContain("七年一班");
+  });
+});
+
+describe("isFollowingTranscriptBottom", () => {
+  it("follows a transcript that is resting at the bottom", () => {
+    expect(
+      isFollowingTranscriptBottom({
+        scrollHeight: 1861,
+        scrollTop: 1349,
+        clientHeight: 512,
+      }),
+    ).toBe(true);
+  });
+
+  it("still follows while the last line is settling into view", () => {
+    expect(
+      isFollowingTranscriptBottom({
+        scrollHeight: 1861,
+        scrollTop: 1317,
+        clientHeight: 512,
+      }),
+    ).toBe(true);
+  });
+
+  it("yields once the teacher scrolls back to read an earlier card", () => {
+    expect(
+      isFollowingTranscriptBottom({
+        scrollHeight: 1861,
+        scrollTop: 400,
+        clientHeight: 512,
+      }),
+    ).toBe(false);
+  });
+
+  it("follows a transcript too short to scroll", () => {
+    expect(
+      isFollowingTranscriptBottom({
+        scrollHeight: 512,
+        scrollTop: 0,
+        clientHeight: 512,
+      }),
+    ).toBe(true);
   });
 });

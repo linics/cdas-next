@@ -27,7 +27,7 @@
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding-right: var(--space-1);
+  padding-inline: var(--space-1);
 }
 
 .assistant[data-surface="panel"] .header {
@@ -85,6 +85,18 @@
 .assistant[data-surface="panel"] .approval dl,
 .assistant[data-surface="panel"] .approval .proposalSummary {
   grid-template-columns: 1fr;
+}
+
+/* The wide surface reads these as full-bleed editorial bands: rules top and
+   bottom, text carried by the page's own margin. The panel has no such margin,
+   so the same band collides with the panel edge and loses its sides. Bound it
+   here instead. */
+.assistant[data-surface="panel"] .toolResult,
+.assistant[data-surface="panel"] .approval,
+.assistant[data-surface="panel"] .knowledgeResult {
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
 }
 
 .assistant[data-surface="panel"] .inlineActions {
