@@ -141,7 +141,7 @@ function ReleaseRow({
     release.submission.followUp === "AWAITING_RESUBMISSION" ? "待重交" : null,
     release.submission.followUp === "RESUBMISSION_IN_PROGRESS" ? "重交中" : null,
     release.submission.hasCurrentFeedback ? "已有反馈" : null,
-    release.submission.hasCurrentEvaluation ? "已有评价" : null,
+    release.submission.hasCurrentEvaluation ? "当前版已有量规评价" : null,
   ].filter((part): part is string => part !== null);
 
   return (

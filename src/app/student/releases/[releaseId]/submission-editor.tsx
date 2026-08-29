@@ -425,10 +425,10 @@ export function SubmissionEditor({
           />
           {hasUnsavedChanges ? (
             <p className={styles.commitHint}>请先保存当前修改，再正式提交。</p>
-          ) : !hasVisibleSavedText ? (
-            <p className={styles.commitHint}>请先保存一段文字内容，再正式提交。</p>
           ) : !attachmentsReady ? (
             <p className={styles.commitHint}>请等待附件完成内容验证，或移除未通过的附件。</p>
+          ) : !hasSavedEvidence ? (
+            <p className={styles.commitHint}>请至少保存一段文字、一个已完成检查点，或一个验证通过的附件，再正式提交。</p>
           ) : null}
         </div>
       ) : null}

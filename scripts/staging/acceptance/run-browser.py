@@ -933,7 +933,7 @@ def run() -> None:
                 student.get_by_role("heading", name="待重交", exact=True),
                 "STAGING_ACCEPTANCE_STUDENT_FOLLOW_UP_MISSING",
             )
-            wait_text(student, "已有评价")
+            wait_text(student, "当前版已有量规评价")
             if evaluation_text in student.locator("body").inner_text():
                 raise AcceptanceFailure("STAGING_ACCEPTANCE_STUDENT_LIST_EVALUATION_LEAK")
             checks.append({"code": "STUDENT_FOLLOW_UP_VISIBLE", "status": "PASS"})

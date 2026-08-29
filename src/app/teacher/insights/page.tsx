@@ -358,7 +358,7 @@ export default async function TeacherInsightsPage({
             </form>
           ) : (
             <p className={workspaceStyles.emptyState}>
-              暂无可查看的发布。发布活动后，这里会出现过程诊断。
+              暂无可查看的发布。发布活动并保持班级管理权后，这里会出现过程诊断。
             </p>
           )}
 

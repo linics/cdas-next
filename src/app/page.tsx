@@ -13,6 +13,7 @@ const loopSteps = [
   "学生提交证据",
   "反馈与量规评价",
   "回看与重交",
+  "关闭活动",
 ] as const;
 
 function DoorArrow() {
@@ -20,13 +21,13 @@ function DoorArrow() {
     <svg
       aria-hidden="true"
       fill="none"
-      height="14"
+      height="1em"
       stroke="currentColor"
       strokeLinecap="round"
       strokeLinejoin="round"
       strokeWidth="1.75"
       viewBox="0 0 24 24"
-      width="14"
+      width="1em"
     >
       <path d="M5 12h14" />
       <path d="m12 5 7 7-7 7" />

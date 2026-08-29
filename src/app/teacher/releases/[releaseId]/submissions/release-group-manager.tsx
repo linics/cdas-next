@@ -192,7 +192,7 @@ export function ReleaseGroupManager({
         </button>
       </header>
       <p className={styles.groupManagerLead}>
-        同组成员共用一份草稿、附件、提交与教师反馈。小组产生提交后，名称、成员与角色将锁定。
+        同组成员共用一份草稿、附件、提交与教师反馈。小组开始保存草稿或提交后，名称、成员与角色将锁定。
       </p>
 
       {groups.length === 0 ? (

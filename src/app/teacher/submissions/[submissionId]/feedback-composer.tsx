@@ -294,7 +294,7 @@ export function FeedbackComposer({
 
       {assistantEnabled ? (
         <p className={styles.aiNote} role="note">
-          AI 建议仅供参考，未经你确认不会保存；助手只读取本版提交内容。
+          这是 AI 建议，未经你确认不会保存。助手只读取本版文字与已确认检查点，不读取附件内容。
         </p>
       ) : null}
       {assistantEnabled ? (

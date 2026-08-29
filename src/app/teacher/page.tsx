@@ -280,7 +280,7 @@ export default async function TeacherDashboardPage() {
                 </div>
               ) : null}
               <p className={styles.asideNote}>
-                仅班级管理教师可以发布活动和查看提交；管理权变更后，历史发布仍会保留，但不再可见。
+                仅班级管理教师可以发布活动和查看提交；管理权变更后，历史发布记录仍会保留，但不能查看其提交内容。
               </p>
             </section>
           </div>

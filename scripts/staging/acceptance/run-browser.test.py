@@ -172,7 +172,7 @@ class BrowserContractTests(unittest.TestCase):
         self.assertIn("STAGING_ACCEPTANCE_STUDENT_FOLLOW_UP_MISSING", source)
         self.assertIn('get_by_role("heading", name="待重交", exact=True)', source)
         self.assertIn("确认并保存量规评价", source)
-        self.assertIn("已有评价", source)
+        self.assertIn("当前版已有量规评价", source)
         self.assertIn("STAGING_ACCEPTANCE_STUDENT_LIST_EVALUATION_LEAK", source)
         self.assertIn("STAGING_ACCEPTANCE_TEACHER_RELEASE_NOT_VISIBLE", source)
         self.assertIn("STAGING_ACCEPTANCE_SUBMISSION_LINK_MISSING", source)

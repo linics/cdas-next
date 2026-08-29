@@ -241,6 +241,7 @@ describe("student dashboard page", () => {
     expect(markup).toContain("进行中");
     expect(markup).toContain("已关闭");
     expect(markup).toContain("已有评价");
+    expect(markup).toContain("当前版已有量规评价");
     expect(markup).toContain("仍可迟交");
     expect(markup).toContain(`/student/releases/${pendingReleaseId}`);
     expect(markup).toContain(`/student/releases/${feedbackReleaseId}`);

@@ -1386,7 +1386,7 @@ export function ActivityAssistant({
                       (part.input.classroomId
                         ? classroomNames.get(part.input.classroomId)
                         : undefined) ??
-                      "未知班级";
+                      "无权限识别的班级";
                     if (
                       part.state === "approval-requested" &&
                       !part.approval.isAutomatic

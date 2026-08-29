@@ -71,7 +71,7 @@
 .preface h1 {
   max-width: 12em;
   margin: 0 0 var(--space-4);
-  font-size: clamp(var(--text-display), 4.2vw, calc(var(--text-display) * 1.35));
+  font-size: var(--text-display);
   font-weight: 400;
   line-height: 1.14;
   text-wrap: balance;
@@ -163,10 +163,6 @@
 .door + .door { border-top: 1px solid var(--color-divider); }
 .door:hover { background: color-mix(in srgb, var(--color-accent) 8%, transparent); }
 .door:active { background: color-mix(in srgb, var(--color-accent) 16%, transparent); }
-.door:focus-visible {
-  outline: 2px solid var(--color-accent-700);
-  outline-offset: -4px;
-}
 
 .doorEyebrow {
   margin: 0;
@@ -194,7 +190,7 @@
 .doorAction {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--space-2);
   margin-top: var(--space-3);
   color: var(--color-accent-700);
   font-family: var(--font-ui);
