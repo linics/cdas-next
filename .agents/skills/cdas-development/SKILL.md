@@ -32,7 +32,7 @@ Prefer these project agents:
 - `cdas_reviewer` / `cdas-reviewer`: independent read-only correctness and invariant review.
 - `cdas_verifier` / `cdas-verifier`: focused checks and failure-evidence collection without source edits.
 
-Codex maps explorer, builder, and verifier to Luna (`max` reasoning), reviewer to Terra, with Sol as coordinator. Cursor maps the primary thread and builder to Grok 4.6, explorer and verifier to Composer 2.5 `[fast=false]`, ordinary review to Grok 4.6, and automatic protected-invariant review to Fable 5.
+Codex maps explorer, builder, and verifier to Luna (`high` reasoning), reviewer to Terra, with Sol as coordinator. Cursor maps the primary thread and builder to Grok 4.6, explorer and verifier to Composer 2.5 `[fast=false]`, ordinary review to Grok 4.6, and automatic protected-invariant review to Fable 5.
 
 Keep delegation one level deep. Subagents must not spawn more agents. Run at most three subagents concurrently, and never run two source-code writers at the same time.
 

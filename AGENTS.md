@@ -31,7 +31,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 - Multi-Agent orchestration is a development workflow only. Do not add it to the CDAS product runtime or weaken the first-phase product boundary.
 - For substantial work that benefits from independent exploration or verification, use the project `cdas-development` skill.
-- **Codex**: GPT-5.6 Sol as primary coordinator; `cdas_explorer`, `cdas_builder`, and `cdas_verifier` on Luna (`max` reasoning); `cdas_reviewer` on Terra for independent review.
+- **Codex**: GPT-5.6 Sol as primary coordinator; `cdas_explorer`, `cdas_builder`, and `cdas_verifier` on Luna (`high` reasoning); `cdas_reviewer` on Terra for independent review.
 - **Cursor**: Grok 4.6 as primary coordinator, `cdas-builder`, and ordinary code review; `cdas-explorer` and `cdas-verifier` on Composer 2.5 `[fast=false]` (never Fast); `cdas-reviewer` on Fable 5 only for automatic protected-invariant must-call gates. See `.agents/skills/cdas-development/references/cursor-routing.md`.
 - Keep delegation one level deep and at most three subagents active. Subagents must not spawn descendants.
 - Parallelize independent reading, review, and verification. Allow only one source-code writer at a time; serialize dependent work and overlapping file ownership.
