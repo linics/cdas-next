@@ -31,13 +31,18 @@ export function TeacherAgentOverlay({
   const launcherRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
 
-  useEffect(() => {
-    if (open) {
-      setRendered(true);
-      return;
-    }
+  const openPanel = () => {
+    setRendered(true);
+    setOpen(true);
+  };
 
-    if (!rendered) {
+  const closePanel = () => {
+    setOpen(false);
+    requestAnimationFrame(() => launcherRef.current?.focus());
+  };
+
+  useEffect(() => {
+    if (open || !rendered) {
       return;
     }
 
@@ -65,11 +70,6 @@ export function TeacherAgentOverlay({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [open]);
-
-  const closePanel = () => {
-    setOpen(false);
-    requestAnimationFrame(() => launcherRef.current?.focus());
-  };
 
   return (
     <ActivityAssistantSessionProvider>
@@ -115,7 +115,7 @@ export function TeacherAgentOverlay({
           aria-label={open ? "收起 CDAS Agent" : "打开 CDAS Agent 独立会话"}
           aria-expanded={open}
           aria-controls={panelId}
-          onClick={() => (open ? closePanel() : setOpen(true))}
+          onClick={() => (open ? closePanel() : openPanel())}
         >
           <svg aria-hidden="true" viewBox="0 0 32 32">
             <path d="M9 8.5h14a4 4 0 0 1 4 4v7a4 4 0 0 1-4 4h-7l-5.5 3v-3H9a4 4 0 0 1-4-4v-7a4 4 0 0 1 4-4Z" />
