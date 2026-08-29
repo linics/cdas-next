@@ -23,6 +23,7 @@ import {
   type SubmissionActionState,
 } from "./submission-action-state";
 import styles from "./submission-workspace.module.css";
+import type { AttachmentUploadStrategy } from "../../../../server/attachments/attachment-storage-factory";
 
 type Submission = StudentReleaseWorkspace["submission"];
 
@@ -33,7 +34,7 @@ type SubmissionEditorProps = Readonly<{
   submission: Submission;
   canWrite: boolean;
   isPastDue: boolean;
-  attachmentStorageEnabled: boolean;
+  attachmentUpload: AttachmentUploadStrategy | null;
   readOnlyMessage: string;
   workingCopyUpdatedLabel: ReactNode;
   idempotencySeeds: Readonly<{
@@ -106,7 +107,7 @@ export function SubmissionEditor({
   submission,
   canWrite,
   isPastDue,
-  attachmentStorageEnabled,
+  attachmentUpload,
   readOnlyMessage,
   workingCopyUpdatedLabel,
   idempotencySeeds,
@@ -360,7 +361,7 @@ export function SubmissionEditor({
         <AttachmentEditor
           releaseId={releaseId}
           workingCopy={workingCopy}
-          enabled={attachmentStorageEnabled}
+          upload={attachmentUpload}
           canWrite={canWrite}
         />
       ) : null}

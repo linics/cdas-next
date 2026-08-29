@@ -3,7 +3,7 @@ import { attachmentDisposition } from "../../../../domain/submission/attachment-
 import { AuthenticationError } from "../../../../server/auth/current-actor";
 import { createSubmissionAttachmentDownload } from "../../../../server/attachments/submission-attachment-service";
 import { SubmissionAttachmentAccessError } from "../../../../server/attachments/submission-attachment-access";
-import { createAttachmentStorageFromEnvironment } from "../../../../server/attachments/vercel-blob-attachment-storage";
+import { createAttachmentStorage } from "../../../../server/attachments/attachment-storage-factory";
 import { createUiCommandContext } from "../../../../server/commands/create-ui-command-context";
 import { getDatabaseClient } from "../../../../server/db/client";
 
@@ -11,7 +11,7 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ attachmentId: string }> },
 ) {
-  const storage = createAttachmentStorageFromEnvironment();
+  const storage = createAttachmentStorage();
   if (!storage) {
     return Response.json(
       { error: "ATTACHMENT_STORAGE_UNAVAILABLE" },

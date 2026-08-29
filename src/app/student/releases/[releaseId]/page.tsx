@@ -19,7 +19,7 @@ import { LocalizedDateTime } from "../../../_components/localized-date-time";
 import { InlineAlert, StatusBadge } from "../../../_components/ui";
 import { WorkspaceShell } from "../../../_components/workspace-shell";
 import { AuthenticationError } from "../../../../server/auth/current-actor";
-import { createAttachmentStorageFromEnvironment } from "../../../../server/attachments/vercel-blob-attachment-storage";
+import { attachmentUploadStrategy } from "../../../../server/attachments/attachment-storage-factory";
 import { createUiCommandContext } from "../../../../server/commands/create-ui-command-context";
 import { getDatabaseClient } from "../../../../server/db/client";
 import {
@@ -611,8 +611,9 @@ export default async function StudentReleasePage({
       : isPastDue
         ? "截止已过 · 可迟交"
         : "开放提交";
-  const attachmentStorageEnabled =
-    createAttachmentStorageFromEnvironment() !== null;
+  // The browser cannot work out how to upload on its own: one backend presigns
+  // and is written directly, the other takes the bytes through this app.
+  const attachmentUpload = attachmentUploadStrategy();
 
   return (
     <WorkspaceShell
@@ -682,7 +683,7 @@ export default async function StudentReleasePage({
               submission={selectedSubmission}
               canWrite={canWrite}
               isPastDue={isPastDue}
-              attachmentStorageEnabled={attachmentStorageEnabled}
+              attachmentUpload={attachmentUpload}
               readOnlyMessage={readOnlyMessage}
               workingCopyUpdatedLabel={
                 selectedSubmission?.workingCopy

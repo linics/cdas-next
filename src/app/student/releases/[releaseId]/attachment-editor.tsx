@@ -1,12 +1,12 @@
 "use client";
 
 import { useRef, useState, useSyncExternalStore } from "react";
-import { uploadPresigned as uploadBlob } from "@vercel/blob/client";
 import { useRouter } from "next/navigation";
 import {
   MAX_ATTACHMENT_BYTES,
   MAX_SUBMISSION_ATTACHMENTS,
 } from "../../../../domain/submission/attachment-policy";
+import type { AttachmentUploadStrategy } from "../../../../server/attachments/attachment-storage-factory";
 import type { StudentReleaseWorkspace } from "../../../../server/queries/submission-workspace";
 import {
   finalizeAttachmentUploadAction,
@@ -16,6 +16,39 @@ import {
 } from "./attachment-actions";
 import { AttachmentPreview } from "../../../_components/attachment-preview";
 import styles from "./submission-workspace.module.css";
+
+/**
+ * Two backends, two ways in. Vercel Blob hands out a presigned token and the
+ * browser writes straight to it; a self-hosted disk has nothing to presign, so
+ * the bytes go through the app. The Blob client is imported only on the branch
+ * that uses it, so a deployment without Blob never loads it.
+ */
+async function putBytes(
+  strategy: AttachmentUploadStrategy | null,
+  reserved: Readonly<{ pathname: string; attachmentId: string }>,
+  file: File,
+): Promise<void> {
+  if (strategy === "server-received") {
+    const body = new FormData();
+    body.set("attachmentId", reserved.attachmentId);
+    body.set("file", file);
+    const response = await fetch("/attachments/receive", {
+      method: "POST",
+      body,
+    });
+    if (!response.ok) {
+      throw new Error(`${file.name} 上传失败。`);
+    }
+    return;
+  }
+  const { uploadPresigned } = await import("@vercel/blob/client");
+  await uploadPresigned(reserved.pathname, file, {
+    access: "private",
+    contentType: inferredMediaType(file),
+    handleUploadUrl: "/attachments/upload",
+    clientPayload: reserved.attachmentId,
+  });
+}
 
 type WorkingCopy = NonNullable<
   NonNullable<StudentReleaseWorkspace["submission"]>["workingCopy"]
@@ -67,12 +100,12 @@ const serverSnapshot = () => false;
 export function AttachmentEditor({
   releaseId,
   workingCopy,
-  enabled,
+  upload: uploadStrategy,
   canWrite,
 }: Readonly<{
   releaseId: string;
   workingCopy: WorkingCopy;
-  enabled: boolean;
+  upload: AttachmentUploadStrategy | null;
   canWrite: boolean;
 }>) {
   const router = useRouter();
@@ -113,12 +146,7 @@ export function AttachmentEditor({
           throw new Error(reserved.ok ? "无法创建附件上传。" : reserved.message);
         }
         version = reserved.workingVersion;
-        await uploadBlob(reserved.pathname, file, {
-          access: "private",
-          contentType: inferredMediaType(file),
-          handleUploadUrl: "/attachments/upload",
-          clientPayload: reserved.attachmentId,
-        });
+        await putBytes(uploadStrategy, { pathname: reserved.pathname, attachmentId: reserved.attachmentId }, file);
         const finalized = await finalizeAttachmentUploadAction({
           releaseId,
           attachmentId: reserved.attachmentId,
@@ -227,7 +255,7 @@ export function AttachmentEditor({
         <p className={styles.attachmentEmpty}>当前工作草稿还没有附件。</p>
       )}
 
-      {canWrite && enabled && attachments.length < MAX_SUBMISSION_ATTACHMENTS ? (
+      {canWrite && uploadStrategy && attachments.length < MAX_SUBMISSION_ATTACHMENTS ? (
         <label className={styles.attachmentPicker}>
           <span>{busy ? "正在处理…" : "选择附件"}</span>
           <input
@@ -239,7 +267,7 @@ export function AttachmentEditor({
             onChange={(event) => upload(event.target.files)}
           />
         </label>
-      ) : canWrite && !enabled ? (
+      ) : canWrite && !uploadStrategy ? (
         <p className={styles.attachmentEmpty}>附件存储尚未启用，文字提交不受影响。</p>
       ) : null}
       <p className={styles.attachmentHelp}>单文件最大 20 MB；未通过内容验证的文件不能进入正式修订。</p>
