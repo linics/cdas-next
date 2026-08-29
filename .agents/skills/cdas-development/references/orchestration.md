@@ -41,9 +41,9 @@ Treat a role name or requested model as intent, not proof. Use runtime agent met
 
 ## Escalation
 
-Escalate Luna work to Terra when the task stops being narrow or repeatable, crosses several modules, needs non-trivial implementation judgment, or produces conflicting evidence.
+Escalate Luna explorer or verifier work to the Luna builder when the task needs bounded implementation inside an accepted card. Escalate any Luna role to the primary Sol thread when the task stops being narrow or repeatable, crosses several modules, needs non-trivial product judgment, or produces conflicting evidence.
 
-Escalate Terra work to the primary Sol thread when it reveals:
+Escalate Terra reviewer findings, or any remaining Terra-assigned work, to the primary Sol thread when it reveals:
 
 - a missing or contradictory product, domain, Agent, or acceptance decision;
 - authentication, authorization, membership, or resource-ownership ambiguity;
