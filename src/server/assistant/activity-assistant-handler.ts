@@ -31,7 +31,7 @@ import {
 } from "./assistant-config";
 import {
   createDeepSeekModel,
-  deepSeekActivityAssistantProviderOptions,
+  deepSeekAgentLoopProviderOptions,
 } from "./deepseek-provider";
 import {
   createActivityAssistantTools,
@@ -600,7 +600,7 @@ ${error.message}`,
         // call cannot write before the teacher has approved it.
         tools: activityAssistantMessageValidationTools,
         toolChoice: { type: "tool", toolName: toolCall.toolName },
-        providerOptions: deepSeekActivityAssistantProviderOptions,
+        providerOptions: deepSeekAgentLoopProviderOptions,
         maxOutputTokens: 16_000,
         maxRetries: 0,
         timeout: 90_000,
@@ -657,7 +657,7 @@ ${error.message}`,
       messages: modelMessages,
       tools,
       toolChoice: selectActivityAssistantToolChoice(uiMessages),
-      providerOptions: deepSeekActivityAssistantProviderOptions,
+      providerOptions: deepSeekAgentLoopProviderOptions,
       repairToolCall,
       toolApproval: {
         create_activity_draft: () => {

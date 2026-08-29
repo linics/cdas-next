@@ -12,7 +12,8 @@ vi.mock("@ai-sdk/openai-compatible", () => ({
 
 import {
   createDeepSeekModel,
-  deepSeekActivityAssistantProviderOptions,
+  deepSeekAgentLoopProviderOptions,
+  deepSeekDrafterProviderOptions,
 } from "./deepseek-provider";
 
 describe("DeepSeek provider boundary", () => {
@@ -42,8 +43,19 @@ describe("DeepSeek provider boundary", () => {
   });
 
   it("uses V4 non-thinking mode for the named publish tool choice", () => {
-    expect(deepSeekActivityAssistantProviderOptions).toEqual({
+    expect(deepSeekAgentLoopProviderOptions).toEqual({
       deepseek: { thinking: { type: "disabled" } },
     });
+  });
+
+  it("lets the toolless drafters think, and keeps the two settings apart", () => {
+    expect(deepSeekDrafterProviderOptions).toEqual({
+      deepseek: { reasoningEffort: "high" },
+    });
+    // Sharing one constant is what silently pinned the drafters to the agent
+    // loop's tool_choice constraint in the first place.
+    expect(deepSeekDrafterProviderOptions).not.toEqual(
+      deepSeekAgentLoopProviderOptions,
+    );
   });
 });
