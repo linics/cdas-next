@@ -242,22 +242,36 @@ def switch_account(
     raise E2eFailure("CLERK_SWITCH_RETRY_EXHAUSTED")
 
 
+def assert_stop_control_exists(page: Page) -> None:
+    """Prove the settle guard's locator is real, while a stream is in flight.
+
+    `settle_assistant_stream` waits for the stop control to go, and a wait for
+    something to vanish passes trivially when the selector matches nothing. That
+    is how five settle guards silently did nothing for the life of this script:
+    they looked for a button named 「停止」 while it is named 「停止生成」, so
+    every wait returned instantly and the script navigated through live streams.
+
+    Checking existence has to happen where streaming is guaranteed — right after
+    submitting — because by the time a turn's result has been asserted it may
+    legitimately be finished and the control legitimately gone.
+    """
+    page.get_by_role("button", name="停止生成", exact=True).wait_for(
+        state="attached", timeout=30_000
+    )
+
+
 def settle_assistant_stream(page: Page) -> None:
     """Wait for the assistant turn to finish before navigating away.
 
     Navigating mid-stream aborts the request and leaves a CANCELLED AgentRun
     that says nothing about what the turn actually did.
 
-    Waits for the stop control to appear first, then to go. Waiting only for it
-    to detach is what made this guard useless: it was looking for a button named
-    「停止」 while the button is named 「停止生成」, and a locator that matches
-    nothing is already detached, so every one of these waits returned instantly
-    and the script navigated straight through a live stream. Requiring it to
-    appear means a future rename times out loudly instead of passing silently.
+    Deliberately tolerant of a turn that has already finished: the control is
+    gone either way. `assert_stop_control_exists` is what keeps this honest.
     """
-    stop = page.get_by_role("button", name="停止生成", exact=True)
-    stop.wait_for(state="attached", timeout=30_000)
-    stop.wait_for(state="detached", timeout=120_000)
+    page.get_by_role("button", name="停止生成", exact=True).wait_for(
+        state="detached", timeout=120_000
+    )
 
 
 def screenshot(page: Page, artifacts: Path, name: str) -> None:
@@ -732,6 +746,7 @@ def run_real_model_browser_flow(
                 "只读取，不要建立新草稿，也不要发布。"
             )
             page.get_by_role("button", name="交给助手整理", exact=True).click()
+            assert_stop_control_exists(page)
             page.get_by_text(f"读取草稿 · {read_title}", exact=True).wait_for(
                 timeout=120_000
             )
