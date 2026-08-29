@@ -61,30 +61,38 @@
   transition:
     background var(--motion-fast),
     border-color var(--motion-fast),
-    color var(--motion-fast);
+    color var(--motion-fast),
+    transform var(--motion-fast);
 }
 .primaryButton,
 .primaryLink { border-color: var(--color-accent); background: transparent; color: var(--color-accent-700); }
 .primaryButton:hover:not(:disabled),
 .primaryLink:hover { background: color-mix(in srgb, var(--color-accent) 12%, transparent); }
 .primaryButton:active:not(:disabled),
-.primaryLink:active { background: color-mix(in srgb, var(--color-accent) 22%, transparent); }
+.primaryLink:active {
+  background: color-mix(in srgb, var(--color-accent) 22%, transparent);
+  transform: scale(0.97);
+}
 .secondaryButton {
   border-color: var(--color-divider);
   background: transparent;
   color: var(--color-text);
 }
 .secondaryButton:hover:not(:disabled) { background: color-mix(in srgb, var(--color-text) 7%, transparent); }
-.secondaryButton:active:not(:disabled) { background: color-mix(in srgb, var(--color-text) 14%, transparent); }
+.secondaryButton:active:not(:disabled) {
+  background: color-mix(in srgb, var(--color-text) 14%, transparent);
+  transform: scale(0.97);
+}
 .dangerButton { border-color: var(--stroke-heavy); background: transparent; color: var(--stroke-heavy); }
 .dangerButton:hover:not(:disabled) { background: var(--ink-tint); }
+.dangerButton:active:not(:disabled) { transform: scale(0.97); }
 .primaryButton:disabled,
 .secondaryButton:disabled,
 .dangerButton:disabled { cursor: not-allowed; opacity: .45; }
 .dashboardBody {
   display: grid;
   max-width: var(--content-width);
-  grid-template-columns: minmax(0, 1fr) clamp(200px, 24%, 288px);
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
   gap: var(--space-8);
   margin: 0 auto;
@@ -115,40 +123,84 @@
 
 .attentionTotals dd {
   margin: var(--space-1) 0 0;
-  font-family: var(--font-heading);
-  font-size: 32px;
-  font-variant-numeric: tabular-nums;
+  font-family: var(--font-ui);
+  font-size: var(--text-title);
+  font-variant-numeric: var(--figure-ui);
   line-height: 1;
 }
 
-.attentionList { display: grid; }
-
-.attentionRow {
-  display: flex;
+/* — 待办：班级 · 标题 · 待处理摘要 — */
+.activityList { display: grid; }
+.activityRow {
+  display: grid;
+  grid-template-columns: 7.5em minmax(0, 1.4fr) minmax(0, 1fr);
+  color: var(--color-text);
   align-items: baseline;
   gap: var(--space-4);
-  border-top: 1px solid var(--color-divider);
+  border-bottom: 1px solid var(--color-divider);
   padding: var(--space-3) var(--space-2);
-  color: var(--color-text);
   transition: background var(--motion-fast);
 }
-
-.attentionRow:hover { background: var(--primary-tint); }
-.attentionWho { flex: none; font-family: var(--font-heading); font-size: var(--text-subhead); }
-.attentionWhat {
+.activityRow:hover { background: color-mix(in srgb, var(--color-accent) 8%, transparent); }
+.activityRow:active { background: color-mix(in srgb, var(--color-accent) 16%, transparent); }
+.activityWho {
   overflow: hidden;
-  flex: 1;
   color: var(--color-neutral-700);
+  font-family: var(--font-ui);
   font-size: var(--text-meta);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.attentionNeeds {
-  flex: none;
-  color: var(--color-accent-700);
-  font-family: var(--font-ui);
+.activityTitle {
+  overflow: hidden;
+  font-family: var(--font-heading);
+  font-size: var(--text-section);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.activityMeta {
+  min-width: 0;
+  color: var(--color-neutral-700);
   font-size: var(--text-meta);
-  font-variant-numeric: tabular-nums;
+  font-variant-numeric: var(--figure-ui);
+}
+.activityStatus {
+  min-height: 1em;
+  justify-self: start;
+}
+
+/* 班级卡里的发布、活动设计里的草稿：标题 · 摘要 · 状态 */
+.nestedActivityRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) 4.75em;
+  color: var(--color-text);
+  align-items: baseline;
+  gap: var(--space-4);
+  border-bottom: 1px solid var(--color-divider);
+  padding: var(--space-3) var(--space-2);
+  transition: background var(--motion-fast);
+}
+.nestedActivityRow:hover { background: color-mix(in srgb, var(--color-accent) 8%, transparent); }
+.nestedActivityRow:active { background: color-mix(in srgb, var(--color-accent) 16%, transparent); }
+
+.classroomCardList { display: grid; gap: var(--space-4); margin-top: var(--space-4); }
+.classroomCard {
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  padding: var(--space-4);
+}
+.classroomCardHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-2);
+}
+.classroomCardHead h3 {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-section);
+  line-height: 1.2;
 }
 
 /* — 发布卡片：描边、不填色，右下角一个描边按钮 — */
@@ -183,11 +235,12 @@
   align-items: baseline;
   gap: var(--space-3);
   margin: var(--space-4) 0 var(--space-3);
-  font-variant-numeric: tabular-nums;
+  font-variant-numeric: var(--figure-ui);
 }
 .releaseProgress > span:first-child {
-  font-family: var(--font-heading);
+  font-family: var(--font-ui);
   font-size: var(--text-title);
+  font-variant-numeric: var(--figure-ui);
   line-height: 1;
 }
 .releaseProgress > span + span { color: var(--color-neutral-700); font-size: var(--text-meta); }
@@ -223,35 +276,22 @@
   font-weight: var(--font-heading-weight);
   line-height: 1.15;
   white-space: nowrap;
-  transition: background var(--motion-fast);
+  transition: background var(--motion-fast), transform var(--motion-fast);
 }
 .cardAction:hover { background: color-mix(in srgb, var(--color-accent) 12%, transparent); }
-.cardAction:active { background: color-mix(in srgb, var(--color-accent) 22%, transparent); }
+.cardAction:active {
+  background: color-mix(in srgb, var(--color-accent) 22%, transparent);
+  transform: scale(0.97);
+}
 .releaseAudit {
   margin: var(--space-3) 0 0;
   border-top: 1px solid var(--color-divider);
   padding-top: var(--space-2);
   color: var(--color-neutral-700);
   font-size: var(--text-meta);
-  font-variant-numeric: tabular-nums;
+  font-variant-numeric: var(--figure-ui);
 }
 
-/* — 草稿列表：一行一条，底部一根发丝线 — */
-.activityRow {
-  display: flex;
-  color: var(--color-text);
-  align-items: baseline;
-  gap: var(--space-4);
-  border-bottom: 1px solid var(--color-divider);
-  padding: var(--space-3) var(--space-2);
-  transition: background var(--motion-fast);
-}
-.activityRow:hover { background: color-mix(in srgb, var(--color-accent) 8%, transparent); }
-.activityRow:active { background: color-mix(in srgb, var(--color-accent) 16%, transparent); }
-.activityTitle { flex: 1; font-family: var(--font-heading); font-size: var(--text-section); }
-.activityMeta { color: var(--color-neutral-700); font-size: var(--text-meta); font-variant-numeric: tabular-nums; }
-
-/* — 侧栏：班级 — */
 .classroomList { display: grid; margin-top: var(--space-2); }
 .classroomRow {
   display: flex;
@@ -265,7 +305,7 @@
 }
 .classroomRow:hover { background: color-mix(in srgb, var(--color-accent) 8%, transparent); color: var(--color-accent-700); }
 .classroomRow > span:first-child { font-family: var(--font-heading); font-size: var(--text-body); }
-.classroomRow > span:last-child { color: var(--color-neutral-700); font-size: var(--text-meta); font-variant-numeric: tabular-nums; }
+.classroomRow > span:last-child { color: var(--color-neutral-700); font-size: var(--text-meta); font-variant-numeric: var(--figure-ui); }
 .asideNote {
   margin: var(--space-2) 0 0;
   color: var(--color-neutral-700);
@@ -381,7 +421,7 @@
   color: var(--color-neutral-700);
   font-family: var(--font-ui);
   font-size: var(--text-meta);
-  font-variant-numeric: tabular-nums;
+  font-variant-numeric: var(--figure-ui);
 }
 .formField { display: grid; gap: var(--space-2); }
 .formField > label:first-child,
@@ -868,7 +908,15 @@
   .editorForm > .actionStack { position: static; grid-template-columns: 1fr; }
   .taskGrid { grid-template-columns: 1fr; }
   .taskFull { grid-column: 1; }
-  .activityRow { flex-wrap: wrap; gap: var(--space-2); }
+  .activityRow,
+  .nestedActivityRow {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-2);
+  }
+  .activityWho,
+  .activityTitle,
+  .activityMeta,
+  .activityStatus { grid-column: 1; }
   .submissionRow { grid-template-columns: 28px minmax(0, 1fr); }
   .submissionRow > * { grid-column: 2; }
   .releaseCard { padding: var(--space-4); }

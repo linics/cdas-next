@@ -48,6 +48,7 @@ type CurrentTeacherContextOutput = {
   kind:
     | "TEACHER_DASHBOARD"
     | "ACTIVITY_NEW"
+    | "ACTIVITY_STUDIO"
     | "ACTIVITY_DRAFT"
     | "ACTIVITY_PREVIEW"
     | "RELEASE_SUBMISSIONS"
@@ -679,6 +680,20 @@ function ActivityDraftRevisionCard({
   );
 }
 
+export function isComposerSubmitKey(event: {
+  key: string;
+  shiftKey: boolean;
+  nativeEvent?: { isComposing?: boolean; keyCode?: number };
+}): boolean {
+  if (event.key !== "Enter" || event.shiftKey) {
+    return false;
+  }
+  if (event.nativeEvent?.isComposing || event.nativeEvent?.keyCode === 229) {
+    return false;
+  }
+  return true;
+}
+
 export function ActivityAssistant({
   classrooms,
   continuationOnly = false,
@@ -703,6 +718,14 @@ export function ActivityAssistant({
     [classrooms],
   );
   const busy = status === "submitted" || status === "streaming";
+  const submitPrompt = () => {
+    const text = input.trim();
+    if (!text || busy || !hydrated) {
+      return;
+    }
+    void sendMessage({ text });
+    setInput("");
+  };
   // 提案里的每条引用都必须先经 read_source_section 通读（工具会拒绝未通读的引用），
   // 所以原文一定已经在这段对话的消息流里 —— 就地展开，不必把教师带离对话。
   const readSections = useMemo(() => {
@@ -732,38 +755,36 @@ export function ActivityAssistant({
     return null;
   }
 
-  const assistantTitleId =
-    surface === "panel"
-      ? "activity-assistant-panel-title"
-      : "activity-assistant-title";
+  const assistantTitleId = "activity-assistant-title";
 
   return (
     <section
       className={styles.assistant}
       data-surface={surface}
-      aria-labelledby={assistantTitleId}
+      {...(surface === "panel"
+        ? { "aria-label": "教师工作区与活动设计" }
+        : { "aria-labelledby": assistantTitleId })}
     >
-      <header className={styles.header}>
-        <div>
-          <p className={styles.eyebrow}>
-            {surface === "panel" ? "当前职责" : "AI 活动助手 · 试行"}
-          </p>
-          <h2 id={assistantTitleId}>
-            {surface === "panel"
-              ? "教师工作区与活动设计"
-              : continuationOnly
+      {surface === "panel" ? null : (
+        <header className={styles.header}>
+          <div>
+            <p className={styles.eyebrow}>AI 活动助手 · 试行</p>
+            <h2 id={assistantTitleId}>
+              {continuationOnly
                 ? "继续核对活动并准备发布"
                 : "把活动构想整理成可编辑草稿"}
-          </h2>
-        </div>
-        {busy ? (
-          <span className={styles.availability} data-busy="true">
-            处理中
-          </span>
-        ) : null}
-      </header>
+            </h2>
+          </div>
+          {busy ? (
+            <span className={styles.availability} data-busy="true">
+              处理中
+            </span>
+          ) : null}
+        </header>
+      )}
 
-      <p className={styles.boundaryNote}>
+      <div className={styles.conversation}>
+        <p className={styles.boundaryNote}>
         {surface === "panel" ? (
           <>
             可识别当前页面，查询你的班级、草稿、发布与待办，也可检索课程依据、设计活动，并经你确认后创建草稿或发布。所有站内跳转都由你点击；刷新会话即清空，手动流程不受影响。
@@ -1475,43 +1496,68 @@ export function ActivityAssistant({
           助手当前无法完成请求。手动创建与编辑活动仍可正常使用。
         </p>
       ) : null}
+      </div>
 
       <form
         className={styles.composer}
         onSubmit={(event) => {
           event.preventDefault();
-          const text = input.trim();
-          if (!text || busy) {
-            return;
-          }
-          void sendMessage({ text });
-          setInput("");
+          submitPrompt();
         }}
       >
-        <label htmlFor="activity-assistant-prompt">描述活动构想或下一步</label>
-        <textarea
-          id="activity-assistant-prompt"
-          data-hydrated={hydrated}
-          disabled={!hydrated}
-          value={input}
-          maxLength={4_000}
-          rows={4}
-          placeholder="交代年级、主题、学生任务、证据与反馈标准…"
-          onChange={(event) => setInput(event.target.value)}
-        />
-        <div className={styles.composerFooter}>
-          <span>{input.length} / 4000</span>
-          {busy ? (
-            <button type="button" data-tone="quiet" onClick={() => stop()}>
-              停止
-            </button>
+        {surface === "panel" ? (
+          <span className={styles.composerStatus} aria-live="polite">
+            {busy ? "处理中" : "描述下一步"}
+          </span>
+        ) : (
+          <label htmlFor="activity-assistant-prompt">描述活动构想或下一步</label>
+        )}
+        <div className={styles.composerField}>
+          {surface === "panel" ? (
+            <label className={styles.composerHiddenLabel} htmlFor="activity-assistant-prompt">
+              描述活动构想或下一步
+            </label>
           ) : null}
-          <button
-            type="submit"
-            disabled={!hydrated || busy || input.trim().length === 0}
-          >
-            交给助手整理
-          </button>
+          <textarea
+            id="activity-assistant-prompt"
+            data-hydrated={hydrated}
+            disabled={!hydrated}
+            value={input}
+            maxLength={4_000}
+            rows={surface === "panel" ? 2 : 4}
+            placeholder="交代年级、主题、学生任务、证据与反馈标准…"
+            onChange={(event) => setInput(event.target.value)}
+            onKeyDown={(event) => {
+              if (!isComposerSubmitKey(event)) {
+                return;
+              }
+              event.preventDefault();
+              submitPrompt();
+            }}
+          />
+          <div className={styles.composerFooter}>
+            <span>{input.length} / 4000</span>
+            <div className={styles.composerActions}>
+              {busy ? (
+                <button
+                  type="button"
+                  className={styles.stopButton}
+                  aria-label="停止生成"
+                  onClick={() => stop()}
+                >
+                  <svg aria-hidden="true" viewBox="0 0 24 24">
+                    <rect x="7" y="7" width="10" height="10" rx="1.2" />
+                  </svg>
+                </button>
+              ) : null}
+              <button
+                type="submit"
+                disabled={!hydrated || busy || input.trim().length === 0}
+              >
+                交给助手整理
+              </button>
+            </div>
+          </div>
         </div>
       </form>
     </section>

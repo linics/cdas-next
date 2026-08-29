@@ -88,12 +88,36 @@
   box-shadow: var(--shadow-lg);
   padding: 0;
   color: var(--color-text);
+  opacity: 0;
+  transform: scale(0.96);
+  transform-origin: center;
+  transition:
+    opacity var(--motion-medium),
+    transform var(--motion-medium);
 }
 
-.dialog[open] { animation: dialogEnter var(--motion-medium) both; }
+.dialog[open] {
+  opacity: 1;
+  transform: scale(1);
+}
+
+@starting-style {
+  .dialog[open] {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
 
 .dialog::backdrop {
   background: color-mix(in srgb, var(--color-neutral-900) 50%, transparent);
+  opacity: 0;
+  transition: opacity var(--motion-medium);
+}
+
+.dialog[open]::backdrop { opacity: 1; }
+
+@starting-style {
+  .dialog[open]::backdrop { opacity: 0; }
 }
 
 .dialogContent { padding: var(--space-6); }
@@ -142,7 +166,8 @@
   transition:
     background var(--motion-fast),
     border-color var(--motion-fast),
-    color var(--motion-fast);
+    color var(--motion-fast),
+    transform var(--motion-fast);
 }
 
 .primaryButton {
@@ -152,7 +177,10 @@
 }
 
 .primaryButton:hover:not(:disabled) { background: color-mix(in srgb, var(--color-accent) 12%, transparent); }
-.primaryButton:active:not(:disabled) { background: color-mix(in srgb, var(--color-accent) 22%, transparent); }
+.primaryButton:active:not(:disabled) {
+  background: color-mix(in srgb, var(--color-accent) 22%, transparent);
+  transform: scale(0.97);
+}
 
 .primaryButton[data-tone="danger"] {
   border-color: var(--stroke-heavy);
@@ -170,14 +198,12 @@
 }
 
 .secondaryButton:hover:not(:disabled) { background: color-mix(in srgb, var(--color-text) 7%, transparent); }
-.secondaryButton:active:not(:disabled) { background: color-mix(in srgb, var(--color-text) 14%, transparent); }
+.secondaryButton:active:not(:disabled) {
+  background: color-mix(in srgb, var(--color-text) 14%, transparent);
+  transform: scale(0.97);
+}
 .primaryButton:disabled,
 .secondaryButton:disabled { cursor: wait; opacity: .45; }
-
-@keyframes dialogEnter {
-  from { opacity: 0; transform: translateY(10px) scale(.985); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
 
 @media (max-width: 480px) {
   .dialogContent { padding: var(--space-6) var(--space-4) var(--space-4); }

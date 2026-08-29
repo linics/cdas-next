@@ -21,6 +21,19 @@ describe("TeacherAgentOverlay", () => {
     expect(markup).toContain('aria-expanded="false"');
     expect(markup).toContain('aria-controls="teacher-agent-panel"');
     expect(markup).toContain("打开 CDAS Agent 独立会话");
+    expect(markup).toContain('data-open="false"');
     expect(markup).not.toContain('data-agent-conversation="true"');
+  });
+
+  it("merges workspace duty into the independent-session header", () => {
+    const markup = renderToStaticMarkup(
+      <TeacherAgentOverlay classrooms={[]} startOpen>
+        <main />
+      </TeacherAgentOverlay>,
+    );
+
+    expect(markup).toContain("独立会话");
+    expect(markup).toContain("教师工作区与活动设计");
+    expect(markup).toContain('data-agent-conversation="true"');
   });
 });

@@ -8,7 +8,7 @@ import {
   getTeacherClassroomRoster,
   TeacherClassroomRosterQueryError,
 } from "../../../../../server/queries/teacher-classroom-roster";
-import { TeacherAccessGate, TeacherPage } from "../../../_components/teacher-shell";
+import { TeacherAccessGate, TeacherPage, teacherHomeCrumb } from "../../../_components/teacher-shell";
 import styles from "../../../teacher-workspace.module.css";
 import { RosterManager } from "./roster-manager";
 
@@ -36,7 +36,7 @@ export default async function TeacherClassroomMembersPage({
   return (
     <TeacherPage
       actorName={roster.actor.displayName}
-      breadcrumb={`教师工作台 › 班级与名单 › ${roster.classroom.name}`}
+      breadcrumb={[teacherHomeCrumb, { label: roster.classroom.name }]}
     >
       <div className={styles.pageContent}>
         <header className={styles.pageHeader}>

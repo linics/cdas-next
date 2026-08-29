@@ -9,6 +9,7 @@ const resourceId = "10000000-0000-4000-8000-000000000001";
 describe("teacher Agent page context", () => {
   it.each([
     ["/teacher", { kind: "TEACHER_DASHBOARD" }],
+    ["/teacher/activities", { kind: "ACTIVITY_STUDIO" }],
     ["/teacher/activities/new", { kind: "ACTIVITY_NEW" }],
     ["/teacher/insights", { kind: "TEACHER_INSIGHTS" }],
     ["/teacher/knowledge", { kind: "TEACHER_KNOWLEDGE" }],

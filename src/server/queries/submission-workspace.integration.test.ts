@@ -389,6 +389,7 @@ describeWithDatabase("submission workspace queries", () => {
     expect(JSON.stringify(result)).not.toContain(fixture.feedbackBody);
     expect(result.release).toMatchObject({
       title: "校园水表观察",
+      classroomId: fixture.classroomId,
       classroomName: "工作台测试班级",
       rubricAvailable: true,
     });

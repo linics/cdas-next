@@ -244,6 +244,14 @@ describe("teacher feedback page access boundary", () => {
     expect(markup).toContain("陈同学");
     expect(markup).toContain("当前账号：林老师 · 教师");
     expect(markup).toContain("退出登录");
+    expect(markup).toContain("学生证据");
+    expect(markup).toContain("已确认记录");
+    expect(markup).toContain("收起评阅");
+    expect(markup).toContain('data-rail-open="true"');
+    expect(markup).toContain('aria-expanded="true"');
+    expect(markup).toContain("data-fill-viewport");
+    expect(markup).not.toContain("正式修订、反馈与评价历史");
+    expect(markup).not.toContain("保存规则");
     expect(markup).toContain(secretSubmissionBody);
     expect(markup).toContain(currentFeedbackBody);
     expect(markup).toContain("继续后续阶段");

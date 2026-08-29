@@ -15,17 +15,40 @@ import styles from "./teacher-agent-overlay.module.css";
 
 const panelId = "teacher-agent-panel";
 const panelTitleId = "teacher-agent-panel-title";
+const panelMotionMs = 240;
 
 export function TeacherAgentOverlay({
   children,
   classrooms,
+  startOpen = false,
 }: Readonly<{
   children: ReactNode;
   classrooms: ActivityAssistantClassroom[];
+  startOpen?: boolean;
 }>) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(startOpen);
+  const [rendered, setRendered] = useState(startOpen);
   const launcherRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+
+  const openPanel = () => {
+    setRendered(true);
+    setOpen(true);
+  };
+
+  const closePanel = () => {
+    setOpen(false);
+    requestAnimationFrame(() => launcherRef.current?.focus());
+  };
+
+  useEffect(() => {
+    if (open || !rendered) {
+      return;
+    }
+
+    const hide = window.setTimeout(() => setRendered(false), panelMotionMs);
+    return () => window.clearTimeout(hide);
+  }, [open, rendered]);
 
   useEffect(() => {
     if (!open) {
@@ -48,25 +71,24 @@ export function TeacherAgentOverlay({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [open]);
 
-  const closePanel = () => {
-    setOpen(false);
-    requestAnimationFrame(() => launcherRef.current?.focus());
-  };
-
   return (
     <ActivityAssistantSessionProvider>
       {children}
       <div className={styles.overlay} data-open={open}>
-        {open ? (
+        {rendered ? (
           <aside
             className={styles.panel}
             id={panelId}
+            data-open={open}
+            aria-hidden={!open}
             aria-labelledby={panelTitleId}
+            inert={!open}
           >
             <header className={styles.panelHeader}>
               <div>
                 <p className={styles.eyebrow}>CDAS Agent · 试行</p>
                 <h2 id={panelTitleId}>独立会话</h2>
+                <p className={styles.duty}>教师工作区与活动设计</p>
               </div>
               <button
                 ref={closeRef}
@@ -93,7 +115,7 @@ export function TeacherAgentOverlay({
           aria-label={open ? "收起 CDAS Agent" : "打开 CDAS Agent 独立会话"}
           aria-expanded={open}
           aria-controls={panelId}
-          onClick={() => (open ? closePanel() : setOpen(true))}
+          onClick={() => (open ? closePanel() : openPanel())}
         >
           <svg aria-hidden="true" viewBox="0 0 32 32">
             <path d="M9 8.5h14a4 4 0 0 1 4 4v7a4 4 0 0 1-4 4h-7l-5.5 3v-3H9a4 4 0 0 1-4-4v-7a4 4 0 0 1 4-4Z" />

@@ -78,6 +78,7 @@ export async function saveActivityDraftAction(previous: ActivityDraftActionState
       content, agentRunId: null, idempotencyKey: input.idempotencyKey,
     });
     revalidatePath("/teacher");
+    revalidatePath("/teacher/activities");
     revalidatePath(`/teacher/activities/${result.draftId}`);
     revalidatePath(`/teacher/activities/${result.draftId}/preview`);
     return { status: "success", message: result.status === "READY_FOR_PREVIEW" ? `版本 ${result.version} 已保存并可进入发布预览。` : `版本 ${result.version} 已保存为编辑中草稿。`, values: content, draftId: result.draftId, expectedVersion: result.version, persistedStatus: result.status, nextIdempotencyKey: createIdempotencyKey() };

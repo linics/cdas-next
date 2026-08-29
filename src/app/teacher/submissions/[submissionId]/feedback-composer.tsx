@@ -252,30 +252,21 @@ export function FeedbackComposer({
     >
       <header className={styles.composerHeading}>
         <div>
-          <p className={styles.eyebrow}>当前正式修订</p>
           <h2 id="feedback-editor-title">
             {expectedFeedbackVersion > 0 ? "修改教师反馈" : "撰写教师反馈"}
           </h2>
+          <p className={styles.composerLead}>
+            第 {submissionRevisionNumber} 版提交 ·{" "}
+            {expectedFeedbackVersion > 0
+              ? `第 ${expectedFeedbackVersion + 1} 版反馈`
+              : "第一版反馈"}
+          </p>
         </div>
-        <span className={styles.manualMode}>
-          {assistantEnabled ? "教师终审 · AI 可选" : "手写模式 · 不呼叫 AI"}
-        </span>
-      </header>
-
-      <p className={styles.composerLead}>
-        对第 {submissionRevisionNumber} 版提交创建
-        {expectedFeedbackVersion > 0
-          ? `第 ${expectedFeedbackVersion + 1} 版反馈`
-          : "第一版反馈"}
-        。准备后仍需在独立面板明确确认。
-      </p>
-
-      {assistantEnabled ? (
-        <>
-          <div className={styles.prepareRow}>
-            <p>
-              这是 AI 建议，未经你确认不会保存。助手只读取本版文字和已确认检查点；附件内容不会交给模型。
-            </p>
+        <div className={styles.composerActions}>
+          <span className={styles.manualMode}>
+            {assistantEnabled ? "教师终审 · AI 可选" : "手写模式 · 不呼叫 AI"}
+          </span>
+          {assistantEnabled ? (
             <form className={styles.suggestionAction} action={requestSuggestion}>
               <input type="hidden" name="submissionId" value={submissionId} />
               <input
@@ -297,12 +288,20 @@ export function FeedbackComposer({
                 {suggestionPending ? "起草中…" : "AI 起草建议"}
               </button>
             </form>
-          </div>
-          <SuggestionNotice
-            state={suggestionState}
-            onRefresh={() => router.refresh()}
-          />
-        </>
+          ) : null}
+        </div>
+      </header>
+
+      {assistantEnabled ? (
+        <p className={styles.aiNote} role="note">
+          这是 AI 建议，未经你确认不会保存。只读本版文字与检查点。
+        </p>
+      ) : null}
+      {assistantEnabled ? (
+        <SuggestionNotice
+          state={suggestionState}
+          onRefresh={() => router.refresh()}
+        />
       ) : null}
 
       <ActionNotice state={prepareState} onRefresh={() => router.refresh()} />
@@ -339,7 +338,15 @@ export function FeedbackComposer({
           value={prepareIdempotencyKey}
         />
 
-        <label htmlFor="teacher-feedback-body">反馈正文</label>
+        <div className={styles.fieldHead}>
+          <label htmlFor="teacher-feedback-body">反馈正文</label>
+          <span
+            id="teacher-feedback-count"
+            data-over-limit={bodyOverLimit ? "true" : "false"}
+          >
+            {codePointCount.toLocaleString("zh-CN")} / 10,000
+          </span>
+        </div>
         <textarea
           id="teacher-feedback-body"
           name="body"
@@ -350,65 +357,63 @@ export function FeedbackComposer({
           spellCheck="true"
           disabled={anyPending}
         />
-        <div className={styles.fieldMeta}>
-          <p id="teacher-feedback-help">
-            正文会统一为 NFC 与 LF；只有完成下一步确认才会保存。
-          </p>
-          <span
-            id="teacher-feedback-count"
-            data-over-limit={bodyOverLimit ? "true" : "false"}
-          >
-            {codePointCount.toLocaleString("zh-CN")} / 10,000
-          </span>
-        </div>
+        <p id="teacher-feedback-help" className={styles.visuallyHidden}>
+          正文会统一为 NFC 与 LF；只有完成下一步确认才会保存。
+        </p>
 
         <fieldset className={styles.structuredFeedbackFields}>
-          <legend>形成性下一步与支架</legend>
-          <p>
-            这两个选择会与本次反馈正文一起冻结；它们只提供行动建议，不改变活动阶段或共同任务。
+          <legend className={styles.visuallyHidden}>形成性下一步与支架</legend>
+          <div className={styles.choiceGrid}>
+            <div>
+              <label htmlFor="teacher-feedback-next-step">形成性下一步</label>
+              <select
+                id="teacher-feedback-next-step"
+                name="nextStep"
+                value={draftNextStep}
+                onChange={(event) =>
+                  setDraftNextStep(
+                    event.target.value as TeacherFeedbackNextStep | "",
+                  )
+                }
+                disabled={anyPending}
+                required
+              >
+                <option value="" disabled>请选择下一步</option>
+                <option value="CONTINUE">继续后续阶段</option>
+                <option value="REVISE">按反馈修改并重交</option>
+              </select>
+            </div>
+            <div>
+              <label htmlFor="teacher-feedback-support-level">支架层级</label>
+              <select
+                id="teacher-feedback-support-level"
+                name="supportLevel"
+                value={draftSupportLevel}
+                onChange={(event) =>
+                  setDraftSupportLevel(
+                    event.target.value as TeacherFeedbackSupportLevel | "",
+                  )
+                }
+                disabled={anyPending}
+                required
+              >
+                <option value="" disabled>请选择支架层级</option>
+                <option value="FOUNDATION">基础支持</option>
+                <option value="STANDARD">标准任务</option>
+                <option value="CHALLENGE">挑战拓展</option>
+              </select>
+            </div>
+          </div>
+          <p className={styles.fieldHint}>
+            与正文一起冻结，只提供行动建议，不改变活动阶段。
           </p>
-          <label htmlFor="teacher-feedback-next-step">形成性下一步</label>
-          <select
-            id="teacher-feedback-next-step"
-            name="nextStep"
-            value={draftNextStep}
-            onChange={(event) =>
-              setDraftNextStep(
-                event.target.value as TeacherFeedbackNextStep | "",
-              )
-            }
-            disabled={anyPending}
-            required
-          >
-            <option value="" disabled>请选择下一步</option>
-            <option value="CONTINUE">继续后续阶段</option>
-            <option value="REVISE">按反馈修改并重交</option>
-          </select>
-          <label htmlFor="teacher-feedback-support-level">支架层级</label>
-          <select
-            id="teacher-feedback-support-level"
-            name="supportLevel"
-            value={draftSupportLevel}
-            onChange={(event) =>
-              setDraftSupportLevel(
-                event.target.value as TeacherFeedbackSupportLevel | "",
-              )
-            }
-            disabled={anyPending}
-            required
-          >
-            <option value="" disabled>请选择支架层级</option>
-            <option value="FOUNDATION">基础支持</option>
-            <option value="STANDARD">标准任务</option>
-            <option value="CHALLENGE">挑战拓展</option>
-          </select>
         </fieldset>
 
         <div className={styles.prepareRow}>
           <p>
             {expectedFeedbackVersion > 0
-              ? `当前反馈版本 ${expectedFeedbackVersion}；旧版不会被覆盖。`
-              : "当前尚无正式反馈。"}
+              ? `当前反馈版本 ${expectedFeedbackVersion}；确认后新增一版，旧版不会被覆盖。`
+              : "确认后才会写入第一版反馈。"}
           </p>
           <button
             className={styles.prepareButton}

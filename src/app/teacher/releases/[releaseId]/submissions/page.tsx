@@ -14,6 +14,7 @@ import { shortResourceId } from "../../../_components/format";
 import {
   TeacherAccessGate,
   TeacherPage,
+  teacherHomeCrumb,
 } from "../../../_components/teacher-shell";
 import styles from "../../../teacher-workspace.module.css";
 import { CloseActivityPanel } from "./close-activity-panel";
@@ -57,7 +58,14 @@ export default async function TeacherReleaseSubmissionsPage({
   return (
     <TeacherPage
       actorName={workspace.actor.displayName}
-      breadcrumb={`教师工作台 › ${workspace.release.title} › 评阅名册`}
+      breadcrumb={[
+        teacherHomeCrumb,
+        {
+          href: `/teacher/classrooms/${workspace.release.classroomId}/members`,
+          label: workspace.release.classroomName,
+        },
+        { label: workspace.release.title },
+      ]}
     >
       <div className={styles.pageContent}>
         <header className={styles.pageHeader}>

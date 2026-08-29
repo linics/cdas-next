@@ -286,7 +286,8 @@ describe("student release page access boundary", () => {
 
     const markup = await renderPage();
 
-    expect(markup).toContain("提交入口当前没有开放");
+    expect(markup).toContain("学生工作台当前没有开放");
+    expect(markup).toContain("返回首页");
     expect(markup).not.toContain("data-clerk-sign-in");
     expect(markup).not.toContain("data-submission-editor");
     expect(mocks.getStudentFeedbackWorkspace).not.toHaveBeenCalled();

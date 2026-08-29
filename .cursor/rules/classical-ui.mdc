@@ -1,0 +1,21 @@
+---
+description: Binding Classical UI contract for all visible interface changes
+alwaysApply: true
+---
+
+# Classical UI is mandatory
+
+Before any change that a teacher or student can see (layout, CSS, copy, overlay, dialog, form, empty state, Agent panel), read and obey `design-system/cdas-next/CLASSICAL.md`.
+
+`design-system/cdas-next/MASTER.md` is a historical UI-201 draft. Do not copy its navy filled buttons, system sans-serif stack, or `#174ea6`. Live tokens live in `src/app/globals.css`.
+
+Hard rules:
+
+- Use existing CSS variables only. No new hex, font names, or spacing/type px in components.
+- Interface counts use `--figure-ui` (lining + tabular) and `--font-ui` for large stats. Do not display Cormorant oldstyle figures.
+- Buttons are stroked, not filled. Color is a stroke, not a slab.
+- Callouts: transparent + divider + 2px left accent.
+- Agent overlay: transcript is the primary surface; chrome stays thin; no page dimmer; no chat bubbles.
+- Confirm high-impact writes with existing `ConfirmDialog` and existing domain commands.
+
+If a visual choice is not in CLASSICAL.md or `globals.css`, do not invent it — extend CLASSICAL.md in the same change after matching existing screens.

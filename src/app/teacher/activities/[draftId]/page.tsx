@@ -12,6 +12,8 @@ import {
 import {
   TeacherAccessGate,
   TeacherPage,
+  activityStudioCrumb,
+  teacherHomeCrumb,
 } from "../../_components/teacher-shell";
 import { ActivityDraftForm } from "../activity-draft-form";
 import { structuredTaskBookValues } from "../activity-draft-action-state";
@@ -51,7 +53,11 @@ export default async function TeacherActivityPage({
   return (
     <TeacherPage
       actorName={workspace.actor.displayName}
-      breadcrumb={`教师工作台 › 活动设计 › ${content.title}`}
+      breadcrumb={[
+        teacherHomeCrumb,
+        activityStudioCrumb,
+        { label: content.title },
+      ]}
     >
       <div className={styles.pageContent}>
         <header className={styles.pageHeader}>

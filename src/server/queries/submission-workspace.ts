@@ -116,6 +116,7 @@ const teacherReleaseSubmissionsSchema = z.strictObject({
   release: z.strictObject({
     id: z.uuid(),
     title: preservedNonBlankTextSchema,
+    classroomId: z.uuid(),
     classroomName: preservedNonBlankTextSchema,
     status: releaseStatusSchema,
     publishedAt: isoDateSchema,
@@ -522,6 +523,7 @@ export async function getTeacherReleaseSubmissions(
       },
       classroom: {
         select: {
+          id: true,
           managerId: true,
           name: true,
           memberships: {
@@ -736,6 +738,7 @@ export async function getTeacherReleaseSubmissions(
     release: {
       id: release.id,
       title: content.title,
+      classroomId: release.classroom.id,
       classroomName: release.classroom.name,
       status: release.status,
       publishedAt: release.publishedAt.toISOString(),

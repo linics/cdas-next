@@ -141,11 +141,59 @@ describe("teacher dashboard role guidance", () => {
     expect(markup).toContain("待评价 2");
     expect(markup).toContain("待重交 1");
     expect(markup).toContain("/submissions");
-    expect(markup).toContain('href="/teacher/insights"');
     expect(markup).toContain("过程诊断");
     expect(markup).not.toContain("学生工作副本正文");
     expect(markup).not.toContain("综评");
     expect(markup).not.toContain("已评价");
+    expect(markup).not.toContain("我的草稿");
+  });
+
+  it("keeps the grading queue off the draft list and groups releases under classrooms", async () => {
+    mocks.getTeacherActivityDashboard.mockResolvedValue({
+      actor: { displayName: "林老师" },
+      classrooms: [
+        {
+          id: "30000000-0000-4000-8000-000000000003",
+          name: "七年一班",
+          currentMemberCount: 4,
+        },
+      ],
+      drafts: [
+        {
+          id: "70000000-0000-4000-8000-000000000007",
+          title: "饮水区用水记录",
+          status: "EDITING",
+          version: 1,
+          updatedAt: "2026-08-18T11:00:00.000Z",
+          releaseId: null,
+        },
+      ],
+      releases: [
+        {
+          id: "60000000-0000-4000-8000-000000000006",
+          title: "校园用水现场调查",
+          classroomName: "七年一班",
+          status: "ACTIVE",
+          publishedAt: "2026-08-18T10:00:00.000Z",
+          dueAt: null,
+          canViewSubmissions: true,
+          attention: {
+            pendingFeedbackCount: 1,
+            pendingEvaluationCount: 0,
+            awaitingResubmissionCount: 0,
+          },
+        },
+      ],
+    });
+
+    const markup = await renderPage();
+    expect(markup).toContain("待反馈 1");
+    expect(markup).toContain("七年一班");
+    expect(markup).toContain("校园用水现场调查");
+    expect(markup).toContain("4 名成员");
+    expect(markup).not.toContain("饮水区用水记录");
+    expect(markup).not.toContain("我的草稿");
+    expect(markup).not.toContain("七年一班 · 校园用水现场调查");
   });
 
   it("hides pending evaluation copy when the count is zero", async () => {

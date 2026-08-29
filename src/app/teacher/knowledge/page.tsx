@@ -17,6 +17,7 @@ import {
 import {
   TeacherAccessGate,
   TeacherPage,
+  teacherHomeCrumb,
 } from "../_components/teacher-shell";
 import workspaceStyles from "../teacher-workspace.module.css";
 import styles from "./knowledge.module.css";
@@ -64,7 +65,10 @@ export default async function TeacherKnowledgePage({
   const sources = listOfficialKnowledgeSources();
 
   return (
-    <TeacherPage actorName={actor.displayName} breadcrumb="教师工作台 › 课程依据">
+    <TeacherPage
+      actorName={actor.displayName}
+      breadcrumb={[teacherHomeCrumb, { label: "课程依据" }]}
+    >
       <div className={workspaceStyles.pageContent}>
         <header className={workspaceStyles.pageHeader}>
           <div>
@@ -76,7 +80,7 @@ export default async function TeacherKnowledgePage({
           </div>
           <Link
             className={workspaceStyles.secondaryButton}
-            href="/teacher/activities/new"
+            href="/teacher/activities"
           >
             返回活动设计
           </Link>

@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto";
-import { SignInButton, SignOutButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
@@ -19,7 +18,6 @@ import {
 import { LocalizedDateTime } from "../../../_components/localized-date-time";
 import { InlineAlert, StatusBadge } from "../../../_components/ui";
 import { WorkspaceShell } from "../../../_components/workspace-shell";
-import { isClickthroughAuthEnabled } from "../../../../server/auth/clickthrough-auth";
 import { AuthenticationError } from "../../../../server/auth/current-actor";
 import { createAttachmentStorageFromEnvironment } from "../../../../server/attachments/vercel-blob-attachment-storage";
 import { createUiCommandContext } from "../../../../server/commands/create-ui-command-context";
@@ -35,70 +33,12 @@ import {
   type StudentReleaseWorkspace,
 } from "../../../../server/queries/submission-workspace";
 import { SubmissionEditor } from "./submission-editor";
+import { StudentAccessGate } from "../../_components/student-shell";
 import styles from "./submission-workspace.module.css";
 
 const studentNavigation = [
   { href: "/student", label: "我的活动" },
 ] as const;
-
-function AccessUnavailable({
-  code,
-  releaseId,
-}: {
-  code: AuthenticationError["code"];
-  releaseId: string;
-}) {
-  const copy =
-    code === "AUTH_NOT_CONFIGURED"
-      ? {
-          eyebrow: "登录服务未配置",
-          title: "提交入口当前没有开放",
-          detail:
-            "系统没有可验证的登录身份，因此不会显示活动内容、草稿或任何可写按钮。配置 Clerk 后再从已登录的学生账号进入。",
-        }
-      : code === "USER_NOT_PROVISIONED"
-        ? {
-            eyebrow: "账号尚未创建",
-            title: "找不到对应的学生身份",
-            detail:
-              "当前登录账号尚未关联到 CDAS Next 用户。请由管理者完成账号创建与班级成员设置。",
-          }
-        : {
-            eyebrow: "需要登录",
-            title: "先确认学生身份再查看作业",
-            detail:
-              "未登录时不会显示活动内容、现有草稿或提交入口。请完成登录后重新打开这个关联。",
-          };
-
-  return (
-    <WorkspaceShell audience="学生">
-      <section className={styles.accessGate}>
-        <p className={styles.eyebrow}>{copy.eyebrow}</p>
-        <h1>{copy.title}</h1>
-        <p>{copy.detail}</p>
-        <div className={styles.accessActions}>
-          {isClickthroughAuthEnabled() ? null : code === "UNAUTHENTICATED" ? (
-            <SignInButton
-              mode="modal"
-              fallbackRedirectUrl={`/student/releases/${releaseId}`}
-            >
-              <button className={styles.signInButton} type="button">
-                登录学生账号
-              </button>
-            </SignInButton>
-          ) : code === "USER_NOT_PROVISIONED" ? (
-            <SignOutButton redirectUrl={`/student/releases/${releaseId}`}>
-              <button className={styles.signInButton} type="button">
-                退出当前账号
-              </button>
-            </SignOutButton>
-          ) : null}
-          <Link href="/">返回工作台</Link>
-        </div>
-      </section>
-    </WorkspaceShell>
-  );
-}
 
 function ReleaseBrief({
   snapshot,
@@ -632,7 +572,12 @@ export default async function StudentReleasePage({
     }
   } catch (error) {
     if (error instanceof AuthenticationError) {
-      return <AccessUnavailable code={error.code} releaseId={releaseId} />;
+      return (
+        <StudentAccessGate
+          code={error.code}
+          returnPath={`/student/releases/${releaseId}`}
+        />
+      );
     }
     if (
       error instanceof FeedbackWorkspaceQueryError ||
@@ -673,7 +618,10 @@ export default async function StudentReleasePage({
     <WorkspaceShell
       audience="学生"
       actorName={workspace.actor.displayName}
-      breadcrumb={`学生端 › 我的学习活动 › ${content.title}`}
+      breadcrumb={[
+        { href: "/student", label: "我的学习活动" },
+        { label: content.title },
+      ]}
       navigation={studentNavigation}
     >
       <div className={styles.releasePage}>

@@ -149,7 +149,7 @@ export function ActivityDraftForm({ initialState }: { initialState: ActivityDraf
       <p>{state.expectedVersion ? `当前以版本 ${state.expectedVersion} 为保存基准。每次成功保存都会追加不可变修订。` : "第一次保存会创建版本 1 与对应的不可变修订。"}</p>
       {state.status !== "idle" ? <div className={styles.actionNotice} data-status={state.status} role={state.status === "success" ? "status" : "alert"} aria-live="polite"><span aria-hidden="true">{state.status === "success" ? "✓" : state.status === "conflict" ? "↻" : "!"}</span><p>{state.message}</p></div> : null}
       {isConflict && draftHref ? <Link className={styles.conflictLink} href={draftHref} target="_blank" rel="noreferrer">在新标签页打开最新版本</Link> : null}
-      <div className={styles.actionStack}>{state.draftId && state.persistedStatus === "READY_FOR_PREVIEW" ? <Link className={styles.primaryLink} href={`/teacher/activities/${state.draftId}/preview`}>查看发布预览 <span aria-hidden="true">→</span></Link> : null}{state.persistedStatus === "SEALED" && state.draftId ? <Link className={styles.secondaryButton} href={`/teacher/activities/${state.draftId}/preview`}>查看已封存内容</Link> : null}<Link className={styles.secondaryButton} href="/teacher">返回教师工作台</Link></div>
+      <div className={styles.actionStack}>{state.draftId && state.persistedStatus === "READY_FOR_PREVIEW" ? <Link className={styles.primaryLink} href={`/teacher/activities/${state.draftId}/preview`}>查看发布预览 <span aria-hidden="true">→</span></Link> : null}{state.persistedStatus === "SEALED" && state.draftId ? <Link className={styles.secondaryButton} href={`/teacher/activities/${state.draftId}/preview`}>查看已封存内容</Link> : null}<Link className={styles.secondaryButton} href="/teacher/activities">返回活动设计</Link></div>
     </aside>
   </div>;
 }

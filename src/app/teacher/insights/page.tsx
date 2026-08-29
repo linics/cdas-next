@@ -14,6 +14,7 @@ import { WorkspaceRoleGate } from "../../_components/workspace-shell";
 import {
   TeacherAccessGate,
   TeacherPage,
+  teacherHomeCrumb,
 } from "../_components/teacher-shell";
 import workspaceStyles from "../teacher-workspace.module.css";
 import styles from "./insights.module.css";
@@ -314,7 +315,7 @@ export default async function TeacherInsightsPage({
   return (
     <TeacherPage
       actorName={dashboard.actor.displayName}
-      breadcrumb="教师工作台 › 过程诊断"
+      breadcrumb={[teacherHomeCrumb, { label: "过程诊断" }]}
     >
       <div className={workspaceStyles.pageContent}>
         <header className={workspaceStyles.pageHeader}>

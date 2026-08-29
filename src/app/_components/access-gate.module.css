@@ -1,5 +1,5 @@
 /* 门禁页：左侧是刊头与闭环说明，右侧只放当前这一种情形的处置。
-   正式环境整屏显示，没有左侧工作台导航。 */
+   正式环境整屏显示，没有左侧工作台导航。教师端与学生端共用。 */
 .gate {
   display: grid;
   min-height: 100svh;
@@ -71,9 +71,9 @@
 .steps span {
   display: block;
   color: var(--color-accent-700);
-  font-family: var(--font-heading);
+  font-family: var(--font-ui);
   font-size: var(--text-section);
-  font-variant-numeric: tabular-nums;
+  font-variant-numeric: var(--figure-ui);
 }
 
 .accessGate {
@@ -121,7 +121,7 @@
   font-size: var(--text-ui);
   font-weight: var(--font-heading-weight);
   line-height: 1.15;
-  transition: background var(--motion-fast);
+  transition: background var(--motion-fast), transform var(--motion-fast);
 }
 
 .primaryButton {
@@ -130,8 +130,11 @@
   color: var(--color-accent-700);
 }
 
-.primaryButton:hover { background: color-mix(in srgb, var(--color-accent) 12%, transparent); }
-.primaryButton:active { background: color-mix(in srgb, var(--color-accent) 22%, transparent); }
+.primaryButton:hover { background: var(--primary-tint); }
+.primaryButton:active {
+  background: var(--primary-tint-strong);
+  transform: scale(0.97);
+}
 
 .secondaryButton {
   border: 1px solid var(--color-divider);
@@ -139,10 +142,11 @@
   color: var(--color-text);
 }
 
-.secondaryButton:hover { background: color-mix(in srgb, var(--color-text) 7%, transparent); }
+.secondaryButton:hover { background: var(--primary-tint); }
+.secondaryButton:active { transform: scale(0.97); }
 
 .backLink { padding-right: var(--space-1); padding-left: var(--space-1); color: var(--color-accent-700); }
-.backLink:hover { background: color-mix(in srgb, var(--color-accent) 10%, transparent); }
+.backLink:hover { background: var(--primary-tint); }
 
 .gateNote {
   margin: 0;
