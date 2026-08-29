@@ -13,6 +13,7 @@ vi.mock("@ai-sdk/openai-compatible", () => ({
 import {
   createDeepSeekAttachmentVisionModel,
   createDeepSeekModel,
+  deepSeekAgentLoopProviderOptions,
   deepSeekNamedToolProviderOptions,
   deepSeekProviderOptionsForToolChoice,
   deepSeekThinkingProviderOptions,
@@ -72,9 +73,21 @@ describe("DeepSeek provider boundary", () => {
     );
   });
 
+  it("spends less reasoning per step in the multi-step loop than in a one-shot draft", () => {
+    // Both think; the loop pays its gear on every retrieval step and the whole
+    // stream shares one 90s budget. Measured on a full activity design: 61s
+    // here against 100s at the drafters' gear, which overran and cancelled.
+    expect(deepSeekAgentLoopProviderOptions).toEqual({
+      deepseek: { reasoningEffort: "low" },
+    });
+    expect(deepSeekThinkingProviderOptions).toEqual({
+      deepseek: { reasoningEffort: "high" },
+    });
+  });
+
   it("withholds thinking from exactly the turns that name a tool", () => {
     expect(deepSeekProviderOptionsForToolChoice("auto")).toBe(
-      deepSeekThinkingProviderOptions,
+      deepSeekAgentLoopProviderOptions,
     );
     expect(
       deepSeekProviderOptionsForToolChoice({

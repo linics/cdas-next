@@ -16,19 +16,13 @@ export const deepSeekNamedToolProviderOptions = {
   deepseek: { thinking: { type: "disabled" } },
 } as const;
 
-// Everything else: the agent loop's ordinary `auto` turns, and the two drafters,
-// which call no tools at all.
-//
-// Measured rather than assumed, on the two shapes that matter. Drafting an
-// evaluation for a student who admitted estimating one of their readings, every
-// gear named the estimate in its prose but only the thinking ones carried it
-// into the level — dimension one landed on the correct "improve" 2/5 times
-// without thinking, 4/5 at low, 5/5 at high, and the spread of whole outcomes
-// narrowed from five distinct results to three. Designing an activity, the high
-// gear returned consistently fuller tool arguments (1081-1266 characters against
-// 992-1068) with no loss of reliability; malformed payloads happen at every gear,
-// which is what D-050 is for. On trivial routing turns thinking costs 13-20
-// reasoning tokens, so the gear is cheap where it earns nothing.
+// The two drafters. One call each, no tools, and the thing being bought is
+// judgement: on an ambiguous evaluation every gear named the problem in prose
+// but only the thinking ones carried it into the level — dimension one landed on
+// the correct "improve" 2/5 times without thinking, 4/5 at low, 5/5 at high, and
+// the spread of whole outcomes narrowed from five distinct results to three. A
+// grade that contradicts its own summary is the worst thing to hand a reviewing
+// teacher, so this pays roughly 13s against 2s for the steadier judgement.
 //
 // Spelled camelCase on purpose. @ai-sdk/openai-compatible forwards unknown
 // provider options verbatim, then writes `reasoning_effort` itself from its own
@@ -37,6 +31,17 @@ export const deepSeekNamedToolProviderOptions = {
 // test asserts the serialized request, which is how that was caught.
 export const deepSeekThinkingProviderOptions = {
   deepseek: { reasoningEffort: "high" },
+} as const;
+
+// The agent loop's ordinary `auto` turns. A lower gear than the drafters get,
+// because this is not one call: retrieval runs up to six steps before the draft
+// call, every step pays the gear, and the whole stream shares one 90s budget.
+// Measured on a full activity design that searches and reads before proposing —
+// 50s with no thinking, 61s here, 100s at the drafters' gear, which overran the
+// budget and cancelled the run outright. The design still reasons; it just
+// cannot afford to reason six times over on its way there.
+export const deepSeekAgentLoopProviderOptions = {
+  deepseek: { reasoningEffort: "low" },
 } as const;
 
 /**
@@ -48,7 +53,7 @@ export function deepSeekProviderOptionsForToolChoice(
   toolChoice: "auto" | Readonly<{ type: "tool"; toolName: string }>,
 ) {
   return toolChoice === "auto"
-    ? deepSeekThinkingProviderOptions
+    ? deepSeekAgentLoopProviderOptions
     : deepSeekNamedToolProviderOptions;
 }
 

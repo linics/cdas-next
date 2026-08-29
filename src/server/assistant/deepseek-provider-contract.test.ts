@@ -190,7 +190,7 @@ describe("DeepSeek provider request contract", () => {
     // thinking when a tool is named — so the turn that writes the most content
     // is precisely the one that must keep its gear.
     expect(requestBody).toMatchObject({
-      reasoning_effort: "high",
+      reasoning_effort: "low",
       tool_choice: "auto",
     });
     expect(requestBody).not.toHaveProperty("thinking");
