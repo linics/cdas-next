@@ -14,6 +14,7 @@ import {
   removeAttachmentAction,
   reserveAttachmentUploadAction,
 } from "./attachment-actions";
+import { AttachmentPreview } from "../../../_components/attachment-preview";
 import styles from "./submission-workspace.module.css";
 
 type WorkingCopy = NonNullable<
@@ -204,7 +205,10 @@ export function AttachmentEditor({
               </div>
               <div className={styles.attachmentActions}>
                 {attachment.status === "READY" ? (
-                  <a href={`/attachments/${attachment.id}/download`}>下载</a>
+                  <>
+                    <AttachmentPreview attachment={attachment} />
+                    <a href={`/attachments/${attachment.id}/download`}>下载</a>
+                  </>
                 ) : attachment.status === "SCAN_PENDING" && canWrite ? (
                   <button type="button" disabled={busy} onClick={() => refresh(attachment.id)}>
                     刷新检查

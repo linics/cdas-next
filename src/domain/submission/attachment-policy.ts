@@ -3,19 +3,28 @@ import { z } from "zod";
 export const MAX_SUBMISSION_ATTACHMENTS = 5;
 export const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024;
 
+// `disposition` decides whether the browser may render the bytes in place or must
+// take them as a download. Only formats a browser renders natively are inline;
+// Word is not one of them, and a download is the honest answer for it.
 const formats = {
-  "image/jpeg": { kind: "IMAGE", extensions: ["jpg", "jpeg"] },
-  "image/png": { kind: "IMAGE", extensions: ["png"] },
-  "image/webp": { kind: "IMAGE", extensions: ["webp"] },
-  "application/pdf": { kind: "PDF", extensions: ["pdf"] },
-  "application/msword": { kind: "WORD", extensions: ["doc"] },
+  "image/jpeg": { kind: "IMAGE", extensions: ["jpg", "jpeg"], disposition: "inline" },
+  "image/png": { kind: "IMAGE", extensions: ["png"], disposition: "inline" },
+  "image/webp": { kind: "IMAGE", extensions: ["webp"], disposition: "inline" },
+  "application/pdf": { kind: "PDF", extensions: ["pdf"], disposition: "inline" },
+  "application/msword": {
+    kind: "WORD",
+    extensions: ["doc"],
+    disposition: "attachment",
+  },
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document": {
     kind: "WORD",
     extensions: ["docx"],
+    disposition: "attachment",
   },
 } as const;
 
 export type AttachmentKind = (typeof formats)[keyof typeof formats]["kind"];
+export type AttachmentDisposition = "inline" | "attachment";
 export type SupportedAttachmentMediaType = keyof typeof formats;
 
 function normalizedFilename(value: string): string {
@@ -79,3 +88,19 @@ export const attachmentReservationSchema = z
   }));
 
 export type AttachmentReservation = z.infer<typeof attachmentReservationSchema>;
+
+/**
+ * How the download route must offer this attachment.
+ *
+ * Deliberately derived from the stored media type alone and never from anything
+ * the caller supplies: a query parameter would hand the choice of "render this
+ * in our origin" to whoever can construct the URL. Anything unrecognised is a
+ * download, so a format added to storage before it is added here degrades to
+ * the safe answer rather than the permissive one.
+ */
+export function attachmentDisposition(mediaType: string): AttachmentDisposition {
+  return (
+    formats[mediaType as SupportedAttachmentMediaType]?.disposition ??
+    "attachment"
+  );
+}
