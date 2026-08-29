@@ -16,6 +16,8 @@
     "e2e:verify": "node --import tsx scripts/e2e/verify-closed-loop.ts",
     "e2e:closed-loop": "python3 scripts/e2e/run-closed-loop.py",
     "e2e:real-model": "python3 scripts/e2e/run-closed-loop.py --real-model-smoke",
+    "probe:glm": "tsx scripts/probe/glm-tool-choice.ts",
+    "probe:vision": "tsx scripts/probe/attachment-vision.ts",
     "staging:preflight": "node --import tsx scripts/staging/preflight.ts",
     "staging:verify-database": "node --import tsx scripts/staging/verify-database.ts",
     "staging:verify-application": "node --import tsx scripts/staging/verify-application.ts",

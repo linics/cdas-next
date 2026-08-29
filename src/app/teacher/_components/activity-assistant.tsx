@@ -11,7 +11,9 @@ import { usePathname } from "next/navigation";
 import {
   createContext,
   useContext,
+  useEffect,
   useMemo,
+  useRef,
   useState,
   useSyncExternalStore,
   type ReactNode,
@@ -694,6 +696,26 @@ export function isComposerSubmitKey(event: {
   return true;
 }
 
+/** Treat "within a line of the end" as still following the stream. */
+const followBottomThresholdPx = 32;
+
+/**
+ * Whether the transcript is still riding the bottom of its scrollport. Reading
+ * one line up counts as following; anything further means the teacher went back
+ * for something and must not be dragged forward again.
+ */
+export function isFollowingTranscriptBottom(
+  scrollport: Readonly<{
+    scrollHeight: number;
+    scrollTop: number;
+    clientHeight: number;
+  }>,
+): boolean {
+  const remaining =
+    scrollport.scrollHeight - scrollport.scrollTop - scrollport.clientHeight;
+  return remaining <= followBottomThresholdPx;
+}
+
 export function ActivityAssistant({
   classrooms,
   continuationOnly = false,
@@ -718,6 +740,25 @@ export function ActivityAssistant({
     [classrooms],
   );
   const busy = status === "submitted" || status === "streaming";
+  // Only the panel scrolls its own transcript; the wide surface rides the page.
+  // Follow new turns to the bottom, but yield the moment the teacher scrolls up
+  // to read something — otherwise the stream drags them back down mid-sentence.
+  const conversationRef = useRef<HTMLDivElement>(null);
+  const followingBottomRef = useRef(true);
+  const trackConversationScroll = () => {
+    const node = conversationRef.current;
+    if (!node) {
+      return;
+    }
+    followingBottomRef.current = isFollowingTranscriptBottom(node);
+  };
+  useEffect(() => {
+    const node = conversationRef.current;
+    if (surface !== "panel" || !node || !followingBottomRef.current) {
+      return;
+    }
+    node.scrollTop = node.scrollHeight;
+  }, [messages, status, surface]);
   const submitPrompt = () => {
     const text = input.trim();
     if (!text || busy || !hydrated) {
@@ -783,7 +824,11 @@ export function ActivityAssistant({
         </header>
       )}
 
-      <div className={styles.conversation}>
+      <div
+        className={styles.conversation}
+        ref={conversationRef}
+        onScroll={trackConversationScroll}
+      >
         <p className={styles.boundaryNote}>
         {surface === "panel" ? (
           <>

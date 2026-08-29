@@ -701,8 +701,11 @@ describe("activity assistant route handler", () => {
     expect(mocks.publishRelease).not.toHaveBeenCalled();
     expect(languageModel.doStreamCalls).toHaveLength(4);
     expect(languageModel.doStreamCalls[0]?.toolChoice).toEqual({ type: "auto" });
+    // Designing an activity is where the assistant writes the most, and it
+    // names no tool — so it keeps the reasoning gear rather than the pin that
+    // only the named-tool turns need.
     expect(languageModel.doStreamCalls[0]?.providerOptions).toEqual({
-      deepseek: { thinking: { type: "disabled" } },
+      deepseek: { reasoningEffort: "high" },
     });
     expect(languageModel.doStreamCalls[0]?.maxOutputTokens).toBe(16_000);
   });

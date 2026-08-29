@@ -31,7 +31,7 @@ import {
 } from "./assistant-config";
 import {
   createDeepSeekModel,
-  deepSeekActivityAssistantProviderOptions,
+  deepSeekThinkingProviderOptions,
 } from "./deepseek-provider";
 import {
   FeedbackWorkspaceQueryError,
@@ -168,8 +168,10 @@ async function generateSuggestion(
     instructions:
       "你是 K12 教师的量规评价起草助手。你只能提出可编辑建议，不能替教师形成最终评价。严格服从输出 schema 和证据边界。",
     prompt: buildTeacherEvaluationSuggestionPrompt(input),
-    providerOptions: deepSeekActivityAssistantProviderOptions,
-    timeout: 30_000,
+    providerOptions: deepSeekThinkingProviderOptions,
+    // Thinking costs wall clock: this call ran ~2s without it and ~13s at the
+    // high gear. 30s left no headroom above that mean for a slow day.
+    timeout: 60_000,
   });
   return teacherEvaluationSuggestionModelOutputSchema.parse(result.output);
 }

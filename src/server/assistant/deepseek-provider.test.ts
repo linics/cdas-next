@@ -12,7 +12,9 @@ vi.mock("@ai-sdk/openai-compatible", () => ({
 
 import {
   createDeepSeekModel,
-  deepSeekActivityAssistantProviderOptions,
+  deepSeekNamedToolProviderOptions,
+  deepSeekProviderOptionsForToolChoice,
+  deepSeekThinkingProviderOptions,
 } from "./deepseek-provider";
 
 describe("DeepSeek provider boundary", () => {
@@ -42,8 +44,31 @@ describe("DeepSeek provider boundary", () => {
   });
 
   it("uses V4 non-thinking mode for the named publish tool choice", () => {
-    expect(deepSeekActivityAssistantProviderOptions).toEqual({
+    expect(deepSeekNamedToolProviderOptions).toEqual({
       deepseek: { thinking: { type: "disabled" } },
     });
+  });
+
+  it("lets everything else think, and keeps the two settings apart", () => {
+    expect(deepSeekThinkingProviderOptions).toEqual({
+      deepseek: { reasoningEffort: "high" },
+    });
+    // Sharing one constant is what silently spread the named-tool constraint to
+    // calls that never name a tool.
+    expect(deepSeekThinkingProviderOptions).not.toEqual(
+      deepSeekNamedToolProviderOptions,
+    );
+  });
+
+  it("withholds thinking from exactly the turns that name a tool", () => {
+    expect(deepSeekProviderOptionsForToolChoice("auto")).toBe(
+      deepSeekThinkingProviderOptions,
+    );
+    expect(
+      deepSeekProviderOptionsForToolChoice({
+        type: "tool",
+        toolName: "publish_activity_release",
+      }),
+    ).toBe(deepSeekNamedToolProviderOptions);
   });
 });

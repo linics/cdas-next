@@ -31,7 +31,8 @@ import {
 } from "./assistant-config";
 import {
   createDeepSeekModel,
-  deepSeekActivityAssistantProviderOptions,
+  deepSeekNamedToolProviderOptions,
+  deepSeekProviderOptionsForToolChoice,
 } from "./deepseek-provider";
 import {
   createActivityAssistantTools,
@@ -600,7 +601,8 @@ ${error.message}`,
         // call cannot write before the teacher has approved it.
         tools: activityAssistantMessageValidationTools,
         toolChoice: { type: "tool", toolName: toolCall.toolName },
-        providerOptions: deepSeekActivityAssistantProviderOptions,
+        // Always names a tool, so this call can never think.
+        providerOptions: deepSeekNamedToolProviderOptions,
         maxOutputTokens: 16_000,
         maxRetries: 0,
         timeout: 90_000,
@@ -644,6 +646,10 @@ ${error.message}`,
         part.approval.approved === false,
     );
   let publishApprovalSelected = false;
+  // Computed once: it decides both which tool the model may pick and, because
+  // DeepSeek refuses a named tool while thinking, whether this turn can think.
+  const activityAssistantToolChoice =
+    selectActivityAssistantToolChoice(uiMessages);
   const postWriteStopController = new AbortController();
   const streamAbortSignal = AbortSignal.any([
     request.signal,
@@ -656,8 +662,10 @@ ${error.message}`,
       instructions: buildActivityAssistantInstructions(classrooms),
       messages: modelMessages,
       tools,
-      toolChoice: selectActivityAssistantToolChoice(uiMessages),
-      providerOptions: deepSeekActivityAssistantProviderOptions,
+      toolChoice: activityAssistantToolChoice,
+      providerOptions: deepSeekProviderOptionsForToolChoice(
+        activityAssistantToolChoice,
+      ),
       repairToolCall,
       toolApproval: {
         create_activity_draft: () => {
