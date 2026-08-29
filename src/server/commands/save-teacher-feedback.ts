@@ -15,6 +15,9 @@ import {
   type ResolvedCommandContext,
   resolveCommandContext,
 } from "./command-context";
+import {
+  teacherFeedbackSuggestionActionName,
+} from "./complete-teacher-feedback-suggestion";
 
 const commandInputSchema = z
   .object({
@@ -278,6 +281,26 @@ async function runTransaction(
         throw new SaveTeacherFeedbackError(
           "FEEDBACK_VERSION_CONFLICT",
         );
+      }
+
+      if (payload.suggestionAgentRunId) {
+        const suggestionAudit = await transaction.actionAudit.findFirst({
+          where: {
+            actorId: context.actorId,
+            agentRunId: payload.suggestionAgentRunId,
+            source: "AGENT",
+            actionName: teacherFeedbackSuggestionActionName,
+            targetType: "SubmissionRevision",
+            targetId: revision.id,
+            outcome: "SUCCEEDED",
+            beforeVersion: currentFeedbackVersion,
+            afterVersion: currentFeedbackVersion,
+          },
+          select: { id: true },
+        });
+        if (!suggestionAudit) {
+          throw new SaveTeacherFeedbackError("INVALID_AGENT_RUN");
+        }
       }
 
       const consumedIntent = await transaction.actionIntent.updateMany({

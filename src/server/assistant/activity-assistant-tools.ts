@@ -5,8 +5,14 @@ import { tool } from "ai";
 import { z } from "zod";
 import {
   activityContentV2Schema,
+  disciplineCodeSchema,
   type DisciplineCode,
 } from "../../domain/activity/activity-content";
+import type { TeacherAgentPageContext } from "../../domain/assistant/teacher-agent-page-context";
+import {
+  changedTaskBookAreas,
+  taskBookAreaSchema,
+} from "../../domain/activity/task-book-areas";
 import { publishDueAtSchema } from "../../domain/activity/prepare-publish-intent";
 import type { PrismaClient } from "../../generated/prisma/client";
 import {
@@ -26,13 +32,25 @@ import {
   SaveActivityDraftError,
 } from "../commands/save-activity-draft";
 import type { CommandContext } from "../commands/command-context";
+import type { TeacherActivityDashboard } from "../queries/teacher-activity-workspace";
+import {
+  teacherDraftDetailOutputSchema,
+  type TeacherDraftDetailReader,
+} from "./teacher-draft-detail";
+import {
+  releaseInsightsOutputSchema,
+  type TeacherReleaseInsightsReader,
+} from "./teacher-release-insights";
+import {
+  releaseRosterOutputSchema,
+  type TeacherReleaseRosterReader,
+} from "./teacher-release-roster";
 import {
   getOfficialKnowledgeReference,
   officialKnowledgeSectionKey,
   type OfficialKnowledgeSectionIdentity,
   officialKnowledgeReadInputSchema,
   officialKnowledgeReadOutputSchema,
-  officialKnowledgeReferenceSchema,
   officialKnowledgeSearchInputSchema,
   officialKnowledgeSearchOutputSchema,
   readOfficialKnowledgeSection,
@@ -67,8 +85,22 @@ const taskUnderstandingSummarySchema = z
 
 const integratedDisciplineContributionSchema = z
   .object({
-    disciplineCode: z.string().trim().min(1).max(40),
+    disciplineCode: disciplineCodeSchema,
     necessaryContribution: proposalText,
+  })
+  .strict();
+
+/**
+ * The model identifies a source; it does not restate it. Citation label and
+ * link are server facts looked up from the same corpus the reference points
+ * at, so a reference cannot be wrong about its own wording, and the proposal
+ * payload stays small enough not to truncate.
+ */
+const activityDraftSourceReferenceSchema = z
+  .object({
+    sourceId: z.string().trim().min(1).max(80),
+    sectionId: z.string().trim().min(1).max(120),
+    reason: proposalText,
   })
   .strict();
 
@@ -88,7 +120,44 @@ const alignmentChainSchema = z
  * exact input and creates its editable v2 draft, or rejects it without a
  * write. The content remains the sole persisted task book.
  */
-export const activityDraftProposalSchema = z
+/**
+ * Two facts in this payload are not the model's to remember: the schema
+ * version is a constant, and the integrated discipline codes are exactly the
+ * keys of the contributions it already wrote. Asking for either again only
+ * creates a way to be inconsistent, so both are filled in before validation.
+ * A list the model does supply is still checked against the contributions.
+ */
+function completeDraftProposalInput(value: unknown): unknown {
+  if (!value || typeof value !== "object") return value;
+  const proposal = value as Record<string, unknown>;
+  const content = proposal.content;
+  if (!content || typeof content !== "object") return value;
+  const contributions = Array.isArray(proposal.integratedDisciplineContributions)
+    ? proposal.integratedDisciplineContributions
+    : [];
+  const derivedCodes = contributions
+    .map((item) =>
+      item && typeof item === "object"
+        ? (item as { disciplineCode?: unknown }).disciplineCode
+        : undefined,
+    )
+    .filter((code): code is string => typeof code === "string");
+  const draft = content as Record<string, unknown>;
+  const codes = draft.integratedDisciplineCodes;
+  return {
+    ...proposal,
+    content: {
+      ...draft,
+      schemaVersion: 2,
+      integratedDisciplineCodes:
+        Array.isArray(codes) && codes.length > 0 ? codes : derivedCodes,
+    },
+  };
+}
+
+export const activityDraftProposalSchema = z.preprocess(
+  completeDraftProposalInput,
+  z
   .object({
     taskUnderstandingSummary: taskUnderstandingSummarySchema,
     teacherRequirements: z.array(proposalText).min(1).max(12),
@@ -98,7 +167,7 @@ export const activityDraftProposalSchema = z
       .min(1)
       .max(14),
     alignmentChains: z.array(alignmentChainSchema).length(3),
-    sourceReferences: z.array(officialKnowledgeReferenceSchema).max(8),
+    sourceReferences: z.array(activityDraftSourceReferenceSchema).max(4),
     content: activityContentV2Schema,
   })
   .strict()
@@ -108,8 +177,14 @@ export const activityDraftProposalSchema = z
       (item) => item.disciplineCode,
     );
     const suppliedSet = new Set(suppliedDisciplines);
-    if (
-      suppliedSet.size !== suppliedDisciplines.length ||
+    if (suppliedSet.size !== suppliedDisciplines.length) {
+      context.addIssue({
+        code: "custom",
+        path: ["integratedDisciplineContributions"],
+        message: "Each integrated discipline may contribute exactly once",
+        params: { reason: "DISCIPLINE_REPEATED" },
+      });
+    } else if (
       suppliedSet.size !== expectedDisciplines.size ||
       [...expectedDisciplines].some((code) => !suppliedSet.has(code))
     ) {
@@ -118,6 +193,7 @@ export const activityDraftProposalSchema = z
         path: ["integratedDisciplineContributions"],
         message:
           "Integrated discipline contributions must cover each integrated discipline exactly once",
+        params: { reason: "DISCIPLINE_CONTRIBUTIONS" },
       });
     }
 
@@ -133,6 +209,7 @@ export const activityDraftProposalSchema = z
         path: ["alignmentChains"],
         message:
           "Alignment chains must contain knowledge, process, and emotion exactly once",
+        params: { reason: "ALIGNMENT_CHAINS" },
       });
     }
 
@@ -155,6 +232,7 @@ export const activityDraftProposalSchema = z
         path: ["sourceReferences"],
         message:
           "Activities covered by the first official corpus require two distinct official sources",
+        params: { reason: "TOO_FEW_SOURCES" },
       });
     }
     proposal.sourceReferences.forEach((reference, index) => {
@@ -164,6 +242,7 @@ export const activityDraftProposalSchema = z
           code: "custom",
           path: ["sourceReferences", index],
           message: "Official source references must not repeat",
+          params: { reason: "SOURCE_REPEATED" },
         });
         return;
       }
@@ -172,15 +251,12 @@ export const activityDraftProposalSchema = z
         reference.sourceId,
         reference.sectionId,
       );
-      if (
-        !canonical ||
-        canonical.citationLabel !== reference.citationLabel ||
-        canonical.href !== reference.href
-      ) {
+      if (!canonical) {
         context.addIssue({
           code: "custom",
           path: ["sourceReferences", index],
-          message: "Official source reference must match the server corpus",
+          message: "Official source reference must exist in the server corpus",
+          params: { reason: "SOURCE_NOT_CANONICAL" },
         });
         return;
       }
@@ -189,6 +265,7 @@ export const activityDraftProposalSchema = z
           code: "custom",
           path: ["sourceReferences", index],
           message: "Official source reference does not cover the selected stage",
+          params: { reason: "SOURCE_STAGE_MISMATCH" },
         });
       }
       if (
@@ -199,10 +276,12 @@ export const activityDraftProposalSchema = z
           code: "custom",
           path: ["sourceReferences", index],
           message: "Official source reference does not cover an activity discipline",
+          params: { reason: "SOURCE_DISCIPLINE_MISMATCH" },
         });
       }
     });
-  });
+  }),
+);
 
 export type ActivityDraftProposal = z.infer<typeof activityDraftProposalSchema>;
 
@@ -229,11 +308,378 @@ export const publishActivityToolOutputSchema = z
   })
   .strict();
 
+const emptyToolInputSchema = z.object({}).strict();
+const teacherInternalHrefSchema = z
+  .string()
+  .regex(/^\/teacher(?:\/[a-z-]+)*(?:\/[0-9a-f-]{36})?(?:\/[a-z-]+)*$/);
+
+export const currentTeacherContextOutputSchema = z
+  .object({
+    status: z.enum(["AVAILABLE", "UNAVAILABLE"]),
+    kind: z.enum([
+      "TEACHER_DASHBOARD",
+      "ACTIVITY_NEW",
+      "ACTIVITY_STUDIO",
+      "ACTIVITY_DRAFT",
+      "ACTIVITY_PREVIEW",
+      "RELEASE_SUBMISSIONS",
+      "SUBMISSION_REVIEW",
+      "TEACHER_INSIGHTS",
+      "TEACHER_KNOWLEDGE",
+      "CLASSROOM_MEMBERS",
+      "UNKNOWN_TEACHER_PAGE",
+    ]),
+    label: z.string().trim().min(1).max(240),
+    href: teacherInternalHrefSchema.nullable(),
+  })
+  .strict();
+
+export const teacherClassroomListOutputSchema = z
+  .object({
+    classrooms: z.array(
+      z
+        .object({
+          id: z.uuid(),
+          name: z.string().trim().min(1),
+          currentMemberCount: z.int().nonnegative(),
+          href: z
+            .string()
+            .regex(/^\/teacher\/classrooms\/[0-9a-f-]{36}\/members$/),
+        })
+        .strict(),
+    ),
+  })
+  .strict();
+
+export const teacherDraftListOutputSchema = z
+  .object({
+    drafts: z.array(
+      z
+        .object({
+          id: z.uuid(),
+          title: z.string().trim().min(1),
+          status: z.enum(["EDITING", "READY_FOR_PREVIEW", "SEALED"]),
+          version: z.int().positive(),
+          updatedAt: z.iso.datetime({ offset: true }),
+          editHref: z
+            .string()
+            .regex(/^\/teacher\/activities\/[0-9a-f-]{36}$/),
+          previewHref: z
+            .string()
+            .regex(/^\/teacher\/activities\/[0-9a-f-]{36}\/preview$/),
+        })
+        .strict(),
+    ),
+  })
+  .strict();
+
+export const teacherReleaseListOutputSchema = z
+  .object({
+    releases: z.array(
+      z
+        .object({
+          id: z.uuid(),
+          title: z.string().trim().min(1),
+          classroomName: z.string().trim().min(1),
+          status: z.enum(["ACTIVE", "CLOSED", "ARCHIVED"]),
+          publishedAt: z.iso.datetime({ offset: true }),
+          dueAt: z.iso.datetime({ offset: true }).nullable(),
+          progress: z
+            .object({
+              submittedCount: z.int().nonnegative(),
+              cohortSize: z.int().nonnegative(),
+            })
+            .strict()
+            .nullable(),
+          attention: z
+            .object({
+              pendingFeedbackCount: z.int().nonnegative(),
+              pendingEvaluationCount: z.int().nonnegative(),
+              awaitingResubmissionCount: z.int().nonnegative(),
+            })
+            .strict()
+            .nullable(),
+          submissionsHref: z
+            .string()
+            .regex(/^\/teacher\/releases\/[0-9a-f-]{36}\/submissions$/)
+            .nullable(),
+        })
+        .strict(),
+    ),
+  })
+  .strict();
+
+export const activityDraftReadInputSchema = z
+  .object({ draftId: z.uuid() })
+  .strict();
+
+export const releaseInsightsInputSchema = z
+  .object({ releaseId: z.uuid() })
+  .strict();
+
+export const releaseRosterInputSchema = z
+  .object({ releaseId: z.uuid() })
+  .strict();
+
+const revisionChangeSchema = z
+  .object({
+    area: taskBookAreaSchema,
+    change: proposalText,
+    reason: proposalText,
+  })
+  .strict();
+
+/**
+ * A revision proposal names the areas it touches. The server checks that claim
+ * against the real difference before the teacher is asked to approve, so
+ * "我只改了第二阶段" cannot quietly arrive with a rewritten rubric attached.
+ */
+export const activityDraftRevisionProposalSchema = z
+  .object({
+    draftId: z.uuid(),
+    expectedVersion: z.int().positive(),
+    changes: z.array(revisionChangeSchema).min(1).max(8),
+    content: activityContentV2Schema,
+  })
+  .strict()
+  .superRefine((proposal, context) => {
+    const areas = proposal.changes.map((item) => item.area);
+    if (new Set(areas).size !== areas.length) {
+      context.addIssue({
+        code: "custom",
+        path: ["changes"],
+        message: "Each task book area may be described at most once",
+        params: { reason: "AREA_REPEATED" },
+      });
+    }
+  });
+
+export type ActivityDraftRevisionProposal = z.infer<
+  typeof activityDraftRevisionProposalSchema
+>;
+
+export const updatedDraftToolOutputSchema = z
+  .object({
+    draftId: z.uuid(),
+    previousVersion: z.int().positive(),
+    version: z.int().positive(),
+    status: z.literal("READY_FOR_PREVIEW"),
+    editHref: z.string().regex(/^\/teacher\/activities\/[0-9a-f-]{36}$/),
+    previewHref: z
+      .string()
+      .regex(/^\/teacher\/activities\/[0-9a-f-]{36}\/preview$/),
+  })
+  .strict();
+
+export type CurrentTeacherContextOutput = z.infer<
+  typeof currentTeacherContextOutputSchema
+>;
+
+export function mapTeacherClassroomList(
+  workspace: TeacherActivityDashboard,
+) {
+  return teacherClassroomListOutputSchema.parse({
+    classrooms: workspace.classrooms.map((classroom) => ({
+      ...classroom,
+      href: `/teacher/classrooms/${classroom.id}/members`,
+    })),
+  });
+}
+
+export function mapTeacherDraftList(workspace: TeacherActivityDashboard) {
+  return teacherDraftListOutputSchema.parse({
+    drafts: workspace.drafts.map((draft) => ({
+      id: draft.id,
+      title: draft.title,
+      status: draft.status,
+      version: draft.version,
+      updatedAt: draft.updatedAt,
+      editHref: `/teacher/activities/${draft.id}`,
+      previewHref: `/teacher/activities/${draft.id}/preview`,
+    })),
+  });
+}
+
+export function mapTeacherReleaseList(workspace: TeacherActivityDashboard) {
+  return teacherReleaseListOutputSchema.parse({
+    releases: workspace.releases.map((release) => ({
+      id: release.id,
+      title: release.title,
+      classroomName: release.classroomName,
+      status: release.status,
+      publishedAt: release.publishedAt,
+      dueAt: release.dueAt,
+      progress: release.progress,
+      attention: release.attention,
+      submissionsHref: release.canViewSubmissions
+        ? `/teacher/releases/${release.id}/submissions`
+        : null,
+    })),
+  });
+}
+
+export function mapCurrentTeacherContext(
+  pageContext: TeacherAgentPageContext,
+  workspace: TeacherActivityDashboard,
+): CurrentTeacherContextOutput {
+  const staticContexts: Partial<
+    Record<TeacherAgentPageContext["kind"], CurrentTeacherContextOutput>
+  > = {
+    TEACHER_DASHBOARD: {
+      status: "AVAILABLE",
+      kind: "TEACHER_DASHBOARD",
+      label: "教师工作台",
+      href: "/teacher",
+    },
+    ACTIVITY_NEW: {
+      status: "AVAILABLE",
+      kind: "ACTIVITY_NEW",
+      label: "新建学习活动",
+      href: "/teacher/activities/new",
+    },
+    ACTIVITY_STUDIO: {
+      status: "AVAILABLE",
+      kind: "ACTIVITY_STUDIO",
+      label: "活动设计",
+      href: "/teacher/activities",
+    },
+    TEACHER_INSIGHTS: {
+      status: "AVAILABLE",
+      kind: "TEACHER_INSIGHTS",
+      label: "过程诊断",
+      href: "/teacher/insights",
+    },
+    TEACHER_KNOWLEDGE: {
+      status: "AVAILABLE",
+      kind: "TEACHER_KNOWLEDGE",
+      label: "课程依据",
+      href: "/teacher/knowledge",
+    },
+    SUBMISSION_REVIEW: {
+      status: "AVAILABLE",
+      kind: "SUBMISSION_REVIEW",
+      label: "提交评阅页（本批不读取学生或提交详情）",
+      href: null,
+    },
+    UNKNOWN_TEACHER_PAGE: {
+      status: "UNAVAILABLE",
+      kind: "UNKNOWN_TEACHER_PAGE",
+      label: "当前教师页面不在首批识别范围",
+      href: null,
+    },
+  };
+  const staticContext = staticContexts[pageContext.kind];
+  if (staticContext) return currentTeacherContextOutputSchema.parse(staticContext);
+
+  if (!("resourceId" in pageContext)) {
+    return currentTeacherContextOutputSchema.parse(
+      staticContexts.UNKNOWN_TEACHER_PAGE,
+    );
+  }
+
+  if (
+    pageContext.kind === "ACTIVITY_DRAFT" ||
+    pageContext.kind === "ACTIVITY_PREVIEW"
+  ) {
+    const draft = workspace.drafts.find(
+      (candidate) => candidate.id === pageContext.resourceId,
+    );
+    if (draft) {
+      return currentTeacherContextOutputSchema.parse({
+        status: "AVAILABLE",
+        kind: pageContext.kind,
+        label: `${pageContext.kind === "ACTIVITY_PREVIEW" ? "活动预览" : "活动草稿"}：${draft.title}`,
+        href:
+          pageContext.kind === "ACTIVITY_PREVIEW"
+            ? `/teacher/activities/${draft.id}/preview`
+            : `/teacher/activities/${draft.id}`,
+      });
+    }
+  }
+
+  if (pageContext.kind === "RELEASE_SUBMISSIONS") {
+    const release = workspace.releases.find(
+      (candidate) =>
+        candidate.id === pageContext.resourceId &&
+        candidate.canViewSubmissions,
+    );
+    if (release) {
+      return currentTeacherContextOutputSchema.parse({
+        status: "AVAILABLE",
+        kind: pageContext.kind,
+        label: `发布提交：${release.title}`,
+        href: `/teacher/releases/${release.id}/submissions`,
+      });
+    }
+  }
+
+  if (pageContext.kind === "CLASSROOM_MEMBERS") {
+    const classroom = workspace.classrooms.find(
+      (candidate) => candidate.id === pageContext.resourceId,
+    );
+    if (classroom) {
+      return currentTeacherContextOutputSchema.parse({
+        status: "AVAILABLE",
+        kind: pageContext.kind,
+        label: `班级成员：${classroom.name}`,
+        href: `/teacher/classrooms/${classroom.id}/members`,
+      });
+    }
+  }
+
+  return currentTeacherContextOutputSchema.parse({
+    status: "UNAVAILABLE",
+    kind: pageContext.kind,
+    label: "当前页面资源不可用或你已无权查看",
+    href: null,
+  });
+}
+
 /**
  * Schema-only registry used to validate client-controlled UI message history
  * before an AgentRun is opened. It deliberately has no execute functions.
  */
 export const activityAssistantMessageValidationTools = {
+  get_current_context: tool({
+    inputSchema: emptyToolInputSchema,
+    outputSchema: currentTeacherContextOutputSchema,
+    strict: true,
+  }),
+  list_my_classrooms: tool({
+    inputSchema: emptyToolInputSchema,
+    outputSchema: teacherClassroomListOutputSchema,
+    strict: true,
+  }),
+  list_my_activity_drafts: tool({
+    inputSchema: emptyToolInputSchema,
+    outputSchema: teacherDraftListOutputSchema,
+    strict: true,
+  }),
+  list_my_releases: tool({
+    inputSchema: emptyToolInputSchema,
+    outputSchema: teacherReleaseListOutputSchema,
+    strict: true,
+  }),
+  get_activity_draft: tool({
+    inputSchema: activityDraftReadInputSchema,
+    outputSchema: teacherDraftDetailOutputSchema,
+    strict: true,
+  }),
+  get_process_insights: tool({
+    inputSchema: releaseInsightsInputSchema,
+    outputSchema: releaseInsightsOutputSchema,
+    strict: true,
+  }),
+  list_release_submissions: tool({
+    inputSchema: releaseRosterInputSchema,
+    outputSchema: releaseRosterOutputSchema,
+    strict: true,
+  }),
+  update_activity_draft: tool({
+    inputSchema: activityDraftRevisionProposalSchema,
+    outputSchema: updatedDraftToolOutputSchema,
+    strict: true,
+  }),
   search_knowledge: tool({
     inputSchema: officialKnowledgeSearchInputSchema,
     outputSchema: officialKnowledgeSearchOutputSchema,
@@ -274,17 +720,30 @@ export type ActivityAssistantToolDependencies = Readonly<{
   database: PrismaClient;
   agentContext: CommandContext;
   approvalContext: CommandContext;
+  pageContext: TeacherAgentPageContext;
+  workspace: TeacherActivityDashboard;
+  readDraftDetail: TeacherDraftDetailReader;
+  readReleaseInsights: TeacherReleaseInsightsReader;
+  readReleaseRoster: TeacherReleaseRosterReader;
+  /**
+   * Draft versions the model has been shown, shared with the caller so the
+   * approval gate and the tool agree on one ledger. The tools write to it.
+   */
+  draftReads?: Map<string, number>;
   agentRunId: string;
   onToolFailure: (failureCode: string) => void;
   onBusinessWriteSuccess: (
-    result: "DRAFT_SAVED" | "RELEASE_PUBLISHED",
+    result: "DRAFT_SAVED" | "DRAFT_UPDATED" | "RELEASE_PUBLISHED",
   ) => void;
   initialKnowledgeSearchResults?: readonly OfficialKnowledgeSectionIdentity[];
   initialKnowledgeReadSections?: readonly OfficialKnowledgeSectionIdentity[];
   commands?: ActivityAssistantCommands;
 }>;
 
-function idempotencyKey(kind: "draft" | "prepare" | "publish", callId: string) {
+function idempotencyKey(
+  kind: "draft" | "revise" | "prepare" | "publish",
+  callId: string,
+) {
   const digest = createHash("sha256").update(callId).digest("hex");
   return `assistant_${kind}_${digest.slice(0, 40)}`;
 }
@@ -305,6 +764,12 @@ export function createActivityAssistantTools({
   database,
   agentContext,
   approvalContext,
+  pageContext,
+  workspace,
+  readDraftDetail,
+  readReleaseInsights,
+  readReleaseRoster,
+  draftReads,
   agentRunId,
   onToolFailure,
   onBusinessWriteSuccess,
@@ -313,6 +778,10 @@ export function createActivityAssistantTools({
   commands = defaultCommands,
 }: ActivityAssistantToolDependencies) {
   let createToolCallId: string | null = null;
+  let updateToolCallId: string | null = null;
+  // Version the model has actually seen, per draft. A revision may only be
+  // proposed against a task book that was read in this same conversation.
+  const readDraftVersions = draftReads ?? new Map<string, number>();
   const searchedSectionKeys = new Set(
     initialKnowledgeSearchResults.map(officialKnowledgeSectionKey),
   );
@@ -328,6 +797,7 @@ export function createActivityAssistantTools({
             path: ["sourceReferences", index],
             message:
               "Every official source reference must be read in the current conversation before draft creation",
+            params: { reason: "SOURCE_NOT_READ" },
           });
         }
       });
@@ -335,6 +805,59 @@ export function createActivityAssistantTools({
   );
 
   return {
+    get_current_context: tool({
+      description:
+        "识别教师当前所在的白名单页面。动态资源只有在服务端确认仍属于当前教师工作区时才返回名称与站内链接；不可用时必须如实说明，不得猜测路径。",
+      inputSchema: emptyToolInputSchema,
+      outputSchema: currentTeacherContextOutputSchema,
+      strict: true,
+      execute: () => mapCurrentTeacherContext(pageContext, workspace),
+    }),
+
+    list_my_classrooms: tool({
+      description:
+        "列出当前教师管理的班级、当前成员人数与班级成员页链接。不返回成员姓名或其他教师的班级。",
+      inputSchema: emptyToolInputSchema,
+      outputSchema: teacherClassroomListOutputSchema,
+      strict: true,
+      execute: () => mapTeacherClassroomList(workspace),
+    }),
+
+    list_my_activity_drafts: tool({
+      description:
+        "列出当前教师拥有的活动草稿摘要与精确编辑、预览链接。不读取或返回草稿正文。",
+      inputSchema: emptyToolInputSchema,
+      outputSchema: teacherDraftListOutputSchema,
+      strict: true,
+      execute: () => mapTeacherDraftList(workspace),
+    }),
+
+    list_my_releases: tool({
+      description:
+        "列出当前教师发布的活动摘要、提交进度以及待反馈、待评价、待重交计数。只有仍管理目标班级时才返回提交页链接与待办，不返回学生或评阅详情。",
+      inputSchema: emptyToolInputSchema,
+      outputSchema: teacherReleaseListOutputSchema,
+      strict: true,
+      execute: () => mapTeacherReleaseList(workspace),
+    }),
+
+    get_activity_draft: tool({
+      description:
+        "读取当前教师本人某一份活动草稿的完整任务书，用于回答、诊断或改写建议。draftId 必须来自 list_my_activity_drafts 或 get_current_context 的结果，不得猜测。不属于本人工作区的草稿一律返回 NOT_FOUND；旧版快照只返回标题与链接。本工具只读，不修改草稿，也不读取学生、提交、反馈或评价数据。",
+      inputSchema: activityDraftReadInputSchema,
+      outputSchema: teacherDraftDetailOutputSchema,
+      strict: true,
+      execute: async ({ draftId }) => {
+        const detail = await readDraftDetail(draftId);
+        if (detail.status === "FOUND") {
+          readDraftVersions.set(detail.draftId, detail.version);
+        } else {
+          readDraftVersions.delete(draftId);
+        }
+        return detail;
+      },
+    }),
+
     search_knowledge: tool({
       description:
         "检索 CDAS 首版白名单中的教育部官方 2022 年义务教育课程方案与学科课程标准。用于为活动目标、学科贡献、任务证据和评价找到可引用依据；其中不含设计理论、AI 生成案例或教师私有材料。",
@@ -371,7 +894,7 @@ export function createActivityAssistantTools({
 
     create_activity_draft: tool({
       description:
-        "把教師已經說明清楚的完整跨學科任務書儲存成可預覽、可繼續編輯的活動草稿。content.schemaVersion 必須是數字 2。作業類型只用 practical、inquiry、project；practical 子類型只用 visit、simulation、observation；inquiry 子類型只用 literature、survey、experiment；project 的 assignmentSubtype 必須為 null。融合學科貢獻必須與 content.integratedDisciplineCodes 恰好一一對應，且不得包含主學科。sourceReferences 每一條都必須是本輪 read_source_section 已返回 FOUND 的章節，數量不得超過已通讀章節。必須包含三維目標、三至四個連續階段、類型化證據及四檔量規，不能臆造缺失事實。",
+        "把教师已经说明清楚的完整跨学科任务书储存成可预览、可继续编辑的活动草稿。所有文字使用简体中文。content.schemaVersion 与 content.integratedDisciplineCodes 由服务端补齐，不要自己填：学科以你写的融合学科贡献为准。作业类型只用 practical、inquiry、project；practical 子类型只用 visit、simulation、observation；inquiry 子类型只用 literature、survey、experiment；project 的 assignmentSubtype 必须为 null。融合学科贡献用学科目录里的英文 code，每个融合学科各写一条，不得包含主学科。sourceReferences 每一条都必须是本轮 read_source_section 已返回 FOUND 的章节，数量不得超过已通读章节。必须包含三维目标、三至四个连续阶段、类型化证据及四档量规，不能臆造缺失事实。",
       inputSchema: proposalAfterReadingSchema,
       outputSchema: createdDraftToolOutputSchema,
       strict: true,
@@ -419,9 +942,109 @@ export function createActivityAssistantTools({
       },
     }),
 
+    get_process_insights: tool({
+      description:
+        "读取当前教师某一次发布的过程诊断：各阶段有多少对象、冻结量规各维度的档位分布与最弱维度、以及重交后评价上升/持平/下降的计数。releaseId 必须来自 list_my_releases 的结果。只返回人数与计数，不含任何学生、小组、提交、证据、反馈或评价正文，因此无法也不应据此判断某个学生。",
+      inputSchema: releaseInsightsInputSchema,
+      outputSchema: releaseInsightsOutputSchema,
+      strict: true,
+      execute: ({ releaseId }) => readReleaseInsights(releaseId),
+    }),
+
+    list_release_submissions: tool({
+      description:
+        "读取当前教师某一次发布的提交名册，用于回答「哪几个需要我先看」。releaseId 必须来自 list_my_releases 的结果。每个对象只用匿名序号 objectOrdinal 呈现（配合 objectKind 说成「对象 n」或「小组 n」），学生姓名与小组名都不会提供、也不存在于结果中，你无从得知也不得猜测；序号只在本次结果内有效，跨轮不得沿用。返回每个对象的阶段位置、是否已正式提交、各次正式提交的修订号、迟交、反馈与评价状态、跟进状态和精确的评阅链接。最多列 60 个对象，truncated 为真时必须如实说明只列出了前 60 个。名册状态只是「谁需要教师优先看」的工作信号，不得据此对任何学生的能力、态度或表现下结论，也不得推断原因或排名次；要看具体情况请教师点开链接。",
+      inputSchema: releaseRosterInputSchema,
+      outputSchema: releaseRosterOutputSchema,
+      strict: true,
+      execute: ({ releaseId }) => readReleaseRoster(releaseId),
+    }),
+
+    update_activity_draft: tool({
+      description:
+        "把教师要求的修改写成这份已有草稿的新版本。只能改写本人的、未封存的草稿，且必须先用 get_activity_draft 读过同一版本。content 必须是改写后的完整 schema v2 任务书，不是片段；未被要求改动的部分必须逐字保留教师原文。changes 必须如实列出你改动的每一个区域及理由；服务端会把它与真实差异逐一核对，谎报或漏报会直接失败。此操作会暂停并展示你声明的改动，只有教师明确确认后才写入，且原版本作为历史修订保留。",
+      inputSchema: activityDraftRevisionProposalSchema,
+      outputSchema: updatedDraftToolOutputSchema,
+      strict: true,
+      execute: async (proposal, { toolCallId }) => {
+        if (updateToolCallId !== null && updateToolCallId !== toolCallId) {
+          onToolFailure("REVISE_MULTIPLE_UPDATE_ATTEMPTS");
+          throw new Error("ACTIVITY_REVISE_MULTIPLE_UPDATE_ATTEMPTS");
+        }
+        updateToolCallId = toolCallId;
+
+        const readVersion = readDraftVersions.get(proposal.draftId);
+        if (readVersion === undefined) {
+          onToolFailure("REVISE_DRAFT_NOT_READ");
+          throw new Error("ACTIVITY_REVISE_DRAFT_NOT_READ");
+        }
+        if (readVersion !== proposal.expectedVersion) {
+          onToolFailure("REVISE_STALE_READ");
+          throw new Error("ACTIVITY_REVISE_STALE_READ");
+        }
+
+        // Re-read rather than trusting the conversation: the current task book
+        // is both the base of the diff and the proof that authorization still
+        // holds at execution time, not only when the model read it.
+        const current = await readDraftDetail(proposal.draftId);
+        if (current.status !== "FOUND") {
+          onToolFailure("REVISE_DRAFT_UNAVAILABLE");
+          throw new Error("ACTIVITY_REVISE_DRAFT_UNAVAILABLE");
+        }
+        if (current.version !== proposal.expectedVersion) {
+          onToolFailure("REVISE_STALE_READ");
+          throw new Error("ACTIVITY_REVISE_STALE_READ");
+        }
+
+        const actuallyChanged = changedTaskBookAreas(
+          current.content,
+          proposal.content,
+        );
+        if (actuallyChanged.length === 0) {
+          onToolFailure("REVISE_NO_CHANGE");
+          throw new Error("ACTIVITY_REVISE_NO_CHANGE");
+        }
+        const declared = new Set(proposal.changes.map((item) => item.area));
+        if (
+          actuallyChanged.some((area) => !declared.has(area)) ||
+          [...declared].some((area) => !actuallyChanged.includes(area))
+        ) {
+          onToolFailure("REVISE_UNDECLARED_CHANGE");
+          throw new Error("ACTIVITY_REVISE_UNDECLARED_CHANGE");
+        }
+
+        try {
+          const result = await commands.saveDraft(database, agentContext, {
+            draftId: proposal.draftId,
+            expectedVersion: proposal.expectedVersion,
+            desiredStatus: "READY_FOR_PREVIEW",
+            content: proposal.content,
+            agentRunId,
+            idempotencyKey: idempotencyKey("revise", toolCallId),
+          });
+          onBusinessWriteSuccess("DRAFT_UPDATED");
+          // The stored task book moved on; a later revision in the same
+          // conversation must read the new version before it may propose one.
+          readDraftVersions.set(proposal.draftId, result.version);
+          return updatedDraftToolOutputSchema.parse({
+            draftId: result.draftId,
+            previousVersion: proposal.expectedVersion,
+            version: result.version,
+            status: result.status,
+            editHref: `/teacher/activities/${result.draftId}`,
+            previewHref: `/teacher/activities/${result.draftId}/preview`,
+          });
+        } catch (error) {
+          const code = stableCommandFailure(error);
+          onToolFailure(`REVISE_${code}`);
+          throw new Error(`ACTIVITY_REVISE_${code}`);
+        }
+      },
+    }),
+
     publish_activity_release: tool({
       description:
-        "發佈一個已處於可預覽狀態的活動草稿。此操作會先暫停並展示精確參數，只有目前教師明確批准後才會執行。",
+        "发布一个已处于可预览状态的活动草稿。此操作会先暂停并展示精确参数，只有目前教师明确批准后才会执行。",
       inputSchema: publishActivityToolInputSchema,
       outputSchema: publishActivityToolOutputSchema,
       strict: true,

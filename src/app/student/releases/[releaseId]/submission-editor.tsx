@@ -168,19 +168,14 @@ export function SubmissionEditor({
       ? `第 ${workingCopy.baseRevisionNumber + 1} 版重交草稿`
       : "未提交草稿";
 
+  // 已正式提交且没有在改的草稿时，这一段只剩一个动作，而且这个动作是针对第 N 版的 ——
+  // 状态本身由下面的「我的提交与反馈」时间线负责讲，不再重复一张卡。
   if (!workingCopy && latestRevisionNumber > 0) {
     return (
       <section className={styles.editorSection} aria-labelledby="submission-title">
-        <div className={styles.sectionHeading}>
-          <div>
-            <p className={styles.eyebrow}>当前状态</p>
-            <h2 id="submission-title">第 {latestRevisionNumber} 版已正式提交</h2>
-          </div>
-          <span className={styles.formalBadge}>正式修订</span>
-        </div>
-        <p className={styles.sectionLead}>
-          当前没有未提交的修改。正式修订不可覆盖；若要补充内容，需另外创建重交草稿。
-        </p>
+        <h2 className={styles.visuallyHidden} id="submission-title">
+          第 {latestRevisionNumber} 版已正式提交
+        </h2>
 
         {canWrite ? (
           <form className={styles.resubmitForm} action={resubmitAction}>
@@ -191,9 +186,9 @@ export function SubmissionEditor({
               idempotencyKey={resubmitIdempotencyKey}
             />
             <div>
-              <strong>开始下一版</strong>
+              <strong>第 {latestRevisionNumber} 版 · 开始下一版</strong>
               <p>
-                系统会复制第 {latestRevisionNumber} 版文字、检查点与附件作为新草稿，现有修订与反馈都会保留。
+                正式修订不可覆盖。系统会复制第 {latestRevisionNumber} 版文字、检查点与附件作为新草稿，现有修订与反馈都会保留。
               </p>
             </div>
             <button

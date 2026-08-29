@@ -22,6 +22,11 @@ import { startSubmissionResubmission } from "./start-submission-resubmission";
 import { submitSubmissionRevision } from "./submit-submission-revision";
 import { listStudentReleases } from "../queries/student-releases";
 import { getTeacherReleaseSubmissions } from "../queries/submission-workspace";
+import {
+  finishActivityAssistantRun,
+  startActivityAssistantRun,
+} from "../assistant/agent-run-lifecycle";
+import { completeTeacherEvaluationSuggestion } from "./complete-teacher-evaluation-suggestion";
 
 const databaseUrl = process.env.TEST_DATABASE_URL;
 const describeWithDatabase = databaseUrl ? describe : describe.skip;
@@ -429,6 +434,163 @@ describeWithDatabase("teacher evaluation commands", () => {
         data: { summary: "不得覆盖" },
       }),
     ).rejects.toThrow(/append-only/);
+  });
+
+  it("records a successful suggestion run on the teacher-confirmed revision and rejects failed runs", async () => {
+    const fixture = await createEvaluationFixture();
+    const suggestionRun = await startActivityAssistantRun(
+      database!,
+      commandContext(fixture.teacherId, minutesAfter(fixture.baseTime, 1)),
+      { model: "deepseek-v4-flash" },
+    );
+    await completeTeacherEvaluationSuggestion(
+      database!,
+      commandContext(
+        fixture.teacherId,
+        minutesAfter(fixture.baseTime, 2),
+        "AGENT",
+      ),
+      {
+        agentRunId: suggestionRun.id,
+        submissionId: fixture.submissionId,
+        submissionRevisionId: fixture.submissionRevisionId,
+        submissionRevisionNumber: 1,
+        expectedEvaluationVersion: 0,
+      },
+    );
+
+    const prepared = await prepareTeacherEvaluationIntent(
+      database!,
+      commandContext(fixture.teacherId, minutesAfter(fixture.baseTime, 3)),
+      {
+        submissionId: fixture.submissionId,
+        expectedSubmissionRevisionId: fixture.submissionRevisionId,
+        expectedSubmissionRevisionNumber: 1,
+        expectedEvaluationVersion: 0,
+        summary: "教师已修改 AI 起草内容，并逐维完成终审。",
+        outcomes: coveringOutcomes({
+          0: { status: "LEVEL", level: "excellent" },
+          1: { status: "INSUFFICIENT_EVIDENCE" },
+        }),
+        suggestionAgentRunId: suggestionRun.id,
+        idempotencyKey: `prepare_ai_evaluation_${randomUUID()}`,
+      },
+    );
+    await decideActionIntent(
+      database!,
+      commandContext(fixture.teacherId, minutesAfter(fixture.baseTime, 4)),
+      { actionIntentId: prepared.actionIntentId, decision: "CONFIRM" },
+    );
+    const saved = await saveTeacherEvaluation(
+      database!,
+      commandContext(fixture.teacherId, minutesAfter(fixture.baseTime, 5)),
+      {
+        actionIntentId: prepared.actionIntentId,
+        idempotencyKey: `save_ai_evaluation_${randomUUID()}`,
+      },
+    );
+    const revision =
+      await database!.teacherEvaluationRevision.findUniqueOrThrow({
+        where: { id: saved.teacherEvaluationRevisionId },
+      });
+    expect(revision.source).toBe("AI_ASSISTED");
+    expect(revision.agentRunId).toBe(suggestionRun.id);
+    expect(revision.summary).toBe("教师已修改 AI 起草内容，并逐维完成终审。");
+
+    const suggestionAudit = await database!.actionAudit.findFirstOrThrow({
+      where: {
+        actorId: fixture.teacherId,
+        agentRunId: suggestionRun.id,
+        actionName: "suggest_teacher_evaluation",
+      },
+    });
+    expect(suggestionAudit).toMatchObject({
+      actionIntentId: null,
+      source: "AGENT",
+      targetType: "SubmissionRevision",
+      targetId: fixture.submissionRevisionId,
+      outcome: "SUCCEEDED",
+      beforeVersion: 0,
+      afterVersion: 0,
+      resultResourceId: null,
+    });
+    expect(suggestionAudit.requestHash).toMatch(/^[a-f0-9]{64}$/);
+    expect(JSON.stringify(suggestionAudit)).not.toContain(revision.summary);
+
+    const unboundRun = await startActivityAssistantRun(
+      database!,
+      commandContext(fixture.teacherId, minutesAfter(fixture.baseTime, 6)),
+      { model: "deepseek-v4-flash" },
+    );
+    await finishActivityAssistantRun(
+      database!,
+      commandContext(
+        fixture.teacherId,
+        minutesAfter(fixture.baseTime, 7),
+        "AGENT",
+      ),
+      {
+        agentRunId: unboundRun.id,
+        status: "SUCCEEDED",
+        failureCode: null,
+      },
+    );
+    await expect(
+      prepareTeacherEvaluationIntent(
+        database!,
+        commandContext(fixture.teacherId, minutesAfter(fixture.baseTime, 8)),
+        {
+          submissionId: fixture.submissionId,
+          expectedSubmissionRevisionId: fixture.submissionRevisionId,
+          expectedSubmissionRevisionNumber: 1,
+          expectedEvaluationVersion: 1,
+          summary: "其他成功运行没有本修订的建议审计，不能冒充来源。",
+          outcomes: coveringOutcomes(),
+          suggestionAgentRunId: unboundRun.id,
+          idempotencyKey: `prepare_unbound_ai_evaluation_${randomUUID()}`,
+        },
+      ),
+    ).rejects.toEqual(
+      new PrepareTeacherEvaluationIntentError("INVALID_AGENT_RUN"),
+    );
+
+    const failedRun = await startActivityAssistantRun(
+      database!,
+      commandContext(fixture.teacherId, minutesAfter(fixture.baseTime, 9)),
+      { model: "deepseek-v4-flash" },
+    );
+    await finishActivityAssistantRun(
+      database!,
+      commandContext(
+        fixture.teacherId,
+        minutesAfter(fixture.baseTime, 10),
+        "AGENT",
+      ),
+      {
+        agentRunId: failedRun.id,
+        status: "FAILED",
+        failureCode: "EVALUATION_SUGGESTION_INVALID_OUTPUT",
+      },
+    );
+
+    await expect(
+      prepareTeacherEvaluationIntent(
+        database!,
+        commandContext(fixture.teacherId, minutesAfter(fixture.baseTime, 11)),
+        {
+          submissionId: fixture.submissionId,
+          expectedSubmissionRevisionId: fixture.submissionRevisionId,
+          expectedSubmissionRevisionNumber: 1,
+          expectedEvaluationVersion: 1,
+          summary: "失败的建议运行不能绑定到第二版评价。",
+          outcomes: coveringOutcomes(),
+          suggestionAgentRunId: failedRun.id,
+          idempotencyKey: `prepare_failed_ai_evaluation_${randomUUID()}`,
+        },
+      ),
+    ).rejects.toEqual(
+      new PrepareTeacherEvaluationIntentError("INVALID_AGENT_RUN"),
+    );
   });
 
   it("rejects another teacher at prepare and execution time", async () => {

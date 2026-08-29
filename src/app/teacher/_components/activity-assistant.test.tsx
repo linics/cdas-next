@@ -4,29 +4,26 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   useChat: vi.fn(),
-  push: vi.fn(),
   sendMessage: vi.fn(),
   stop: vi.fn(),
   addToolApprovalResponse: vi.fn(),
-  capturedOptions: null as null | {
-    onFinish?: (options: { message: { parts: unknown[] } }) => void;
-  },
+  pathname: "/teacher",
+  transportOptions: [] as unknown[],
 }));
 
 vi.mock("@ai-sdk/react", () => ({
-  useChat: (options: unknown) => {
-    mocks.capturedOptions = options as typeof mocks.capturedOptions;
-    return mocks.useChat();
-  },
+  useChat: () => mocks.useChat(),
 }));
 vi.mock("ai", () => ({
   DefaultChatTransport: class DefaultChatTransport {
-    constructor() {}
+    constructor(options: unknown) {
+      mocks.transportOptions.push(options);
+    }
   },
   lastAssistantMessageIsCompleteWithApprovalResponses: vi.fn(),
 }));
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: mocks.push }),
+  usePathname: () => mocks.pathname,
 }));
 vi.mock("next/link", () => ({
   default: ({
@@ -41,6 +38,7 @@ vi.mock("next/link", () => ({
 import {
   ActivityAssistant,
   ActivityAssistantSessionProvider,
+  isComposerSubmitKey,
 } from "./activity-assistant";
 
 const draftId = "10000000-0000-4000-8000-000000000001";
@@ -105,7 +103,8 @@ function renderAssistant(
 describe("ActivityAssistant", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.capturedOptions = null;
+    mocks.pathname = "/teacher";
+    mocks.transportOptions.length = 0;
     mocks.useChat.mockReturnValue(helpers());
   });
 
@@ -121,6 +120,138 @@ describe("ActivityAssistant", () => {
     );
     expect(markup).toContain("手动创建与编辑活动仍可正常使用");
     expect(markup).not.toContain("AI_TOOL_APPROVAL_SECRET");
+  });
+
+  it("renders the bounded global-panel responsibility copy", () => {
+    const markup = renderToStaticMarkup(
+      <ActivityAssistantSessionProvider>
+        <ActivityAssistant classrooms={[]} surface="panel" />
+      </ActivityAssistantSessionProvider>,
+    );
+
+    expect(markup).toContain('data-surface="panel"');
+    expect(markup).toContain("教师工作区与活动设计");
+    expect(markup).toContain("可分配职责");
+    expect(markup).toContain("所有站内跳转都由你点击");
+    expect(markup).not.toContain("当前职责");
+  });
+
+  it("uses a compact stop control next to submit while the model is streaming", () => {
+    mocks.useChat.mockReturnValue(helpers([], "streaming"));
+    const markup = renderAssistant();
+
+    expect(markup).toContain('aria-label="停止生成"');
+    expect(markup).not.toContain(">停止<");
+    expect(markup).toContain("交给助手整理");
+  });
+
+  it("sends on Enter and inserts a line on Shift+Enter", () => {
+    expect(
+      isComposerSubmitKey({ key: "Enter", shiftKey: false, nativeEvent: {} }),
+    ).toBe(true);
+    expect(
+      isComposerSubmitKey({ key: "Enter", shiftKey: true, nativeEvent: {} }),
+    ).toBe(false);
+    expect(
+      isComposerSubmitKey({
+        key: "Enter",
+        shiftKey: false,
+        nativeEvent: { isComposing: true },
+      }),
+    ).toBe(false);
+    expect(
+      isComposerSubmitKey({ key: "a", shiftKey: false, nativeEvent: {} }),
+    ).toBe(false);
+  });
+
+  it("sends only an allowlisted current page context with each request", () => {
+    mocks.pathname = `/teacher/activities/${draftId}/preview`;
+    renderAssistant();
+    const options = mocks.transportOptions.at(-1) as {
+      prepareSendMessagesRequest: (input: { messages: unknown[] }) => {
+        body: unknown;
+      };
+    };
+
+    expect(
+      options.prepareSendMessagesRequest({ messages: [{ id: "message_1" }] }),
+    ).toEqual({
+      body: {
+        messages: [{ id: "message_1" }],
+        pageContext: { kind: "ACTIVITY_PREVIEW", resourceId: draftId },
+      },
+    });
+  });
+
+  it("renders read-only workspace results as exact user-clicked links", () => {
+    mocks.useChat.mockReturnValue(
+      helpers([
+        {
+          id: "assistant_workspace",
+          role: "assistant",
+          parts: [
+            {
+              type: "tool-get_current_context",
+              toolCallId: "context_1",
+              state: "output-available",
+              input: {},
+              output: {
+                status: "AVAILABLE",
+                kind: "TEACHER_DASHBOARD",
+                label: "教师工作台",
+                href: "/teacher",
+              },
+            },
+            {
+              type: "tool-list_my_classrooms",
+              toolCallId: "classrooms_1",
+              state: "output-available",
+              input: {},
+              output: {
+                classrooms: [
+                  {
+                    id: classroomId,
+                    name: "七年一班",
+                    currentMemberCount: 28,
+                    href: `/teacher/classrooms/${classroomId}/members`,
+                  },
+                ],
+              },
+            },
+            {
+              type: "tool-list_my_activity_drafts",
+              toolCallId: "drafts_1",
+              state: "output-available",
+              input: {},
+              output: {
+                drafts: [
+                  {
+                    id: draftId,
+                    title: "校园节水行动",
+                    status: "READY_FOR_PREVIEW",
+                    version: 3,
+                    updatedAt: "2026-08-28T08:00:00.000Z",
+                    editHref: `/teacher/activities/${draftId}`,
+                    previewHref: `/teacher/activities/${draftId}/preview`,
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ]),
+    );
+
+    const markup = renderAssistant();
+    expect(markup).toContain('href="/teacher"');
+    expect(markup).toContain(
+      `href="/teacher/classrooms/${classroomId}/members"`,
+    );
+    expect(markup).toContain(`href="/teacher/activities/${draftId}"`);
+    expect(markup).toContain(
+      `href="/teacher/activities/${draftId}/preview"`,
+    );
+    expect(markup).not.toContain("router.push");
   });
 
   it("renders exact draft edit and preview destinations", () => {
@@ -186,7 +317,7 @@ describe("ActivityAssistant", () => {
     expect(markup).toContain("明确假设");
     expect(markup).toContain("跨学科必要性");
     expect(markup).toContain("目标—任务—证据—评价一致性链");
-    expect(markup).toContain("官方来源依据");
+    expect(markup).toContain("本次设计参考了哪些依据");
     expect(markup).toContain("用于校准跨学科任务的真实情境与实践要求");
     expect(markup).toContain("不代表活动已自动通过课程标准合规审查");
     expect(markup).toContain("确认理解并创建草稿");
@@ -373,56 +504,6 @@ describe("ActivityAssistant", () => {
     expect(markup).toContain("取消");
     expect(markup).not.toContain("signed-but-never-rendered");
     expect(markup).not.toContain("approval_1");
-  });
-
-  it("navigates only when the server output matches the exact tool input", () => {
-    renderAssistant();
-    const onFinish = mocks.capturedOptions?.onFinish;
-    expect(onFinish).toBeTypeOf("function");
-
-    onFinish?.({
-      message: {
-        parts: [
-          {
-            type: "tool-create_activity_draft",
-            toolCallId: "open_exact_1",
-            state: "output-available",
-            input: {},
-            output: {
-              draftId,
-              version: 1,
-              status: "READY_FOR_PREVIEW",
-              editHref: `/teacher/activities/${draftId}`,
-              previewHref: `/teacher/activities/${draftId}/preview`,
-            },
-          },
-        ],
-      },
-    });
-    onFinish?.({
-      message: {
-        parts: [
-          {
-            type: "tool-create_activity_draft",
-            toolCallId: "open_tampered_2",
-            state: "output-available",
-            input: {},
-            output: {
-              draftId,
-              version: 1,
-              status: "READY_FOR_PREVIEW",
-              editHref: `/teacher/activities/${draftId}`,
-              previewHref: `/teacher/activities/${draftId}`,
-            },
-          },
-        ],
-      },
-    });
-
-    expect(mocks.push).toHaveBeenCalledTimes(1);
-    expect(mocks.push).toHaveBeenCalledWith(
-      `/teacher/activities/${draftId}/preview`,
-    );
   });
 
   it("does not render a continuation surface for a fresh direct preview", () => {

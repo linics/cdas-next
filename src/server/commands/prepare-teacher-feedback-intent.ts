@@ -17,6 +17,9 @@ import {
   type ResolvedCommandContext,
   resolveCommandContext,
 } from "./command-context";
+import {
+  teacherFeedbackSuggestionActionName,
+} from "./complete-teacher-feedback-suggestion";
 
 const commandInputSchema = z
   .object({
@@ -211,14 +214,31 @@ async function runTransaction(
       }
 
       if (input.suggestionAgentRunId) {
-        const agentRun = await transaction.agentRun.findUnique({
-          where: { id: input.suggestionAgentRunId },
-          select: { actorId: true, status: true },
-        });
+        const [agentRun, suggestionAudit] = await Promise.all([
+          transaction.agentRun.findUnique({
+            where: { id: input.suggestionAgentRunId },
+            select: { actorId: true, status: true },
+          }),
+          transaction.actionAudit.findFirst({
+            where: {
+              actorId: context.actorId,
+              agentRunId: input.suggestionAgentRunId,
+              source: "AGENT",
+              actionName: teacherFeedbackSuggestionActionName,
+              targetType: "SubmissionRevision",
+              targetId: revision.id,
+              outcome: "SUCCEEDED",
+              beforeVersion: feedbackVersion,
+              afterVersion: feedbackVersion,
+            },
+            select: { id: true },
+          }),
+        ]);
         if (
           !agentRun ||
           agentRun.actorId !== context.actorId ||
-          agentRun.status !== "SUCCEEDED"
+          agentRun.status !== "SUCCEEDED" ||
+          !suggestionAudit
         ) {
           throw new PrepareTeacherFeedbackIntentError("INVALID_AGENT_RUN");
         }

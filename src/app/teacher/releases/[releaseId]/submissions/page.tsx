@@ -14,6 +14,7 @@ import { shortResourceId } from "../../../_components/format";
 import {
   TeacherAccessGate,
   TeacherPage,
+  teacherHomeCrumb,
 } from "../../../_components/teacher-shell";
 import styles from "../../../teacher-workspace.module.css";
 import { CloseActivityPanel } from "./close-activity-panel";
@@ -55,7 +56,17 @@ export default async function TeacherReleaseSubmissionsPage({
   ).length;
 
   return (
-    <TeacherPage actorName={workspace.actor.displayName}>
+    <TeacherPage
+      actorName={workspace.actor.displayName}
+      breadcrumb={[
+        teacherHomeCrumb,
+        {
+          href: `/teacher/classrooms/${workspace.release.classroomId}/members`,
+          label: workspace.release.classroomName,
+        },
+        { label: workspace.release.title },
+      ]}
+    >
       <div className={styles.pageContent}>
         <header className={styles.pageHeader}>
           <div>
@@ -163,6 +174,23 @@ export default async function TeacherReleaseSubmissionsPage({
                             : "个人提交"}
                       </small>
                     </div>
+                    {workspace.release.executionVersion === 1 &&
+                    progress.totalPhaseCount > 0 ? (
+                      <div aria-hidden="true" className={styles.rowProgress}>
+                        <span
+                          style={{
+                            width: `${Math.min(
+                              100,
+                              Math.round(
+                                (progress.completedPhaseCount /
+                                  progress.totalPhaseCount) *
+                                  100,
+                              ),
+                            )}%`,
+                          }}
+                        />
+                      </div>
+                    ) : null}
                   </article>
                 ))}
               </div>

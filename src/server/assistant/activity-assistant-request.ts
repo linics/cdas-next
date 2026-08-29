@@ -7,9 +7,22 @@ import {
 } from "ai";
 import { z } from "zod";
 import {
+  teacherAgentPageContextSchema,
+  type TeacherAgentPageContext,
+} from "../../domain/assistant/teacher-agent-page-context";
+import {
   activityAssistantMessageValidationTools,
   activityDraftProposalSchema,
+  activityDraftRevisionProposalSchema,
+  mapCurrentTeacherContext,
+  mapTeacherClassroomList,
+  mapTeacherDraftList,
+  mapTeacherReleaseList,
 } from "./activity-assistant-tools";
+import type { TeacherActivityDashboard } from "../queries/teacher-activity-workspace";
+import type { TeacherDraftDetailReader } from "./teacher-draft-detail";
+import type { TeacherReleaseInsightsReader } from "./teacher-release-insights";
+import type { TeacherReleaseRosterReader } from "./teacher-release-roster";
 import {
   officialKnowledgeSectionKey,
   readOfficialKnowledgeSection,
@@ -26,6 +39,7 @@ const MAX_TOOL_PARTS = 24;
 const requestBodySchema = z
   .object({
     messages: z.array(z.unknown()).min(1).max(MAX_MESSAGES),
+    pageContext: teacherAgentPageContextSchema.optional(),
   })
   .strict();
 
@@ -96,6 +110,14 @@ function assertSafeMessageHistory(
       }
 
       if (
+        part.type !== "tool-get_current_context" &&
+        part.type !== "tool-list_my_classrooms" &&
+        part.type !== "tool-list_my_activity_drafts" &&
+        part.type !== "tool-list_my_releases" &&
+        part.type !== "tool-get_activity_draft" &&
+        part.type !== "tool-get_process_insights" &&
+        part.type !== "tool-list_release_submissions" &&
+        part.type !== "tool-update_activity_draft" &&
         part.type !== "tool-search_knowledge" &&
         part.type !== "tool-read_source_section" &&
         part.type !== "tool-create_activity_draft" &&
@@ -118,6 +140,19 @@ function assertSafeMessageHistory(
         throw new ActivityAssistantRequestError("INVALID_MESSAGES");
       }
       toolCallIds.add(part.toolCallId);
+
+      if (
+        (part.type === "tool-get_current_context" ||
+          part.type === "tool-list_my_classrooms" ||
+          part.type === "tool-list_my_activity_drafts" ||
+          part.type === "tool-list_my_releases" ||
+          part.type === "tool-get_activity_draft" ||
+          part.type === "tool-get_process_insights" ||
+          part.type === "tool-list_release_submissions") &&
+        part.state !== "output-available"
+      ) {
+        throw new ActivityAssistantRequestError("INVALID_MESSAGES");
+      }
 
       if (part.type === "tool-search_knowledge") {
         if (part.state !== "output-available") {
@@ -163,8 +198,19 @@ function assertSafeMessageHistory(
         }
       }
 
+      // Structure only. Whether this revision may be applied depends on the
+      // draft's current version and content, which are re-established from the
+      // database once the history has been canonicalized.
+      if (
+        part.type === "tool-update_activity_draft" &&
+        !activityDraftRevisionProposalSchema.safeParse(part.input).success
+      ) {
+        throw new ActivityAssistantRequestError("INVALID_MESSAGES");
+      }
+
       if (
         (part.type === "tool-create_activity_draft" ||
+          part.type === "tool-update_activity_draft" ||
           part.type === "tool-publish_activity_release") &&
         (part.state === "approval-requested" ||
           part.state === "approval-responded")
@@ -200,6 +246,7 @@ function assertSafeMessageHistory(
   const hasApprovalResponse = lastMessage.parts.some(
     (part) =>
       (part.type === "tool-create_activity_draft" ||
+        part.type === "tool-update_activity_draft" ||
         part.type === "tool-publish_activity_release") &&
       part.state === "approval-responded" &&
       part.approval.isAutomatic !== true,
@@ -243,9 +290,129 @@ export function getActivityAssistantKnowledgeLedger(
   };
 }
 
-export async function parseActivityAssistantRequest(
-  request: Request,
+/**
+ * Draft versions the model has genuinely been shown in this conversation,
+ * taken from canonicalized history so a forged read cannot unlock a revision.
+ * A later read of the same draft wins: it is the version the model saw last.
+ */
+export function getActivityAssistantDraftReadLedger(
+  messages: ActivityAssistantMessage[],
+): Map<string, number> {
+  const reads = new Map<string, number>();
+  for (const message of messages) {
+    if (message.role !== "assistant") continue;
+    for (const part of message.parts) {
+      if (
+        part.type !== "tool-get_activity_draft" ||
+        part.state !== "output-available"
+      ) {
+        continue;
+      }
+      if (part.output.status === "FOUND") {
+        reads.set(part.output.draftId, part.output.version);
+      } else {
+        reads.delete(part.output.draftId);
+      }
+    }
+  }
+  return reads;
+}
+
+export type ParsedActivityAssistantRequest = Readonly<{
+  messages: ActivityAssistantMessage[];
+  pageContext: TeacherAgentPageContext;
+}>;
+
+/**
+ * Client-supplied history is never trusted as a record of what the teacher is
+ * allowed to see. Every read-only result is recomputed from the current
+ * authorized workspace before it reaches the model, so a draft that was
+ * renamed, rewritten, deleted, or handed to another teacher between turns
+ * cannot survive in the conversation as its stale self.
+ */
+export type ActivityAssistantReaders = Readonly<{
+  readDraftDetail: TeacherDraftDetailReader;
+  readReleaseInsights: TeacherReleaseInsightsReader;
+  readReleaseRoster: TeacherReleaseRosterReader;
+}>;
+
+export async function canonicalizeActivityAssistantReadOnlyHistory(
+  messages: ActivityAssistantMessage[],
+  workspace: TeacherActivityDashboard,
+  pageContext: TeacherAgentPageContext,
+  readers: ActivityAssistantReaders,
 ): Promise<ActivityAssistantMessage[]> {
+  return Promise.all(messages.map(async (message) => {
+    if (message.role !== "assistant") return message;
+    const parts = await Promise.all(message.parts.map(async (part) => {
+      if (
+        part.type === "tool-get_activity_draft" &&
+        part.state === "output-available"
+      ) {
+        return {
+          ...part,
+          output: await readers.readDraftDetail(part.input.draftId),
+        };
+      }
+      if (
+        part.type === "tool-get_process_insights" &&
+        part.state === "output-available"
+      ) {
+        return {
+          ...part,
+          output: await readers.readReleaseInsights(part.input.releaseId),
+        };
+      }
+      if (
+        part.type === "tool-list_release_submissions" &&
+        part.state === "output-available"
+      ) {
+        return {
+          ...part,
+          output: await readers.readReleaseRoster(part.input.releaseId),
+        };
+      }
+      return part;
+    }));
+    return {
+      ...message,
+      parts: parts.map((part) => {
+        if (
+          part.type === "tool-get_current_context" &&
+          part.state === "output-available"
+        ) {
+          return {
+            ...part,
+            output: mapCurrentTeacherContext(pageContext, workspace),
+          };
+        }
+        if (
+          part.type === "tool-list_my_classrooms" &&
+          part.state === "output-available"
+        ) {
+          return { ...part, output: mapTeacherClassroomList(workspace) };
+        }
+        if (
+          part.type === "tool-list_my_activity_drafts" &&
+          part.state === "output-available"
+        ) {
+          return { ...part, output: mapTeacherDraftList(workspace) };
+        }
+        if (
+          part.type === "tool-list_my_releases" &&
+          part.state === "output-available"
+        ) {
+          return { ...part, output: mapTeacherReleaseList(workspace) };
+        }
+        return part;
+      }),
+    };
+  }));
+}
+
+export async function parseActivityAssistantRequestEnvelope(
+  request: Request,
+): Promise<ParsedActivityAssistantRequest> {
   const declaredLength = Number(request.headers.get("content-length"));
   if (
     Number.isFinite(declaredLength) &&
@@ -284,5 +451,16 @@ export async function parseActivityAssistantRequest(
     throw new ActivityAssistantRequestError("INVALID_MESSAGES");
   }
   assertSafeMessageHistory(messages);
-  return messages;
+  return {
+    messages,
+    pageContext: body.data.pageContext ?? {
+      kind: "UNKNOWN_TEACHER_PAGE",
+    },
+  };
+}
+
+export async function parseActivityAssistantRequest(
+  request: Request,
+): Promise<ActivityAssistantMessage[]> {
+  return (await parseActivityAssistantRequestEnvelope(request)).messages;
 }

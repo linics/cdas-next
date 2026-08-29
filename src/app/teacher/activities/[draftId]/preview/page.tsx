@@ -12,12 +12,6 @@ import {
   submissionModes,
 } from "../../../../../domain/activity/activity-content";
 import { AuthenticationError } from "../../../../../server/auth/current-actor";
-import { isActivityAssistantEnabled } from "../../../../../server/assistant/assistant-config";
-import {
-  getTeacherAssistantClassrooms,
-  TeacherAssistantContextError,
-  type AssistantClassroom,
-} from "../../../../../server/assistant/teacher-assistant-context";
 import { createUiCommandContext } from "../../../../../server/commands/create-ui-command-context";
 import { getDatabaseClient } from "../../../../../server/db/client";
 import {
@@ -27,8 +21,9 @@ import {
 import {
   TeacherAccessGate,
   TeacherPage,
+  activityStudioCrumb,
+  teacherHomeCrumb,
 } from "../../../_components/teacher-shell";
-import { ActivityAssistant } from "../../../_components/activity-assistant";
 import styles from "../../../teacher-workspace.module.css";
 import { PublishPanel } from "./publish-panel";
 
@@ -39,18 +34,10 @@ export default async function TeacherActivityPreviewPage({
 }) {
   const { draftId } = await params;
   let workspace;
-  let assistantEnabled = false;
-  let assistantClassrooms: AssistantClassroom[] = [];
   try {
     const context = await createUiCommandContext();
     const database = getDatabaseClient();
-    assistantEnabled = isActivityAssistantEnabled();
-    [workspace, assistantClassrooms] = await Promise.all([
-      getTeacherActivityPreview(database, context, { draftId }),
-      assistantEnabled
-        ? getTeacherAssistantClassrooms(database, context)
-        : Promise.resolve([]),
-    ]);
+    workspace = await getTeacherActivityPreview(database, context, { draftId });
   } catch (error) {
     if (error instanceof AuthenticationError) {
       return (
@@ -62,7 +49,6 @@ export default async function TeacherActivityPreviewPage({
     }
     if (
       error instanceof TeacherActivityQueryError ||
-      error instanceof TeacherAssistantContextError ||
       error instanceof ZodError
     ) {
       notFound();
@@ -72,7 +58,18 @@ export default async function TeacherActivityPreviewPage({
 
   const content = workspace.draft.revision.content;
   return (
-    <TeacherPage actorName={workspace.actor.displayName}>
+    <TeacherPage
+      actorName={workspace.actor.displayName}
+      breadcrumb={[
+        teacherHomeCrumb,
+        activityStudioCrumb,
+        {
+          href: `/teacher/activities/${workspace.draft.id}`,
+          label: content.title,
+        },
+        { label: "发布预览" },
+      ]}
+    >
       <div className={styles.pageContent}>
         <header className={styles.pageHeader}>
           <div>
@@ -98,12 +95,28 @@ export default async function TeacherActivityPreviewPage({
               <p>{content.summary}</p>
             </header>
             {content.schemaVersion === 2 ? <>
-              <section><h3>基本设置</h3><p>{content.topic} · {content.schoolStage === "PRIMARY" ? "小学" : "初中"}{content.grade}年级 · 主学科：{disciplineLabel(content.mainDisciplineCode)} · 融合：{content.integratedDisciplineCodes.map(disciplineLabel).join("、")}<br />{assignmentTypeDetails(content.assignmentType).label}：{assignmentTypeDetails(content.assignmentType).description}{assignmentSubtypeLabel(content.assignmentType, content.assignmentSubtype) ? ` · ${assignmentSubtypeLabel(content.assignmentType, content.assignmentSubtype)}` : ""} · {inquiryDepths.find((item) => item.code === content.inquiryDepth)?.label} · {submissionModes.find((item) => item.code === content.submissionMode)?.label} · {content.durationWeeks} 周</p></section>
+              <section>
+                <h3>基本设置</h3>
+                <div>
+                  <p>{content.topic}</p>
+                  <div className={styles.factTags}>
+                    <span>{content.schoolStage === "PRIMARY" ? "小学" : "初中"} {content.grade} 年级</span>
+                    <span>主学科 {disciplineLabel(content.mainDisciplineCode)}</span>
+                    <span>融合 {content.integratedDisciplineCodes.map(disciplineLabel).join(" · ")}</span>
+                    <span>{assignmentTypeDetails(content.assignmentType).label}</span>
+                    {assignmentSubtypeLabel(content.assignmentType, content.assignmentSubtype) ? <span>{assignmentSubtypeLabel(content.assignmentType, content.assignmentSubtype)}</span> : null}
+                    <span>{inquiryDepths.find((item) => item.code === content.inquiryDepth)?.label}</span>
+                    <span>{submissionModes.find((item) => item.code === content.submissionMode)?.label}</span>
+                    <span>{content.durationWeeks} 周</span>
+                  </div>
+                  <p>{assignmentTypeDetails(content.assignmentType).description}</p>
+                </div>
+              </section>
               {content.crossDisciplinaryConceptCodes.length > 0 ? <section><h3>跨学科概念</h3><p>{content.crossDisciplinaryConceptCodes.map((code) => { const concept = crossDisciplinaryConcepts.find((item) => item.code === code)!; return `${concept.label}（${concept.description}）`; }).join("；")}</p></section> : null}
               <section><h3>背景设定</h3><p>{content.backgroundSetting}</p></section>
               <section><h3>三维目标</h3><ol><li>知识与技能：{content.objectiveKnowledge}</li><li>过程与方法：{content.objectiveProcess}</li><li>情感态度：{content.objectiveEmotion}</li></ol></section>
               <section><h3>总体任务</h3><p>{content.taskInstructions}</p></section>
-              <section><h3>任务链</h3><ol>{content.phases.map((phase) => <li key={phase.name}><strong>{phase.name}</strong>（建议 {phase.suggestedLessons} 课时）<br />行动：{phase.action}<br />情境：{phase.context}<br />支架：{phase.support}<br />证据：{phase.evidence.map((evidence) => `${evidenceTypeLabel(evidence.type)}：${evidence.description}`).join("；")}<br />评价要点：{phase.evaluationFocus}</li>)}</ol></section>
+              <section><h3>任务链</h3><ol>{content.phases.map((phase) => <li key={phase.name}><strong>{phase.name}</strong><br />行动：{phase.action}<br />情境：{phase.context}<br />支架：{phase.support}<br />证据：{phase.evidence.map((evidence) => `${evidenceTypeLabel(evidence.type)}：${evidence.description}`).join("；")}<br />评价要点：{phase.evaluationFocus}</li>)}</ol></section>
               <section><h3>评价标准</h3><ul>{content.rubricDimensions.map((dimension) => <li key={dimension.name}><strong>{dimension.name}</strong>：优秀 {dimension.excellent}；良好 {dimension.good}；合格 {dimension.pass}；需改进 {dimension.improve}</li>)}</ul></section>
             </> : <>
               <section><h3>学习目标</h3><ol>{content.learningObjectives.map((item) => <li key={item}>{item}</li>)}</ol></section>
@@ -125,12 +138,6 @@ export default async function TeacherActivityPreviewPage({
             }}
           />
         </div>
-        {assistantEnabled ? (
-          <ActivityAssistant
-            classrooms={assistantClassrooms}
-            continuationOnly
-          />
-        ) : null}
       </div>
     </TeacherPage>
   );

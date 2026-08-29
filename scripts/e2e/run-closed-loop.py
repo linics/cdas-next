@@ -290,17 +290,51 @@ def fill_activity_form(page: Page, title: str, summary: str) -> None:
         rubric.get_by_label("需改进", exact=True).fill("证据或解释仍需补充。")
 
 
-def fill_feedback_when_ready(page: Page, body: str) -> None:
-    """Fill after hydration and prove React enabled the confirmation action."""
+def expand_submission_history(page: Page) -> None:
+    """Open every collapsed section.
+
+    After a resubmission the student page keeps only the newest revision
+    expanded, so older feedback is present but not readable until a reader
+    opens it. Historical readability is what these assertions are about.
+    """
+    for _ in range(12):
+        closed = page.locator("details:not([open]) > summary")
+        if closed.count() == 0:
+            return
+        closed.first.click()
+
+
+def fill_feedback_when_ready(
+    page: Page,
+    body: str,
+    next_step: str = "REVISE",
+    support_level: str = "FOUNDATION",
+) -> None:
+    """Fill after hydration and prove React enabled the confirmation action.
+
+    The structured next step and support level are frozen with the body, so
+    the confirmation stays disabled until both are chosen.
+    """
     textarea = page.locator("#teacher-feedback-body")
+    next_step_select = page.locator("#teacher-feedback-next-step")
+    support_level_select = page.locator("#teacher-feedback-support-level")
     button = page.get_by_role("button", name="准备确认", exact=True)
     textarea.wait_for(state="visible")
+    next_step_select.wait_for(state="visible")
+    support_level_select.wait_for(state="visible")
     button.wait_for(state="visible")
 
     deadline = time.monotonic() + 30
     while time.monotonic() < deadline:
         textarea.fill(body)
-        if textarea.input_value() == body and button.is_enabled():
+        next_step_select.select_option(next_step)
+        support_level_select.select_option(support_level)
+        if (
+            textarea.input_value() == body
+            and next_step_select.input_value() == next_step
+            and support_level_select.input_value() == support_level
+            and button.is_enabled()
+        ):
             return
         page.wait_for_timeout(250)
 
@@ -509,6 +543,7 @@ def run_browser_flow(
                     "button", name=action_label, exact=True
                 ).count() != 0:
                     raise E2eFailure("HISTORICAL_MEMBER_WRITE_ACTION_VISIBLE")
+            expand_submission_history(page)
             wait_for_text(page, first_feedback)
             wait_for_text(page, second_feedback)
             screenshot(page, artifacts, "05-historical-member-readonly")
@@ -541,6 +576,7 @@ def run_browser_flow(
             ):
                 if page.get_by_role("button", name=action_label, exact=True).count() != 0:
                     raise E2eFailure("CLOSED_RELEASE_WRITE_ACTION_VISIBLE")
+            expand_submission_history(page)
             wait_for_text(page, first_feedback)
             wait_for_text(page, second_feedback)
             screenshot(page, artifacts, "07-closed-student-history-readonly")
@@ -641,11 +677,102 @@ def run_real_model_browser_flow(
 
         try:
             switch_account(page, base_url, "teacher", broker_secret)
+
+            # D-047 is verified against a draft the teacher wrote by hand, so
+            # the read-back evidence does not depend on the model's ability to
+            # author a whole task book in the later proposal step.
+            read_title = f"E2E AI 讀取 {marker}"
             page.goto(
                 f"{base_url}/teacher/activities/new",
                 wait_until="domcontentloaded",
             )
-            wait_for_text(page, "AI 活动助手 · 试行")
+            fill_activity_form(
+                page,
+                read_title,
+                "供助手只读回看的手工草稿。",
+            )
+            page.get_by_role("button", name="保存为编辑中", exact=True).click()
+            page.wait_for_url(
+                re.compile(
+                    rf"{re.escape(base_url)}/teacher/activities/[0-9a-f-]+$"
+                )
+            )
+            draft_url = page.url
+            page.get_by_role(
+                "button", name="打开 CDAS Agent 独立会话", exact=True
+            ).click()
+            page.get_by_role(
+                "heading", name="教师工作区与活动设计", exact=True
+            ).wait_for()
+            page.locator(
+                '#activity-assistant-prompt[data-hydrated="true"]'
+            ).fill(
+                "请先确认我当前所在的页面，再读取这份草稿的完整任务书，"
+                "然后只用一句话说明第二个阶段在情境承接上还差什么。"
+                "只读取，不要建立新草稿，也不要发布。"
+            )
+            page.get_by_role("button", name="交给助手整理", exact=True).click()
+            page.get_by_text(f"读取草稿 · {read_title}", exact=True).wait_for(
+                timeout=120_000
+            )
+            if page.get_by_role("link", name="打开草稿", exact=True).count() == 0:
+                raise E2eFailure("REAL_MODEL_DRAFT_READ_LINK_MISSING")
+            if page.url != draft_url:
+                raise E2eFailure("REAL_MODEL_DRAFT_READ_NAVIGATED")
+            # Let the read turn settle before reloading. Navigating mid-stream
+            # would abort it and leave a CANCELLED AgentRun that says nothing
+            # about the read itself.
+            page.get_by_role("button", name="停止", exact=True).wait_for(
+                state="detached", timeout=120_000
+            )
+            # The transcript scrolls inside the panel, so bring the result the
+            # assertions just proved into frame before capturing evidence.
+            page.get_by_text(f"读取草稿 · {read_title}", exact=True).scroll_into_view_if_needed()
+            screenshot(page, artifacts, "00-real-model-draft-read")
+
+            # D-048: the teacher asks for the change to be applied. The
+            # revision must pause for confirmation, and version 1 must survive
+            # as history once it is confirmed.
+            page.locator(
+                '#activity-assistant-prompt[data-hydrated="true"]'
+            ).fill(
+                "就按你说的改：只改第二个阶段的情境承接，让它接住第一个阶段的产出，"
+                "其他部分一个字都不要动。改完写回这份草稿。"
+            )
+            page.get_by_role("button", name="交给助手整理", exact=True).click()
+            revision = page.locator('[role="group"][aria-label="草稿改写确认"]')
+            revision.get_by_role(
+                "button", name="确认并改写草稿", exact=True
+            ).wait_for(timeout=120_000)
+            revision.get_by_text("任务链阶段", exact=True).wait_for()
+            revision.scroll_into_view_if_needed()
+            screenshot(page, artifacts, "01-real-model-draft-revision")
+            revision.get_by_role(
+                "button", name="确认并改写草稿", exact=True
+            ).click()
+            page.get_by_text("草稿已改写 · 版本 1 → 2", exact=True).wait_for(
+                timeout=120_000
+            )
+            if page.url != draft_url:
+                raise E2eFailure("REAL_MODEL_DRAFT_REVISION_NAVIGATED")
+            page.get_by_role("button", name="停止", exact=True).wait_for(
+                state="detached", timeout=120_000
+            )
+            page.get_by_text("草稿已改写 · 版本 1 → 2", exact=True).scroll_into_view_if_needed()
+            screenshot(page, artifacts, "02-real-model-draft-revised")
+
+            # A full reload clears the in-memory session, so the proposal step
+            # below starts from an empty conversation exactly as before.
+            page.goto(
+                f"{base_url}/teacher/activities/new",
+                wait_until="domcontentloaded",
+            )
+            page.get_by_role(
+                "button", name="打开 CDAS Agent 独立会话", exact=True
+            ).click()
+            page.get_by_role(
+                "heading", name="教师工作区与活动设计", exact=True
+            ).wait_for()
             textarea = page.locator("#activity-assistant-prompt")
             submit = page.get_by_role("button", name="交给助手整理", exact=True)
             textarea.fill(prompt)
@@ -661,11 +788,11 @@ def run_real_model_browser_flow(
                 "明确假设",
                 "跨学科必要性",
                 "目标—任务—证据—评价一致性链",
-                "官方来源依据",
+                "本次设计参考了哪些依据",
             ):
                 proposal.get_by_text(label, exact=True).wait_for()
             if proposal.locator(
-                'section[aria-label="官方来源依据"] a[href^="/teacher/knowledge?source="]'
+                'section[aria-label="本次设计参考了哪些依据"] a[href^="/teacher/knowledge?source="]'
             ).count() < 2:
                 raise E2eFailure("REAL_MODEL_OFFICIAL_REFERENCES_MISSING")
             if page.locator(
@@ -675,11 +802,20 @@ def run_real_model_browser_flow(
             proposal.get_by_text("math", exact=True).wait_for()
             proposal.get_by_text("chinese", exact=True).wait_for()
             proposal.get_by_text("知识与技能", exact=True).wait_for()
-            screenshot(page, artifacts, "01-real-model-draft-proposal")
-            wait_for_text(page, "可使用")
+            screenshot(page, artifacts, "03-real-model-draft-proposal")
+            # The idle badge this used to wait for no longer exists; the panel
+            # now only marks the busy state. Wait for that to clear instead.
+            page.get_by_role("button", name="停止", exact=True).wait_for(
+                state="detached", timeout=120_000
+            )
             proposal.get_by_role(
                 "button", name="确认理解并创建草稿", exact=True
             ).click()
+            preview_link = page.get_by_role(
+                "link", name="查看预览", exact=True
+            )
+            preview_link.wait_for(timeout=120_000)
+            preview_link.click()
             page.wait_for_url(
                 re.compile(
                     rf"{re.escape(base_url)}/teacher/activities/[0-9a-f-]+/preview$"
@@ -694,9 +830,191 @@ def run_real_model_browser_flow(
                 "link", name="查看发布与学生提交", exact=True
             ).count() != 0:
                 raise E2eFailure("REAL_MODEL_SMOKE_CREATED_RELEASE")
-            screenshot(page, artifacts, "02-real-model-draft-preview")
+            screenshot(page, artifacts, "04-real-model-draft-preview")
+
+            # The assertion above proves the model did not publish anything by
+            # itself. From here the teacher publishes through the ordinary
+            # first-party UI, and the drafting steps run against the
+            # hand-written draft so their evidence does not depend on what the
+            # model chose to author.
+            page.goto(f"{draft_url}/preview", wait_until="domcontentloaded")
+            page.get_by_role(
+                "button", name="准备精确发布确认", exact=True
+            ).click()
+            confirm_dialog(page, "确认发布活动", "确认并发布")
+            wait_for_text(page, "活动已发布")
+            release_link = page.get_by_role(
+                "link", name="查看发布与学生提交", exact=True
+            )
+            release_href = release_link.get_attribute("href")
+            if not release_href:
+                raise E2eFailure("REAL_MODEL_RELEASE_LINK_MISSING")
+
+            switch_account(page, base_url, "student", broker_secret)
+            # Read the name the roster must never show, from the page itself.
+            student_display_name = ""
+            account_label = page.get_by_text(
+                re.compile(r"当前账号：")
+            ).first
+            if account_label.count() != 0:
+                match = re.search(
+                    r"当前账号：\s*([^·\n]+)", account_label.inner_text()
+                )
+                if match:
+                    student_display_name = match.group(1).strip()
+            page.get_by_role(
+                "link", name=f"打开活动：{read_title}", exact=True
+            ).click()
+            page.locator("#text-evidence").fill(
+                f"{marker} 我在教学楼三楼记录了两次水表读数，第二次比第一次多，"
+                "我认为是午休时段用水集中造成的。"
+            )
+            page.get_by_role("button", name="保存草稿", exact=True).click()
+            wait_for_text(page, "草稿已保存")
+            page.get_by_role("button", name="正式提交", exact=True).click()
+            confirm_dialog(page, "确认正式提交？", "确认正式提交")
+            wait_for_text(page, "第 1 版已正式提交")
+
+            switch_account(page, base_url, "teacher", broker_secret)
+            page.goto(f"{base_url}{release_href}", wait_until="domcontentloaded")
+            page.get_by_role(
+                "link", name=re.compile("查看反馈与评价")
+            ).first.click()
+
+            # D-052: the feedback drafter must fill the real form, and the
+            # teacher's ordinary confirmation must save it as AI_ASSISTED.
+            page.get_by_role(
+                "button", name="让助手起草这一版反馈", exact=True
+            ).click()
+            page.get_by_text(
+                "AI 建议已填入当前表单。请核对、修改后，再准备反馈确认。",
+                exact=True,
+            ).wait_for(timeout=120_000)
+            drafted_feedback = page.locator("#teacher-feedback-body").input_value()
+            if len(drafted_feedback) < 40:
+                raise E2eFailure("REAL_MODEL_FEEDBACK_DRAFT_TOO_SHORT")
+            if page.locator("#teacher-feedback-next-step").input_value() not in (
+                "CONTINUE",
+                "REVISE",
+            ):
+                raise E2eFailure("REAL_MODEL_FEEDBACK_DRAFT_NEXT_STEP_MISSING")
+            if page.locator("#teacher-feedback-support-level").input_value() == "":
+                raise E2eFailure("REAL_MODEL_FEEDBACK_DRAFT_SUPPORT_LEVEL_MISSING")
+            # The verifier proves this text never reached the audit trail.
+            (artifacts / "drafted-feedback.txt").write_text(
+                drafted_feedback, encoding="utf-8"
+            )
+            screenshot(page, artifacts, "05-real-model-feedback-draft")
+            page.get_by_role("button", name="准备确认", exact=True).click()
+            confirm_dialog(page, "确认并保存最终反馈", "确认并保存最终反馈")
+            page.get_by_text("AI 建议 · 教师已确认").first.wait_for(
+                timeout=120_000
+            )
+
+            # D-044: the evaluation drafter, through the same confirmation chain.
+            page.get_by_role(
+                "button", name="让助手起草这一版评价", exact=True
+            ).click()
+            page.get_by_text(
+                "AI 建议已填入当前表单。请逐维核对、修改后，再准备评价确认。",
+                exact=True,
+            ).wait_for(timeout=120_000)
+            screenshot(page, artifacts, "06-real-model-evaluation-draft")
+            prepare_evaluation = page.get_by_role(
+                "button", name="准备评价确认", exact=True
+            )
+            if not prepare_evaluation.is_enabled():
+                raise E2eFailure("REAL_MODEL_EVALUATION_DRAFT_INCOMPLETE")
+            prepare_evaluation.click()
+            confirm_dialog(page, "确认并保存量规评价", "确认并保存量规评价")
+            page.wait_for_timeout(500)
+            if page.get_by_text("AI 建议 · 教师已确认").count() < 2:
+                raise E2eFailure("REAL_MODEL_EVALUATION_NOT_AI_ASSISTED")
+            screenshot(page, artifacts, "07-real-model-review-saved")
+
+            # D-051: the assistant reports this release's process diagnostics,
+            # and they are the diagnostics page's own numbers.
+            page.goto(f"{base_url}/teacher", wait_until="domcontentloaded")
+            page.get_by_role(
+                "button", name="打开 CDAS Agent 独立会话", exact=True
+            ).click()
+            page.get_by_role(
+                "heading", name="教师工作区与活动设计", exact=True
+            ).wait_for()
+            page.locator(
+                '#activity-assistant-prompt[data-hydrated="true"]'
+            ).fill(
+                f"先列出我的发布，再读《{read_title}》这次发布的过程诊断，"
+                "告诉我学生卡在哪个阶段、量规哪一维最弱。不要建立或改写任何草稿。"
+            )
+            page.get_by_role("button", name="交给助手整理", exact=True).click()
+            insights = page.get_by_text(
+                f"过程诊断 · {read_title}", exact=True
+            )
+            insights.wait_for(timeout=120_000)
+            insights_block = page.locator(
+                "div", has=insights
+            ).last
+            insights_text = insights_block.inner_text()
+            for expected in ("对象 1", "已评价 1 份"):
+                if expected not in insights_text:
+                    raise E2eFailure("REAL_MODEL_INSIGHTS_COUNT_MISMATCH")
+            page.get_by_role("button", name="停止", exact=True).wait_for(
+                state="detached", timeout=120_000
+            )
+            insights.scroll_into_view_if_needed()
+            screenshot(page, artifacts, "08-real-model-process-insights")
+
+            # D-054: the roster names no one. The submitting student appears
+            # as an ordinal, and their display name must not be in the panel.
+            page.locator(
+                '#activity-assistant-prompt[data-hydrated="true"]'
+            ).fill(
+                f"再看《{read_title}》这次发布的提交名册，告诉我哪几个需要我先看。"
+                "不要建立或改写任何草稿。"
+            )
+            page.get_by_role("button", name="交给助手整理", exact=True).click()
+            roster = page.get_by_text(
+                re.compile(rf"提交名册 · {re.escape(read_title)} · \d+/\d+")
+            )
+            roster.wait_for(timeout=120_000)
+            roster_block = page.locator("div", has=roster).last
+            roster_text = roster_block.inner_text()
+            if "对象 1" not in roster_text:
+                raise E2eFailure("REAL_MODEL_ROSTER_ORDINAL_MISSING")
+            if "待反馈" in roster_text and "待评价" not in roster_text:
+                raise E2eFailure("REAL_MODEL_ROSTER_REVIEW_STATE_MISSING")
+            # Fail closed: a guard that silently had no name to look for would
+            # pass no matter what the roster contained.
+            if len(student_display_name) < 2:
+                raise E2eFailure("REAL_MODEL_ROSTER_STUDENT_NAME_UNKNOWN")
+            if student_display_name in roster_text:
+                raise E2eFailure("REAL_MODEL_ROSTER_LEAKED_STUDENT_NAME")
+            if page.get_by_role("link", name=re.compile("阶段|整项提交")).count() == 0:
+                raise E2eFailure("REAL_MODEL_ROSTER_REVIEW_LINK_MISSING")
+            page.get_by_role("button", name="停止", exact=True).wait_for(
+                state="detached", timeout=120_000
+            )
+            roster.scroll_into_view_if_needed()
+            screenshot(page, artifacts, "09-real-model-release-roster")
+
+            # The same numbers must be what the first-party page shows.
+            page.goto(f"{base_url}/teacher/insights", wait_until="domcontentloaded")
+            wait_for_text(page, read_title)
         except Exception:
             screenshot(page, artifacts, "failure")
+            # The transcript is what the model actually did. Without it a
+            # timeout only says "no approval appeared", which is the same
+            # evidence for a refusal, a clarifying question and a truncated
+            # tool call. Synthetic data only; no credentials are rendered here.
+            try:
+                transcript = page.locator("article[data-role]").all_inner_texts()
+            except PlaywrightError:
+                transcript = []
+            (artifacts / "transcript.txt").write_text(
+                redact_sensitive_text("\n\n---\n\n".join(transcript)),
+                encoding="utf-8",
+            )
             raise
         finally:
             context.close()

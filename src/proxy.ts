@@ -1,14 +1,36 @@
 import { clerkMiddleware } from "@clerk/nextjs/server";
-import { NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
+import { isClickthroughAuthEnabled } from "./server/auth/clickthrough-auth";
 import { isClerkAuthenticationAvailable } from "./server/auth/clerk-availability";
+
+function withPathname(request: NextRequest) {
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-cdas-pathname", request.nextUrl.pathname);
+  return NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
+}
 
 // Clerk supplies identity context only. Individual routes and every command
 // still perform their own authentication and resource-level authorization.
-const proxy = isClerkAuthenticationAvailable()
-  ? clerkMiddleware()
-  : () => NextResponse.next();
+const clerkProxy = clerkMiddleware((_auth, request) => withPathname(request));
 
-export default proxy;
+export default function proxy(
+  request: NextRequest,
+  event: Parameters<typeof clerkProxy>[1],
+) {
+  if (isClickthroughAuthEnabled()) {
+    return withPathname(request);
+  }
+
+  if (isClerkAuthenticationAvailable()) {
+    return clerkProxy(request, event);
+  }
+
+  return withPathname(request);
+}
 
 export const config = {
   matcher: ["/((?!_next/static|_next/image|.*\\..*).*)"],

@@ -1,0 +1,137 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { ZodError } from "zod";
+import { LocalizedDateTime } from "../../_components/localized-date-time";
+import { WorkspaceRoleGate } from "../../_components/workspace-shell";
+import { AuthenticationError } from "../../../server/auth/current-actor";
+import { createUiCommandContext } from "../../../server/commands/create-ui-command-context";
+import { getDatabaseClient } from "../../../server/db/client";
+import {
+  getTeacherActivityDashboard,
+  TeacherActivityQueryError,
+} from "../../../server/queries/teacher-activity-workspace";
+import {
+  TeacherAccessGate,
+  TeacherPage,
+  teacherHomeCrumb,
+} from "../_components/teacher-shell";
+import styles from "../teacher-workspace.module.css";
+
+const draftStatus = {
+  EDITING: { label: "编辑中", tone: "editing" },
+  READY_FOR_PREVIEW: { label: "可预览", tone: "ready" },
+} as const;
+
+function isOpenDraft(status: string): status is keyof typeof draftStatus {
+  return status === "EDITING" || status === "READY_FOR_PREVIEW";
+}
+
+export default async function TeacherActivityStudioPage() {
+  let dashboard;
+  try {
+    const context = await createUiCommandContext();
+    const database = getDatabaseClient();
+    dashboard = await getTeacherActivityDashboard(database, context, {});
+  } catch (error) {
+    if (error instanceof AuthenticationError) {
+      return (
+        <TeacherAccessGate code={error.code} returnPath="/teacher/activities" />
+      );
+    }
+    if (
+      error instanceof TeacherActivityQueryError &&
+      error.code === "WRONG_ROLE" &&
+      error.actorName
+    ) {
+      return (
+        <WorkspaceRoleGate
+          actorName={error.actorName}
+          currentAudience="学生"
+          requestedAudience="教师"
+        />
+      );
+    }
+    if (error instanceof TeacherActivityQueryError || error instanceof ZodError) {
+      notFound();
+    }
+    throw error;
+  }
+
+  const openDrafts = dashboard.drafts.filter((draft) =>
+    isOpenDraft(draft.status),
+  );
+
+  return (
+    <TeacherPage
+      actorName={dashboard.actor.displayName}
+      breadcrumb={[teacherHomeCrumb, { label: "活动设计" }]}
+    >
+      <div className={styles.pageContent}>
+        <header className={styles.pageHeader}>
+          <div>
+            <p className={styles.eyebrow}>活动设计 / 草稿</p>
+            <h1>还没发给学生的稿子</h1>
+            <p>
+              这里只放编辑中和可预览的草稿。已经发布的活动在工作台的班级里，不在这份名单里再出现一次。
+            </p>
+          </div>
+          <div className={styles.pageHeaderActions}>
+            <Link className={styles.secondaryButton} href="/teacher/knowledge">
+              检索课程标准
+            </Link>
+            <Link className={styles.primaryLink} href="/teacher/activities/new">
+              新建学习活动 <span aria-hidden="true">＋</span>
+            </Link>
+          </div>
+        </header>
+
+        <div className={styles.dashboardBody}>
+          <section className={styles.dashboardSection}>
+            <header className={styles.sectionHeader}>
+              <div>
+                <p className={styles.eyebrow}>可继续写</p>
+                <h2>我的草稿</h2>
+              </div>
+              <span>{openDrafts.length} 份</span>
+            </header>
+            {openDrafts.length === 0 ? (
+              <p className={styles.emptyState}>
+                没有进行中的草稿。使用「新建学习活动」开始第一份可追溯版本。
+              </p>
+            ) : (
+              <div className={styles.activityList}>
+                {openDrafts.map((draft) => {
+                  if (!isOpenDraft(draft.status)) {
+                    return null;
+                  }
+                  const status = draftStatus[draft.status];
+                  return (
+                    <Link
+                      className={styles.nestedActivityRow}
+                      href={`/teacher/activities/${draft.id}`}
+                      key={draft.id}
+                    >
+                      <span className={styles.activityTitle}>{draft.title}</span>
+                      <span className={styles.activityMeta}>
+                        版本 {draft.version} ·{" "}
+                        <LocalizedDateTime dateTime={draft.updatedAt} /> 更新
+                      </span>
+                      <span className={styles.activityStatus}>
+                        <span
+                          className={styles.statusBadge}
+                          data-tone={status.tone}
+                        >
+                          {status.label}
+                        </span>
+                      </span>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        </div>
+      </div>
+    </TeacherPage>
+  );
+}

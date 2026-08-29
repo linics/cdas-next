@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({
   database: { kind: "teacher-evaluation-action-database" },
   getDatabaseClient: vi.fn(),
   createUiCommandContext: vi.fn(),
+  suggestEvaluation: vi.fn(),
   prepareEvaluation: vi.fn(),
   decideIntent: vi.fn(),
   saveEvaluation: vi.fn(),
@@ -28,6 +29,18 @@ vi.mock("../../../../server/auth/current-actor", () => ({
     }
   },
 }));
+vi.mock(
+  "../../../../server/assistant/teacher-evaluation-suggestion",
+  async (importOriginal) => {
+    const actual = await importOriginal<
+      typeof import("../../../../server/assistant/teacher-evaluation-suggestion")
+    >();
+    return {
+      ...actual,
+      suggestTeacherEvaluation: mocks.suggestEvaluation,
+    };
+  },
+);
 vi.mock(
   "../../../../server/commands/prepare-teacher-evaluation-intent",
   async (importOriginal) => {
@@ -66,6 +79,7 @@ vi.mock(
 );
 
 import { AuthenticationError } from "../../../../server/auth/current-actor";
+import { TeacherEvaluationSuggestionError } from "../../../../server/assistant/teacher-evaluation-suggestion";
 import { hashTeacherEvaluationPayload } from "../../../../domain/evaluation/teacher-evaluation-intent";
 import { DecideActionIntentError } from "../../../../server/commands/decide-action-intent";
 import { PrepareTeacherEvaluationIntentError } from "../../../../server/commands/prepare-teacher-evaluation-intent";
@@ -73,8 +87,10 @@ import { SaveTeacherEvaluationError } from "../../../../server/commands/save-tea
 import {
   decideTeacherEvaluationAction,
   prepareTeacherEvaluationAction,
+  suggestTeacherEvaluationAction,
 } from "./evaluation-actions";
 import { initialEvaluationActionState } from "./evaluation-action-state";
+import { initialEvaluationSuggestionActionState } from "./evaluation-suggestion-action-state";
 
 const submissionId = "10000000-0000-4000-8000-000000000001";
 const revisionId = "20000000-0000-4000-8000-000000000002";
@@ -84,6 +100,7 @@ const evaluationRevisionId = "50000000-0000-4000-8000-000000000005";
 const actorId = "60000000-0000-4000-8000-000000000006";
 const attachmentId = "70000000-0000-4000-8000-000000000007";
 const releaseId = "80000000-0000-4000-8000-000000000008";
+const suggestionAgentRunId = "90000000-0000-4000-8000-000000000009";
 const outcomes = [
   {
     dimensionIndex: 1,
@@ -146,7 +163,17 @@ function prepareForm(overrides?: Record<string, string>): FormData {
     expectedEvaluationVersion: "1",
     summary: "  e\u0301vidence\r\n第二行  ",
     outcomes: JSON.stringify(outcomes),
+    suggestionAgentRunId: "",
     idempotencyKey: "prepare_evaluation_request_001",
+    ...overrides,
+  });
+}
+
+function suggestionForm(overrides?: Record<string, string>): FormData {
+  return formData({
+    submissionId,
+    submissionRevisionId: revisionId,
+    submissionRevisionNumber: "2",
     ...overrides,
   });
 }
@@ -165,6 +192,13 @@ describe("teacher evaluation server actions", () => {
     vi.clearAllMocks();
     mocks.getDatabaseClient.mockReturnValue(mocks.database);
     mocks.createUiCommandContext.mockResolvedValue(trustedContext);
+    mocks.suggestEvaluation.mockResolvedValue({
+      agentRunId: suggestionAgentRunId,
+      submissionRevisionId: revisionId,
+      submissionRevisionNumber: 2,
+      summary: "AI 起草的可编辑综评。",
+      outcomes,
+    });
     mocks.prepareEvaluation.mockResolvedValue({
       actionIntentId: intentId,
       submissionRevisionId: revisionId,
@@ -233,6 +267,98 @@ describe("teacher evaluation server actions", () => {
     expect(state.confirmation?.saveIdempotencyKey).toMatch(
       /^save_teacher_evaluation_[0-9a-f-]{36}$/,
     );
+  });
+
+  it("returns a validated AI suggestion without preparing or saving an evaluation", async () => {
+    const state = await suggestTeacherEvaluationAction(
+      initialEvaluationSuggestionActionState,
+      suggestionForm(),
+    );
+
+    expect(mocks.suggestEvaluation).toHaveBeenCalledWith(
+      mocks.database,
+      trustedContext,
+      {
+        submissionId,
+        submissionRevisionId: revisionId,
+        submissionRevisionNumber: 2,
+      },
+    );
+    expect(state).toMatchObject({
+      status: "suggested",
+      suggestion: {
+        agentRunId: suggestionAgentRunId,
+        submissionRevisionId: revisionId,
+        submissionRevisionNumber: 2,
+      },
+    });
+    expect(mocks.prepareEvaluation).not.toHaveBeenCalled();
+    expect(mocks.saveEvaluation).not.toHaveBeenCalled();
+  });
+
+  it("rejects injected suggestion fields before authentication", async () => {
+    const state = await suggestTeacherEvaluationAction(
+      initialEvaluationSuggestionActionState,
+      suggestionForm({ actorId }),
+    );
+
+    expect(state.status).toBe("error");
+    expect(mocks.createUiCommandContext).not.toHaveBeenCalled();
+    expect(mocks.suggestEvaluation).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["STALE_SUBMISSION_REVISION", "stale"],
+    ["NOT_FOUND", "unauthorized"],
+    ["AI_UNAVAILABLE", "unavailable"],
+    ["PROVIDER_FAILED", "unavailable"],
+    ["INVALID_OUTPUT", "error"],
+  ] as const)("maps suggestion %s without exposing its code", async (code, status) => {
+    mocks.suggestEvaluation.mockRejectedValue(
+      new TeacherEvaluationSuggestionError(code),
+    );
+
+    const state = await suggestTeacherEvaluationAction(
+      initialEvaluationSuggestionActionState,
+      suggestionForm(),
+    );
+
+    expect(state.status).toBe(status);
+    expect(state.message).not.toContain(code);
+    expect(state.suggestion).toBeNull();
+  });
+
+  it("binds a successful suggestion run into the existing prepare intent", async () => {
+    const aiPayloadHash = hashTeacherEvaluationPayload({
+      schemaVersion: 1,
+      submissionId,
+      submissionRevisionId: revisionId,
+      expectedSubmissionRevisionNumber: 2,
+      expectedEvaluationVersion: 1,
+      summary: "  évidence\n第二行  ",
+      outcomes,
+      suggestionAgentRunId,
+    });
+    mocks.prepareEvaluation.mockResolvedValue({
+      actionIntentId: intentId,
+      submissionRevisionId: revisionId,
+      expectedEvaluationVersion: 1,
+      payloadHash: aiPayloadHash,
+      expiresAt: "2026-08-18T12:10:00.000Z",
+    });
+
+    const state = await prepareTeacherEvaluationAction(
+      initialEvaluationActionState,
+      prepareForm({ suggestionAgentRunId }),
+    );
+
+    expect(mocks.prepareEvaluation).toHaveBeenCalledWith(
+      mocks.database,
+      trustedContext,
+      expect.objectContaining({ suggestionAgentRunId }),
+    );
+    expect(state.status).toBe("prepared");
+    expect(state.confirmation?.payloadHash).toBe(aiPayloadHash);
   });
 
   it("rejects extra or duplicate form fields before authentication", async () => {

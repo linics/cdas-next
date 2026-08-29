@@ -1,17 +1,10 @@
 import { randomUUID } from "node:crypto";
-import { SignInButton, SignOutButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { ZodError } from "zod";
 import {
-  assignmentTypeDetails,
-  assignmentSubtypeLabel,
-  crossDisciplinaryConcepts,
-  disciplineLabel,
   evidenceTypeLabel,
-  inquiryDepths,
-  submissionModes,
 } from "../../../../domain/activity/activity-content";
 import {
   teacherFeedbackNextStepLabels,
@@ -40,66 +33,12 @@ import {
   type StudentReleaseWorkspace,
 } from "../../../../server/queries/submission-workspace";
 import { SubmissionEditor } from "./submission-editor";
+import { StudentAccessGate } from "../../_components/student-shell";
 import styles from "./submission-workspace.module.css";
 
-function AccessUnavailable({
-  code,
-  releaseId,
-}: {
-  code: AuthenticationError["code"];
-  releaseId: string;
-}) {
-  const copy =
-    code === "AUTH_NOT_CONFIGURED"
-      ? {
-          eyebrow: "登录服务未配置",
-          title: "提交入口当前没有开放",
-          detail:
-            "系统没有可验证的登录身份，因此不会显示活动内容、草稿或任何可写按钮。配置 Clerk 后再从已登录的学生账号进入。",
-        }
-      : code === "USER_NOT_PROVISIONED"
-        ? {
-            eyebrow: "账号尚未创建",
-            title: "找不到对应的学生身份",
-            detail:
-              "当前登录账号尚未关联到 CDAS Next 用户。请由管理者完成账号创建与班级成员设置。",
-          }
-        : {
-            eyebrow: "需要登录",
-            title: "先确认学生身份再查看作业",
-            detail:
-              "未登录时不会显示活动内容、现有草稿或提交入口。请完成登录后重新打开这个关联。",
-          };
-
-  return (
-    <WorkspaceShell audience="学生">
-      <section className={styles.accessGate}>
-        <p className={styles.eyebrow}>{copy.eyebrow}</p>
-        <h1>{copy.title}</h1>
-        <p>{copy.detail}</p>
-        <div className={styles.accessActions}>
-          {code === "UNAUTHENTICATED" ? (
-            <SignInButton
-              mode="modal"
-              fallbackRedirectUrl={`/student/releases/${releaseId}`}
-            >
-              <button className={styles.signInButton} type="button">
-                登录学生账号
-              </button>
-            </SignInButton>
-          ) : code === "USER_NOT_PROVISIONED" ? (
-            <SignOutButton redirectUrl={`/student/releases/${releaseId}`}>
-              <button className={styles.signInButton} type="button">
-                退出当前账号
-              </button>
-            </SignOutButton>
-          ) : null}
-          <Link href="/">返回工作台</Link>
-        </div>
-      </section>
-    </WorkspaceShell>
-  );
-}
+const studentNavigation = [
+  { href: "/student", label: "我的活动" },
+] as const;
 
 function ReleaseBrief({
   snapshot,
@@ -108,32 +47,46 @@ function ReleaseBrief({
 }) {
   const { content } = snapshot;
   return (
-    <aside className={styles.releaseBrief} aria-labelledby="release-brief-title">
-      <div className={styles.briefHeading}>
-        <p className={styles.eyebrow}>活动要求</p>
-        <h2 id="release-brief-title">发布快照</h2>
-        <span>版本 {snapshot.sourceDraftVersion}</span>
+    <details className={styles.releaseBrief}>
+      <summary className={styles.briefHeading}>
+        <span>查看完整任务书</span>
+        <span className={styles.briefVersion}>
+          发布快照 · 版本 {snapshot.sourceDraftVersion}
+        </span>
+      </summary>
+      <div className={styles.briefBody}>
+        {content.schemaVersion === 2 ? <>
+          <section><h3>总体任务</h3><p>{content.taskInstructions}</p></section>
+          <section><h3>任务链</h3><ol>{content.phases.map((phase) => <li key={phase.name}><strong>{phase.name}</strong><br />要完成：{phase.action}<br />情境：{phase.context}<br />可以怎么做：{phase.support}<br />要交：{phase.evidence.map((evidence) => `${evidenceTypeLabel(evidence.type)}：${evidence.description}`).join("；")}<br />老师会看什么：{phase.evaluationFocus}</li>)}</ol></section>
+          <section><h3>评价标准</h3><ul>{content.rubricDimensions.map((dimension) => <li key={dimension.name}><strong>{dimension.name}</strong><br />优秀：{dimension.excellent}<br />良好：{dimension.good}<br />合格：{dimension.pass}<br />需改进：{dimension.improve}</li>)}</ul></section>
+        </> : <>
+          <section><h3>任务说明</h3><p>{content.taskInstructions}</p></section>
+          <section><h3>学习目标</h3><ol>{content.learningObjectives.map((objective) => <li key={objective}>{objective}</li>)}</ol></section>
+          <section><h3>提交证据</h3><ul>{content.evidenceRequirements.map((requirement) => <li key={requirement}>{requirement}</li>)}</ul></section>
+          <section><h3>教师反馈将关注</h3><ul>{content.feedbackCriteria.map((criterion) => <li key={criterion}>{criterion}</li>)}</ul></section>
+        </>}
       </div>
+    </details>
+  );
+}
 
-      {content.schemaVersion === 2 ? <>
-        <section><h3>任务设置</h3><p>{content.topic} · {content.schoolStage === "PRIMARY" ? "小学" : "初中"}{content.grade}年级<br />主学科：{disciplineLabel(content.mainDisciplineCode)}；融合学科：{content.integratedDisciplineCodes.map(disciplineLabel).join("、")}<br />{assignmentTypeDetails(content.assignmentType).label}（{assignmentTypeDetails(content.assignmentType).description}）{assignmentSubtypeLabel(content.assignmentType, content.assignmentSubtype) ? ` · ${assignmentSubtypeLabel(content.assignmentType, content.assignmentSubtype)}` : ""} · {inquiryDepths.find((item) => item.code === content.inquiryDepth)?.label} · {submissionModes.find((item) => item.code === content.submissionMode)?.label} · {content.durationWeeks} 周</p></section>
-        {content.crossDisciplinaryConceptCodes.length > 0 ? <section><h3>跨学科概念</h3><p>{content.crossDisciplinaryConceptCodes.map((code) => { const concept = crossDisciplinaryConcepts.find((item) => item.code === code)!; return `${concept.label}（${concept.description}）`; }).join("；")}</p></section> : null}
-        <section><h3>背景设定</h3><p>{content.backgroundSetting}</p></section>
-        <section><h3>学习目标</h3><ol><li>知识与技能：{content.objectiveKnowledge}</li><li>过程与方法：{content.objectiveProcess}</li><li>情感态度：{content.objectiveEmotion}</li></ol></section>
-        <section><h3>总体任务</h3><p>{content.taskInstructions}</p></section>
-        <section><h3>任务链</h3><ol>{content.phases.map((phase) => <li key={phase.name}><strong>{phase.name}</strong>（建议 {phase.suggestedLessons} 课时）<br />要完成：{phase.action}<br />情境：{phase.context}<br />学习支架：{phase.support}<br />提交：{phase.evidence.map((evidence) => `${evidenceTypeLabel(evidence.type)}：${evidence.description}`).join("；")}<br />评价要点：{phase.evaluationFocus}</li>)}</ol></section>
-        <section><h3>评价标准</h3><ul>{content.rubricDimensions.map((dimension) => <li key={dimension.name}><strong>{dimension.name}</strong><br />优秀：{dimension.excellent}<br />良好：{dimension.good}<br />合格：{dimension.pass}<br />需改进：{dimension.improve}</li>)}</ul></section>
-      </> : <>
-        <section><h3>任务说明</h3><p>{content.taskInstructions}</p></section>
-        <section><h3>学习目标</h3><ol>{content.learningObjectives.map((objective) => <li key={objective}>{objective}</li>)}</ol></section>
-        <section><h3>提交证据</h3><ul>{content.evidenceRequirements.map((requirement) => <li key={requirement}>{requirement}</li>)}</ul></section>
-        <section><h3>教师反馈将关注</h3><ul>{content.feedbackCriteria.map((criterion) => <li key={criterion}>{criterion}</li>)}</ul></section>
-      </>}
-
-      <p className={styles.snapshotHash} title={snapshot.contentHash}>
-        快照摘要 {snapshot.contentHash.slice(0, 12)}…
-      </p>
-    </aside>
+// 背景设定是整个故事的开头 —— 收进折叠里，学生就直接从「第 3 阶段」读起，
+// 没头没尾。所以它常驻，其余（总体任务、任务链、评价标准）留在折叠里。
+// 三维目标、任务设置、跨学科概念、快照摘要是教学设计与审计用的，学生端不展示。
+function ActivityBackground({
+  snapshot,
+}: {
+  snapshot: StudentReleaseWorkspace["release"]["snapshot"];
+}) {
+  const { content } = snapshot;
+  if (content.schemaVersion !== 2) {
+    return null;
+  }
+  return (
+    <section className={styles.activityBackground} aria-label="活动背景">
+      <p className={styles.eyebrow}>活动背景</p>
+      <p>{content.backgroundSetting}</p>
+    </section>
   );
 }
 
@@ -165,7 +118,7 @@ function RevisionHistory({
       <div className={styles.historyHeading}>
         <div>
           <p className={styles.eyebrow}>不可变历史</p>
-          <h2 id="history-title">正式修订</h2>
+          <h2 id="history-title">我的提交与反馈</h2>
         </div>
         <span>{revisions.length} 版</span>
       </div>
@@ -190,8 +143,12 @@ function RevisionHistory({
             const evaluationHeadingId = `evaluation-${revision.id}`;
 
             return (
-              <article className={styles.revision} key={revision.id}>
-                <header>
+              <details
+                className={styles.revision}
+                key={revision.id}
+                open={index === 0}
+              >
+                <summary>
                   <div>
                     <span className={styles.revisionNumber}>
                       {String(revision.revisionNumber).padStart(2, "0")}
@@ -209,7 +166,7 @@ function RevisionHistory({
                       {revision.isLate ? "迟交" : "期限内"}
                     </span>
                   </div>
-                </header>
+                </summary>
                 <p className={styles.formalNote}>正式修订 · 内容不可覆盖</p>
                 {revision.textEvidence ? (
                   <div className={styles.revisionText}>
@@ -401,7 +358,7 @@ function RevisionHistory({
                     </p>
                   )}
                 </section>
-              </article>
+              </details>
             );
           })}
         </div>
@@ -458,6 +415,7 @@ function PhaseNavigator({
             <small>{state}</small>
           </>
         );
+        // 一行一档：只有当前阶段在下方展开详情，其余靠点击切换。
         return unlocked ? (
           <Link
             aria-current={
@@ -484,34 +442,68 @@ function PhaseNavigator({
 function PhaseFocus({
   phase,
   phaseIndex,
+  dueAt,
+  isPastDue,
+  showLateWarning,
 }: {
   phase: Extract<
     StudentReleaseWorkspace["release"]["snapshot"]["content"],
     { schemaVersion: 2 }
   >["phases"][number] | null;
   phaseIndex: number;
+  dueAt: string | null;
+  isPastDue: boolean;
+  showLateWarning: boolean;
 }) {
   if (!phase) {
     return phaseIndex === 0 ? (
-      <section className={styles.phaseFocus}>
+      <section className={styles.phaseFocus} aria-label="整项终稿">
         <p className={styles.eyebrow}>混合提交 / 整项终稿</p>
-        <h2>汇总全部阶段成果</h2>
-        <p>所有阶段已经正式提交。现在整理跨阶段说明、最终成果和必要附件。</p>
+        <p className={styles.phaseStory}>
+          所有阶段已经正式提交。现在整理跨阶段说明、最终成果和必要附件。
+        </p>
       </section>
     ) : null;
   }
 
   return (
-    <section className={styles.phaseFocus}>
-      <p className={styles.eyebrow}>第 {phaseIndex} 阶段</p>
-      <h2>{phase.name}</h2>
-      <p>{phase.context}</p>
+    <section className={styles.phaseFocus} aria-label={`第 ${phaseIndex} 阶段：${phase.name}`}>
+      <p className={styles.eyebrow}>
+        第 {phaseIndex} 阶段 · {phase.name}
+      </p>
+      {/* 首句是情境，不是标签 —— 学生先读到自己在这个故事里要干什么。 */}
+      <p className={styles.phaseStory}>{phase.context}</p>
       <dl>
-        <div><dt>核心行动</dt><dd>{phase.action}</dd></div>
-        <div><dt>学习支架</dt><dd>{phase.support}</dd></div>
-        <div><dt>评价要点</dt><dd>{phase.evaluationFocus}</dd></div>
-        <div><dt>建议课时</dt><dd>{phase.suggestedLessons} 课时</dd></div>
+        <div><dt>这一步做什么</dt><dd>{phase.action}</dd></div>
+        <div>
+          <dt>要交什么</dt>
+          <dd>
+            {phase.evidence
+              .map(
+                (evidence) =>
+                  `${evidenceTypeLabel(evidence.type)}：${evidence.description}`,
+              )
+              .join("；")}
+          </dd>
+        </div>
+        <div><dt>可以怎么做</dt><dd>{phase.support}</dd></div>
+        <div><dt>老师会看什么</dt><dd>{phase.evaluationFocus}</dd></div>
       </dl>
+      <p className={styles.phaseDue} data-late={isPastDue ? "true" : undefined}>
+        {dueAt ? (
+          <>
+            截止 <LocalizedDateTime dateTime={dueAt} />
+          </>
+        ) : (
+          "未设置截止时间"
+        )}
+      </p>
+      {showLateWarning ? (
+        <InlineAlert tone="warning">
+          <strong>截止时间已过，但活动仍开放。</strong>{" "}
+          你仍可保存并正式提交；新创建的正式修订会永久标记为迟交。
+        </InlineAlert>
+      ) : null}
     </section>
   );
 }
@@ -580,7 +572,12 @@ export default async function StudentReleasePage({
     }
   } catch (error) {
     if (error instanceof AuthenticationError) {
-      return <AccessUnavailable code={error.code} releaseId={releaseId} />;
+      return (
+        <StudentAccessGate
+          code={error.code}
+          returnPath={`/student/releases/${releaseId}`}
+        />
+      );
     }
     if (
       error instanceof FeedbackWorkspaceQueryError ||
@@ -614,21 +611,6 @@ export default async function StudentReleasePage({
       : isPastDue
         ? "截止已过 · 可迟交"
         : "开放提交";
-  const currentSubmission = workspace.submissions.find(
-    (submission) =>
-      submission.phaseIndex === workspace.execution.currentPhaseIndex,
-  );
-  const currentSubmissionLabel = workspace.execution.version === 1
-    ? workspace.execution.currentPhaseIndex === 0
-      ? "阶段已完成 · 正在整理整项终稿"
-      : `第 ${workspace.execution.currentPhaseIndex}/${workspace.execution.phaseCount} 阶段`
-    : currentSubmission?.workingCopy
-    ? currentSubmission.workingCopy.baseRevisionNumber > 0
-      ? `第 ${currentSubmission.workingCopy.baseRevisionNumber + 1} 版重交草稿`
-      : "未提交草稿"
-    : currentSubmission && currentSubmission.latestRevisionNumber > 0
-      ? `第 ${currentSubmission.latestRevisionNumber} 版已正式提交`
-      : "尚未创建草稿";
   const attachmentStorageEnabled =
     createAttachmentStorageFromEnvironment() !== null;
 
@@ -636,6 +618,11 @@ export default async function StudentReleasePage({
     <WorkspaceShell
       audience="学生"
       actorName={workspace.actor.displayName}
+      breadcrumb={[
+        { href: "/student", label: "我的学习活动" },
+        { label: content.title },
+      ]}
+      navigation={studentNavigation}
     >
       <div className={styles.releasePage}>
         <Link className={styles.backLink} href="/student">← 返回我的活动</Link>
@@ -649,25 +636,6 @@ export default async function StudentReleasePage({
             {statusLabel}
           </StatusBadge>
         </header>
-
-        <dl className={styles.releaseFacts}>
-          <div>
-            <dt>发布时间</dt>
-            <dd>
-              <LocalizedDateTime dateTime={workspace.release.publishedAt} />
-            </dd>
-          </div>
-          <div>
-            <dt>截止时间</dt>
-            <dd>
-              {dueAt ? <LocalizedDateTime dateTime={dueAt} /> : "未设置"}
-            </dd>
-          </div>
-          <div>
-            <dt>当前进度</dt>
-            <dd>{currentSubmissionLabel}</dd>
-          </div>
-        </dl>
 
         {workspace.group ? (
           <section className={styles.groupNotice} aria-labelledby="student-group-title">
@@ -691,24 +659,21 @@ export default async function StudentReleasePage({
           </section>
         ) : null}
 
-        {isPastDue && isActive && canWrite ? (
-          <div className={styles.lateNotice}>
-            <InlineAlert tone="warning">
-              <strong>截止时间已过，但活动仍开放。</strong> 你仍可保存并正式提交；新创建的正式修订会永久标记为迟交。
-            </InlineAlert>
-          </div>
-        ) : null}
+        <ActivityBackground snapshot={workspace.release.snapshot} />
+        <ReleaseBrief snapshot={workspace.release.snapshot} />
 
         <PhaseNavigator
           workspace={workspace}
           selectedPhaseIndex={selectedPhaseIndex}
         />
 
-        <div className={styles.workspaceGrid}>
-          <div className={styles.submissionColumn}>
+        <div className={styles.workspaceColumn}>
             <PhaseFocus
               phase={selectedPhase}
               phaseIndex={selectedPhaseIndex}
+              dueAt={dueAt}
+              isPastDue={isPastDue}
+              showLateWarning={isPastDue && isActive && canWrite}
             />
             <SubmissionEditor
               releaseId={releaseId}
@@ -737,8 +702,6 @@ export default async function StudentReleasePage({
               feedbackWorkspace={feedbackWorkspace}
               phase={selectedPhase}
             />
-          </div>
-          <ReleaseBrief snapshot={workspace.release.snapshot} />
         </div>
       </div>
     </WorkspaceShell>

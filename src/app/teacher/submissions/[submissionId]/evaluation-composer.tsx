@@ -1,6 +1,12 @@
 "use client";
 
-import { useActionState, useMemo, useRef, useState } from "react";
+import {
+  useActionState,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import { useRouter } from "next/navigation";
 import { LocalizedDateTime } from "../../../_components/localized-date-time";
 import { ConfirmDialog, InlineAlert } from "../../../_components/ui";
@@ -17,12 +23,17 @@ import { hasMeaningfulTextEvidence } from "../../../../domain/submission/text-ev
 import {
   decideTeacherEvaluationAction,
   prepareTeacherEvaluationAction,
+  suggestTeacherEvaluationAction,
 } from "./evaluation-actions";
 import {
   initialEvaluationActionState,
   type EvaluationActionState,
   type PendingEvaluationConfirmation,
 } from "./evaluation-action-state";
+import {
+  initialEvaluationSuggestionActionState,
+  type EvaluationSuggestionActionState,
+} from "./evaluation-suggestion-action-state";
 import styles from "./feedback-workspace.module.css";
 
 type RubricDimension = Readonly<{
@@ -44,6 +55,7 @@ type EvaluationComposerProps = Readonly<{
   checkpoints: ReadonlyArray<{ evidenceIndex: number; description: string }>;
   initialSummary: string;
   prepareIdempotencySeed: string;
+  assistantEnabled: boolean;
 }>;
 
 type DimensionDraft = Readonly<{
@@ -107,6 +119,36 @@ function ActionNotice({
       </span>
       <p>{state.message}</p>
       {isConflict && state.status !== "concurrent" ? (
+        <button type="button" onClick={onRefresh}>
+          刷新
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+function SuggestionNotice({
+  state,
+  onRefresh,
+}: {
+  state: EvaluationSuggestionActionState;
+  onRefresh: () => void;
+}) {
+  if (state.status === "idle") return null;
+  const isSuccess = state.status === "suggested";
+  const isConflict = state.status === "stale";
+  return (
+    <div
+      className={styles.actionNotice}
+      data-tone={isSuccess ? "success" : isConflict ? "conflict" : "error"}
+      role={isSuccess ? "status" : "alert"}
+      aria-live="polite"
+    >
+      <span aria-hidden="true">
+        {isSuccess ? "✓" : isConflict ? "↻" : "!"}
+      </span>
+      <p>{state.message}</p>
+      {isConflict ? (
         <button type="button" onClick={onRefresh}>
           刷新
         </button>
@@ -267,12 +309,21 @@ export function EvaluationComposer({
   checkpoints,
   initialSummary,
   prepareIdempotencySeed,
+  assistantEnabled,
 }: EvaluationComposerProps) {
   const router = useRouter();
   const [draftSummary, setDraftSummary] = useState(initialSummary);
   const [dimensionDrafts, setDimensionDrafts] = useState<DimensionDraft[]>(() =>
     rubricDimensions.map(() => emptyDimensionDraft()),
   );
+  const [suggestionAgentRunId, setSuggestionAgentRunId] = useState<string | null>(
+    null,
+  );
+  const [suggestionState, setSuggestionState] =
+    useState<EvaluationSuggestionActionState>(
+      initialEvaluationSuggestionActionState,
+    );
+  const [suggestionPending, startSuggestionTransition] = useTransition();
   const [prepareState, prepareAction, preparePending] = useActionState(
     prepareTeacherEvaluationAction,
     initialEvaluationActionState,
@@ -301,7 +352,7 @@ export function EvaluationComposer({
   const summaryOverLimit =
     codePointCount > TEACHER_EVALUATION_SUMMARY_MAX_LENGTH;
   const summaryHasVisibleText = hasMeaningfulTextEvidence(draftSummary);
-  const anyPending = preparePending || decisionPending;
+  const anyPending = preparePending || decisionPending || suggestionPending;
   const relatedDecisionState =
     activeConfirmation &&
     decisionState.resolvedIntentId === activeConfirmation.actionIntentId
@@ -339,6 +390,44 @@ export function EvaluationComposer({
     return citationsFromDraft(draft).length > 0;
   });
 
+  const requestSuggestion = (formData: FormData) => {
+    startSuggestionTransition(async () => {
+      const nextState = await suggestTeacherEvaluationAction(
+        initialEvaluationSuggestionActionState,
+        formData,
+      );
+      setSuggestionState(nextState);
+      const suggestion = nextState.suggestion;
+      if (!suggestion) return;
+
+      setDraftSummary(suggestion.summary);
+      setSuggestionAgentRunId(suggestion.agentRunId);
+      setDimensionDrafts(
+        rubricDimensions.map((_, index) => {
+          const outcome = suggestion.outcomes[index];
+          if (!outcome) return emptyDimensionDraft();
+          if (outcome.status === "INSUFFICIENT_EVIDENCE") {
+            return {
+              ...emptyDimensionDraft(),
+              status: "INSUFFICIENT_EVIDENCE",
+            };
+          }
+          return {
+            status: "LEVEL",
+            level: outcome.level,
+            citeText: outcome.citations.some(
+              (citation) => citation.kind === "text",
+            ),
+            attachmentIds: [],
+            evidenceIndexes: outcome.citations.flatMap((citation) =>
+              citation.kind === "checkpoint" ? [citation.evidenceIndex] : [],
+            ),
+          };
+        }),
+      );
+    });
+  };
+
   if (activeConfirmation) {
     return (
       <ConfirmationPanel
@@ -356,27 +445,64 @@ export function EvaluationComposer({
     <section
       className={styles.composer}
       aria-labelledby="evaluation-editor-title"
-      aria-busy={preparePending}
+      aria-busy={preparePending || suggestionPending}
     >
       <header className={styles.composerHeading}>
         <div>
-          <p className={styles.eyebrow}>当前正式修订</p>
           <h2 id="evaluation-editor-title">
             {expectedEvaluationVersion > 0
               ? "修改量规评价"
               : "撰写量规评价"}
           </h2>
+          <p className={styles.composerLead}>
+            第 {submissionRevisionNumber} 版提交 ·{" "}
+            {expectedEvaluationVersion > 0
+              ? `第 ${expectedEvaluationVersion + 1} 版评价`
+              : "第一版评价"}
+            · 每维须等级并引用证据，或标证据不足
+          </p>
         </div>
-        <span className={styles.manualMode}>手写模式 · 不呼叫 AI</span>
+        <div className={styles.composerActions}>
+          <span className={styles.manualMode}>
+            {assistantEnabled ? "教师终审 · AI 可选" : "手写模式 · 不呼叫 AI"}
+          </span>
+          {assistantEnabled ? (
+            <form className={styles.suggestionAction} action={requestSuggestion}>
+              <input type="hidden" name="submissionId" value={submissionId} />
+              <input
+                type="hidden"
+                name="submissionRevisionId"
+                value={submissionRevisionId}
+              />
+              <input
+                type="hidden"
+                name="submissionRevisionNumber"
+                value={submissionRevisionNumber}
+              />
+              <button
+                className={styles.secondaryButton}
+                type="submit"
+                disabled={anyPending}
+                aria-label="让助手起草这一版评价"
+              >
+                {suggestionPending ? "起草中…" : "AI 起草建议"}
+              </button>
+            </form>
+          ) : null}
+        </div>
       </header>
 
-      <p className={styles.composerLead}>
-        对第 {submissionRevisionNumber} 版提交按冻结量规给出
-        {expectedEvaluationVersion > 0
-          ? `第 ${expectedEvaluationVersion + 1} 版评价`
-          : "第一版评价"}
-        。每个维度必须给出等级并引用本版证据，或明确标记证据不足。准备后仍需在独立面板明确确认。
-      </p>
+      {assistantEnabled ? (
+        <p className={styles.aiNote} role="note">
+          这是 AI 建议，未经你确认不会保存。只读本版文字与检查点。
+        </p>
+      ) : null}
+      {assistantEnabled ? (
+        <SuggestionNotice
+          state={suggestionState}
+          onRefresh={() => router.refresh()}
+        />
+      ) : null}
 
       <ActionNotice state={prepareState} onRefresh={() => router.refresh()} />
       {decisionState.status === "rejected" ||
@@ -407,6 +533,11 @@ export function EvaluationComposer({
         <input type="hidden" name="outcomes" value={outcomesJson} />
         <input
           type="hidden"
+          name="suggestionAgentRunId"
+          value={suggestionAgentRunId ?? ""}
+        />
+        <input
+          type="hidden"
           name="idempotencyKey"
           value={prepareIdempotencyKey}
         />
@@ -423,62 +554,54 @@ export function EvaluationComposer({
               <legend>
                 维度 {index + 1}：{dimension.name}
               </legend>
-              <p>
-                优秀：{dimension.excellent} 良好：{dimension.good} 合格：
-                {dimension.pass} 需改进：{dimension.improve}
-              </p>
-              <label htmlFor={statusId}>判断方式</label>
-              <select
-                id={statusId}
-                value={draft.status}
-                onChange={(event) => {
-                  const status = event.target
-                    .value as TeacherEvaluationOutcomeStatus | "";
-                  setDimensionDrafts((current) =>
-                    current.map((item, itemIndex) =>
-                      itemIndex === index
-                        ? {
-                            ...item,
-                            status,
-                            level: status === "LEVEL" ? item.level : "",
-                            citeText:
-                              status === "INSUFFICIENT_EVIDENCE"
-                                ? false
-                                : item.citeText,
-                            attachmentIds:
-                              status === "INSUFFICIENT_EVIDENCE"
-                                ? []
-                                : item.attachmentIds,
-                            evidenceIndexes:
-                              status === "INSUFFICIENT_EVIDENCE"
-                                ? []
-                                : item.evidenceIndexes,
-                          }
-                        : item,
-                    ),
-                  );
-                }}
-                disabled={anyPending}
-                required
-              >
-                <option value="" disabled>
-                  请选择判断方式
-                </option>
-                <option value="LEVEL">给出等级</option>
-                <option value="INSUFFICIENT_EVIDENCE">证据不足</option>
-              </select>
-              {draft.status === "LEVEL" ? (
-                <>
-                  <label htmlFor={levelId}>达成等级</label>
+              <dl className={styles.levelScale}>
+                <div>
+                  <dt>优秀</dt>
+                  <dd>{dimension.excellent}</dd>
+                </div>
+                <div>
+                  <dt>良好</dt>
+                  <dd>{dimension.good}</dd>
+                </div>
+                <div>
+                  <dt>合格</dt>
+                  <dd>{dimension.pass}</dd>
+                </div>
+                <div>
+                  <dt>需改进</dt>
+                  <dd>{dimension.improve}</dd>
+                </div>
+              </dl>
+              <div className={styles.choiceGrid}>
+                <div>
+                  <label htmlFor={statusId}>判断方式</label>
                   <select
-                    id={levelId}
-                    value={draft.level}
+                    id={statusId}
+                    value={draft.status}
                     onChange={(event) => {
-                      const level = event.target
-                        .value as TeacherEvaluationLevel | "";
+                      const status = event.target
+                        .value as TeacherEvaluationOutcomeStatus | "";
                       setDimensionDrafts((current) =>
                         current.map((item, itemIndex) =>
-                          itemIndex === index ? { ...item, level } : item,
+                          itemIndex === index
+                            ? {
+                                ...item,
+                                status,
+                                level: status === "LEVEL" ? item.level : "",
+                                citeText:
+                                  status === "INSUFFICIENT_EVIDENCE"
+                                    ? false
+                                    : item.citeText,
+                                attachmentIds:
+                                  status === "INSUFFICIENT_EVIDENCE"
+                                    ? []
+                                    : item.attachmentIds,
+                                evidenceIndexes:
+                                  status === "INSUFFICIENT_EVIDENCE"
+                                    ? []
+                                    : item.evidenceIndexes,
+                              }
+                            : item,
                         ),
                       );
                     }}
@@ -486,13 +609,42 @@ export function EvaluationComposer({
                     required
                   >
                     <option value="" disabled>
-                      请选择等级
+                      请选择判断方式
                     </option>
-                    <option value="excellent">优秀</option>
-                    <option value="good">良好</option>
-                    <option value="pass">合格</option>
-                    <option value="improve">需改进</option>
+                    <option value="LEVEL">给出等级</option>
+                    <option value="INSUFFICIENT_EVIDENCE">证据不足</option>
                   </select>
+                </div>
+                {draft.status === "LEVEL" ? (
+                  <div>
+                    <label htmlFor={levelId}>达成等级</label>
+                    <select
+                      id={levelId}
+                      value={draft.level}
+                      onChange={(event) => {
+                        const level = event.target
+                          .value as TeacherEvaluationLevel | "";
+                        setDimensionDrafts((current) =>
+                          current.map((item, itemIndex) =>
+                            itemIndex === index ? { ...item, level } : item,
+                          ),
+                        );
+                      }}
+                      disabled={anyPending}
+                      required
+                    >
+                      <option value="" disabled>
+                        请选择等级
+                      </option>
+                      <option value="excellent">优秀</option>
+                      <option value="good">良好</option>
+                      <option value="pass">合格</option>
+                      <option value="improve">需改进</option>
+                    </select>
+                  </div>
+                ) : null}
+              </div>
+              {draft.status === "LEVEL" ? (
                   <fieldset className={styles.evaluationCitations}>
                     <legend>引用本版证据（1–5 项）</legend>
                     {hasTextEvidence ? (
@@ -577,15 +729,23 @@ export function EvaluationComposer({
                       </label>
                     ))}
                   </fieldset>
-                </>
               ) : null}
             </fieldset>
           );
         })}
 
-        <label htmlFor="teacher-evaluation-summary">综合评价</label>
+        <div className={styles.fieldHead}>
+          <label htmlFor="teacher-evaluation-summary">综合评价</label>
+          <span
+            id="teacher-evaluation-count"
+            data-over-limit={summaryOverLimit ? "true" : "false"}
+          >
+            {codePointCount.toLocaleString("zh-CN")} / 10,000
+          </span>
+        </div>
         <textarea
           id="teacher-evaluation-summary"
+          className={styles.compactTextarea}
           name="summary"
           value={draftSummary}
           onChange={(event) => setDraftSummary(event.target.value)}
@@ -594,23 +754,15 @@ export function EvaluationComposer({
           spellCheck="true"
           disabled={anyPending}
         />
-        <div className={styles.fieldMeta}>
-          <p id="teacher-evaluation-help">
-            综评会统一为 NFC 与 LF；只有完成下一步确认才会保存。形成性继续/重交建议仍在上方反馈中单独确认。
-          </p>
-          <span
-            id="teacher-evaluation-count"
-            data-over-limit={summaryOverLimit ? "true" : "false"}
-          >
-            {codePointCount.toLocaleString("zh-CN")} / 10,000
-          </span>
-        </div>
+        <p id="teacher-evaluation-help" className={styles.visuallyHidden}>
+          综评会统一为 NFC 与 LF；只有完成下一步确认才会保存。形成性继续/重交建议仍在上方反馈中单独确认。
+        </p>
 
         <div className={styles.prepareRow}>
           <p>
             {expectedEvaluationVersion > 0
-              ? `当前评价版本 ${expectedEvaluationVersion}；旧版不会被覆盖。`
-              : "当前尚无正式量规评价。"}
+              ? `当前评价版本 ${expectedEvaluationVersion}；确认后新增一版，旧版不会被覆盖。形成性下一步仍在上方单独确认。`
+              : "确认后才会写入第一版评价。形成性下一步仍在上方单独确认。"}
           </p>
           <button
             className={styles.prepareButton}

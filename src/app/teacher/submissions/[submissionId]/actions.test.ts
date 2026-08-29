@@ -118,6 +118,7 @@ function prepareForm(overrides?: Record<string, string>): FormData {
     body: "  e\u0301vidence\r\n第二行  ",
     nextStep: "REVISE",
     supportLevel: "FOUNDATION",
+    suggestionAgentRunId: "",
     idempotencyKey: "prepare_feedback_request_001",
     ...overrides,
   });

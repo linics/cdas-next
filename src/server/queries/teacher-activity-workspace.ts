@@ -93,6 +93,12 @@ export const teacherDashboardSchema = z
           publishedAt: isoDateSchema,
           dueAt: isoDateSchema.nullable(),
           canViewSubmissions: z.boolean(),
+          progress: z
+            .strictObject({
+              submittedCount: z.int().nonnegative(),
+              cohortSize: z.int().nonnegative(),
+            })
+            .nullable(),
           attention: z
             .strictObject({
               pendingFeedbackCount: z.int().nonnegative(),
@@ -299,7 +305,7 @@ export async function getTeacherActivityDashboard(
   rawInput: unknown,
 ): Promise<TeacherActivityDashboard> {
   emptyInputSchema.parse(rawInput);
-  const context = resolveCommandContext(commandContext, ["UI"]);
+  const context = resolveCommandContext(commandContext, ["UI", "AGENT"]);
   const actor = await requireTeacher(
     database,
     context.actorId,
@@ -328,10 +334,18 @@ export async function getTeacherActivityDashboard(
         status: true,
         publishedAt: true,
         dueAt: true,
-        classroom: { select: { name: true, managerId: true } },
+        classroom: {
+          select: {
+            name: true,
+            managerId: true,
+            memberships: { select: { joinedAt: true, endedAt: true } },
+          },
+        },
         snapshot: { select: { content: true } },
         submissions: {
           select: {
+            studentId: true,
+            groupId: true,
             latestRevisionNumber: true,
             workingCopy: { select: { id: true } },
             revisions: {
@@ -392,6 +406,23 @@ export async function getTeacherActivityDashboard(
         publishedAt: release.publishedAt.toISOString(),
         dueAt: release.dueAt?.toISOString() ?? null,
         canViewSubmissions,
+        progress: canViewSubmissions
+          ? {
+              // 分阶段活动里同一个学生每个阶段各有一行提交，直接数行会把
+              // 「4 人的班」算成「7 份已提交」。按提交主体（学生或小组）去重。
+              submittedCount: new Set(
+                release.submissions
+                  .filter((submission) => submission.latestRevisionNumber > 0)
+                  .map(
+                    (submission) =>
+                      submission.groupId ?? submission.studentId ?? "",
+                  ),
+              ).size,
+              cohortSize: release.classroom.memberships.filter((membership) =>
+                isCurrentMembership(membership, context.now),
+              ).length,
+            }
+          : null,
         attention: canViewSubmissions
           ? releaseAttention(
               release.id,
@@ -411,13 +442,19 @@ export async function getTeacherActivityDashboard(
   });
 }
 
+/**
+ * The teacher draft page and the global Agent read the same owned draft
+ * through this one query. AGENT is allowed as a source, but ownership is
+ * still proved here on every call: a draft owned by another teacher stays
+ * resource-level absent regardless of who asks.
+ */
 export async function getTeacherActivityDraft(
   database: PrismaClient,
   commandContext: CommandContext,
   rawInput: unknown,
 ): Promise<{ actor: TeacherIdentity; draft: TeacherActivityDraft }> {
   const input = draftInputSchema.parse(rawInput);
-  const context = resolveCommandContext(commandContext, ["UI"]);
+  const context = resolveCommandContext(commandContext, ["UI", "AGENT"]);
   const [actor, draft] = await Promise.all([
     requireTeacher(database, context.actorId),
     database.activityDraft.findUnique({

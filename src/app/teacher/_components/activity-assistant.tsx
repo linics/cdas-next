@@ -7,12 +7,11 @@ import {
   type UIMessage,
 } from "ai";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   createContext,
   useContext,
   useMemo,
-  useRef,
   useState,
   useSyncExternalStore,
   type ReactNode,
@@ -22,6 +21,11 @@ import {
   LocalizedDateTime,
 } from "../../_components/localized-date-time";
 import type { ActivityContentV2 } from "../../../domain/activity/activity-content";
+import {
+  taskBookAreaLabels,
+  type TaskBookArea,
+} from "../../../domain/activity/task-book-areas";
+import { getTeacherAgentPageContext } from "../../../domain/assistant/teacher-agent-page-context";
 import styles from "./activity-assistant.module.css";
 
 type CreatedDraftOutput = {
@@ -38,6 +42,168 @@ type PublishInput = {
   classroomId: string;
   dueAt: string | null;
 };
+
+type CurrentTeacherContextOutput = {
+  status: "AVAILABLE" | "UNAVAILABLE";
+  kind:
+    | "TEACHER_DASHBOARD"
+    | "ACTIVITY_NEW"
+    | "ACTIVITY_STUDIO"
+    | "ACTIVITY_DRAFT"
+    | "ACTIVITY_PREVIEW"
+    | "RELEASE_SUBMISSIONS"
+    | "SUBMISSION_REVIEW"
+    | "TEACHER_INSIGHTS"
+    | "TEACHER_KNOWLEDGE"
+    | "CLASSROOM_MEMBERS"
+    | "UNKNOWN_TEACHER_PAGE";
+  label: string;
+  href: string | null;
+};
+
+type TeacherClassroomListOutput = {
+  classrooms: Array<{
+    id: string;
+    name: string;
+    currentMemberCount: number;
+    href: string;
+  }>;
+};
+
+type TeacherDraftListOutput = {
+  drafts: Array<{
+    id: string;
+    title: string;
+    status: "EDITING" | "READY_FOR_PREVIEW" | "SEALED";
+    version: number;
+    updatedAt: string;
+    editHref: string;
+    previewHref: string;
+  }>;
+};
+
+type TeacherReleaseListOutput = {
+  releases: Array<{
+    id: string;
+    title: string;
+    classroomName: string;
+    status: "ACTIVE" | "CLOSED" | "ARCHIVED";
+    publishedAt: string;
+    dueAt: string | null;
+    progress: { submittedCount: number; cohortSize: number } | null;
+    attention: {
+      pendingFeedbackCount: number;
+      pendingEvaluationCount: number;
+      awaitingResubmissionCount: number;
+    } | null;
+    submissionsHref: string | null;
+  }>;
+};
+
+type TeacherDraftDetailOutput =
+  | {
+      status: "FOUND";
+      draftId: string;
+      draftStatus: "EDITING" | "READY_FOR_PREVIEW" | "SEALED";
+      version: number;
+      updatedAt: string;
+      published: boolean;
+      editHref: string;
+      previewHref: string;
+      content: ActivityContentV2;
+    }
+  | {
+      status: "LEGACY_SNAPSHOT";
+      draftId: string;
+      title: string;
+      editHref: string;
+      previewHref: string;
+    }
+  | { status: "NOT_FOUND"; draftId: string };
+
+type ActivityDraftRevisionProposal = {
+  draftId: string;
+  expectedVersion: number;
+  changes: Array<{ area: TaskBookArea; change: string; reason: string }>;
+  content: ActivityContentV2;
+};
+
+type ReleaseInsightsOutput =
+  | {
+      status: "FOUND";
+      releaseId: string;
+      title: string;
+      classroomName: string;
+      releaseStatus: "ACTIVE" | "CLOSED" | "ARCHIVED";
+      insightsHref: string;
+      audienceCount: number;
+      stageBuckets: Array<{ key: string; label: string; count: number }>;
+      rubricStatus: "no_rubric" | "no_evaluations" | "ready";
+      evaluatedCount: number;
+      rubricDimensions: Array<{
+        dimensionName: string;
+        excellent: number;
+        good: number;
+        pass: number;
+        improve: number;
+        insufficient: number;
+        weakest: boolean;
+      }>;
+      improvement: {
+        reviseCount: number;
+        resubmittedCount: number;
+        evaluationPairs: number;
+        rose: number;
+        unchanged: number;
+        fell: number;
+      };
+    }
+  | { status: "NOT_FOUND"; releaseId: string };
+
+type ReleaseRosterOutput =
+  | {
+      status: "FOUND";
+      releaseId: string;
+      title: string;
+      classroomName: string;
+      releaseStatus: "ACTIVE" | "CLOSED" | "ARCHIVED";
+      submissionMode: "once" | "phased" | "mixed";
+      phaseCount: number;
+      submissionsHref: string;
+      objectCount: number;
+      truncated: boolean;
+      objects: Array<{
+        objectOrdinal: number;
+        objectKind: "STUDENT" | "GROUP";
+        started: boolean;
+        complete: boolean;
+        currentPhaseIndex: number;
+        completedPhaseCount: number;
+        totalPhaseCount: number;
+        awaitingFormalRevision: boolean;
+        submissions: Array<{
+          phaseIndex: number;
+          phaseName: string | null;
+          revisionNumber: number;
+          isLate: boolean;
+          feedback: "PENDING" | "DONE";
+          feedbackVersion: number | null;
+          evaluation: "PENDING" | "DONE" | "NO_RUBRIC";
+          evaluationVersion: number | null;
+          followUp:
+            | "AWAITING_RESUBMISSION"
+            | "RESUBMISSION_IN_PROGRESS"
+            | null;
+          reviewHref: string;
+        }>;
+      }>;
+      reviewCoverage: {
+        currentRevisionCount: number;
+        feedbackCount: number;
+        evaluationCount: number;
+      };
+    }
+  | { status: "NOT_FOUND"; releaseId: string };
 
 const draftNotCreatedRetryText =
   '草稿未创建。你可以补一句"请重新创建草稿"让助手重试，或改用手动表单。';
@@ -99,8 +265,6 @@ type ActivityDraftProposal = {
   sourceReferences: Array<{
     sourceId: string;
     sectionId: string;
-    citationLabel: string;
-    href: string;
     reason: string;
   }>;
   content: ActivityContentV2;
@@ -110,6 +274,45 @@ type ActivityAssistantMessage = UIMessage<
   undefined,
   never,
   {
+    get_current_context: {
+      input: Record<string, never>;
+      output: CurrentTeacherContextOutput;
+    };
+    list_my_classrooms: {
+      input: Record<string, never>;
+      output: TeacherClassroomListOutput;
+    };
+    list_my_activity_drafts: {
+      input: Record<string, never>;
+      output: TeacherDraftListOutput;
+    };
+    list_my_releases: {
+      input: Record<string, never>;
+      output: TeacherReleaseListOutput;
+    };
+    get_activity_draft: {
+      input: { draftId: string };
+      output: TeacherDraftDetailOutput;
+    };
+    get_process_insights: {
+      input: { releaseId: string };
+      output: ReleaseInsightsOutput;
+    };
+    list_release_submissions: {
+      input: { releaseId: string };
+      output: ReleaseRosterOutput;
+    };
+    update_activity_draft: {
+      input: ActivityDraftRevisionProposal;
+      output: {
+        draftId: string;
+        previousVersion: number;
+        version: number;
+        status: "READY_FOR_PREVIEW";
+        editHref: string;
+        previewHref: string;
+      };
+    };
     search_knowledge: {
       input: {
         query: string;
@@ -147,6 +350,7 @@ export type ActivityAssistantClassroom = Readonly<{
 export type ActivityAssistantProps = Readonly<{
   classrooms: ActivityAssistantClassroom[];
   continuationOnly?: boolean;
+  surface?: "inline" | "panel";
 }>;
 
 type ActivityAssistantSession = ReturnType<
@@ -168,44 +372,28 @@ export function ActivityAssistantSessionProvider({
   children: ReactNode;
   api?: string;
 }>) {
-  const router = useRouter();
-  const navigatedToolCalls = useRef(new Set<string>());
+  const pathname = usePathname();
+  const pageContext = useMemo(
+    () => getTeacherAgentPageContext(pathname),
+    [pathname],
+  );
   const transport = useMemo(
     () =>
       new DefaultChatTransport<ActivityAssistantMessage>({
         api,
         prepareSendMessagesRequest: ({ messages }) => ({
-          body: { messages },
+          body: {
+            messages,
+            pageContext,
+          },
         }),
       }),
-    [api],
+    [api, pageContext],
   );
   const session = useChat<ActivityAssistantMessage>({
     transport,
     sendAutomaticallyWhen:
       lastAssistantMessageIsCompleteWithApprovalResponses,
-    onFinish: ({ message }) => {
-      for (const part of message.parts) {
-        if (
-          part.type !== "tool-create_activity_draft" ||
-          part.state !== "output-available" ||
-          navigatedToolCalls.current.has(part.toolCallId)
-        ) {
-          continue;
-        }
-        const base = `/teacher/activities/${part.output.draftId}`;
-        const expectedEditHref = base;
-        const expectedPreviewHref = `${base}/preview`;
-        if (
-          part.output.status === "READY_FOR_PREVIEW" &&
-          part.output.editHref === expectedEditHref &&
-          part.output.previewHref === expectedPreviewHref
-        ) {
-          navigatedToolCalls.current.add(part.toolCallId);
-          router.push(expectedPreviewHref);
-        }
-      }
-    },
   });
 
   return (
@@ -241,13 +429,42 @@ const objectiveKindLabel = {
   emotion: "情感态度",
 } as const;
 
+const readOnlyDraftStatusLabel = {
+  EDITING: "编辑中",
+  READY_FOR_PREVIEW: "可预览",
+  SEALED: "已封存",
+} as const;
+
+const rosterFollowUpLabel = {
+  AWAITING_RESUBMISSION: "待重交",
+  RESUBMISSION_IN_PROGRESS: "重交中",
+} as const;
+
+const readOnlyReleaseStatusLabel = {
+  ACTIVE: "开放中",
+  CLOSED: "已关闭",
+  ARCHIVED: "已封存",
+} as const;
+
+/** The canonical wording of a section the assistant read in this conversation. */
+type ReadSection = Readonly<{
+  sourceTitle: string;
+  locator: string;
+  content: string;
+  sourceUrl: string;
+  citationLabel: string;
+  href: string;
+}>;
+
 function ActivityDraftProposalCard({
   proposal,
+  readSections,
   toolCallId,
   approval,
   onRespond,
 }: Readonly<{
   proposal: ActivityDraftProposal;
+  readSections: ReadonlyMap<string, ReadSection>;
   toolCallId: string;
   approval: { id: string; isAutomatic?: boolean };
   onRespond: (response: {
@@ -322,19 +539,47 @@ function ActivityDraftProposalCard({
           ))}
         </dl>
       </section>
-      <section className={styles.proposalSection} aria-label="官方来源依据">
-        <h3>官方来源依据</h3>
+      <section className={styles.proposalSection} aria-label="本次设计参考了哪些依据">
+        <h3>本次设计参考了哪些依据</h3>
         {proposal.sourceReferences.length > 0 ? (
           <ul className={styles.referenceList}>
-            {proposal.sourceReferences.map((reference) => (
-              <li key={`${reference.sourceId}:${reference.sectionId}`}>
-                <Link href={reference.href}>{reference.citationLabel}</Link>
-                <p>{reference.reason}</p>
-              </li>
-            ))}
+            {proposal.sourceReferences.map((reference) => {
+              // Every reference in a valid proposal was read in this same
+              // conversation, so its canonical wording is already on screen.
+              const section = readSections.get(
+                `${reference.sourceId}:${reference.sectionId}`,
+              );
+              return (
+                <li key={`${reference.sourceId}:${reference.sectionId}`}>
+                  <details>
+                    <summary>
+                      {section?.citationLabel ??
+                        `${reference.sourceId} · ${reference.sectionId}`}
+                    </summary>
+                    <p>{reference.reason}</p>
+                    {section ? (
+                      <>
+                        <p className={styles.sourceMeta}>
+                          {section.sourceTitle} · {section.locator}
+                        </p>
+                        <blockquote className={styles.sourceExcerpt}>
+                          {section.content}
+                        </blockquote>
+                      </>
+                    ) : null}
+                    {section ? (
+                      <Link href={section.href}>在课程依据页打开这一节</Link>
+                    ) : null}
+                  </details>
+                </li>
+              );
+            })}
           </ul>
         ) : (
-          <p>首版官方语料中未找到与本活动直接对应的学科章节。</p>
+          <p>
+            语料中未找到依据。首版语料只收教育部课程方案与语文、数学、物理、信息科技
+            四科课程标准；本次设计未引用任何官方来源，请在确认前自行核对。
+          </p>
         )}
         <p className={styles.referenceCaveat}>
           引用用于说明设计依据，不代表活动已自动通过课程标准合规审查。
@@ -365,9 +610,94 @@ function ActivityDraftProposalCard({
   );
 }
 
+function ActivityDraftRevisionCard({
+  proposal,
+  toolCallId,
+  approval,
+  onRespond,
+}: Readonly<{
+  proposal: ActivityDraftRevisionProposal;
+  toolCallId: string;
+  approval: { id: string };
+  onRespond: (response: {
+    id: string;
+    approved: boolean;
+    reason?: string;
+  }) => void;
+}>) {
+  return (
+    <div
+      className={styles.approval}
+      key={toolCallId}
+      role="group"
+      aria-label="草稿改写确认"
+    >
+      <strong>先确认这次改写</strong>
+      <p>
+        《{proposal.content.title}》版本 {proposal.expectedVersion} →{" "}
+        {proposal.expectedVersion + 1}。原版本会作为历史修订保留；未确认前不会写入。
+      </p>
+      <section className={styles.proposalSection} aria-label="本次改动">
+        <h3>本次改动</h3>
+        <dl>
+          {proposal.changes.map((item) => (
+            <div key={item.area}>
+              <dt>{taskBookAreaLabels[item.area]}</dt>
+              <dd>
+                改动：{item.change}
+                <br />
+                理由：{item.reason}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+      <p className={styles.referenceCaveat}>
+        这些区域已与草稿当前内容逐一核对；其余部分保持教师原文。确认后仍可在草稿页继续修改。
+      </p>
+      <div className={styles.inlineActions}>
+        <button
+          type="button"
+          onClick={() => onRespond({ id: approval.id, approved: true })}
+        >
+          确认并改写草稿
+        </button>
+        <button
+          type="button"
+          data-tone="quiet"
+          onClick={() =>
+            onRespond({
+              id: approval.id,
+              approved: false,
+              reason: "教师选择不改写这份草稿",
+            })
+          }
+        >
+          先不改写
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export function isComposerSubmitKey(event: {
+  key: string;
+  shiftKey: boolean;
+  nativeEvent?: { isComposing?: boolean; keyCode?: number };
+}): boolean {
+  if (event.key !== "Enter" || event.shiftKey) {
+    return false;
+  }
+  if (event.nativeEvent?.isComposing || event.nativeEvent?.keyCode === 229) {
+    return false;
+  }
+  return true;
+}
+
 export function ActivityAssistant({
   classrooms,
   continuationOnly = false,
+  surface = "inline",
 }: ActivityAssistantProps) {
   const hydrated = useSyncExternalStore(
     subscribeToHydration,
@@ -388,29 +718,84 @@ export function ActivityAssistant({
     [classrooms],
   );
   const busy = status === "submitted" || status === "streaming";
+  const submitPrompt = () => {
+    const text = input.trim();
+    if (!text || busy || !hydrated) {
+      return;
+    }
+    void sendMessage({ text });
+    setInput("");
+  };
+  // 提案里的每条引用都必须先经 read_source_section 通读（工具会拒绝未通读的引用），
+  // 所以原文一定已经在这段对话的消息流里 —— 就地展开，不必把教师带离对话。
+  const readSections = useMemo(() => {
+    const sections = new Map<string, ReadSection>();
+    for (const message of messages) {
+      for (const part of message.parts) {
+        if (
+          part.type === "tool-read_source_section" &&
+          part.state === "output-available" &&
+          part.output.status === "FOUND"
+        ) {
+          sections.set(`${part.output.sourceId}:${part.output.sectionId}`, {
+            sourceTitle: part.output.sourceTitle,
+            locator: part.output.locator,
+            content: part.output.content,
+            sourceUrl: part.output.sourceUrl,
+            citationLabel: part.output.citationLabel,
+            href: part.output.href,
+          });
+        }
+      }
+    }
+    return sections;
+  }, [messages]);
 
   if (continuationOnly && messages.length === 0) {
     return null;
   }
 
-  return (
-    <section className={styles.assistant} aria-labelledby="activity-assistant-title">
-      <header className={styles.header}>
-        <div>
-          <p className={styles.eyebrow}>AI 活动助手 · 试行</p>
-          <h2 id="activity-assistant-title">
-            {continuationOnly ? "继续核对活动并准备发布" : "把活动构想整理成可编辑草稿"}
-          </h2>
-        </div>
-        <span className={styles.availability} data-busy={busy}>
-          {busy ? "处理中" : "可使用"}
-        </span>
-      </header>
+  const assistantTitleId = "activity-assistant-title";
 
-      <p className={styles.boundaryNote}>
-        助手只会创建「可预览」草稿；你仍可进入编辑页逐项修改。发布前会另行列出草稿版本、班级与截止时间，没有你的明确确认就不会发布。
-        助手不可用时，手动创建与编辑活动仍可正常使用。你也可以
-        <Link href="/teacher/knowledge">直接检索首版官方课程标准</Link>。
+  return (
+    <section
+      className={styles.assistant}
+      data-surface={surface}
+      {...(surface === "panel"
+        ? { "aria-label": "教师工作区与活动设计" }
+        : { "aria-labelledby": assistantTitleId })}
+    >
+      {surface === "panel" ? null : (
+        <header className={styles.header}>
+          <div>
+            <p className={styles.eyebrow}>AI 活动助手 · 试行</p>
+            <h2 id={assistantTitleId}>
+              {continuationOnly
+                ? "继续核对活动并准备发布"
+                : "把活动构想整理成可编辑草稿"}
+            </h2>
+          </div>
+          {busy ? (
+            <span className={styles.availability} data-busy="true">
+              处理中
+            </span>
+          ) : null}
+        </header>
+      )}
+
+      <div className={styles.conversation}>
+        <p className={styles.boundaryNote}>
+        {surface === "panel" ? (
+          <>
+            可识别当前页面，查询你的班级、草稿、发布与待办，也可检索课程依据、设计活动，并经你确认后创建草稿或发布。所有站内跳转都由你点击；刷新会话即清空，手动流程不受影响。
+          </>
+        ) : (
+          <>
+            这是独立的教师会话，可检索官方课程依据、设计活动，并在你确认后创建「可预览」草稿。发布前会另行列出草稿版本、班级与截止时间，没有你的明确确认就不会发布。
+            助手不可用时，手动创建与编辑活动仍可正常使用。你也可以
+            <Link href="/teacher/knowledge">直接检索首版官方课程标准</Link>。
+          </>
+        )}
       </p>
 
       {messages.length > 0 ? (
@@ -430,6 +815,220 @@ export function ActivityAssistant({
                     return part.text ? <p key={index}>{part.text}</p> : null;
                   }
 
+                  if (part.type === "tool-get_current_context") {
+                    if (part.state === "output-available") {
+                      return (
+                        <div className={styles.toolResult} key={part.toolCallId}>
+                          <strong>当前页面</strong>
+                          <p>{part.output.label}</p>
+                          {part.output.href ? (
+                            <Link href={part.output.href}>打开当前页面</Link>
+                          ) : null}
+                        </div>
+                      );
+                    }
+                    if (part.state === "output-error") {
+                      return (
+                        <p className={styles.errorText} key={part.toolCallId}>
+                          当前页面识别失败；你仍可使用原页面导航。
+                        </p>
+                      );
+                    }
+                    return (
+                      <p className={styles.toolProgress} key={part.toolCallId}>
+                        正在安全识别当前页面…
+                      </p>
+                    );
+                  }
+
+                  if (part.type === "tool-list_my_classrooms") {
+                    if (part.state === "output-available") {
+                      return (
+                        <div className={styles.toolResult} key={part.toolCallId}>
+                          <strong>我的班级 · {part.output.classrooms.length}</strong>
+                          {part.output.classrooms.length > 0 ? (
+                            <ul className={styles.referenceList}>
+                              {part.output.classrooms.map((classroom) => (
+                                <li key={classroom.id}>
+                                  <Link href={classroom.href}>{classroom.name}</Link>
+                                  <p>当前成员 {classroom.currentMemberCount} 人</p>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p>当前没有你管理的班级。</p>
+                          )}
+                        </div>
+                      );
+                    }
+                    if (part.state === "output-error") {
+                      return (
+                        <p className={styles.errorText} key={part.toolCallId}>
+                          班级摘要查询失败；请回到教师工作台查看。
+                        </p>
+                      );
+                    }
+                    return (
+                      <p className={styles.toolProgress} key={part.toolCallId}>
+                        正在查询你的班级…
+                      </p>
+                    );
+                  }
+
+                  if (part.type === "tool-list_my_activity_drafts") {
+                    if (part.state === "output-available") {
+                      return (
+                        <div className={styles.toolResult} key={part.toolCallId}>
+                          <strong>我的草稿 · {part.output.drafts.length}</strong>
+                          {part.output.drafts.length > 0 ? (
+                            <ul className={styles.referenceList}>
+                              {part.output.drafts.map((draft) => (
+                                <li key={draft.id}>
+                                  <Link href={draft.editHref}>{draft.title}</Link>
+                                  <p>
+                                    版本 {draft.version} · {readOnlyDraftStatusLabel[draft.status]}
+                                  </p>
+                                  <Link href={draft.previewHref}>查看预览</Link>
+                                </li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p>当前没有活动草稿。</p>
+                          )}
+                        </div>
+                      );
+                    }
+                    if (part.state === "output-error") {
+                      return (
+                        <p className={styles.errorText} key={part.toolCallId}>
+                          草稿摘要查询失败；请回到教师工作台查看。
+                        </p>
+                      );
+                    }
+                    return (
+                      <p className={styles.toolProgress} key={part.toolCallId}>
+                        正在查询你的活动草稿…
+                      </p>
+                    );
+                  }
+
+                  if (part.type === "tool-list_my_releases") {
+                    if (part.state === "output-available") {
+                      return (
+                        <div className={styles.toolResult} key={part.toolCallId}>
+                          <strong>我的发布与待办 · {part.output.releases.length}</strong>
+                          {part.output.releases.length > 0 ? (
+                            <ul className={styles.referenceList}>
+                              {part.output.releases.map((release) => {
+                                const attention = release.attention;
+                                const todo = attention
+                                  ? [
+                                      attention.pendingFeedbackCount > 0
+                                        ? `待反馈 ${attention.pendingFeedbackCount}`
+                                        : null,
+                                      attention.pendingEvaluationCount > 0
+                                        ? `待评价 ${attention.pendingEvaluationCount}`
+                                        : null,
+                                      attention.awaitingResubmissionCount > 0
+                                        ? `待重交 ${attention.awaitingResubmissionCount}`
+                                        : null,
+                                    ].filter(Boolean)
+                                  : [];
+                                return (
+                                  <li key={release.id}>
+                                    {release.submissionsHref ? (
+                                      <Link href={release.submissionsHref}>
+                                        {release.title}
+                                      </Link>
+                                    ) : (
+                                      <strong>{release.title}</strong>
+                                    )}
+                                    <p>
+                                      {release.classroomName} · {readOnlyReleaseStatusLabel[release.status]}
+                                      {release.progress
+                                        ? ` · 已提交 ${release.progress.submittedCount}/${release.progress.cohortSize}`
+                                        : ""}
+                                    </p>
+                                    <p>
+                                      发布于 <LocalizedDateTime dateTime={release.publishedAt} />
+                                    </p>
+                                    <p>{todo.length > 0 ? todo.join(" · ") : "当前无待办"}</p>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          ) : (
+                            <p>当前没有活动发布。</p>
+                          )}
+                        </div>
+                      );
+                    }
+                    if (part.state === "output-error") {
+                      return (
+                        <p className={styles.errorText} key={part.toolCallId}>
+                          发布与待办查询失败；请回到教师工作台查看。
+                        </p>
+                      );
+                    }
+                    return (
+                      <p className={styles.toolProgress} key={part.toolCallId}>
+                        正在查询你的发布与待办…
+                      </p>
+                    );
+                  }
+
+                  if (part.type === "tool-get_activity_draft") {
+                    if (part.state === "output-available") {
+                      if (part.output.status === "NOT_FOUND") {
+                        return (
+                          <p className={styles.errorText} key={part.toolCallId}>
+                            这份草稿不在你的工作区，或你已无权查看。
+                          </p>
+                        );
+                      }
+                      if (part.output.status === "LEGACY_SNAPSHOT") {
+                        return (
+                          <div className={styles.toolResult} key={part.toolCallId}>
+                            <strong>读取草稿 · {part.output.title}</strong>
+                            <p>这是旧版快照草稿，助手不读取其正文。</p>
+                            <Link href={part.output.editHref}>打开草稿</Link>
+                          </div>
+                        );
+                      }
+                      return (
+                        <div className={styles.toolResult} key={part.toolCallId}>
+                          <strong>读取草稿 · {part.output.content.title}</strong>
+                          <p>
+                            版本 {part.output.version} ·{" "}
+                            {readOnlyDraftStatusLabel[part.output.draftStatus]}
+                            {part.output.published ? " · 已发布" : ""}
+                          </p>
+                          <p>
+                            {part.output.content.phases.length} 个阶段 ·{" "}
+                            {part.output.content.rubricDimensions.length} 个量规维度 · 更新于{" "}
+                            <LocalizedDateTime dateTime={part.output.updatedAt} />
+                          </p>
+                          <div className={styles.inlineActions}>
+                            <Link href={part.output.editHref}>打开草稿</Link>
+                            <Link href={part.output.previewHref}>查看预览</Link>
+                          </div>
+                        </div>
+                      );
+                    }
+                    if (part.state === "output-error") {
+                      return (
+                        <p className={styles.errorText} key={part.toolCallId}>
+                          草稿读取失败；请直接打开草稿页查看。
+                        </p>
+                      );
+                    }
+                    return (
+                      <p className={styles.toolProgress} key={part.toolCallId}>
+                        正在读取这份草稿…
+                      </p>
+                    );
+                  }
+
                   if (part.type === "tool-search_knowledge") {
                     if (!part.input || part.state === "input-streaming") {
                       return (
@@ -442,7 +1041,7 @@ export function ActivityAssistant({
                       if (part.output.status === "NO_MATCH") {
                         return (
                           <p className={styles.toolProgress} key={part.toolCallId}>
-                            首版官方语料中没有找到直接匹配的章节。
+                            语料中未找到依据（首版只收课程方案与语文、数学、物理、信息科技）。
                           </p>
                         );
                       }
@@ -514,6 +1113,201 @@ export function ActivityAssistant({
                     );
                   }
 
+                  if (part.type === "tool-list_release_submissions") {
+                    if (part.state === "output-available") {
+                      if (part.output.status === "NOT_FOUND") {
+                        return (
+                          <p className={styles.errorText} key={part.toolCallId}>
+                            这次发布不在你的工作区，或你已无权查看提交。
+                          </p>
+                        );
+                      }
+                      const roster = part.output;
+                      return (
+                        <div className={styles.toolResult} key={part.toolCallId}>
+                          <strong>
+                            提交名册 · {roster.title} · {roster.objects.length}/
+                            {roster.objectCount}
+                          </strong>
+                          <p>
+                            {roster.classroomName} ·{" "}
+                            {readOnlyReleaseStatusLabel[roster.releaseStatus]} · 已反馈{" "}
+                            {roster.reviewCoverage.feedbackCount}/
+                            {roster.reviewCoverage.currentRevisionCount} · 已评价{" "}
+                            {roster.reviewCoverage.evaluationCount}/
+                            {roster.reviewCoverage.currentRevisionCount}
+                          </p>
+                          {roster.truncated ? (
+                            <p>只列出前 {roster.objects.length} 个对象，其余请在名册页查看。</p>
+                          ) : null}
+                          <ul className={styles.referenceList}>
+                            {roster.objects.map((object) => {
+                              const label = `${object.objectKind === "GROUP" ? "小组" : "对象"} ${object.objectOrdinal}`;
+                              const marks = [
+                                object.complete
+                                  ? "已完成"
+                                  : object.started
+                                    ? `当前第 ${object.currentPhaseIndex} 阶段`
+                                    : "尚未开始",
+                                object.awaitingFormalRevision
+                                  ? "尚未正式提交"
+                                  : null,
+                              ].filter(Boolean);
+                              return (
+                                <li key={object.objectOrdinal}>
+                                  <strong>{label}</strong>
+                                  <p>{marks.join(" · ")}</p>
+                                  {object.submissions.map((submission) => (
+                                    <p key={submission.reviewHref}>
+                                      <Link href={submission.reviewHref}>
+                                        {submission.phaseName
+                                          ? `第 ${submission.phaseIndex} 阶段 · ${submission.phaseName}`
+                                          : "整项提交"}
+                                      </Link>
+                                      {` · 第 ${submission.revisionNumber} 版`}
+                                      {submission.isLate ? " · 迟交" : ""}
+                                      {submission.feedback === "DONE"
+                                        ? ` · 已反馈 v${submission.feedbackVersion}`
+                                        : " · 待反馈"}
+                                      {submission.evaluation === "NO_RUBRIC"
+                                        ? " · 无量规"
+                                        : submission.evaluation === "DONE"
+                                          ? ` · 已评价 v${submission.evaluationVersion}`
+                                          : " · 待评价"}
+                                      {submission.followUp
+                                        ? ` · ${rosterFollowUpLabel[submission.followUp]}`
+                                        : ""}
+                                    </p>
+                                  ))}
+                                </li>
+                              );
+                            })}
+                          </ul>
+                          <Link href={roster.submissionsHref}>打开提交名册</Link>
+                        </div>
+                      );
+                    }
+                    if (part.state === "output-error") {
+                      return (
+                        <p className={styles.errorText} key={part.toolCallId}>
+                          提交名册读取失败；请直接打开名册页查看。
+                        </p>
+                      );
+                    }
+                    return (
+                      <p className={styles.toolProgress} key={part.toolCallId}>
+                        正在读取这次发布的提交名册…
+                      </p>
+                    );
+                  }
+
+                  if (part.type === "tool-get_process_insights") {
+                    if (part.state === "output-available") {
+                      if (part.output.status === "NOT_FOUND") {
+                        return (
+                          <p className={styles.errorText} key={part.toolCallId}>
+                            这次发布不在你的工作区，或你已无权查看。
+                          </p>
+                        );
+                      }
+                      const weakest = part.output.rubricDimensions.find(
+                        (dimension) => dimension.weakest,
+                      );
+                      return (
+                        <div className={styles.toolResult} key={part.toolCallId}>
+                          <strong>过程诊断 · {part.output.title}</strong>
+                          <p>
+                            {part.output.classroomName} ·{" "}
+                            {readOnlyReleaseStatusLabel[part.output.releaseStatus]} ·
+                            对象 {part.output.audienceCount}
+                          </p>
+                          <p>
+                            {part.output.stageBuckets
+                              .map((bucket) => `${bucket.label} ${bucket.count}`)
+                              .join(" · ")}
+                          </p>
+                          <p>
+                            {part.output.rubricStatus === "ready"
+                              ? `已评价 ${part.output.evaluatedCount} 份${weakest ? ` · 最弱维度：${weakest.dimensionName}` : ""}`
+                              : part.output.rubricStatus === "no_rubric"
+                                ? "这次发布没有冻结量规。"
+                                : "还没有量规评价可供统计。"}
+                          </p>
+                          <p>
+                            重交后：上升 {part.output.improvement.rose} · 持平{" "}
+                            {part.output.improvement.unchanged} · 下降{" "}
+                            {part.output.improvement.fell}
+                          </p>
+                          <Link href={part.output.insightsHref}>打开过程诊断</Link>
+                        </div>
+                      );
+                    }
+                    if (part.state === "output-error") {
+                      return (
+                        <p className={styles.errorText} key={part.toolCallId}>
+                          过程诊断读取失败；请直接打开过程诊断页查看。
+                        </p>
+                      );
+                    }
+                    return (
+                      <p className={styles.toolProgress} key={part.toolCallId}>
+                        正在统计这次发布的过程数据…
+                      </p>
+                    );
+                  }
+
+                  if (part.type === "tool-update_activity_draft") {
+                    if (
+                      part.state === "approval-requested" &&
+                      part.input &&
+                      !part.approval.isAutomatic
+                    ) {
+                      return (
+                        <ActivityDraftRevisionCard
+                          key={part.toolCallId}
+                          proposal={part.input}
+                          toolCallId={part.toolCallId}
+                          approval={part.approval}
+                          onRespond={addToolApprovalResponse}
+                        />
+                      );
+                    }
+                    if (part.state === "output-available") {
+                      return (
+                        <div className={styles.toolResult} key={part.toolCallId}>
+                          <strong>
+                            草稿已改写 · 版本 {part.output.previousVersion} →{" "}
+                            {part.output.version}
+                          </strong>
+                          <p>原版本仍保留在草稿历史中，可以先检查或继续编辑。</p>
+                          <div className={styles.inlineActions}>
+                            <Link href={part.output.previewHref}>查看预览</Link>
+                            <Link href={part.output.editHref}>继续编辑</Link>
+                          </div>
+                        </div>
+                      );
+                    }
+                    if (part.state === "output-error") {
+                      return (
+                        <p className={styles.errorText} key={part.toolCallId}>
+                          草稿未改写，原内容一个字都没变。你可以让助手重新读取这份草稿后再试，或直接在草稿页修改。
+                        </p>
+                      );
+                    }
+                    if (part.state === "output-denied") {
+                      return (
+                        <p className={styles.toolProgress} key={part.toolCallId}>
+                          已保留这次改写建议，草稿未改动。
+                        </p>
+                      );
+                    }
+                    return (
+                      <p className={styles.toolProgress} key={part.toolCallId}>
+                        正在整理这次改写…
+                      </p>
+                    );
+                  }
+
                   if (part.type === "tool-create_activity_draft") {
                     if (
                       part.state === "approval-requested" &&
@@ -524,6 +1318,7 @@ export function ActivityAssistant({
                         <ActivityDraftProposalCard
                           key={part.toolCallId}
                           proposal={part.input}
+                          readSections={readSections}
                           toolCallId={part.toolCallId}
                           approval={part.approval}
                           onRespond={addToolApprovalResponse}
@@ -690,7 +1485,9 @@ export function ActivityAssistant({
         </div>
       ) : (
         <p className={styles.emptyPrompt}>
-          例如：「帮我设计一个七年级校园节水活动，学生要记录两次水表读数，并用证据提出改善建议。」
+          {surface === "panel"
+            ? "可分配职责：告诉我当前页面，列出我的班级、草稿、发布和待办；也可检索课程依据、整理活动设计、创建草稿或准备发布。"
+            : "例如：「帮我设计一个七年级校园节水活动，学生要记录两次水表读数，并用证据提出改善建议。」"}
         </p>
       )}
 
@@ -699,43 +1496,68 @@ export function ActivityAssistant({
           助手当前无法完成请求。手动创建与编辑活动仍可正常使用。
         </p>
       ) : null}
+      </div>
 
       <form
         className={styles.composer}
         onSubmit={(event) => {
           event.preventDefault();
-          const text = input.trim();
-          if (!text || busy) {
-            return;
-          }
-          void sendMessage({ text });
-          setInput("");
+          submitPrompt();
         }}
       >
-        <label htmlFor="activity-assistant-prompt">描述活动构想或下一步</label>
-        <textarea
-          id="activity-assistant-prompt"
-          data-hydrated={hydrated}
-          disabled={!hydrated}
-          value={input}
-          maxLength={4_000}
-          rows={4}
-          placeholder="交代年级、主题、学生任务、证据与反馈标准…"
-          onChange={(event) => setInput(event.target.value)}
-        />
-        <div className={styles.composerFooter}>
-          <span>{input.length} / 4000</span>
-          {busy ? (
-            <button type="button" data-tone="quiet" onClick={() => stop()}>
-              停止
-            </button>
+        {surface === "panel" ? (
+          <span className={styles.composerStatus} aria-live="polite">
+            {busy ? "处理中" : "描述下一步"}
+          </span>
+        ) : (
+          <label htmlFor="activity-assistant-prompt">描述活动构想或下一步</label>
+        )}
+        <div className={styles.composerField}>
+          {surface === "panel" ? (
+            <label className={styles.composerHiddenLabel} htmlFor="activity-assistant-prompt">
+              描述活动构想或下一步
+            </label>
           ) : null}
-          <button
-            type="submit"
-            disabled={!hydrated || busy || input.trim().length === 0}
-          >
-            交给助手整理
-          </button>
+          <textarea
+            id="activity-assistant-prompt"
+            data-hydrated={hydrated}
+            disabled={!hydrated}
+            value={input}
+            maxLength={4_000}
+            rows={surface === "panel" ? 2 : 4}
+            placeholder="交代年级、主题、学生任务、证据与反馈标准…"
+            onChange={(event) => setInput(event.target.value)}
+            onKeyDown={(event) => {
+              if (!isComposerSubmitKey(event)) {
+                return;
+              }
+              event.preventDefault();
+              submitPrompt();
+            }}
+          />
+          <div className={styles.composerFooter}>
+            <span>{input.length} / 4000</span>
+            <div className={styles.composerActions}>
+              {busy ? (
+                <button
+                  type="button"
+                  className={styles.stopButton}
+                  aria-label="停止生成"
+                  onClick={() => stop()}
+                >
+                  <svg aria-hidden="true" viewBox="0 0 24 24">
+                    <rect x="7" y="7" width="10" height="10" rx="1.2" />
+                  </svg>
+                </button>
+              ) : null}
+              <button
+                type="submit"
+                disabled={!hydrated || busy || input.trim().length === 0}
+              >
+                交给助手整理
+              </button>
+            </div>
+          </div>
         </div>
       </form>
     </section>

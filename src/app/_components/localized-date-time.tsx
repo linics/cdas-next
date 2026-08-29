@@ -8,6 +8,7 @@ const explicitInstantPattern =
 type FormatDateTimeOptions = Readonly<{
   locales?: Intl.LocalesArgument;
   timeZone?: string;
+  timeZoneName?: Intl.DateTimeFormatOptions["timeZoneName"];
   includeSeconds?: boolean;
 }>;
 
@@ -22,7 +23,9 @@ function dateTimeFormatOptions(
     minute: "2-digit",
     ...(options.includeSeconds ? { second: "2-digit" } : {}),
     hourCycle: "h23",
-    timeZoneName: "short",
+    // 不带 timeZoneName：整页反复出现「GMT+8」只是噪音，教师页尤其明显。
+    // 需要显示时区的地方（审计、跨时区核对）自己传 timeZoneName。
+    ...(options.timeZoneName ? { timeZoneName: options.timeZoneName } : {}),
     ...(options.timeZone ? { timeZone: options.timeZone } : {}),
   };
 }
@@ -73,11 +76,12 @@ export function LocalizedDateTime({
     hydratedSnapshot,
     serverSnapshot,
   );
+  // locale 钉死简体中文：这是 zh-CN 产品，不能因为演示机浏览器语言是英文
+  // 就把日期显示成 Aug 27, 2026。时区仍随浏览器，水合前按 UTC 渲染。
   const formatted = formatDateTimeInstant(dateTime, {
     includeSeconds,
-    ...(hydrated
-      ? {}
-      : { locales: "zh-CN", timeZone: "UTC" }),
+    locales: "zh-CN",
+    ...(hydrated ? {} : { timeZone: "UTC", timeZoneName: "short" }),
   });
 
   return <time dateTime={dateTime}>{formatted}</time>;

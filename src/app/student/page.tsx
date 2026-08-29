@@ -1,4 +1,3 @@
-import { SignInButton, SignOutButton } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
@@ -18,100 +17,39 @@ import {
   StudentReleaseListQueryError,
   type StudentReleaseList,
 } from "../../server/queries/student-releases";
+import { StudentAccessGate } from "./_components/student-shell";
 import styles from "./student-dashboard.module.css";
+
+const studentNavigation = [
+  { href: "/student", label: "我的活动" },
+] as const;
 
 export const metadata: Metadata = {
   title: "我的学习活动 | CDAS Next",
   description: "查看可见活动、提交状态、教师反馈与量规评价",
 };
 
-function AccessUnavailable({
-  code,
-}: {
-  code: AuthenticationError["code"];
-}) {
-  const copy =
-    code === "AUTH_NOT_CONFIGURED"
-      ? {
-          eyebrow: "登录服务未配置",
-          title: "学习活动入口尚未开放",
-          detail:
-            "系统当前无法验证学生身份，因此不会读取或显示任何班级活动。配置 Clerk 后再从真实学生账号进入。",
-        }
-      : code === "USER_NOT_PROVISIONED"
-        ? {
-            eyebrow: "账号尚未创建",
-            title: "找不到对应的学生身份",
-            detail:
-              "当前登录账号尚未关联到 CDAS Next 用户。请由管理者完成账号创建与班级成员设置。",
-          }
-        : {
-            eyebrow: "需要登录",
-            title: "登录后查看自己的学习活动",
-            detail:
-              "未登录时不会显示班级活动、提交进度或反馈状态。",
-          };
-
-  return (
-    <WorkspaceShell audience="学生">
-      <section className={styles.accessGate}>
-        <p className={styles.eyebrow}>{copy.eyebrow}</p>
-        <h1>{copy.title}</h1>
-        <p>{copy.detail}</p>
-        <div className={styles.accessActions}>
-          {code === "UNAUTHENTICATED" ? (
-            <SignInButton mode="modal" fallbackRedirectUrl="/student">
-              <button className={styles.signInButton} type="button">
-                登录学生账号
-              </button>
-            </SignInButton>
-          ) : code === "USER_NOT_PROVISIONED" ? (
-            <SignOutButton redirectUrl="/student">
-              <button className={styles.signInButton} type="button">
-                退出当前账号
-              </button>
-            </SignOutButton>
-          ) : null}
-          <Link href="/">返回工作台</Link>
-        </div>
-      </section>
-    </WorkspaceShell>
-  );
-}
-
 type StudentRelease = StudentReleaseList["releases"][number];
-type ReleaseGroupKey = "pending" | "submitted" | "feedback" | "resubmit" | "evaluation" | "history";
+type ReleaseGroupKey = "resubmit" | "active" | "closed";
 
+// 按「急不急」分组，不按数据状态分：学生先看要不要重交，再看还在进行的，
+// 最后才是已经关掉的。原来的六组（待提交/已提交/已有反馈/待重交/已有评价/历史）
+// 是照着提交状态机切的，读的人得先懂状态机。
 const groupDetails = {
-  pending: {
-    number: "01",
-    title: "待提交",
-    detail: "尚未形成正式修订，或仍有未提交的工作草稿。",
-  },
-  submitted: {
-    number: "02",
-    title: "已提交",
-    detail: "当前正式版已经提交，等待教师反馈。",
-  },
-  feedback: {
-    number: "03",
-    title: "已有反馈",
-    detail: "当前正式修订已有教师反馈，可进入活动查看。",
-  },
   resubmit: {
-    number: "04",
-    title: "待重交",
-    detail: "教师要求按反馈修改并重交，当前还没有新的工作草稿。",
+    number: "01",
+    title: "要重交",
+    detail: "老师看过了，要你按反馈改完再交一次。",
   },
-  evaluation: {
-    number: "05",
-    title: "已有评价",
-    detail: "当前正式修订已有教师确认的量规评价。",
+  active: {
+    number: "02",
+    title: "进行中",
+    detail: "还能继续做：有的等你开始，有的等老师看，有的已经有反馈可以读。",
   },
-  history: {
-    number: "06",
-    title: "历史与关闭",
-    detail: "保留读取权限，但当前不能继续保存或提交。",
+  closed: {
+    number: "03",
+    title: "已关闭",
+    detail: "还能翻看，但不能再保存或提交。",
   },
 } satisfies Record<
   ReleaseGroupKey,
@@ -120,24 +58,12 @@ const groupDetails = {
 
 function groupRelease(release: StudentRelease): ReleaseGroupKey {
   if (!release.access.canWrite) {
-    return "history";
+    return "closed";
   }
   if (release.submission.followUp === "AWAITING_RESUBMISSION") {
     return "resubmit";
   }
-  if (release.submission.hasWorkingCopy) {
-    return "pending";
-  }
-  if (release.submission.hasCurrentEvaluation) {
-    return "evaluation";
-  }
-  if (release.submission.hasCurrentFeedback) {
-    return "feedback";
-  }
-  if (release.submission.latestRevisionNumber > 0) {
-    return "submitted";
-  }
-  return "pending";
+  return "active";
 }
 
 function releaseStatusLabel(release: StudentRelease): string {
@@ -301,7 +227,7 @@ export default async function StudentDashboardPage() {
     releaseList = await listStudentReleases(database, context, {});
   } catch (error) {
     if (error instanceof AuthenticationError) {
-      return <AccessUnavailable code={error.code} />;
+      return <StudentAccessGate code={error.code} returnPath="/student" />;
     }
     if (
       error instanceof StudentReleaseListQueryError &&
@@ -326,24 +252,20 @@ export default async function StudentDashboardPage() {
 
   const now = context.clock();
   const grouped = {
-    pending: [] as StudentRelease[],
-    submitted: [] as StudentRelease[],
-    feedback: [] as StudentRelease[],
     resubmit: [] as StudentRelease[],
-    evaluation: [] as StudentRelease[],
-    history: [] as StudentRelease[],
+    active: [] as StudentRelease[],
+    closed: [] as StudentRelease[],
   };
   for (const release of releaseList.releases) {
     grouped[groupRelease(release)].push(release);
   }
-  const writableCount = releaseList.releases.filter(
-    (release) => release.access.canWrite,
-  ).length;
 
   return (
     <WorkspaceShell
       audience="学生"
       actorName={releaseList.actor.displayName}
+      breadcrumb={[{ label: "我的学习活动" }]}
+      navigation={studentNavigation}
     >
       <div className={styles.dashboardMain}>
         <header className={styles.dashboardHeader}>
@@ -352,26 +274,19 @@ export default async function StudentDashboardPage() {
             <h1>我的学习活动</h1>
             <p>只显示你当前可参与或依法保留读取权限的发布活动。</p>
           </div>
+          {/* 计数跟着分组走，同一套口径，不再另立五个状态。 */}
           <dl className={styles.summaryLine}>
             <div>
-              <dt>开放可写</dt>
-              <dd>{writableCount}</dd>
-            </div>
-            <div>
-              <dt>待提交</dt>
-              <dd>{grouped.pending.length}</dd>
-            </div>
-            <div>
-              <dt>已有反馈</dt>
-              <dd>{grouped.feedback.length}</dd>
-            </div>
-            <div>
-              <dt>待重交</dt>
+              <dt>要重交</dt>
               <dd>{grouped.resubmit.length}</dd>
             </div>
             <div>
-              <dt>已有评价</dt>
-              <dd>{grouped.evaluation.length}</dd>
+              <dt>进行中</dt>
+              <dd>{grouped.active.length}</dd>
+            </div>
+            <div>
+              <dt>已关闭</dt>
+              <dd>{grouped.closed.length}</dd>
             </div>
           </dl>
         </header>

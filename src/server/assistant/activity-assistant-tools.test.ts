@@ -3,13 +3,16 @@ import type { ActivityContentV2 } from "../../domain/activity/activity-content";
 import type { PrismaClient } from "../../generated/prisma/client";
 import { DecideActionIntentError } from "../commands/decide-action-intent";
 import { PreparePublishActivityIntentError } from "../commands/prepare-publish-activity-intent";
+import { SaveActivityDraftError } from "../commands/save-activity-draft";
 import type { CommandContext } from "../commands/command-context";
 import { searchOfficialKnowledge } from "../knowledge/official-corpus";
 import {
   activityDraftProposalSchema,
   createActivityAssistantTools,
+  mapCurrentTeacherContext,
   type ActivityDraftProposal,
 } from "./activity-assistant-tools";
+import type { TeacherActivityDashboard } from "../queries/teacher-activity-workspace";
 
 vi.mock("server-only", () => ({}));
 
@@ -21,6 +24,39 @@ const intentId = "50000000-0000-4000-8000-000000000005";
 const releaseId = "60000000-0000-4000-8000-000000000006";
 const revisionId = "70000000-0000-4000-8000-000000000007";
 const now = new Date("2026-08-20T04:00:00.000Z");
+const workspace: TeacherActivityDashboard = {
+  actor: { displayName: "林老师" },
+  classrooms: [
+    { id: classroomId, name: "七年一班", currentMemberCount: 28 },
+  ],
+  drafts: [
+    {
+      id: draftId,
+      title: "校园节水行动",
+      status: "READY_FOR_PREVIEW",
+      version: 3,
+      updatedAt: now.toISOString(),
+      releaseId: null,
+    },
+  ],
+  releases: [
+    {
+      id: releaseId,
+      title: "校园节水行动",
+      classroomName: "七年一班",
+      status: "ACTIVE",
+      publishedAt: now.toISOString(),
+      dueAt: null,
+      canViewSubmissions: true,
+      progress: { submittedCount: 10, cohortSize: 28 },
+      attention: {
+        pendingFeedbackCount: 2,
+        pendingEvaluationCount: 3,
+        awaitingResubmissionCount: 1,
+      },
+    },
+  ],
+};
 
 const agentContext: CommandContext = {
   actorId,
@@ -75,8 +111,6 @@ const proposal: ActivityDraftProposal = {
     .map((result) => ({
       sourceId: result.sourceId,
       sectionId: result.sectionId,
-      citationLabel: result.citationLabel,
-      href: result.href,
       reason: "用于校准活动目标、证据与评价。",
     })),
   content,
@@ -89,6 +123,9 @@ const mocks = {
   publishRelease: vi.fn(),
   onToolFailure: vi.fn(),
   onBusinessWriteSuccess: vi.fn(),
+  readDraftDetail: vi.fn(),
+  readReleaseInsights: vi.fn(),
+  readReleaseRoster: vi.fn(),
 };
 
 function database(): PrismaClient {
@@ -103,11 +140,20 @@ function options(toolCallId: string) {
   };
 }
 
-function tools({ seedReadSections = true } = {}) {
+function tools({ seedReadSections = true, draftReads }: {
+  seedReadSections?: boolean;
+  draftReads?: Map<string, number>;
+} = {}) {
   return createActivityAssistantTools({
+    ...(draftReads ? { draftReads } : {}),
     database: database(),
     agentContext,
     approvalContext,
+    pageContext: { kind: "ACTIVITY_DRAFT", resourceId: draftId },
+    workspace,
+    readDraftDetail: mocks.readDraftDetail,
+    readReleaseInsights: mocks.readReleaseInsights,
+    readReleaseRoster: mocks.readReleaseRoster,
     agentRunId: runId,
     onToolFailure: mocks.onToolFailure,
     onBusinessWriteSuccess: mocks.onBusinessWriteSuccess,
@@ -155,6 +201,166 @@ describe("activity assistant tools", () => {
     });
   });
 
+  it("maps current context and read-only workspace tools to canonical links", async () => {
+    const registry = tools();
+
+    expect(
+      registry.get_current_context.execute!({}, options("context_call")),
+    ).toEqual({
+      status: "AVAILABLE",
+      kind: "ACTIVITY_DRAFT",
+      label: "活动草稿：校园节水行动",
+      href: `/teacher/activities/${draftId}`,
+    });
+    expect(
+      registry.list_my_classrooms.execute!({}, options("classrooms_call")),
+    ).toMatchObject({
+      classrooms: [
+        {
+          id: classroomId,
+          currentMemberCount: 28,
+          href: `/teacher/classrooms/${classroomId}/members`,
+        },
+      ],
+    });
+    expect(
+      registry.list_my_activity_drafts.execute!({}, options("drafts_call")),
+    ).toMatchObject({
+      drafts: [
+        {
+          id: draftId,
+          version: 3,
+          previewHref: `/teacher/activities/${draftId}/preview`,
+        },
+      ],
+    });
+    expect(
+      registry.list_my_releases.execute!({}, options("releases_call")),
+    ).toMatchObject({
+      releases: [
+        {
+          id: releaseId,
+          attention: { pendingFeedbackCount: 2 },
+          submissionsHref: `/teacher/releases/${releaseId}/submissions`,
+        },
+      ],
+    });
+    expect(mocks.saveDraft).not.toHaveBeenCalled();
+  });
+
+  it("reads one owned draft only through the authorized detail reader", async () => {
+    mocks.readDraftDetail.mockResolvedValue({
+      status: "NOT_FOUND",
+      draftId: "90000000-0000-4000-8000-000000000009",
+    });
+    const registry = tools();
+
+    await expect(
+      registry.get_activity_draft.execute!(
+        { draftId: "90000000-0000-4000-8000-000000000009" },
+        options("draft_read_call"),
+      ),
+    ).resolves.toEqual({
+      status: "NOT_FOUND",
+      draftId: "90000000-0000-4000-8000-000000000009",
+    });
+    expect(mocks.readDraftDetail).toHaveBeenCalledWith(
+      "90000000-0000-4000-8000-000000000009",
+    );
+    expect(mocks.saveDraft).not.toHaveBeenCalled();
+  });
+
+  it("reads a release roster only through the authorized reader", async () => {
+    mocks.readReleaseRoster.mockResolvedValue({
+      status: "NOT_FOUND",
+      releaseId,
+    });
+    const registry = tools();
+
+    await expect(
+      registry.list_release_submissions.execute!(
+        { releaseId },
+        options("roster_call"),
+      ),
+    ).resolves.toEqual({ status: "NOT_FOUND", releaseId });
+    expect(mocks.readReleaseRoster).toHaveBeenCalledWith(releaseId);
+    expect(mocks.saveDraft).not.toHaveBeenCalled();
+  });
+
+  it("does not reflect an unauthorized dynamic page resource", () => {
+    expect(
+      mapCurrentTeacherContext(
+        {
+          kind: "ACTIVITY_DRAFT",
+          resourceId: "90000000-0000-4000-8000-000000000009",
+        },
+        workspace,
+      ),
+    ).toEqual({
+      status: "UNAVAILABLE",
+      kind: "ACTIVITY_DRAFT",
+      label: "当前页面资源不可用或你已无权查看",
+      href: null,
+    });
+  });
+
+  it("removes release links and attention after classroom management is lost", () => {
+    const revokedWorkspace: TeacherActivityDashboard = {
+      ...workspace,
+      releases: workspace.releases.map((release) => ({
+        ...release,
+        canViewSubmissions: false,
+        progress: null,
+        attention: null,
+      })),
+    };
+
+    expect(
+      tools().list_my_releases.execute!({}, options("revoked_releases")),
+    ).toMatchObject({
+      releases: [
+        {
+          submissionsHref: `/teacher/releases/${releaseId}/submissions`,
+        },
+      ],
+    });
+    expect(
+      mapCurrentTeacherContext(
+        { kind: "RELEASE_SUBMISSIONS", resourceId: releaseId },
+        revokedWorkspace,
+      ),
+    ).toMatchObject({ status: "UNAVAILABLE", href: null });
+    expect(
+      createActivityAssistantTools({
+        database: database(),
+        agentContext,
+        approvalContext,
+        pageContext: { kind: "TEACHER_DASHBOARD" },
+        workspace: revokedWorkspace,
+        readDraftDetail: mocks.readDraftDetail,
+        readReleaseInsights: mocks.readReleaseInsights,
+        readReleaseRoster: mocks.readReleaseRoster,
+        agentRunId: runId,
+        onToolFailure: mocks.onToolFailure,
+        onBusinessWriteSuccess: mocks.onBusinessWriteSuccess,
+        commands: {
+          saveDraft: mocks.saveDraft,
+          preparePublish: mocks.preparePublish,
+          decideIntent: mocks.decideIntent,
+          publishRelease: mocks.publishRelease,
+        },
+      }).list_my_releases.execute!({}, options("revoked_list")),
+    ).toMatchObject({
+      releases: [
+        {
+          attention: null,
+          progress: null,
+          submissionsHref: null,
+        },
+      ],
+    });
+  });
+
   it("requires exact integrated-discipline coverage and three unique alignment chains", () => {
     expect(activityDraftProposalSchema.safeParse(proposal).success).toBe(true);
     expect(
@@ -188,6 +394,18 @@ describe("activity assistant tools", () => {
         sourceReferences: [],
       }).success,
     ).toBe(false);
+    // The model no longer supplies wording, so the fabrication that matters is
+    // pointing at a section the corpus does not have.
+    expect(
+      activityDraftProposalSchema.safeParse({
+        ...proposal,
+        sourceReferences: proposal.sourceReferences.map((reference, index) =>
+          index === 0
+            ? { ...reference, sectionId: "invented-section-id" }
+            : reference,
+        ),
+      }).success,
+    ).toBe(false);
     expect(
       activityDraftProposalSchema.safeParse({
         ...proposal,
@@ -196,6 +414,43 @@ describe("activity assistant tools", () => {
             ? { ...reference, citationLabel: "伪造的课程标准章节" }
             : reference,
         ),
+      }).success,
+    ).toBe(false);
+  });
+
+  it("fills in the constants the model should not have to restate", async () => {
+    const partialContent: Record<string, unknown> = { ...proposal.content };
+    delete partialContent.schemaVersion;
+    delete partialContent.integratedDisciplineCodes;
+
+    const parsed = activityDraftProposalSchema.safeParse({
+      ...proposal,
+      content: partialContent,
+    });
+
+    expect(parsed.success).toBe(true);
+    expect(parsed.data?.content.schemaVersion).toBe(2);
+    expect(parsed.data?.content.integratedDisciplineCodes).toEqual(
+      proposal.integratedDisciplineContributions.map(
+        (item) => item.disciplineCode,
+      ),
+    );
+  });
+
+  it("still rejects contributions that disagree with a supplied discipline list", async () => {
+    expect(
+      activityDraftProposalSchema.safeParse({
+        ...proposal,
+        content: { ...proposal.content, integratedDisciplineCodes: ["chinese"] },
+      }).success,
+    ).toBe(false);
+    expect(
+      activityDraftProposalSchema.safeParse({
+        ...proposal,
+        integratedDisciplineContributions: [
+          ...proposal.integratedDisciplineContributions,
+          { disciplineCode: "chinese", necessaryContribution: "公开表达建议。" },
+        ],
       }).success,
     ).toBe(false);
   });
@@ -460,5 +715,222 @@ describe("activity assistant tools", () => {
     ).rejects.toThrow(`ACTIVITY_PUBLISH_${error.code}`);
     expect(mocks.decideIntent).not.toHaveBeenCalled();
     expect(mocks.publishRelease).not.toHaveBeenCalled();
+  });
+});
+
+const currentDraftDetail = {
+  status: "FOUND" as const,
+  draftId,
+  draftStatus: "READY_FOR_PREVIEW" as const,
+  version: 3,
+  updatedAt: now.toISOString(),
+  published: false,
+  editHref: `/teacher/activities/${draftId}`,
+  previewHref: `/teacher/activities/${draftId}/preview`,
+  content,
+};
+
+function revisedPhases() {
+  return content.phases.map((phase, index) =>
+    index === 1
+      ? { ...phase, context: "你們在上一階段發現了讀數差異，現在總務處希望你們解釋它。" }
+      : phase,
+  );
+}
+
+function revision(overrides: Record<string, unknown> = {}) {
+  return {
+    draftId,
+    expectedVersion: 3,
+    changes: [
+      {
+        area: "PHASES" as const,
+        change: "把第二階段的情境改成承接第一階段的發現。",
+        reason: "原本三個階段讀起來像三道並列的題。",
+      },
+    ],
+    content: { ...content, phases: revisedPhases() },
+    ...overrides,
+  };
+}
+
+describe("activity assistant draft revision", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.readDraftDetail.mockResolvedValue(currentDraftDetail);
+    mocks.saveDraft.mockResolvedValue({
+      draftId,
+      revisionId,
+      version: 4,
+      status: "READY_FOR_PREVIEW",
+      savedAt: now.toISOString(),
+    });
+  });
+
+  it("writes a new version of the draft it just read", async () => {
+    const registry = tools();
+    await registry.get_activity_draft.execute!(
+      { draftId },
+      options("read_before_revise"),
+    );
+
+    await expect(
+      registry.update_activity_draft.execute!(revision(), options("revise_1")),
+    ).resolves.toEqual({
+      draftId,
+      previousVersion: 3,
+      version: 4,
+      status: "READY_FOR_PREVIEW",
+      editHref: `/teacher/activities/${draftId}`,
+      previewHref: `/teacher/activities/${draftId}/preview`,
+    });
+    expect(mocks.saveDraft).toHaveBeenCalledWith(
+      expect.anything(),
+      agentContext,
+      expect.objectContaining({
+        draftId,
+        expectedVersion: 3,
+        desiredStatus: "READY_FOR_PREVIEW",
+        agentRunId: runId,
+      }),
+    );
+    expect(mocks.onBusinessWriteSuccess).toHaveBeenCalledWith("DRAFT_UPDATED");
+  });
+
+  it("refuses to revise a draft that was never read in this conversation", async () => {
+    const registry = tools();
+
+    await expect(
+      registry.update_activity_draft.execute!(revision(), options("revise_1")),
+    ).rejects.toThrow("ACTIVITY_REVISE_DRAFT_NOT_READ");
+    expect(mocks.saveDraft).not.toHaveBeenCalled();
+    expect(mocks.readDraftDetail).not.toHaveBeenCalled();
+  });
+
+  it("accepts a read recovered from earlier turns of the same conversation", async () => {
+    const registry = tools({ draftReads: new Map([[draftId, 3]]) });
+
+    await expect(
+      registry.update_activity_draft.execute!(revision(), options("revise_1")),
+    ).resolves.toMatchObject({ version: 4 });
+  });
+
+  it("refuses a revision aimed at a version the model did not see", async () => {
+    const registry = tools({ draftReads: new Map([[draftId, 2]]) });
+
+    await expect(
+      registry.update_activity_draft.execute!(revision(), options("revise_1")),
+    ).rejects.toThrow("ACTIVITY_REVISE_STALE_READ");
+    expect(mocks.saveDraft).not.toHaveBeenCalled();
+  });
+
+  it("refuses when the draft moved on between the read and the write", async () => {
+    mocks.readDraftDetail.mockResolvedValue({
+      ...currentDraftDetail,
+      version: 4,
+    });
+    const registry = tools({ draftReads: new Map([[draftId, 3]]) });
+
+    await expect(
+      registry.update_activity_draft.execute!(revision(), options("revise_1")),
+    ).rejects.toThrow("ACTIVITY_REVISE_STALE_READ");
+    expect(mocks.saveDraft).not.toHaveBeenCalled();
+  });
+
+  it("refuses when the draft is no longer readable at write time", async () => {
+    mocks.readDraftDetail.mockResolvedValue({ status: "NOT_FOUND", draftId });
+    const registry = tools({ draftReads: new Map([[draftId, 3]]) });
+
+    await expect(
+      registry.update_activity_draft.execute!(revision(), options("revise_1")),
+    ).rejects.toThrow("ACTIVITY_REVISE_DRAFT_UNAVAILABLE");
+    expect(mocks.saveDraft).not.toHaveBeenCalled();
+  });
+
+  it("refuses a revision that quietly reaches past the areas it declared", async () => {
+    const registry = tools({ draftReads: new Map([[draftId, 3]]) });
+
+    await expect(
+      registry.update_activity_draft.execute!(
+        revision({
+          content: {
+            ...content,
+            phases: revisedPhases(),
+            rubricDimensions: content.rubricDimensions.map((dimension) => ({
+              ...dimension,
+              improve: "需要更多證據支持。",
+            })),
+          },
+        }),
+        options("revise_1"),
+      ),
+    ).rejects.toThrow("ACTIVITY_REVISE_UNDECLARED_CHANGE");
+    expect(mocks.saveDraft).not.toHaveBeenCalled();
+  });
+
+  it("refuses a revision that claims an area it did not touch", async () => {
+    const registry = tools({ draftReads: new Map([[draftId, 3]]) });
+
+    await expect(
+      registry.update_activity_draft.execute!(
+        revision({
+          changes: [
+            {
+              area: "PHASES" as const,
+              change: "把第二階段的情境改成承接第一階段的發現。",
+              reason: "原本三個階段讀起來像三道並列的題。",
+            },
+            {
+              area: "RUBRIC" as const,
+              change: "重寫四檔描述。",
+              reason: "教師說量規太籠統。",
+            },
+          ],
+        }),
+        options("revise_1"),
+      ),
+    ).rejects.toThrow("ACTIVITY_REVISE_UNDECLARED_CHANGE");
+    expect(mocks.saveDraft).not.toHaveBeenCalled();
+  });
+
+  it("refuses a revision that changes nothing", async () => {
+    const registry = tools({ draftReads: new Map([[draftId, 3]]) });
+
+    await expect(
+      registry.update_activity_draft.execute!(
+        revision({ content }),
+        options("revise_1"),
+      ),
+    ).rejects.toThrow("ACTIVITY_REVISE_NO_CHANGE");
+    expect(mocks.saveDraft).not.toHaveBeenCalled();
+  });
+
+  it("allows only one revision per request", async () => {
+    const registry = tools({ draftReads: new Map([[draftId, 3]]) });
+    await registry.update_activity_draft.execute!(
+      revision(),
+      options("revise_1"),
+    );
+
+    await expect(
+      registry.update_activity_draft.execute!(
+        revision({ expectedVersion: 4 }),
+        options("revise_2"),
+      ),
+    ).rejects.toThrow("ACTIVITY_REVISE_MULTIPLE_UPDATE_ATTEMPTS");
+    expect(mocks.saveDraft).toHaveBeenCalledTimes(1);
+  });
+
+  it("reports the underlying command refusal without writing", async () => {
+    mocks.saveDraft.mockRejectedValue(
+      new SaveActivityDraftError("STALE_VERSION"),
+    );
+    const registry = tools({ draftReads: new Map([[draftId, 3]]) });
+
+    await expect(
+      registry.update_activity_draft.execute!(revision(), options("revise_1")),
+    ).rejects.toThrow("ACTIVITY_REVISE_STALE_VERSION");
+    expect(mocks.onToolFailure).toHaveBeenCalledWith("REVISE_STALE_VERSION");
+    expect(mocks.onBusinessWriteSuccess).not.toHaveBeenCalled();
   });
 });

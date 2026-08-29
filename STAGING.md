@@ -34,6 +34,12 @@ Environment variables：
 
 `/api/health` 不连接数据库、Clerk 或 AI。受保护门禁给每次请求一个随机 challenge；只有远端应用持有同一 proof secret，且构建期 commit、源码指纹、完整 runtime `DATABASE_URL` 的 SHA-256 指纹、pooled runtime DB target、Clerk publishable key、Clerk secret key 的 SHA-256 指纹与 `AI_PROVIDER_DISABLED=1` 同时匹配时，才返回含 deployment ID、源码指纹与 HMAC 的 `ok`。数据库 URL、secret key 及其凭据指纹都不会出现在响应或 artifact 中。这证明源码和配置绑定，不替代数据库/Clerk 实际业务可用性、DPA、地区、备份或人工审批。
 
+本地演示用的一键登录旁路（`src/server/auth/clickthrough-auth.ts`）由 `DEV_TEST_TEACHER_CLERK_ID` 与
+`DEV_TEST_STUDENT_CLERK_ID` 两个变量开启。它本身已经拒绝在 `NODE_ENV=development` 之外、
+在 Vercel、在 E2E/staging marker 存在时启用，但**任何部署环境（含 staging）都不得设置这两个变量**——
+staging 必须走真实 Clerk。preflight 的 `NO_CLICKTHROUGH_AUTH_IDENTITIES` 检查会在两者中任一存在时
+直接 FAIL 并给出 `NO_GO`；这是配置错误，不是可用的回退路径。
+
 每次运行上传 `output/staging/<safe-run-marker>/` 下的 `preflight.json`、`database.json`、`application.json` 与 `decision.json`，保留 14 天。每个 artifact 只包含 schema、状态、检查代码和 presence/boolean 信息。
 
 ## Go/No-Go 规则

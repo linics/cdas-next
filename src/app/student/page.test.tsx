@@ -198,7 +198,10 @@ describe("student dashboard page", () => {
 
     const markup = await renderPage();
 
-    expect(markup).toContain("学习活动入口尚未开放");
+    expect(markup).toContain("学生工作台当前没有开放");
+    expect(markup).toContain("接到活动，交出证据，看清老师怎么说");
+    expect(markup).toContain("返回首页");
+    expect(markup).not.toContain("学生工作台导航");
     expect(markup).not.toContain("data-clerk-sign-in");
     expect(mocks.getDatabaseClient).not.toHaveBeenCalled();
     expect(mocks.listStudentReleases).not.toHaveBeenCalled();
@@ -213,6 +216,8 @@ describe("student dashboard page", () => {
 
     expect(markup).toContain('data-clerk-sign-in="true"');
     expect(markup).toContain("登录学生账号");
+    expect(markup).toContain("先确认学生身份");
+    expect(markup).toContain("查看活动");
     expect(mocks.listStudentReleases).not.toHaveBeenCalled();
   });
 
@@ -231,12 +236,11 @@ describe("student dashboard page", () => {
   it("groups real release links by progress without placeholder buttons", async () => {
     const markup = await renderPage();
 
-    expect(markup).toContain("待提交");
-    expect(markup).toContain("已有反馈");
-    expect(markup).toContain("待重交");
-    expect(markup).toContain("已有评价");
+    // 三组：要重交 → 进行中 → 已关闭。每条活动自己的状态标签不变。
+    expect(markup).toContain("要重交");
+    expect(markup).toContain("进行中");
+    expect(markup).toContain("已关闭");
     expect(markup).toContain("当前版已有量规评价");
-    expect(markup).toContain("历史与关闭");
     expect(markup).toContain("仍可迟交");
     expect(markup).toContain(`/student/releases/${pendingReleaseId}`);
     expect(markup).toContain(`/student/releases/${feedbackReleaseId}`);
@@ -247,6 +251,7 @@ describe("student dashboard page", () => {
     expect(markup).not.toContain("问题意识");
     expect(markup).not.toContain("创建活动");
     expect(markup).not.toContain("打开导航");
+    expect(markup).toContain("我的活动");
     expect(markup).toContain("当前账号：测试学生 · 学生");
     expect(markup).toContain("退出登录");
     expect(markup).toContain('data-clerk-sign-out="true"');
