@@ -159,6 +159,51 @@ type ReleaseInsightsOutput =
     }
   | { status: "NOT_FOUND"; releaseId: string };
 
+type ReleaseRosterOutput =
+  | {
+      status: "FOUND";
+      releaseId: string;
+      title: string;
+      classroomName: string;
+      releaseStatus: "ACTIVE" | "CLOSED" | "ARCHIVED";
+      submissionMode: "once" | "phased" | "mixed";
+      phaseCount: number;
+      submissionsHref: string;
+      objectCount: number;
+      truncated: boolean;
+      objects: Array<{
+        objectOrdinal: number;
+        objectKind: "STUDENT" | "GROUP";
+        started: boolean;
+        complete: boolean;
+        currentPhaseIndex: number;
+        completedPhaseCount: number;
+        totalPhaseCount: number;
+        awaitingFormalRevision: boolean;
+        submissions: Array<{
+          phaseIndex: number;
+          phaseName: string | null;
+          revisionNumber: number;
+          isLate: boolean;
+          feedback: "PENDING" | "DONE";
+          feedbackVersion: number | null;
+          evaluation: "PENDING" | "DONE" | "NO_RUBRIC";
+          evaluationVersion: number | null;
+          followUp:
+            | "AWAITING_RESUBMISSION"
+            | "RESUBMISSION_IN_PROGRESS"
+            | null;
+          reviewHref: string;
+        }>;
+      }>;
+      reviewCoverage: {
+        currentRevisionCount: number;
+        feedbackCount: number;
+        evaluationCount: number;
+      };
+    }
+  | { status: "NOT_FOUND"; releaseId: string };
+
 const draftNotCreatedRetryText =
   '草稿未创建。你可以补一句"请重新创建草稿"让助手重试，或改用手动表单。';
 
@@ -251,6 +296,10 @@ type ActivityAssistantMessage = UIMessage<
     get_process_insights: {
       input: { releaseId: string };
       output: ReleaseInsightsOutput;
+    };
+    list_release_submissions: {
+      input: { releaseId: string };
+      output: ReleaseRosterOutput;
     };
     update_activity_draft: {
       input: ActivityDraftRevisionProposal;
@@ -383,6 +432,11 @@ const readOnlyDraftStatusLabel = {
   EDITING: "编辑中",
   READY_FOR_PREVIEW: "可预览",
   SEALED: "已封存",
+} as const;
+
+const rosterFollowUpLabel = {
+  AWAITING_RESUBMISSION: "待重交",
+  RESUBMISSION_IN_PROGRESS: "重交中",
 } as const;
 
 const readOnlyReleaseStatusLabel = {
@@ -1034,6 +1088,94 @@ export function ActivityAssistant({
                     return (
                       <p className={styles.toolProgress} key={part.toolCallId}>
                         正在核对来源章节…
+                      </p>
+                    );
+                  }
+
+                  if (part.type === "tool-list_release_submissions") {
+                    if (part.state === "output-available") {
+                      if (part.output.status === "NOT_FOUND") {
+                        return (
+                          <p className={styles.errorText} key={part.toolCallId}>
+                            这次发布不在你的工作区，或你已无权查看提交。
+                          </p>
+                        );
+                      }
+                      const roster = part.output;
+                      return (
+                        <div className={styles.toolResult} key={part.toolCallId}>
+                          <strong>
+                            提交名册 · {roster.title} · {roster.objects.length}/
+                            {roster.objectCount}
+                          </strong>
+                          <p>
+                            {roster.classroomName} ·{" "}
+                            {readOnlyReleaseStatusLabel[roster.releaseStatus]} · 已反馈{" "}
+                            {roster.reviewCoverage.feedbackCount}/
+                            {roster.reviewCoverage.currentRevisionCount} · 已评价{" "}
+                            {roster.reviewCoverage.evaluationCount}/
+                            {roster.reviewCoverage.currentRevisionCount}
+                          </p>
+                          {roster.truncated ? (
+                            <p>只列出前 {roster.objects.length} 个对象，其余请在名册页查看。</p>
+                          ) : null}
+                          <ul className={styles.referenceList}>
+                            {roster.objects.map((object) => {
+                              const label = `${object.objectKind === "GROUP" ? "小组" : "对象"} ${object.objectOrdinal}`;
+                              const marks = [
+                                object.complete
+                                  ? "已完成"
+                                  : object.started
+                                    ? `当前第 ${object.currentPhaseIndex} 阶段`
+                                    : "尚未开始",
+                                object.awaitingFormalRevision
+                                  ? "尚未正式提交"
+                                  : null,
+                              ].filter(Boolean);
+                              return (
+                                <li key={object.objectOrdinal}>
+                                  <strong>{label}</strong>
+                                  <p>{marks.join(" · ")}</p>
+                                  {object.submissions.map((submission) => (
+                                    <p key={submission.reviewHref}>
+                                      <Link href={submission.reviewHref}>
+                                        {submission.phaseName
+                                          ? `第 ${submission.phaseIndex} 阶段 · ${submission.phaseName}`
+                                          : "整项提交"}
+                                      </Link>
+                                      {` · 第 ${submission.revisionNumber} 版`}
+                                      {submission.isLate ? " · 迟交" : ""}
+                                      {submission.feedback === "DONE"
+                                        ? ` · 已反馈 v${submission.feedbackVersion}`
+                                        : " · 待反馈"}
+                                      {submission.evaluation === "NO_RUBRIC"
+                                        ? " · 无量规"
+                                        : submission.evaluation === "DONE"
+                                          ? ` · 已评价 v${submission.evaluationVersion}`
+                                          : " · 待评价"}
+                                      {submission.followUp
+                                        ? ` · ${rosterFollowUpLabel[submission.followUp]}`
+                                        : ""}
+                                    </p>
+                                  ))}
+                                </li>
+                              );
+                            })}
+                          </ul>
+                          <Link href={roster.submissionsHref}>打开提交名册</Link>
+                        </div>
+                      );
+                    }
+                    if (part.state === "output-error") {
+                      return (
+                        <p className={styles.errorText} key={part.toolCallId}>
+                          提交名册读取失败；请直接打开名册页查看。
+                        </p>
+                      );
+                    }
+                    return (
+                      <p className={styles.toolProgress} key={part.toolCallId}>
+                        正在读取这次发布的提交名册…
                       </p>
                     );
                   }

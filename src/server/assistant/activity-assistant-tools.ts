@@ -42,6 +42,10 @@ import {
   type TeacherReleaseInsightsReader,
 } from "./teacher-release-insights";
 import {
+  releaseRosterOutputSchema,
+  type TeacherReleaseRosterReader,
+} from "./teacher-release-roster";
+import {
   getOfficialKnowledgeReference,
   officialKnowledgeSectionKey,
   type OfficialKnowledgeSectionIdentity,
@@ -412,6 +416,10 @@ export const releaseInsightsInputSchema = z
   .object({ releaseId: z.uuid() })
   .strict();
 
+export const releaseRosterInputSchema = z
+  .object({ releaseId: z.uuid() })
+  .strict();
+
 const revisionChangeSchema = z
   .object({
     area: taskBookAreaSchema,
@@ -655,6 +663,11 @@ export const activityAssistantMessageValidationTools = {
     outputSchema: releaseInsightsOutputSchema,
     strict: true,
   }),
+  list_release_submissions: tool({
+    inputSchema: releaseRosterInputSchema,
+    outputSchema: releaseRosterOutputSchema,
+    strict: true,
+  }),
   update_activity_draft: tool({
     inputSchema: activityDraftRevisionProposalSchema,
     outputSchema: updatedDraftToolOutputSchema,
@@ -704,6 +717,7 @@ export type ActivityAssistantToolDependencies = Readonly<{
   workspace: TeacherActivityDashboard;
   readDraftDetail: TeacherDraftDetailReader;
   readReleaseInsights: TeacherReleaseInsightsReader;
+  readReleaseRoster: TeacherReleaseRosterReader;
   /**
    * Draft versions the model has been shown, shared with the caller so the
    * approval gate and the tool agree on one ledger. The tools write to it.
@@ -747,6 +761,7 @@ export function createActivityAssistantTools({
   workspace,
   readDraftDetail,
   readReleaseInsights,
+  readReleaseRoster,
   draftReads,
   agentRunId,
   onToolFailure,
@@ -927,6 +942,15 @@ export function createActivityAssistantTools({
       outputSchema: releaseInsightsOutputSchema,
       strict: true,
       execute: ({ releaseId }) => readReleaseInsights(releaseId),
+    }),
+
+    list_release_submissions: tool({
+      description:
+        "读取当前教师某一次发布的提交名册，用于回答「哪几个需要我先看」。releaseId 必须来自 list_my_releases 的结果。每个对象只用匿名序号 objectOrdinal 呈现（配合 objectKind 说成「对象 n」或「小组 n」），学生姓名与小组名都不会提供、也不存在于结果中，你无从得知也不得猜测；序号只在本次结果内有效，跨轮不得沿用。返回每个对象的阶段位置、是否已正式提交、各次正式提交的修订号、迟交、反馈与评价状态、跟进状态和精确的评阅链接。最多列 60 个对象，truncated 为真时必须如实说明只列出了前 60 个。名册状态只是「谁需要教师优先看」的工作信号，不得据此对任何学生的能力、态度或表现下结论，也不得推断原因或排名次；要看具体情况请教师点开链接。",
+      inputSchema: releaseRosterInputSchema,
+      outputSchema: releaseRosterOutputSchema,
+      strict: true,
+      execute: ({ releaseId }) => readReleaseRoster(releaseId),
     }),
 
     update_activity_draft: tool({

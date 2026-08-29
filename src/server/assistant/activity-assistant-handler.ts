@@ -52,8 +52,10 @@ import {
   type TeacherActivityDashboard,
 } from "../queries/teacher-activity-workspace";
 import { getTeacherInsights } from "../queries/teacher-insights";
+import { getTeacherReleaseSubmissions } from "../queries/submission-workspace";
 import { createTeacherDraftDetailReader } from "./teacher-draft-detail";
 import { createTeacherReleaseInsightsReader } from "./teacher-release-insights";
+import { createTeacherReleaseRosterReader } from "./teacher-release-roster";
 
 type StartedRun = Awaited<ReturnType<typeof startActivityAssistantRun>>;
 
@@ -70,6 +72,7 @@ export type ActivityAssistantHandlerDependencies = Readonly<{
   ) => Promise<TeacherActivityDashboard>;
   readDraft: typeof getTeacherActivityDraft;
   readInsights: typeof getTeacherInsights;
+  readRoster: typeof getTeacherReleaseSubmissions;
   startRun: typeof startActivityAssistantRun;
   finishRun: typeof finishActivityAssistantRun;
   createTraceId: () => string;
@@ -85,6 +88,7 @@ const defaultDependencies: ActivityAssistantHandlerDependencies = {
   getWorkspace: getTeacherActivityDashboard,
   readDraft: getTeacherActivityDraft,
   readInsights: getTeacherInsights,
+  readRoster: getTeacherReleaseSubmissions,
   startRun: startActivityAssistantRun,
   finishRun: finishActivityAssistantRun,
   createTraceId: randomUUID,
@@ -279,6 +283,13 @@ export function buildActivityAssistantInstructions(
 可以据此推断某个学生怎么样——教师要看具体是谁，请他打开提交页。解读时把弱项当成任务书或教学
 安排的信号（证据要求是不是太模糊、支架够不够、阶段是不是断层），提出可以改的地方；这不是对
 学生的评判，也不是课程质量或达标结论。
+0.4 教师问某次发布「哪几个需要我先看」「谁还没交」「谁要重交」时，用 list_release_submissions
+读那次发布的提交名册，releaseId 取自 list_my_releases。名册里没有姓名：每个对象只有匿名序号，
+你只能说成「对象 3」「小组 2」，不知道也不得猜测任何人叫什么；序号只在本次结果里有效，
+下一轮重新读过之前不要沿用旧序号，也不要把序号说成学号或固定编号。教师问「某某同学怎么样」时，
+如实说你看不到姓名，请他按序号或直接点开链接。最多列 60 个对象，truncated 为真时要说明只列了前 60 个。
+解读边界：名册状态只是「谁需要教师优先看」的排序信号，不得据此判断任何学生的能力、态度或表现，
+不得推断原因，不得排名次或说谁「落后」；要看具体情况，请教师点开那一行的评阅链接看原始证据。
 1. 根据教师自然语言，整理 schema v2 的完整跨学科任务书。必须使用原版 CTS 的学段/年级、稳定学科目录、主学科加至少一个融合学科、实践性/探究性/项目式作业及其条件子类型、探究深度、提交模式和 1–16 周周期。作业类型只能用 practical、inquiry、project。子类型必须与类型匹配且只用这些代码：practical 配 visit、simulation、observation；inquiry 配 literature、survey、experiment；project 的 assignmentSubtype 必须为 null，不得填其他字串。探究深度只用 basic、intermediate、deep。提交模式只用 phased、once、mixed；教师说过程性提交时用 phased。学科代码必须用目录中的英文 code，信息科技是 infoTech。另需具体背景、知识与技能/过程与方法/情感态度三维目标、三到四个连续阶段（每阶段一个明确行动、情境、支架、类型化证据、评价要点、课时）及四档量规。可选 0–2 个跨学科概念：物质与能量、结构与功能、系统与模型、稳定与变化。
 2. 只有缺少会改变年级、学科、真实任务、成果、证据或评价结构的资料时，才每轮问一个必要问题；不要因可选润饰、措辞或补充背景而阻塞，也不得把缺失事实当成已知资料。资料足够时立刻调用 create_activity_draft。
 
@@ -449,6 +460,12 @@ export async function handleActivityAssistantRequest(
       agentContext,
       workspace,
       getInsights: dependencies.readInsights,
+    }),
+    readReleaseRoster: createTeacherReleaseRosterReader({
+      database,
+      agentContext,
+      workspace,
+      getSubmissions: dependencies.readRoster,
     }),
   };
 

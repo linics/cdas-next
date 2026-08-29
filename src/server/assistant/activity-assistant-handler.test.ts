@@ -148,6 +148,7 @@ const mocks = {
   getWorkspace: vi.fn(),
   readDraft: vi.fn(),
   readInsights: vi.fn(),
+  readRoster: vi.fn(),
   startRun: vi.fn<typeof startActivityAssistantRun>(),
   finishRun: vi.fn<typeof finishActivityAssistantRun>(),
   saveDraft: vi.fn(),
@@ -378,6 +379,7 @@ function dependencies(): ActivityAssistantHandlerDependencies {
     getWorkspace: mocks.getWorkspace,
     readDraft: mocks.readDraft,
     readInsights: mocks.readInsights,
+    readRoster: mocks.readRoster,
     startRun: mocks.startRun,
     finishRun: mocks.finishRun,
     createTraceId: vi

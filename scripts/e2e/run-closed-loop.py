@@ -851,6 +851,17 @@ def run_real_model_browser_flow(
                 raise E2eFailure("REAL_MODEL_RELEASE_LINK_MISSING")
 
             switch_account(page, base_url, "student", broker_secret)
+            # Read the name the roster must never show, from the page itself.
+            student_display_name = ""
+            account_label = page.get_by_text(
+                re.compile(r"当前账号：")
+            ).first
+            if account_label.count() != 0:
+                match = re.search(
+                    r"当前账号：\s*([^·\n]+)", account_label.inner_text()
+                )
+                if match:
+                    student_display_name = match.group(1).strip()
             page.get_by_role(
                 "link", name=f"打开活动：{read_title}", exact=True
             ).click()
@@ -953,6 +964,39 @@ def run_real_model_browser_flow(
             )
             insights.scroll_into_view_if_needed()
             screenshot(page, artifacts, "08-real-model-process-insights")
+
+            # D-054: the roster names no one. The submitting student appears
+            # as an ordinal, and their display name must not be in the panel.
+            page.locator(
+                '#activity-assistant-prompt[data-hydrated="true"]'
+            ).fill(
+                f"再看《{read_title}》这次发布的提交名册，告诉我哪几个需要我先看。"
+                "不要建立或改写任何草稿。"
+            )
+            page.get_by_role("button", name="交给助手整理", exact=True).click()
+            roster = page.get_by_text(
+                re.compile(rf"提交名册 · {re.escape(read_title)} · \d+/\d+")
+            )
+            roster.wait_for(timeout=120_000)
+            roster_block = page.locator("div", has=roster).last
+            roster_text = roster_block.inner_text()
+            if "对象 1" not in roster_text:
+                raise E2eFailure("REAL_MODEL_ROSTER_ORDINAL_MISSING")
+            if "待反馈" in roster_text and "待评价" not in roster_text:
+                raise E2eFailure("REAL_MODEL_ROSTER_REVIEW_STATE_MISSING")
+            # Fail closed: a guard that silently had no name to look for would
+            # pass no matter what the roster contained.
+            if len(student_display_name) < 2:
+                raise E2eFailure("REAL_MODEL_ROSTER_STUDENT_NAME_UNKNOWN")
+            if student_display_name in roster_text:
+                raise E2eFailure("REAL_MODEL_ROSTER_LEAKED_STUDENT_NAME")
+            if page.get_by_role("link", name=re.compile("阶段|整项提交")).count() == 0:
+                raise E2eFailure("REAL_MODEL_ROSTER_REVIEW_LINK_MISSING")
+            page.get_by_role("button", name="停止", exact=True).wait_for(
+                state="detached", timeout=120_000
+            )
+            roster.scroll_into_view_if_needed()
+            screenshot(page, artifacts, "09-real-model-release-roster")
 
             # The same numbers must be what the first-party page shows.
             page.goto(f"{base_url}/teacher/insights", wait_until="domcontentloaded")

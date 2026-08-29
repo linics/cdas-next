@@ -22,6 +22,7 @@ import {
 import type { TeacherActivityDashboard } from "../queries/teacher-activity-workspace";
 import type { TeacherDraftDetailReader } from "./teacher-draft-detail";
 import type { TeacherReleaseInsightsReader } from "./teacher-release-insights";
+import type { TeacherReleaseRosterReader } from "./teacher-release-roster";
 import {
   officialKnowledgeSectionKey,
   readOfficialKnowledgeSection,
@@ -115,6 +116,7 @@ function assertSafeMessageHistory(
         part.type !== "tool-list_my_releases" &&
         part.type !== "tool-get_activity_draft" &&
         part.type !== "tool-get_process_insights" &&
+        part.type !== "tool-list_release_submissions" &&
         part.type !== "tool-update_activity_draft" &&
         part.type !== "tool-search_knowledge" &&
         part.type !== "tool-read_source_section" &&
@@ -145,7 +147,8 @@ function assertSafeMessageHistory(
           part.type === "tool-list_my_activity_drafts" ||
           part.type === "tool-list_my_releases" ||
           part.type === "tool-get_activity_draft" ||
-          part.type === "tool-get_process_insights") &&
+          part.type === "tool-get_process_insights" ||
+          part.type === "tool-list_release_submissions") &&
         part.state !== "output-available"
       ) {
         throw new ActivityAssistantRequestError("INVALID_MESSAGES");
@@ -330,6 +333,7 @@ export type ParsedActivityAssistantRequest = Readonly<{
 export type ActivityAssistantReaders = Readonly<{
   readDraftDetail: TeacherDraftDetailReader;
   readReleaseInsights: TeacherReleaseInsightsReader;
+  readReleaseRoster: TeacherReleaseRosterReader;
 }>;
 
 export async function canonicalizeActivityAssistantReadOnlyHistory(
@@ -357,6 +361,15 @@ export async function canonicalizeActivityAssistantReadOnlyHistory(
         return {
           ...part,
           output: await readers.readReleaseInsights(part.input.releaseId),
+        };
+      }
+      if (
+        part.type === "tool-list_release_submissions" &&
+        part.state === "output-available"
+      ) {
+        return {
+          ...part,
+          output: await readers.readReleaseRoster(part.input.releaseId),
         };
       }
       return part;

@@ -71,12 +71,13 @@ async function main(): Promise<void> {
     // proposal and its confirmed draft execution, the D-052 feedback and D-044
     // evaluation drafts, then the D-051 process diagnostics turn. Every run
     // that only read or proposed must have written nothing at all.
-    invariant(runs.length === 8, "E2E_REAL_MODEL_RUN_COUNT_MISMATCH");
+    invariant(runs.length === 9, "E2E_REAL_MODEL_RUN_COUNT_MISMATCH");
     const [readRun, revisionProposalRun, revisionRun, proposalRun, run] = runs;
     const insightsRun = runs[7];
+    const rosterRun = runs[8];
     invariant(
       readRun && revisionProposalRun && revisionRun && proposalRun && run &&
-        insightsRun,
+        insightsRun && rosterRun,
       "E2E_REAL_MODEL_RUN_COUNT_MISMATCH",
     );
     const suggestionRunFor = (actionName: string) =>
@@ -123,6 +124,10 @@ async function main(): Promise<void> {
         insightsRun.intents.length === 0 &&
         insightsRun.auditEntries.length === 0 &&
         insightsRun.feedbackRevisions.length === 0 &&
+        rosterRun.draftRevision === null &&
+        rosterRun.intents.length === 0 &&
+        rosterRun.auditEntries.length === 0 &&
+        rosterRun.feedbackRevisions.length === 0 &&
         run.id === revision.agentRunId &&
         run.status === "SUCCEEDED" &&
         run.model === configuredModel &&
@@ -231,7 +236,7 @@ async function main(): Promise<void> {
         database.activityRelease.count(),
       ]);
     invariant(idempotencyCount === 1, "E2E_REAL_MODEL_IDEMPOTENCY_MISSING");
-    invariant(runCount === 8, "E2E_REAL_MODEL_RUN_COUNT_MISMATCH");
+    invariant(runCount === 9, "E2E_REAL_MODEL_RUN_COUNT_MISMATCH");
     // The teacher published and confirmed through the first-party UI, so those
     // intents carry no agent run. The model published nothing on its own.
     invariant(intentCount > 0, "E2E_REAL_MODEL_TEACHER_INTENT_MISSING");
@@ -259,6 +264,7 @@ async function main(): Promise<void> {
             ),
             proposalAgentRunStatus: proposalRun.status,
             processInsightsAgentRunStatus: insightsRun.status,
+            releaseRosterAgentRunStatus: rosterRun.status,
             feedbackSuggestionAgentRunStatus: feedbackSuggestionRun.status,
             evaluationSuggestionAgentRunStatus: evaluationSuggestionRun.status,
             feedbackRevisionSource: feedbackRevision.source,

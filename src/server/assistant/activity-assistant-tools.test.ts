@@ -125,6 +125,7 @@ const mocks = {
   onBusinessWriteSuccess: vi.fn(),
   readDraftDetail: vi.fn(),
   readReleaseInsights: vi.fn(),
+  readReleaseRoster: vi.fn(),
 };
 
 function database(): PrismaClient {
@@ -152,6 +153,7 @@ function tools({ seedReadSections = true, draftReads }: {
     workspace,
     readDraftDetail: mocks.readDraftDetail,
     readReleaseInsights: mocks.readReleaseInsights,
+    readReleaseRoster: mocks.readReleaseRoster,
     agentRunId: runId,
     onToolFailure: mocks.onToolFailure,
     onBusinessWriteSuccess: mocks.onBusinessWriteSuccess,
@@ -268,6 +270,23 @@ describe("activity assistant tools", () => {
     expect(mocks.saveDraft).not.toHaveBeenCalled();
   });
 
+  it("reads a release roster only through the authorized reader", async () => {
+    mocks.readReleaseRoster.mockResolvedValue({
+      status: "NOT_FOUND",
+      releaseId,
+    });
+    const registry = tools();
+
+    await expect(
+      registry.list_release_submissions.execute!(
+        { releaseId },
+        options("roster_call"),
+      ),
+    ).resolves.toEqual({ status: "NOT_FOUND", releaseId });
+    expect(mocks.readReleaseRoster).toHaveBeenCalledWith(releaseId);
+    expect(mocks.saveDraft).not.toHaveBeenCalled();
+  });
+
   it("does not reflect an unauthorized dynamic page resource", () => {
     expect(
       mapCurrentTeacherContext(
@@ -320,6 +339,7 @@ describe("activity assistant tools", () => {
         workspace: revokedWorkspace,
         readDraftDetail: mocks.readDraftDetail,
         readReleaseInsights: mocks.readReleaseInsights,
+        readReleaseRoster: mocks.readReleaseRoster,
         agentRunId: runId,
         onToolFailure: mocks.onToolFailure,
         onBusinessWriteSuccess: mocks.onBusinessWriteSuccess,

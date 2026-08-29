@@ -62,6 +62,21 @@ describe("real-model smoke D-033 contract", () => {
     expect(realModelFlowSource).toContain("REAL_MODEL_INSIGHTS_COUNT_MISMATCH");
   });
 
+  it("reads the roster as ordinals and proves no student name reaches it", () => {
+    expect(realModelFlowSource).toContain("提交名册 · ");
+    expect(realModelFlowSource).toContain("对象 1");
+    expect(realModelFlowSource).toContain("REAL_MODEL_ROSTER_ORDINAL_MISSING");
+    expect(realModelFlowSource).toContain(
+      "REAL_MODEL_ROSTER_LEAKED_STUDENT_NAME",
+    );
+    // The leak guard must fail closed rather than pass with nothing to match.
+    expect(realModelFlowSource).toContain(
+      "REAL_MODEL_ROSTER_STUDENT_NAME_UNKNOWN",
+    );
+    expect(realModelFlowSource).toContain("REAL_MODEL_ROSTER_REVIEW_LINK_MISSING");
+    expect(verifierSource).toContain("rosterRun.auditEntries.length === 0");
+  });
+
   it("requires both suggestion runs to reach a confirmed AI_ASSISTED revision", () => {
     expect(verifierSource).toContain("suggest_teacher_feedback");
     expect(verifierSource).toContain("suggest_teacher_evaluation");
@@ -78,7 +93,7 @@ describe("real-model smoke D-033 contract", () => {
   });
 
   it("requires exactly a no-write proposal run followed by the draft execution run", () => {
-    expect(verifierSource).toContain("runs.length === 8");
+    expect(verifierSource).toContain("runs.length === 9");
     expect(verifierSource).toContain("readRun.draftRevision === null");
     expect(verifierSource).toContain("readRun.intents.length === 0");
     expect(verifierSource).toContain("readRun.auditEntries.length === 0");
@@ -86,7 +101,7 @@ describe("real-model smoke D-033 contract", () => {
     expect(verifierSource).toContain("proposalRun.intents.length === 0");
     expect(verifierSource).toContain("proposalRun.auditEntries.length === 0");
     expect(verifierSource).toContain("run.id === revision.agentRunId");
-    expect(verifierSource).toContain("runCount === 8");
+    expect(verifierSource).toContain("runCount === 9");
     expect(verifierSource).toContain("revisionProposalRun.draftRevision === null");
     expect(verifierSource).toContain("revisionRun.id === agentRevision?.agentRunId");
     expect(verifierSource).toContain("E2E_REAL_MODEL_REVISION_HISTORY_MISMATCH");
