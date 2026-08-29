@@ -1,6 +1,14 @@
 import { simulateReadableStream } from "ai";
 import { MockLanguageModelV4 } from "ai/test";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  assignmentSubtypes,
+  assignmentTypes,
+  crossDisciplinaryConcepts,
+  disciplineCatalog,
+  inquiryDepths,
+  submissionModes,
+} from "../../domain/activity/activity-content";
 import { waterConservationTaskBook } from "../../fixtures/water-conservation";
 import type { AppUser, PrismaClient } from "../../generated/prisma/client";
 
@@ -402,6 +410,49 @@ function dependencies(): ActivityAssistantHandlerDependencies {
 }
 
 describe("buildActivityAssistantInstructions", () => {
+  it.each([
+    ["学科目录", disciplineCatalog],
+    ["作业类型", assignmentTypes],
+    ["探究深度", inquiryDepths],
+    ["提交模式", submissionModes],
+    ["跨学科概念", crossDisciplinaryConcepts],
+    ["实践性子类型", assignmentSubtypes.practical],
+    ["探究性子类型", assignmentSubtypes.inquiry],
+  ])(
+    "states every %s code the payload will be validated against",
+    (_label, catalog) => {
+      // The model is rejected for missing a closed vocabulary it was never
+      // shown. These lists are generated from the same catalogs that do the
+      // rejecting, and this walks them so the instructions cannot fall behind
+      // the domain — when a discipline is added, or the cross-disciplinary
+      // concepts are dropped, this fails until the text follows.
+      const text = buildActivityAssistantInstructions([]);
+
+      for (const entry of catalog) {
+        expect(text).toContain(`${entry.code}（${entry.label}）`);
+      }
+    },
+  );
+
+  it("says what to do when a closed vocabulary is emptied", () => {
+    // 跨学科概念 is expected to be dropped. On that day the instructions must
+    // tell the model to send an empty array, not keep listing labels the schema
+    // no longer accepts — so the sentence is generated, not typed out.
+    const text = buildActivityAssistantInstructions([]);
+
+    expect(text).toContain("crossDisciplinaryConceptCodes");
+    // Widened for the same reason the instruction builder widens it: the tuple
+    // is provably non-empty today, and the empty case is exactly the future
+    // this test exists to cover.
+    const concepts: readonly { code: string; label: string }[] =
+      crossDisciplinaryConcepts;
+    if (concepts.length === 0) {
+      expect(text).toContain("必须留空数组");
+    } else {
+      expect(text).toContain("可选 0–2 个跨学科概念");
+    }
+  });
+
   it("names which disciplines each stage actually offers", () => {
     const text = buildActivityAssistantInstructions([]);
 
@@ -455,7 +506,12 @@ describe("buildActivityAssistantInstructions", () => {
 
   it("lists legal assignment subtypes and the unread-citation rule", () => {
     const text = buildActivityAssistantInstructions([]);
-    expect(text).toContain("inquiry 配 literature、survey、experiment");
+    // Now rendered from assignmentSubtypes rather than typed out, so the pairs
+    // carry their labels and a new subtype cannot be legal in the schema while
+    // missing from the instructions.
+    expect(text).toContain(
+      "inquiry 配 literature（文献探究）、survey（调查探究）、experiment（实验探究）",
+    );
     expect(text).toContain("project 的 assignmentSubtype 必须为 null");
     expect(text).toContain("read_source_section 已返回 FOUND");
     expect(text).toContain("引用数量不得超过已通读章节数");

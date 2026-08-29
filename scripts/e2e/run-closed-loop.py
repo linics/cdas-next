@@ -877,7 +877,13 @@ def run_real_model_browser_flow(
                 str(attachment_fixture)
             )
             wait_for_text(page, "文件已上传并完成内容验证，可正式提交。")
-            page.get_by_text("可正式提交", exact=False).wait_for()
+            # Assert the attachment row itself reached READY, by structure. A
+            # bare text match on the status word now resolves to two elements —
+            # the row's own "67 KB · 可正式提交" and the message above — and a
+            # copy change would move it again.
+            page.locator(
+                '[data-attachment-editor] li[data-status="READY"]'
+            ).filter(has_text=attachment_fixture.name).wait_for()
             page.get_by_role("button", name="正式提交", exact=True).click()
             confirm_dialog(page, "确认正式提交？", "确认正式提交")
             wait_for_text(page, "第 1 版已正式提交")

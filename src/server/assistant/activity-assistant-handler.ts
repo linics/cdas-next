@@ -58,7 +58,12 @@ import { createTeacherDraftDetailReader } from "./teacher-draft-detail";
 import { createTeacherReleaseInsightsReader } from "./teacher-release-insights";
 import { createTeacherReleaseRosterReader } from "./teacher-release-roster";
 import {
+  assignmentSubtypes,
+  assignmentTypes,
+  crossDisciplinaryConcepts,
   disciplineCatalog,
+  inquiryDepths,
+  submissionModes,
   type SchoolStage,
 } from "../../domain/activity/activity-content";
 
@@ -247,25 +252,60 @@ function classroomInstructions(classrooms: AssistantClassroom[]): string {
 }
 
 /**
- * Which discipline codes a stage actually offers, written out for the model.
+ * Every closed vocabulary the model must hit exactly, rendered from the domain
+ * catalogs that will reject it.
  *
- * The catalog already enforces this — 科学 is a primary-school subject, and in
- * 初中 it splits into 物理/化学/生物/地理 — but nothing told the model, so a
- * middle-school activity naming 科学 died at validation with an opaque code and
- * the teacher only saw "草稿未创建". Generated from the catalog so it cannot
- * drift away from the rule it describes.
+ * These lists used to be typed out by hand in the instructions, which is fine
+ * until the domain moves. When a discipline is added, or the cross-disciplinary
+ * concepts are dropped, hand-written text keeps teaching the model the old set —
+ * and the model's obedient answer then fails validation with a code the teacher
+ * reads as "草稿未创建". Generating them means the instructions cannot describe a
+ * rule the domain no longer holds, and `activity-assistant-handler.test.ts`
+ * walks each catalog to prove every member is actually stated.
+ *
+ * A rule the payload is validated against, and which the model cannot infer,
+ * belongs here rather than in prose.
  */
+function codeList(
+  entries: readonly Readonly<{ code: string; label: string }>[],
+): string {
+  return entries
+    .map((entry) => `${entry.code}（${entry.label}）`)
+    .join("、");
+}
+
 function disciplineCodesByStage(): string {
   const line = (stage: SchoolStage, label: string) =>
-    `${label}：${disciplineCatalog
-      .filter((discipline) =>
+    `${label}：${codeList(
+      disciplineCatalog.filter((discipline) =>
         (discipline.stages as readonly SchoolStage[]).includes(stage),
-      )
-      .map((discipline) => `${discipline.code}（${discipline.label}）`)
-      .join("、")}`;
+      ),
+    )}`;
   return [line("PRIMARY", "小学 1–6 年级"), line("MIDDLE", "初中 7–9 年级")].join(
     "\n",
   );
+}
+
+function assignmentSubtypeRules(): string {
+  const pairs = Object.entries(assignmentSubtypes).map(
+    ([type, subtypes]) => `${type} 配 ${codeList(subtypes)}`,
+  );
+  const withoutSubtype = assignmentTypes
+    .filter((type) => !(type.code in assignmentSubtypes))
+    .map((type) => type.code);
+  return `${pairs.join("；")}；${withoutSubtype.join("、")} 的 assignmentSubtype 必须为 null，不得填其他字串`;
+}
+
+function crossDisciplinaryConceptRule(): string {
+  // Read through a widened type on purpose. The catalog is a literal tuple, so
+  // TypeScript can currently prove it is non-empty and calls the other branch
+  // dead — but this label is expected to be dropped, and the instructions have
+  // to stop teaching it on the same day rather than one release later.
+  const concepts: readonly Readonly<{ code: string; label: string }>[] =
+    crossDisciplinaryConcepts;
+  return concepts.length === 0
+    ? "本版没有跨学科概念标签，crossDisciplinaryConceptCodes 必须留空数组。"
+    : `crossDisciplinaryConceptCodes 可选 0–2 个跨学科概念，只用这些 code：${codeList(concepts)}。`;
 }
 
 export function buildActivityAssistantInstructions(
@@ -317,9 +357,9 @@ export function buildActivityAssistantInstructions(
 如实说你看不到姓名，请他按序号或直接点开链接。最多列 60 个对象，truncated 为真时要说明只列了前 60 个。
 解读边界：名册状态只是「谁需要教师优先看」的排序信号，不得据此判断任何学生的能力、态度或表现，
 不得推断原因，不得排名次或说谁「落后」；要看具体情况，请教师点开那一行的评阅链接看原始证据。
-1. 根据教师自然语言，整理 schema v2 的完整跨学科任务书。必须使用原版 CTS 的学段/年级、稳定学科目录、主学科加至少一个融合学科、实践性/探究性/项目式作业及其条件子类型、探究深度、提交模式和 1–16 周周期。作业类型只能用 practical、inquiry、project。子类型必须与类型匹配且只用这些代码：practical 配 visit、simulation、observation；inquiry 配 literature、survey、experiment；project 的 assignmentSubtype 必须为 null，不得填其他字串。探究深度只用 basic、intermediate、deep。提交模式只用 phased、once、mixed；教师说过程性提交时用 phased。学科代码必须用目录中的英文 code，信息科技是 infoTech。主学科与每个融合学科都必须是该学段真的开设的科目，否则整份提案会被拒绝——各学段可用的 code 如下：
+1. 根据教师自然语言，整理 schema v2 的完整跨学科任务书。必须使用原版 CTS 的学段/年级、稳定学科目录、主学科加至少一个融合学科、实践性/探究性/项目式作业及其条件子类型、探究深度、提交模式和 1–16 周周期。作业类型只用这些 code：${codeList(assignmentTypes)}。子类型必须与类型匹配：${assignmentSubtypeRules()}。探究深度只用 ${codeList(inquiryDepths)}。提交模式只用 ${codeList(submissionModes)}；教师说过程性提交时用 phased。学科代码必须用目录中的英文 code。主学科与每个融合学科都必须是该学段真的开设的科目，否则整份提案会被拒绝——各学段可用的 code 如下：
 ${disciplineCodesByStage()}
-初中没有「科学」这门课，水循环之类的内容要落到 physics、chemistry、biology 或 geography。另需具体背景、知识与技能/过程与方法/情感态度三维目标、三到四个连续阶段（每阶段一个明确行动、情境、支架、类型化证据、评价要点、课时）及四档量规。可选 0–2 个跨学科概念：物质与能量、结构与功能、系统与模型、稳定与变化。
+初中没有「科学」这门课，水循环之类的内容要落到 physics、chemistry、biology 或 geography。另需具体背景、知识与技能/过程与方法/情感态度三维目标、三到四个连续阶段（每阶段一个明确行动、情境、支架、类型化证据、评价要点、课时）及四档量规。${crossDisciplinaryConceptRule()}
 2. 只有缺少会改变年级、学科、真实任务、成果、证据或评价结构的资料时，才每轮问一个必要问题；不要因可选润饰、措辞或补充背景而阻塞，也不得把缺失事实当成已知资料。资料足够时立刻调用 create_activity_draft。
 
 关于「要不要先问一句」：不要。create_activity_draft、update_activity_draft 和 publish_activity_release 本身就会停下来，把你填的全部参数完整渲染成确认卡片摆在教师面前等他点确认——调用工具就是在请求确认，不是在执行。所以：不要在文字里写「请确认这份提案，确认后我会调用 create_activity_draft」，也不要写「请确认下面的修改声明，下面调用工具提交」，也不要把任务理解、三条目标链、来源引用先用文字复述一遍再调用。你在文字里复述，教师反而看不到那张可确认的卡片，只能看到一堆散文，这一轮就白费了。把这些内容直接写进工具参数，让卡片去展示。资料够了就调用，教师自然会在卡片上确认或拒绝。
