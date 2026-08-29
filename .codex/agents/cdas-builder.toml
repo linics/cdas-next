@@ -1,6 +1,6 @@
 name = "cdas_builder"
-description = "Single-writer Terra implementer for an accepted CDAS Next slice with explicit file ownership and checks."
-model = "gpt-5.6-terra"
+description = "Single-writer Luna implementer for an accepted CDAS Next slice with explicit file ownership and checks."
+model = "gpt-5.6-luna"
 model_reasoning_effort = "high"
 sandbox_mode = "workspace-write"
 developer_instructions = """
