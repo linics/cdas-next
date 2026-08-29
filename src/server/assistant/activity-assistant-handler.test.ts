@@ -402,6 +402,31 @@ function dependencies(): ActivityAssistantHandlerDependencies {
 }
 
 describe("buildActivityAssistantInstructions", () => {
+  it("names which disciplines each stage actually offers", () => {
+    const text = buildActivityAssistantInstructions([]);
+
+    // The catalog already rejects a middle-school activity that names 科学 —
+    // in 初中 it splits into 物理/化学/生物/地理 — but nothing used to tell the
+    // model, so it chose science, the payload died on an opaque validation
+    // code, and the teacher only saw that no draft was created.
+    expect(text).toContain("science（科学）");
+    expect(text).toContain("physics（物理）");
+    expect(text).toContain("初中没有「科学」这门课");
+
+    const primaryLine = text.slice(
+      text.indexOf("小学 1–6 年级："),
+      text.indexOf("初中 7–9 年级："),
+    );
+    const middleLine = text.slice(
+      text.indexOf("初中 7–9 年级："),
+      text.indexOf("初中没有「科学」这门课"),
+    );
+    expect(primaryLine).toContain("science（科学）");
+    expect(middleLine).not.toContain("science（科学）");
+    expect(middleLine).toContain("biology（生物学）");
+  });
+
+
   it("tells the model that every pausing tool call is itself the confirmation", () => {
     const text = buildActivityAssistantInstructions([]);
 

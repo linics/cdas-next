@@ -437,19 +437,58 @@ describe("activity assistant tools", () => {
     );
   });
 
-  it("still rejects contributions that disagree with a supplied discipline list", async () => {
+  it("lets the contributions decide the disciplines, whatever list the model also wrote", async () => {
+    // The instructions tell the model to leave this list alone, and it writes it
+    // anyway. Rejecting the proposal for that disagreement cost a whole design
+    // run in practice; deriving the list instead makes the disagreement
+    // impossible. The contributions are the activity's disciplines.
+    const parsed = activityDraftProposalSchema.safeParse({
+      ...proposal,
+      content: { ...proposal.content, integratedDisciplineCodes: ["chinese"] },
+    });
+
+    expect(parsed.success).toBe(true);
+    expect(parsed.data?.content.integratedDisciplineCodes).toEqual(
+      proposal.integratedDisciplineContributions.map(
+        (item) => item.disciplineCode,
+      ),
+    );
+  });
+
+  it("adds a discipline the model contributed for, rather than refusing the draft", async () => {
+    const parsed = activityDraftProposalSchema.safeParse({
+      ...proposal,
+      integratedDisciplineContributions: [
+        ...proposal.integratedDisciplineContributions,
+        { disciplineCode: "chinese", necessaryContribution: "公开表达建议。" },
+      ],
+    });
+
+    expect(parsed.success).toBe(true);
+    expect(parsed.data?.content.integratedDisciplineCodes).toContain("chinese");
+  });
+
+  it("keeps every other rule about those codes biting", async () => {
+    // Deriving the list removes one failure mode, not the invariants. Each of
+    // these now reports against the contributions, which is the field the model
+    // can actually correct.
     expect(
       activityDraftProposalSchema.safeParse({
         ...proposal,
-        content: { ...proposal.content, integratedDisciplineCodes: ["chinese"] },
+        integratedDisciplineContributions: [
+          ...proposal.integratedDisciplineContributions,
+          { disciplineCode: "math", necessaryContribution: "重复的学科贡献。" },
+        ],
       }).success,
     ).toBe(false);
     expect(
       activityDraftProposalSchema.safeParse({
         ...proposal,
         integratedDisciplineContributions: [
-          ...proposal.integratedDisciplineContributions,
-          { disciplineCode: "chinese", necessaryContribution: "公开表达建议。" },
+          {
+            disciplineCode: proposal.content.mainDisciplineCode,
+            necessaryContribution: "主学科不能同时是融合学科。",
+          },
         ],
       }).success,
     ).toBe(false);
