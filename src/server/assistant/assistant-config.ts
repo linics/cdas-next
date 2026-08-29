@@ -1,6 +1,7 @@
 import "server-only";
 
 import { z } from "zod";
+import { defaultAttachmentVisionModel } from "../../domain/assistant/attachment-vision-model";
 
 const modelIdSchema = z
   .string()
@@ -9,7 +10,7 @@ const modelIdSchema = z
   .max(200)
   .regex(/^deepseek-[a-z0-9][a-z0-9._:-]*$/);
 
-const defaultAttachmentVisionModel = "deepseek-v4-flash-vision-exp";
+
 
 const enabledConfigSchema = z.object({
   apiKey: z.string().trim().min(1).max(2_000),

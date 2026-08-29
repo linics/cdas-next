@@ -34,6 +34,7 @@ async function main(): Promise<void> {
     aiProviderDisabled: process.env.AI_PROVIDER_DISABLED,
     deepseekApiKey: process.env.DEEPSEEK_API_KEY,
     aiModel: process.env.AI_MODEL,
+    attachmentVisionModel: process.env.AI_ATTACHMENT_VISION_MODEL,
     aiToolApprovalSecret: process.env.AI_TOOL_APPROVAL_SECRET,
     secret: process.env.STAGING_HEALTH_PROOF_SECRET,
     challenge,

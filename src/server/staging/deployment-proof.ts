@@ -1,4 +1,5 @@
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
+import { defaultAttachmentVisionModel } from "../../domain/assistant/attachment-vision-model";
 
 export type DeploymentProofInput = Readonly<{
   deploymentId: string | undefined;
@@ -9,6 +10,7 @@ export type DeploymentProofInput = Readonly<{
   aiProviderDisabled: string | undefined;
   deepseekApiKey?: string | undefined;
   aiModel?: string | undefined;
+  attachmentVisionModel?: string | undefined;
   aiToolApprovalSecret?: string | undefined;
   secret: string | undefined;
   challenge?: string | undefined;
@@ -24,6 +26,7 @@ export type DeploymentConfiguration = Readonly<{
   aiProviderDisabled: "0" | "1";
   deepseekApiKeyHash?: string;
   aiModel?: string;
+  attachmentVisionModel?: string;
   aiToolApprovalSecretHash?: string;
   challenge: string;
 }>;
@@ -125,6 +128,12 @@ export function deploymentConfiguration(
   const aiProviderDisabled = input.aiProviderDisabled?.trim() ?? "";
   const deepseekApiKey = input.deepseekApiKey?.trim() ?? "";
   const aiModel = input.aiModel?.trim() ?? "";
+  // A deployment that reads attachments calls a second model, so the identity
+  // this proof binds has to name it too — otherwise the vision model could be
+  // swapped without the proof changing. Resolved through the same default the
+  // runtime applies, so an unset variable is not a disagreement.
+  const attachmentVisionModel =
+    input.attachmentVisionModel?.trim() || defaultAttachmentVisionModel;
   const aiToolApprovalSecret = input.aiToolApprovalSecret ?? "";
   const challenge = input.challenge?.trim().toLowerCase() ?? "";
   const aiEnabled = aiProviderDisabled === "0";
@@ -132,6 +141,7 @@ export function deploymentConfiguration(
     deepseekApiKey.length >= 16 &&
     deepseekApiKey.length <= 2_000 &&
     /^deepseek-[a-z0-9][a-z0-9._:-]*$/u.test(aiModel) &&
+    /^deepseek-[a-z0-9][a-z0-9._:-]*$/u.test(attachmentVisionModel) &&
     aiToolApprovalSecret.length >= 32 &&
     aiToolApprovalSecret.length <= 4_096;
   if (
@@ -165,6 +175,7 @@ export function deploymentConfiguration(
         .update(deepseekApiKey, "utf8")
         .digest("hex"),
       aiModel,
+      attachmentVisionModel,
       aiToolApprovalSecretHash: createHash("sha256")
         .update(aiToolApprovalSecret, "utf8")
         .digest("hex"),

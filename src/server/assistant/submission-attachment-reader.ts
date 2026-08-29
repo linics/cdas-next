@@ -3,6 +3,10 @@ import "server-only";
 import { generateText, type LanguageModel } from "ai";
 import type { PrismaClient } from "../../generated/prisma/client";
 import type { CommandContext } from "../commands/command-context";
+// The same ceiling the reservation enforced. Kept as one constant: a second
+// copy here would keep the old limit the day the policy raises it, and every
+// larger attachment would fail to read for no visible reason.
+import { MAX_ATTACHMENT_BYTES } from "../../domain/submission/attachment-policy";
 import {
   getAuthorizedCurrentRevisionAttachmentDownload,
   SubmissionAttachmentAccessError,
@@ -14,7 +18,6 @@ import type { AttachmentStorage } from "../attachments/attachment-storage";
 import type { ActivityAssistantConfig } from "./assistant-config";
 import { createDeepSeekAttachmentVisionModel } from "./deepseek-provider";
 
-const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024;
 const MAX_EXTRACTED_CODE_POINTS = 12_000;
 
 export type FormalAttachmentForSuggestion = Readonly<{
@@ -131,7 +134,13 @@ async function describeImage(
   return result.text;
 }
 
-async function extractPdfText(bytes: Uint8Array): Promise<string> {
+/**
+ * Exported so the real library can be exercised against real files. The unit
+ * tests for the reader itself substitute these, which is right for testing the
+ * reader's branching but leaves the parsers themselves uncovered — and a parser
+ * that only ever runs behind a stub is one nobody notices breaking.
+ */
+export async function extractPdfText(bytes: Uint8Array): Promise<string> {
   const { getDocument } = await import(
     "pdfjs-dist/legacy/build/pdf.mjs"
   );
@@ -157,7 +166,8 @@ async function extractPdfText(bytes: Uint8Array): Promise<string> {
   }
 }
 
-async function extractDocxText(bytes: Uint8Array): Promise<string> {
+/** Exported for the same reason as extractPdfText. */
+export async function extractDocxText(bytes: Uint8Array): Promise<string> {
   const mammoth = await import("mammoth");
   const result = await mammoth.extractRawText({
     buffer: Buffer.from(bytes),
