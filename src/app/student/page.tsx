@@ -1,4 +1,3 @@
-import { SignInButton, SignOutButton } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
@@ -10,7 +9,6 @@ import {
   WorkspaceRoleGate,
   WorkspaceShell,
 } from "../_components/workspace-shell";
-import { isClickthroughAuthEnabled } from "../../server/auth/clickthrough-auth";
 import { AuthenticationError } from "../../server/auth/current-actor";
 import { createUiCommandContext } from "../../server/commands/create-ui-command-context";
 import { getDatabaseClient } from "../../server/db/client";
@@ -19,6 +17,7 @@ import {
   StudentReleaseListQueryError,
   type StudentReleaseList,
 } from "../../server/queries/student-releases";
+import { StudentAccessGate } from "./_components/student-shell";
 import styles from "./student-dashboard.module.css";
 
 const studentNavigation = [
@@ -29,60 +28,6 @@ export const metadata: Metadata = {
   title: "我的学习活动 | CDAS Next",
   description: "查看可见活动、提交状态、教师反馈与量规评价",
 };
-
-function AccessUnavailable({
-  code,
-}: {
-  code: AuthenticationError["code"];
-}) {
-  const copy =
-    code === "AUTH_NOT_CONFIGURED"
-      ? {
-          eyebrow: "登录服务未配置",
-          title: "学习活动入口尚未开放",
-          detail:
-            "系统当前无法验证学生身份，因此不会读取或显示任何班级活动。配置 Clerk 后再从真实学生账号进入。",
-        }
-      : code === "USER_NOT_PROVISIONED"
-        ? {
-            eyebrow: "账号尚未创建",
-            title: "找不到对应的学生身份",
-            detail:
-              "当前登录账号尚未关联到 CDAS Next 用户。请由管理者完成账号创建与班级成员设置。",
-          }
-        : {
-            eyebrow: "需要登录",
-            title: "登录后查看自己的学习活动",
-            detail:
-              "未登录时不会显示班级活动、提交进度或反馈状态。",
-          };
-
-  return (
-    <WorkspaceShell audience="学生">
-      <section className={styles.accessGate}>
-        <p className={styles.eyebrow}>{copy.eyebrow}</p>
-        <h1>{copy.title}</h1>
-        <p>{copy.detail}</p>
-        <div className={styles.accessActions}>
-          {isClickthroughAuthEnabled() ? null : code === "UNAUTHENTICATED" ? (
-            <SignInButton mode="modal" fallbackRedirectUrl="/student">
-              <button className={styles.signInButton} type="button">
-                登录学生账号
-              </button>
-            </SignInButton>
-          ) : code === "USER_NOT_PROVISIONED" ? (
-            <SignOutButton redirectUrl="/student">
-              <button className={styles.signInButton} type="button">
-                退出当前账号
-              </button>
-            </SignOutButton>
-          ) : null}
-          <Link href="/">返回工作台</Link>
-        </div>
-      </section>
-    </WorkspaceShell>
-  );
-}
 
 type StudentRelease = StudentReleaseList["releases"][number];
 type ReleaseGroupKey = "resubmit" | "active" | "closed";
@@ -282,7 +227,7 @@ export default async function StudentDashboardPage() {
     releaseList = await listStudentReleases(database, context, {});
   } catch (error) {
     if (error instanceof AuthenticationError) {
-      return <AccessUnavailable code={error.code} />;
+      return <StudentAccessGate code={error.code} returnPath="/student" />;
     }
     if (
       error instanceof StudentReleaseListQueryError &&
@@ -319,7 +264,7 @@ export default async function StudentDashboardPage() {
     <WorkspaceShell
       audience="学生"
       actorName={releaseList.actor.displayName}
-      breadcrumb="学生端 › 我的学习活动"
+      breadcrumb={[{ label: "我的学习活动" }]}
       navigation={studentNavigation}
     >
       <div className={styles.dashboardMain}>

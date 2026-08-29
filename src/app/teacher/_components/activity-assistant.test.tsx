@@ -38,6 +38,7 @@ vi.mock("next/link", () => ({
 import {
   ActivityAssistant,
   ActivityAssistantSessionProvider,
+  isComposerSubmitKey,
 } from "./activity-assistant";
 
 const draftId = "10000000-0000-4000-8000-000000000001";
@@ -132,6 +133,35 @@ describe("ActivityAssistant", () => {
     expect(markup).toContain("教师工作区与活动设计");
     expect(markup).toContain("可分配职责");
     expect(markup).toContain("所有站内跳转都由你点击");
+    expect(markup).not.toContain("当前职责");
+  });
+
+  it("uses a compact stop control next to submit while the model is streaming", () => {
+    mocks.useChat.mockReturnValue(helpers([], "streaming"));
+    const markup = renderAssistant();
+
+    expect(markup).toContain('aria-label="停止生成"');
+    expect(markup).not.toContain(">停止<");
+    expect(markup).toContain("交给助手整理");
+  });
+
+  it("sends on Enter and inserts a line on Shift+Enter", () => {
+    expect(
+      isComposerSubmitKey({ key: "Enter", shiftKey: false, nativeEvent: {} }),
+    ).toBe(true);
+    expect(
+      isComposerSubmitKey({ key: "Enter", shiftKey: true, nativeEvent: {} }),
+    ).toBe(false);
+    expect(
+      isComposerSubmitKey({
+        key: "Enter",
+        shiftKey: false,
+        nativeEvent: { isComposing: true },
+      }),
+    ).toBe(false);
+    expect(
+      isComposerSubmitKey({ key: "a", shiftKey: false, nativeEvent: {} }),
+    ).toBe(false);
   });
 
   it("sends only an allowlisted current page context with each request", () => {

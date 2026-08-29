@@ -1,5 +1,4 @@
-.releasePage,
-.accessGate {
+.releasePage {
   width: min(100%, var(--content-width));
   margin: 0 auto;
   padding: var(--space-6) var(--space-8) calc(var(--space-8) * 2);
@@ -61,7 +60,7 @@
 .releaseFacts > div { min-width: 0; padding: var(--space-4) var(--space-4) var(--space-4) 0; }
 .releaseFacts > div + div { border-left: 1px solid var(--color-divider); padding-left: var(--space-4); }
 .releaseFacts dt { color: var(--color-neutral-700); font-size: var(--text-meta); }
-.releaseFacts dd { margin: var(--space-1) 0 0; font-family: var(--font-heading); font-size: var(--text-subhead); font-weight: var(--font-heading-weight); font-variant-numeric: tabular-nums; line-height: 1.2; }
+.releaseFacts dd { margin: var(--space-1) 0 0; font-family: var(--font-heading); font-size: var(--text-subhead); font-weight: var(--font-heading-weight); font-variant-numeric: var(--figure-ui); line-height: 1.2; }
 
 .groupNotice {
   display: grid;
@@ -126,7 +125,7 @@
   flex: none;
   color: var(--color-accent-700);
   font-family: var(--font-heading);
-  font-variant-numeric: tabular-nums;
+  font-variant-numeric: var(--figure-ui);
 }
 
 .phaseNavigator strong {
@@ -172,7 +171,7 @@
   margin: var(--space-4) 0 0 !important;
   border-top: 1px solid var(--color-divider);
   padding-top: var(--space-2);
-  font-variant-numeric: tabular-nums;
+  font-variant-numeric: var(--figure-ui);
 }
 
 .phaseDue[data-late="true"] { color: var(--color-accent-700); }
@@ -290,7 +289,7 @@
 }
 
 .fieldMeta p { margin: 0; }
-.fieldMeta span { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.fieldMeta span { white-space: nowrap; font-variant-numeric: var(--figure-ui); }
 .fieldMeta span[data-over-limit="true"] { color: var(--stroke-heavy); font-weight: var(--font-heading-weight); }
 
 .saveRow {
@@ -566,7 +565,7 @@
   color: var(--color-neutral-700);
   font-family: var(--font-ui);
   font-size: var(--text-label);
-  font-variant-numeric: tabular-nums;
+  font-variant-numeric: var(--figure-ui);
 }
 
 .releaseBrief[open] .briefBody {
@@ -594,29 +593,12 @@
 .releaseBrief li + li { margin-top: 6px; }
 .snapshotHash { margin: var(--space-4) 0 0; color: var(--color-neutral-700); font-size: var(--text-label); overflow-wrap: anywhere; }
 
-.accessGate { max-width: 720px; padding-top: clamp(calc(var(--space-8) * 1.5), 13vh, calc(var(--space-8) * 3.59)); }
-.accessGate h1 { margin: var(--space-2) 0 var(--space-3); font-size: var(--text-display); font-weight: 400; line-height: 1.08; }
-.accessGate > p:not(.eyebrow) { margin: 0; color: var(--color-neutral-700); font-size: var(--text-body); line-height: 1.7; }
-.accessActions { display: flex; align-items: center; gap: var(--space-3); margin-top: var(--space-6); }
-.accessGate a { display: inline-flex; align-items: center; color: var(--color-accent-700); font-size: var(--text-ui); font-weight: var(--font-heading-weight); }
-
-.signInButton {
-  border: 1px solid var(--color-accent);
-  border-radius: var(--radius-md);
-  background: transparent;
-  padding: 0 var(--space-4);
-  color: var(--color-accent-700);
-  font-size: var(--text-ui);
-  font-weight: var(--font-heading-weight);
-}
-
 @media (max-width: 860px) {
   .workspaceGrid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 620px) {
-  .releasePage,
-  .accessGate { padding: var(--space-4) var(--space-4) calc(var(--space-8) * 1.5); }
+  .releasePage { padding: var(--space-4) var(--space-4) calc(var(--space-8) * 1.5); }
   .releaseHeader { align-items: flex-start; flex-direction: column; }
   .releaseFacts,
   .phaseFocus dl,
@@ -638,7 +620,6 @@
   .feedbackVersion { grid-template-columns: 1fr; }
   .commitArea button,
   .resubmitForm button { width: 100%; }
-  .accessActions { align-items: stretch; flex-direction: column; }
 }
 
 /* 活动背景：故事的开头，常驻。收进折叠里学生会直接从「第 3 阶段」读起。 */

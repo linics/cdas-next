@@ -7,6 +7,51 @@ import styles from "./workspace-shell.module.css";
 
 export type WorkspaceNavigationItem = { href: string; label: string };
 
+/** Ancestor crumbs may carry `href`; the last crumb is always the current page. */
+export type WorkspaceCrumb = {
+  label: string;
+  href?: string;
+};
+
+function WorkspaceBreadcrumb({
+  items,
+}: {
+  items: readonly WorkspaceCrumb[];
+}) {
+  return (
+    <nav aria-label="面包屑" className={styles.audienceLabel}>
+      <ol className={styles.breadcrumbList}>
+        {items.map((item, index) => {
+          const isCurrent = index === items.length - 1;
+          const showLink = !isCurrent && Boolean(item.href);
+
+          return (
+            <li key={`${item.label}-${index}`} className={styles.breadcrumbItem}>
+              {index > 0 ? (
+                <span aria-hidden="true" className={styles.breadcrumbSeparator}>
+                  ›
+                </span>
+              ) : null}
+              {showLink && item.href ? (
+                <Link className={styles.breadcrumbLink} href={item.href}>
+                  {item.label}
+                </Link>
+              ) : (
+                <span
+                  aria-current={isCurrent ? "page" : undefined}
+                  className={styles.breadcrumbCurrent}
+                >
+                  {item.label}
+                </span>
+              )}
+            </li>
+          );
+        })}
+      </ol>
+    </nav>
+  );
+}
+
 export function WorkspaceShell({
   audience,
   actorName,
@@ -14,21 +59,31 @@ export function WorkspaceShell({
   breadcrumb,
   navigation = [],
   toolbarAction,
+  fillViewport = false,
   children,
 }: {
   audience: "教师" | "学生";
   actorName?: string;
   actorAudience?: "教师" | "学生";
-  breadcrumb?: string;
+  breadcrumb?: readonly WorkspaceCrumb[];
   navigation?: readonly WorkspaceNavigationItem[];
   toolbarAction?: ReactNode;
+  fillViewport?: boolean;
   children: ReactNode;
 }) {
   const workspaceHref = audience === "教师" ? "/teacher" : "/student";
   const showNavigation = navigation.length > 0;
+  const crumbs =
+    breadcrumb && breadcrumb.length > 0
+      ? breadcrumb
+      : [{ label: `${audience}工作区` }];
 
   return (
-    <div className={styles.shell} data-with-sidebar={showNavigation || undefined}>
+    <div
+      className={styles.shell}
+      data-with-sidebar={showNavigation || undefined}
+      data-fill-viewport={fillViewport || undefined}
+    >
       <a className={styles.skipLink} href="#main-content">跳到主要内容</a>
       {showNavigation ? (
         <aside className={styles.sidebar}>
@@ -57,9 +112,7 @@ export function WorkspaceShell({
               CDAS
             </Link>
           ) : null}
-          <p className={styles.audienceLabel}>
-            {breadcrumb ?? `${audience}工作区`}
-          </p>
+          <WorkspaceBreadcrumb items={crumbs} />
           <div className={styles.toolbarEnd}>
             <span className={styles.actorLabel}>
               {actorName

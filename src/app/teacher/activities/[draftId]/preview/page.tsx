@@ -21,6 +21,8 @@ import {
 import {
   TeacherAccessGate,
   TeacherPage,
+  activityStudioCrumb,
+  teacherHomeCrumb,
 } from "../../../_components/teacher-shell";
 import styles from "../../../teacher-workspace.module.css";
 import { PublishPanel } from "./publish-panel";
@@ -58,7 +60,15 @@ export default async function TeacherActivityPreviewPage({
   return (
     <TeacherPage
       actorName={workspace.actor.displayName}
-      breadcrumb={`教师工作台 › 活动设计 › 发布确认`}
+      breadcrumb={[
+        teacherHomeCrumb,
+        activityStudioCrumb,
+        {
+          href: `/teacher/activities/${workspace.draft.id}`,
+          label: content.title,
+        },
+        { label: "发布预览" },
+      ]}
     >
       <div className={styles.pageContent}>
         <header className={styles.pageHeader}>

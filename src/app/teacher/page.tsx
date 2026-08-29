@@ -9,6 +9,7 @@ import { getDatabaseClient } from "../../server/db/client";
 import {
   getTeacherActivityDashboard,
   TeacherActivityQueryError,
+  type TeacherActivityDashboard,
 } from "../../server/queries/teacher-activity-workspace";
 import {
   TeacherAccessGate,
@@ -16,17 +17,69 @@ import {
 } from "./_components/teacher-shell";
 import styles from "./teacher-workspace.module.css";
 
-const draftStatus = {
-  EDITING: { label: "编辑中", tone: "editing" },
-  READY_FOR_PREVIEW: { label: "可预览", tone: "ready" },
-  SEALED: { label: "已封存", tone: "sealed" },
-} as const;
-
 const releaseStatus = {
   ACTIVE: { label: "开放中", tone: "active" },
   CLOSED: { label: "已关闭", tone: "closed" },
   ARCHIVED: { label: "已封存", tone: "sealed" },
 } as const;
+
+type DashboardRelease = TeacherActivityDashboard["releases"][number];
+
+function attentionLine(attention: NonNullable<DashboardRelease["attention"]>) {
+  return [
+    attention.pendingFeedbackCount > 0
+      ? `待反馈 ${attention.pendingFeedbackCount}`
+      : null,
+    attention.pendingEvaluationCount > 0
+      ? `待评价 ${attention.pendingEvaluationCount}`
+      : null,
+    attention.awaitingResubmissionCount > 0
+      ? `待重交 ${attention.awaitingResubmissionCount}`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
+
+function ReleaseCatalogRow({ release }: { release: DashboardRelease }) {
+  const status = releaseStatus[release.status];
+  const row = (
+    <>
+      <span className={styles.activityTitle}>{release.title}</span>
+      <span className={styles.activityMeta}>
+        {release.progress
+          ? `${release.progress.submittedCount}/${release.progress.cohortSize} 已正式提交`
+          : "无读取权限"}
+        {release.dueAt ? " · " : ""}
+        {release.dueAt ? (
+          <>
+            <LocalizedDateTime dateTime={release.dueAt} /> 截止
+          </>
+        ) : null}
+      </span>
+      <span className={styles.activityStatus}>
+        <span className={styles.statusBadge} data-tone={status.tone}>
+          {status.label}
+        </span>
+      </span>
+    </>
+  );
+  if (!release.canViewSubmissions) {
+    return (
+      <div className={styles.nestedActivityRow} key={release.id}>
+        {row}
+      </div>
+    );
+  }
+  return (
+    <Link
+      className={styles.nestedActivityRow}
+      href={`/teacher/releases/${release.id}/submissions`}
+    >
+      {row}
+    </Link>
+  );
+}
 
 export default async function TeacherDashboardPage() {
   let dashboard;
@@ -74,35 +127,31 @@ export default async function TeacherDashboardPage() {
     }),
     { feedback: 0, evaluation: 0, resubmission: 0 },
   );
+  const managedNames = new Set(
+    dashboard.classrooms.map((classroom) => classroom.name),
+  );
+  const orphanReleases = dashboard.releases.filter(
+    (release) => !managedNames.has(release.classroomName),
+  );
 
   return (
     <TeacherPage
       actorName={dashboard.actor.displayName}
-      breadcrumb="教师工作台"
+      breadcrumb={[{ label: "教师工作台" }]}
     >
       <div className={styles.pageContent}>
         <header className={styles.pageHeader}>
           <div>
-            <p className={styles.eyebrow}>教师工作台 / 活动闭环</p>
-            <h1>你的活动、班级与发布</h1>
+            <p className={styles.eyebrow}>教师工作台 / 今日</p>
+            <h1>该处理的提交，和你教的班</h1>
             <p>
-              从草稿版本走到不可变发布，再进入学生正式提交；这里只列出当前教师身份有权操作的资源。
+              待办只放评阅。活动本身按班级收纳。还在写的稿子在「活动设计」。
             </p>
-          </div>
-          <div className={styles.pageHeaderActions}>
-            <Link className={styles.secondaryButton} href="/teacher/insights">
-              过程诊断
-            </Link>
-            <Link className={styles.primaryLink} href="/teacher/activities/new">
-              新建学习活动 <span aria-hidden="true">＋</span>
-            </Link>
           </div>
         </header>
 
         <div className={styles.dashboardBody}>
           <div className={styles.dashboardMain}>
-            {/* 待办从各张发布卡片里抽出来，聚成一个置顶区块：教师进来先看到
-                今天要处理什么，而不是挨张卡片自己数。 */}
             <section className={styles.dashboardSection}>
               <header className={styles.sectionHeader}>
                 <div>
@@ -117,7 +166,6 @@ export default async function TeacherDashboardPage() {
                 </p>
               ) : (
                 <>
-                  {/* 只列真有的那几档：0 不是待办，写成「待评价 0」会让人以为有事要做。 */}
                   <dl className={styles.attentionTotals}>
                     {(
                       [
@@ -134,33 +182,21 @@ export default async function TeacherDashboardPage() {
                         </div>
                       ))}
                   </dl>
-                  <div className={styles.attentionList}>
+                  <div className={styles.activityList}>
                     {actionable.map(({ release, attention }) => (
                       <Link
-                        className={styles.attentionRow}
+                        className={styles.activityRow}
                         href={`/teacher/releases/${release.id}/submissions`}
                         key={release.id}
                       >
-                        <span className={styles.attentionWho}>
+                        <span className={styles.activityWho}>
                           {release.classroomName}
                         </span>
-                        <span className={styles.attentionWhat}>
+                        <span className={styles.activityTitle}>
                           {release.title}
                         </span>
-                        <span className={styles.attentionNeeds}>
-                          {[
-                            attention.pendingFeedbackCount > 0
-                              ? `待反馈 ${attention.pendingFeedbackCount}`
-                              : null,
-                            attention.pendingEvaluationCount > 0
-                              ? `待评价 ${attention.pendingEvaluationCount}`
-                              : null,
-                            attention.awaitingResubmissionCount > 0
-                              ? `待重交 ${attention.awaitingResubmissionCount}`
-                              : null,
-                          ]
-                            .filter(Boolean)
-                            .join(" · ")}
+                        <span className={styles.activityMeta}>
+                          {attentionLine(attention)}
                         </span>
                       </Link>
                     ))}
@@ -169,137 +205,85 @@ export default async function TeacherDashboardPage() {
               )}
             </section>
 
-            {/* 发布压成单行摘要：班级、标题、提交进度、状态。细节进评阅名册。 */}
             <section className={styles.dashboardSection}>
               <header className={styles.sectionHeader}>
                 <div>
-                  <p className={styles.eyebrow}>不可变快照</p>
-                  <h2>我的发布</h2>
+                  <p className={styles.eyebrow}>我教的班</p>
+                  <h2>班级</h2>
                 </div>
-                <span>{dashboard.releases.length} 次</span>
+                <span>{dashboard.classrooms.length} 个</span>
               </header>
-              {dashboard.releases.length === 0 ? (
-                <p className={styles.emptyState}>
-                  尚未发布活动。草稿标记为可预览后，仍需完成独立教师确认才会产生发布。
-                </p>
-              ) : (
-                <div className={styles.activityList}>
-                  {dashboard.releases.map((release) => {
-                    const status = releaseStatus[release.status];
-                    const row = (
-                      <>
-                        <span className={styles.activityTitle}>
-                          {release.classroomName} · {release.title}
-                        </span>
-                        <span className={styles.activityMeta}>
-                          {release.progress
-                            ? `${release.progress.submittedCount}/${release.progress.cohortSize} 已正式提交`
-                            : "无读取权限"}
-                          {release.dueAt ? " · " : ""}
-                          {release.dueAt ? (
-                            <>
-                              <LocalizedDateTime dateTime={release.dueAt} /> 截止
-                            </>
-                          ) : null}
-                        </span>
-                        <span
-                          className={styles.statusBadge}
-                          data-tone={status.tone}
-                        >
-                          {status.label}
-                        </span>
-                      </>
-                    );
-                    return release.canViewSubmissions ? (
-                      <Link
-                        className={styles.activityRow}
-                        href={`/teacher/releases/${release.id}/submissions`}
-                        key={release.id}
-                      >
-                        {row}
-                      </Link>
-                    ) : (
-                      <div className={styles.activityRow} key={release.id}>
-                        {row}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </section>
-
-            <section className={styles.dashboardSection}>
-              <header className={styles.sectionHeader}>
-                <div>
-                  <p className={styles.eyebrow}>活动设计</p>
-                  <h2>我的草稿</h2>
-                </div>
-                <span>{dashboard.drafts.length} 份</span>
-              </header>
-              {dashboard.drafts.length === 0 ? (
-                <p className={styles.emptyState}>
-                  尚未创建活动草稿。使用「新建学习活动」即可开始第一个可追溯版本。
-                </p>
-              ) : (
-                <div className={styles.activityList}>
-                  {dashboard.drafts.map((draft) => {
-                    const status = draftStatus[draft.status];
-                    return (
-                      <Link
-                        className={styles.activityRow}
-                        href={`/teacher/activities/${draft.id}`}
-                        key={draft.id}
-                      >
-                        <span className={styles.activityTitle}>
-                          {draft.title}
-                        </span>
-                        <span className={styles.activityMeta}>
-                          版本 {draft.version} ·{" "}
-                          <LocalizedDateTime dateTime={draft.updatedAt} /> 更新
-                        </span>
-                        <span
-                          className={styles.statusBadge}
-                          data-tone={status.tone}
-                        >
-                          {status.label}
-                        </span>
-                      </Link>
-                    );
-                  })}
-                </div>
-              )}
-            </section>
-          </div>
-
-          <aside className={styles.dashboardAside}>
-            <div>
-              <p className={styles.eyebrow}>我管理的班级</p>
               {dashboard.classrooms.length === 0 ? (
-                <p className={styles.asideNote} role="note">
+                <p className={styles.emptyState}>
                   当前没有预先配置给你的班级，因此可保存草稿，但不能准备发布。请由系统管理流程先创建班级归属。
                 </p>
               ) : (
-                <div className={styles.classroomList}>
-                  {dashboard.classrooms.map((classroom) => (
-                    <Link
-                      className={styles.classroomRow}
-                      href={`/teacher/classrooms/${classroom.id}/members`}
-                      key={classroom.id}
-                    >
-                      <span>{classroom.name}</span>
-                      <span>{classroom.currentMemberCount} 名</span>
-                    </Link>
-                  ))}
+                <div className={styles.classroomCardList}>
+                  {dashboard.classrooms.map((classroom) => {
+                    const releases = dashboard.releases.filter(
+                      (release) => release.classroomName === classroom.name,
+                    );
+                    return (
+                      <article
+                        className={styles.classroomCard}
+                        key={classroom.id}
+                      >
+                        <header className={styles.classroomCardHead}>
+                          <div>
+                            <p className={styles.eyebrow}>班级</p>
+                            <h3>{classroom.name}</h3>
+                          </div>
+                          <Link
+                            className={styles.rowLink}
+                            href={`/teacher/classrooms/${classroom.id}/members`}
+                          >
+                            {classroom.currentMemberCount} 名成员
+                          </Link>
+                        </header>
+                        {releases.length === 0 ? (
+                          <p className={styles.asideNote}>
+                            尚未向这个班发布活动。
+                          </p>
+                        ) : (
+                          <div className={styles.activityList}>
+                            {releases.map((release) => (
+                              <ReleaseCatalogRow
+                                key={release.id}
+                                release={release}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </article>
+                    );
+                  })}
                 </div>
               )}
-            </div>
-            <div>
-              <p className={styles.eyebrow}>发布边界</p>
+              {orphanReleases.length > 0 ? (
+                <div className={styles.classroomCardList}>
+                  <article className={styles.classroomCard}>
+                    <header className={styles.classroomCardHead}>
+                      <div>
+                        <p className={styles.eyebrow}>历史发布</p>
+                        <h3>当前管不了的班</h3>
+                      </div>
+                    </header>
+                    <div className={styles.activityList}>
+                      {orphanReleases.map((release) => (
+                        <ReleaseCatalogRow
+                          key={release.id}
+                          release={release}
+                        />
+                      ))}
+                    </div>
+                  </article>
+                </div>
+              ) : null}
               <p className={styles.asideNote}>
                 只有班级管理者可以发布活动与阅读提交；班级管理权变更后，历史发布仍保留，但不再可读。
               </p>
-            </div>
-          </aside>
+            </section>
+          </div>
         </div>
       </div>
     </TeacherPage>

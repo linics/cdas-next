@@ -4,23 +4,38 @@ import type { ReactNode } from "react";
 import type { AuthenticationError } from "../../../server/auth/current-actor";
 import { isClickthroughAuthEnabled } from "../../../server/auth/clickthrough-auth";
 import { InlineAlert } from "../../_components/ui";
-import { WorkspaceShell } from "../../_components/workspace-shell";
-import gateStyles from "./teacher-gate.module.css";
+import {
+  WorkspaceShell,
+  type WorkspaceCrumb,
+} from "../../_components/workspace-shell";
+import gateStyles from "../../_components/access-gate.module.css";
 
 const teacherNavigation = [
   { href: "/teacher", label: "工作台" },
-  { href: "/teacher/activities/new", label: "活动设计" },
+  { href: "/teacher/activities", label: "活动设计" },
   { href: "/teacher/insights", label: "过程诊断" },
   { href: "/teacher/knowledge", label: "课程依据" },
 ] as const;
 
+export const teacherHomeCrumb = {
+  href: "/teacher",
+  label: "教师工作台",
+} as const satisfies WorkspaceCrumb;
+
+export const activityStudioCrumb = {
+  href: "/teacher/activities",
+  label: "活动设计",
+} as const satisfies WorkspaceCrumb;
+
 export function TeacherPage({
   actorName,
   breadcrumb,
+  fillViewport = false,
   children,
 }: {
   actorName?: string;
-  breadcrumb?: string;
+  breadcrumb?: readonly WorkspaceCrumb[];
+  fillViewport?: boolean;
   children: ReactNode;
 }) {
   return (
@@ -29,6 +44,7 @@ export function TeacherPage({
       actorName={actorName}
       breadcrumb={breadcrumb}
       navigation={teacherNavigation}
+      fillViewport={fillViewport}
     >
       {children}
     </WorkspaceShell>

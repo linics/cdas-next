@@ -166,7 +166,7 @@
   color: var(--color-text);
   font-family: var(--font-ui);
   font-size: var(--text-meta);
-  font-variant-numeric: tabular-nums;
+  font-variant-numeric: var(--figure-ui);
 }
 
 .barFill + .barFill { border-left: 1px solid var(--color-bg); }
@@ -205,10 +205,10 @@
 
 .statGrid dd {
   margin: var(--space-2) 0 0;
-  font-family: var(--font-heading);
+  font-family: var(--font-ui);
   font-size: var(--text-title);
   font-weight: 400;
-  font-variant-numeric: tabular-nums;
+  font-variant-numeric: var(--figure-ui);
   line-height: 1;
 }
 

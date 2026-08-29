@@ -11,8 +11,8 @@
   bottom: calc(var(--space-6) + 68px);
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
-  width: min(440px, calc(100vw - 48px));
-  height: min(720px, calc(100svh - 120px));
+  width: min(520px, calc(100vw - 32px));
+  height: min(780px, calc(100svh - 96px));
   min-height: 360px;
   overflow: hidden;
   border: 1px solid var(--color-divider);
@@ -42,12 +42,21 @@
 
 .panelHeader h2 {
   margin: var(--space-1) 0 0;
-  font-size: var(--text-card);
+  font-size: var(--text-section);
   font-weight: var(--font-heading-weight);
   line-height: 1.1;
 }
 
+.duty {
+  margin: var(--space-1) 0 0;
+  color: var(--color-neutral-700);
+  font-family: var(--font-ui);
+  font-size: var(--text-meta);
+  line-height: 1.4;
+}
+
 .panelBody {
+  display: grid;
   min-height: 0;
   overflow: hidden;
 }

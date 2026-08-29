@@ -75,6 +75,7 @@ vi.mock("../_components/teacher-shell", () => ({
     <div data-access-gate={code}>安全门</div>
   ),
   TeacherPage: ({ children }: { children: ReactNode }) => <>{children}</>,
+  teacherHomeCrumb: { href: "/teacher", label: "教师工作台" },
 }));
 
 import { AuthenticationError } from "../../../server/auth/current-actor";

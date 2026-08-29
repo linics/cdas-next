@@ -5,6 +5,7 @@ const uuidPathSegment = "[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]
 export const teacherAgentPageKindSchema = z.enum([
   "TEACHER_DASHBOARD",
   "ACTIVITY_NEW",
+  "ACTIVITY_STUDIO",
   "ACTIVITY_DRAFT",
   "ACTIVITY_PREVIEW",
   "RELEASE_SUBMISSIONS",
@@ -20,6 +21,7 @@ const staticPageContextSchema = z
     kind: z.enum([
       "TEACHER_DASHBOARD",
       "ACTIVITY_NEW",
+      "ACTIVITY_STUDIO",
       "SUBMISSION_REVIEW",
       "TEACHER_INSIGHTS",
       "TEACHER_KNOWLEDGE",
@@ -75,6 +77,7 @@ const resourceRoutes: ReadonlyArray<
 
 const staticRoutes = new Map<string, TeacherAgentPageContext["kind"]>([
   ["/teacher", "TEACHER_DASHBOARD"],
+  ["/teacher/activities", "ACTIVITY_STUDIO"],
   ["/teacher/activities/new", "ACTIVITY_NEW"],
   ["/teacher/insights", "TEACHER_INSIGHTS"],
   ["/teacher/knowledge", "TEACHER_KNOWLEDGE"],

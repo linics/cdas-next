@@ -70,6 +70,7 @@ import { SubmissionWorkspaceQueryError } from "../../../../../server/queries/sub
 import TeacherReleaseSubmissionsPage from "./page";
 
 const releaseId = "10000000-0000-4000-8000-000000000001";
+const classroomId = "60000000-0000-4000-8000-000000000006";
 const submissionId = "20000000-0000-4000-8000-000000000002";
 const studentId = "30000000-0000-4000-8000-000000000003";
 const trustedContext = {
@@ -83,6 +84,7 @@ const workspace = {
   release: {
     id: releaseId,
     title: "校园水表观察",
+    classroomId,
     classroomName: "七年一班",
     status: "ACTIVE",
     publishedAt: "2026-08-18T10:00:00.000Z",
@@ -191,6 +193,8 @@ describe("teacher release submissions page boundary", () => {
     );
     expect(markup).toContain("校园水表观察");
     expect(markup).toContain("七年一班");
+    expect(markup).toContain('aria-label="面包屑"');
+    expect(markup).toContain(`href="/teacher/classrooms/${classroomId}/members"`);
     expect(markup).toContain("陈同学");
     expect(markup).toContain("正式修订 2");
     expect(markup).toContain("已反馈 v3");

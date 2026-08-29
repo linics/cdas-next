@@ -24,7 +24,8 @@ import {
 } from "../../../../server/queries/feedback-workspace";
 import { FeedbackComposer } from "./feedback-composer";
 import { EvaluationComposer } from "./evaluation-composer";
-import { TeacherAccessGate, TeacherPage } from "../../_components/teacher-shell";
+import { FeedbackWorkspacePanes } from "./feedback-workspace-panes";
+import { TeacherAccessGate, TeacherPage, teacherHomeCrumb } from "../../_components/teacher-shell";
 import styles from "./feedback-workspace.module.css";
 
 function AccessUnavailable({
@@ -55,12 +56,9 @@ function FeedbackHistory({ revision }: { revision: FormalRevision }) {
       aria-labelledby={`feedback-history-${revision.id}`}
     >
       <header>
-        <div>
-          <p className={styles.eyebrow}>已确认历史</p>
-          <h4 id={`feedback-history-${revision.id}`}>教师反馈</h4>
-        </div>
+        <h4 id={`feedback-history-${revision.id}`}>教师反馈</h4>
         <span>
-          {feedback ? `当前版本 ${feedback.currentVersion}` : "尚无反馈"}
+          {feedback ? `v${feedback.currentVersion}` : "尚无反馈"}
         </span>
       </header>
 
@@ -126,12 +124,9 @@ function EvaluationHistory({ revision }: { revision: FormalRevision }) {
       aria-labelledby={`evaluation-history-${revision.id}`}
     >
       <header>
-        <div>
-          <p className={styles.eyebrow}>已确认历史</p>
-          <h4 id={`evaluation-history-${revision.id}`}>量规评价</h4>
-        </div>
+        <h4 id={`evaluation-history-${revision.id}`}>量规评价</h4>
         <span>
-          {evaluation ? `当前版本 ${evaluation.currentVersion}` : "尚无评价"}
+          {evaluation ? `v${evaluation.currentVersion}` : "尚无评价"}
         </span>
       </header>
 
@@ -219,9 +214,14 @@ function SubmissionRevision({
     <article
       className={styles.submissionRevision}
       data-current={current ? "true" : "false"}
-      aria-labelledby={`submission-revision-${revision.id}`}
+      aria-labelledby={
+        current
+          ? "submission-evidence-title"
+          : `submission-revision-${revision.id}`
+      }
     >
-      <header className={styles.revisionHeading}>
+      {current ? null : (
+        <header className={styles.revisionHeading}>
         <div>
           <span className={styles.revisionIndex}>
             {String(revision.revisionNumber).padStart(2, "0")}
@@ -239,9 +239,10 @@ function SubmissionRevision({
             {revision.isLate ? "迟交" : "期限内"}
           </span>
         </div>
-      </header>
+        </header>
+      )}
 
-      <p className={styles.formalLabel}>正式修订 · 内容不可覆盖</p>
+      {current ? null : <p className={styles.formalLabel}>正式修订 · 内容不可覆盖</p>}
       {revision.textEvidence ? (
         <div className={styles.submissionBody}>{revision.textEvidence}</div>
       ) : null}
@@ -270,8 +271,6 @@ function SubmissionRevision({
           ))}
         </ul>
       ) : null}
-      <FeedbackHistory revision={revision} />
-      <EvaluationHistory revision={revision} />
     </article>
   );
 }
@@ -322,99 +321,141 @@ export default async function TeacherSubmissionPage({
       ? (content.phases[submission.phaseIndex - 1] ?? null)
       : null;
   const revisions = [...submission.revisions].reverse();
+  const earlierRevisions = revisions.filter(
+    (revision) => revision.id !== currentRevision.id,
+  );
+  const feedbackStatus = latestFeedbackRevision
+    ? latestFeedbackRevision.nextStep && latestFeedbackRevision.supportLevel
+      ? `已确认 v${latestFeedbackRevision.version} · ${teacherFeedbackNextStepLabels[latestFeedbackRevision.nextStep]}`
+      : `已确认 v${latestFeedbackRevision.version}`
+    : "尚无反馈";
+  const evaluationStatus =
+    content.schemaVersion !== 2
+      ? "v1 快照无量规"
+      : latestEvaluationRevision
+        ? `已确认 v${latestEvaluationRevision.version}`
+        : "尚无评价";
 
   return (
     <TeacherPage
       actorName={workspace.actor.displayName}
-      breadcrumb={`教师工作台 › 评阅名册 › ${group?.name ?? student.displayName}`}
+      fillViewport
+      breadcrumb={[
+        teacherHomeCrumb,
+        {
+          href: `/teacher/classrooms/${submission.release.classroom.id}/members`,
+          label: submission.release.classroom.name,
+        },
+        {
+          href: `/teacher/releases/${submission.release.id}/submissions`,
+          label: content.title,
+        },
+        { label: group?.name ?? student.displayName },
+      ]}
     >
-      <div>
-        <header className={styles.pageHeader}>
-          <div>
-            <p className={styles.eyebrow}>提交 / 教师反馈</p>
-            <h1>{group?.name ?? student.displayName}</h1>
-            <p>
-              {content.title} · {submission.release.classroom.name}
-              {submission.phaseName ? ` · ${submission.phaseName}` : ""}
-            </p>
-          </div>
-          <span className={styles.workspaceStatus}>
-            <i aria-hidden="true" />
-            手写反馈可用
-          </span>
-        </header>
-
-        {/* 这页替教师回答的是「这份提交怎么样、我要写什么反馈」。六格事实表压成
-            一行摘要：谁交的、交的哪一段、第几版、什么时候截止 —— 剩下的位置留给
-            证据与反馈撰写。 */}
-        <p className={styles.contextLine}>
-          {content.title} · {submission.release.classroom.name} ·{" "}
-          {group ? `${group.name} · 小组共享` : student.displayName} ·{" "}
-          {submission.phaseName
-            ? `第 ${submission.phaseIndex} 阶段 · ${submission.phaseName}`
-            : "整项提交"}{" "}
-          · 正式修订 {submission.latestRevisionNumber} 版 ·{" "}
-          {submission.release.dueAt ? (
-            <>
-              <LocalizedDateTime dateTime={submission.release.dueAt} /> 截止
-            </>
-          ) : (
-            "未设置截止"
-          )}
-        </p>
-
-        {group ? (
-          <section className={styles.railNote} role="note">
-            <p className={styles.eyebrow}>小组共享提交</p>
-            <p>
-              成员：
-              {group.members
-                .map(
-                  (member) =>
-                    `${member.student.displayName}${
-                      member.roleLabel ? `（${member.roleLabel}）` : ""
-                    }`,
-                )
-                .join("、")}
-              。本页反馈绑定这份共享正式修订，并对全组成员可见。
-            </p>
-          </section>
-        ) : null}
-
-        {phase ? (
-          <section className={styles.railNote}>
-            <p className={styles.eyebrow}>冻结阶段要求</p>
-            <p>
-              {phase.action} · 评价要点：{phase.evaluationFocus}
-            </p>
-          </section>
-        ) : null}
-
-        <div className={styles.workspaceGrid}>
+      <FeedbackWorkspacePanes
+        evidence={
           <section
             className={styles.submissionHistory}
-            aria-labelledby="submission-history-title"
+            aria-labelledby="submission-student-title"
           >
+            <header className={styles.paneHeading}>
+              <p className={styles.eyebrow}>学生证据</p>
+              <h1 id="submission-student-title">
+                {group?.name ?? student.displayName}
+              </h1>
+              <p className={styles.contextLine}>
+                {content.title} · {submission.release.classroom.name}
+                {submission.phaseName
+                  ? ` · 第 ${submission.phaseIndex} 阶段 · ${submission.phaseName}`
+                  : " · 整项提交"}
+                {" · "}
+                正式修订 {submission.latestRevisionNumber} 版
+                {" · "}
+                {submission.release.dueAt ? (
+                  <>
+                    <LocalizedDateTime dateTime={submission.release.dueAt} /> 截止
+                  </>
+                ) : (
+                  "未设置截止"
+                )}
+              </p>
+            </header>
+            {group ? (
+              <section className={styles.railNote} role="note">
+                <p className={styles.eyebrow}>小组共享提交</p>
+                <p>
+                  成员：
+                  {group.members
+                    .map(
+                      (member) =>
+                        `${member.student.displayName}${
+                          member.roleLabel ? `（${member.roleLabel}）` : ""
+                        }`,
+                    )
+                    .join("、")}
+                  。本页反馈绑定这份共享正式修订，并对全组成员可见。
+                </p>
+              </section>
+            ) : null}
             <header className={styles.historyHeading}>
               <div>
-                <p className={styles.eyebrow}>学生证据</p>
-                <h2 id="submission-history-title">正式修订、反馈与评价历史</h2>
+                <h2 id="submission-evidence-title">
+                  第 {currentRevision.revisionNumber} 版正式提交
+                </h2>
               </div>
-              <span>{revisions.length} 版 · 新版在前</span>
+              <span>
+                {currentRevision.isLate ? "迟交" : "期限内"}
+                {revisions.length > 1
+                  ? ` · 共 ${revisions.length} 版`
+                  : null}
+              </span>
             </header>
-            <div className={styles.revisionList}>
-              {revisions.map((revision) => (
-                <SubmissionRevision
-                  key={revision.id}
-                  revision={revision}
-                  current={revision.id === currentRevision.id}
-                  phase={phase}
-                />
-              ))}
-            </div>
+            {phase ? (
+              <p className={styles.phaseContext}>
+                {phase.action} · 评价要点：{phase.evaluationFocus}
+              </p>
+            ) : null}
+            <SubmissionRevision
+              revision={currentRevision}
+              current
+              phase={phase}
+            />
+            {earlierRevisions.length > 0 ? (
+              <details className={styles.historyDisclosure}>
+                <summary>更早的正式修订（{earlierRevisions.length}）</summary>
+                <div className={styles.revisionList}>
+                  {earlierRevisions.map((revision) => (
+                    <SubmissionRevision
+                      key={revision.id}
+                      revision={revision}
+                      current={false}
+                      phase={phase}
+                    />
+                  ))}
+                </div>
+              </details>
+            ) : null}
           </section>
-
-          <aside className={styles.feedbackRail}>
+        }
+      >
+          <dl className={styles.statusLine}>
+              <div>
+                <dt>形成性反馈</dt>
+                <dd>{feedbackStatus}</dd>
+              </div>
+              <div>
+                <dt>量规评价</dt>
+                <dd>{evaluationStatus}</dd>
+              </div>
+            </dl>
+            <details className={styles.historyDisclosure}>
+              <summary>已确认记录</summary>
+              <FeedbackHistory revision={currentRevision} />
+              {content.schemaVersion === 2 ? (
+                <EvaluationHistory revision={currentRevision} />
+              ) : null}
+            </details>
             <FeedbackComposer
               key={`${currentRevision.id}:${currentRevision.feedback?.currentVersion ?? 0}`}
               submissionId={submission.id}
@@ -473,15 +514,7 @@ export default async function TeacherSubmissionPage({
                 </p>
               </div>
             )}
-            <div className={styles.railNote} role="note">
-              <p className={styles.eyebrow}>保存规则</p>
-              <p>
-                每次修改都新增不可变反馈或量规评价版本。AI 服务停用时，手写与确认流程仍完整可用。
-              </p>
-            </div>
-          </aside>
-        </div>
-      </div>
+      </FeedbackWorkspacePanes>
     </TeacherPage>
   );
 }

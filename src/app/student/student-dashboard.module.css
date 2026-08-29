@@ -1,5 +1,4 @@
-.dashboardMain,
-.accessGate {
+.dashboardMain {
   width: min(100%, 1040px);
   margin: 0 auto;
   padding: var(--space-8) var(--space-8) calc(var(--space-8) * 1.5);
@@ -22,8 +21,7 @@
   margin-bottom: var(--space-6);
 }
 
-.dashboardHeader h1,
-.accessGate h1 {
+.dashboardHeader h1 {
   margin: var(--space-2) 0 var(--space-2);
   font-size: var(--text-display);
   font-weight: 400;
@@ -31,8 +29,7 @@
   line-height: 1.12;
 }
 
-.dashboardHeader > div > p:last-child,
-.accessGate > p:not(.eyebrow) {
+.dashboardHeader > div > p:last-child {
   max-width: 44em;
   margin: 0;
   color: var(--color-neutral-800);
@@ -51,7 +48,7 @@
   margin: 0;
   padding-top: 6px;
   font-size: var(--text-meta);
-  font-variant-numeric: tabular-nums;
+  font-variant-numeric: var(--figure-ui);
 }
 
 .summaryLine dt { color: var(--color-neutral-700); font-size: var(--text-meta); }
@@ -78,9 +75,9 @@
 
 .groupHeading > span {
   color: var(--color-accent-700);
-  font-family: var(--font-heading);
+  font-family: var(--font-ui);
   font-size: var(--text-section);
-  font-variant-numeric: tabular-nums;
+  font-variant-numeric: var(--figure-ui);
 }
 
 .groupHeading h2 { margin: 0; font-size: var(--text-section); line-height: 1.2; }
@@ -115,7 +112,7 @@
   display: block;
   color: var(--color-neutral-700);
   font-size: var(--text-meta);
-  font-variant-numeric: tabular-nums;
+  font-variant-numeric: var(--figure-ui);
 }
 
 .releaseDates {
@@ -124,7 +121,7 @@
   margin: 0;
   color: var(--color-neutral-700);
   font-size: var(--text-meta);
-  font-variant-numeric: tabular-nums;
+  font-variant-numeric: var(--figure-ui);
 }
 .releaseDates div { display: flex; gap: var(--space-2); }
 .releaseDates dt { flex: none; color: var(--color-neutral-700); font-size: var(--text-meta); white-space: nowrap; }
@@ -140,50 +137,6 @@
 }
 .releaseAction i { font-family: var(--font-heading); font-size: var(--text-body); font-style: normal; }
 
-.accessGate {
-  max-width: 720px;
-  padding-top: clamp(calc(var(--space-8) * 1.5), 13vh, calc(var(--space-8) * 3.59));
-}
-
-.accessGate::before,
-.accessGate::after {
-  display: block;
-  height: 1px;
-  background: var(--color-divider);
-  content: "";
-}
-
-.accessGate::before { margin-bottom: var(--space-6); }
-.accessGate::after { margin-top: var(--space-8); }
-
-.accessActions {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  margin-top: var(--space-6);
-}
-
-.accessGate a {
-  display: inline-flex;
-  align-items: center;
-  color: var(--color-accent-700);
-  font-size: var(--text-ui);
-  font-weight: var(--font-heading-weight);
-}
-
-.signInButton {
-  border: 1px solid var(--color-accent);
-  border-radius: var(--radius-md);
-  background: transparent;
-  padding: calc(var(--space-2) * .8) calc(var(--space-3) * 1.2);
-  color: var(--color-accent-700);
-  font-family: var(--font-ui);
-  font-size: var(--text-ui);
-  font-weight: var(--font-heading-weight);
-}
-
-.signInButton:hover { background: var(--primary-tint); color: var(--color-accent-700); }
-
 @media (max-width: 800px) {
   .dashboardHeader { flex-wrap: wrap; }
   .summaryLine { gap: var(--space-4); }
@@ -198,13 +151,11 @@
 }
 
 @media (max-width: 520px) {
-  .dashboardMain,
-  .accessGate { padding: var(--space-6) var(--space-4) calc(var(--space-8) * 1.5); }
+  .dashboardMain { padding: var(--space-6) var(--space-4) calc(var(--space-8) * 1.5); }
   .summaryLine { width: 100%; gap: var(--space-3); }
   .summaryLine dd { font-size: var(--text-subhead); }
   .releaseRow { display: block; padding: var(--space-3) 0; }
   .releaseDates { display: grid; margin-top: var(--space-4); }
   .releaseAction { display: flex; justify-content: space-between; margin-top: var(--space-4); }
   .groupHeading { grid-template-columns: 28px minmax(0, 1fr) auto; }
-  .accessActions { align-items: stretch; flex-direction: column; }
 }

@@ -122,6 +122,43 @@
 
 .workspace { min-width: 0; }
 
+.shell[data-fill-viewport] {
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+:global(html:has([data-fill-viewport])) {
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.shell[data-fill-viewport] .sidebar {
+  height: 100%;
+  max-height: 100dvh;
+}
+
+.shell[data-fill-viewport] .workspace {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.shell[data-fill-viewport] .main {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.shell[data-fill-viewport] .main > :first-child {
+  flex: 1;
+  min-height: 0;
+}
+
 .toolbar {
   position: sticky;
   z-index: calc(var(--z-nav) - 1);
@@ -141,8 +178,44 @@
 .audienceLabel {
   margin: 0;
   margin-right: auto;
+  min-width: 0;
   color: var(--color-neutral-700);
   font-size: var(--text-meta);
+}
+
+.breadcrumbList {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.breadcrumbItem {
+  display: flex;
+  align-items: center;
+}
+
+.breadcrumbSeparator {
+  margin: 0 var(--space-1);
+  color: var(--color-neutral-700);
+}
+
+.breadcrumbLink {
+  border-radius: var(--radius-md);
+  padding: 0 var(--space-1);
+  margin: 0 calc(var(--space-1) * -1);
+  color: var(--color-accent-700);
+  transition: background var(--motion-fast), color var(--motion-fast);
+}
+
+.breadcrumbLink:hover {
+  background: var(--primary-tint);
+}
+
+.breadcrumbCurrent {
+  color: var(--color-neutral-700);
 }
 
 .toolbarEnd {
@@ -307,6 +380,32 @@
   }
 
   .actorLabel { max-width: 52vw; }
+}
+
+@media (max-width: 1023px) {
+  :global(html:has([data-fill-viewport])) {
+    height: auto;
+    overflow: visible;
+  }
+
+  .shell[data-fill-viewport] {
+    height: auto;
+    max-height: none;
+    overflow: visible;
+    overscroll-behavior: auto;
+  }
+
+  .shell[data-fill-viewport] .workspace,
+  .shell[data-fill-viewport] .main {
+    display: block;
+    height: auto;
+    overflow: visible;
+  }
+
+  .shell[data-fill-viewport] .main > :first-child {
+    flex: none;
+    min-height: 0;
+  }
 }
 
 @media (max-width: 520px) {

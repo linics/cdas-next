@@ -1,26 +1,27 @@
 .teacherApp { min-height: 100svh; background: var(--color-bg); color: var(--color-text); }
 
-.pageHeader {
-  display: flex;
-  max-width: var(--content-width);
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-6);
-  margin: 0 auto;
-  padding: calc(var(--space-8) * 1.3) var(--space-8) var(--space-6);
+.paneHeading {
+  display: block;
+  margin: 0 0 var(--space-4);
+  padding: 0 0 var(--space-4);
+  border-bottom: 1px solid var(--color-divider);
 }
 
-.pageHeader h1 {
-  margin: var(--space-2) 0 var(--space-3);
-  font-size: var(--text-display);
+.paneHeading h1 {
+  margin: var(--space-1) 0 var(--space-2);
+  font-size: var(--text-title);
   font-weight: 400;
-  line-height: 1.08;
+  line-height: 1.12;
 }
 
-.pageHeader > div > p:last-child {
+.paneHeading .contextLine {
+  max-width: 58em;
   margin: 0;
+  border: 0;
+  padding: 0;
   color: var(--color-neutral-700);
-  font-size: var(--text-body);
+  font-size: var(--text-meta);
+  font-variant-numeric: var(--figure-ui);
   line-height: 1.7;
 }
 
@@ -79,26 +80,13 @@
   margin: var(--space-1) 0 0;
   font-family: var(--font-heading);
   font-size: var(--text-subhead);
-  font-variant-numeric: tabular-nums;
+  font-variant-numeric: var(--figure-ui);
   line-height: 1.2;
 }
 
-.contextLine {
-  width: min(calc(100% - 72px), 1128px);
-  max-width: 46em;
-  margin: 0 auto;
-  border-top: 1px solid var(--color-divider);
-  border-bottom: 1px solid var(--color-divider);
-  padding: var(--space-3) 0;
-  color: var(--color-neutral-700);
-  font-size: var(--text-meta);
-  font-variant-numeric: tabular-nums;
-  line-height: 1.7;
-}
-
 .railNote {
-  width: min(calc(100% - 72px), 1128px);
-  margin: var(--space-3) auto 0;
+  max-width: none;
+  margin: 0 0 var(--space-4);
   border: 1px solid var(--color-divider);
   border-left: 2px solid var(--color-accent);
   border-radius: var(--radius-md);
@@ -116,22 +104,138 @@
 
 .workspaceGrid {
   display: grid;
-  max-width: var(--content-width);
-  grid-template-columns: minmax(0, 1fr) 380px;
-  align-items: start;
-  gap: clamp(var(--space-8), 5vw, calc(var(--space-8) * 1.75));
-  margin: 0 auto;
-  padding: calc(var(--space-8) * 1.3) var(--space-8) calc(var(--space-8) * 2);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.65fr);
+  align-items: stretch;
+  gap: 0;
+  height: 100%;
+  min-height: 0;
+  max-width: none;
+  margin: 0;
+  overflow: hidden;
+}
+
+.workspaceGrid[data-rail-open="false"] {
+  grid-template-columns: minmax(0, 1fr) auto;
 }
 
 .submissionHistory,
-.feedbackRail { min-width: 0; }
+.feedbackRail {
+  min-width: 0;
+  min-height: 0;
+  background: var(--color-surface);
+}
+
+.submissionHistory {
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-right: 1px solid var(--color-divider);
+  padding: var(--space-6) var(--space-6) var(--space-8) var(--space-8);
+}
 
 .feedbackRail {
-  position: sticky;
-  top: calc(var(--toolbar-height) + 24px);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  padding: var(--space-4) var(--space-6) var(--space-6);
+}
+
+.railToggle {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  align-self: flex-end;
+  justify-content: center;
+  cursor: pointer;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  background: transparent;
+  padding: var(--space-1) var(--space-3);
+  color: var(--color-accent-700);
+  font-family: var(--font-ui);
+  font-size: var(--text-meta);
+  font-weight: var(--font-heading-weight);
+}
+
+.railToggle:hover { background: var(--primary-tint); }
+.railToggle:focus-visible { border-color: var(--color-accent); }
+
+.workspaceGrid[data-rail-open="false"] .feedbackRail {
+  padding: var(--space-2);
+}
+
+.workspaceGrid[data-rail-open="false"] .railToggle {
+  writing-mode: vertical-rl;
+  align-self: stretch;
+  flex: 1 1 auto;
+  justify-content: center;
+  padding: var(--space-4) var(--space-2);
+  letter-spacing: 0.12em;
+}
+
+.workspaceGrid[data-rail-open="false"] .railBody { display: none; }
+
+.railBody {
   display: grid;
-  gap: var(--space-6);
+  flex: 1 1 auto;
+  align-content: start;
+  gap: var(--space-4);
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.statusLine {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+  margin: 0;
+  border-bottom: 1px solid var(--color-divider);
+  padding-bottom: var(--space-3);
+}
+
+.statusLine dt {
+  color: var(--color-neutral-700);
+  font-size: var(--text-meta);
+}
+
+.statusLine dd {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-meta);
+  font-variant-numeric: var(--figure-ui);
+  line-height: 1.5;
+}
+
+.phaseContext {
+  margin: 0 0 var(--space-4);
+  color: var(--color-neutral-700);
+  font-size: var(--text-meta);
+  line-height: 1.7;
+}
+
+.historyDisclosure {
+  border-top: 1px solid var(--color-divider);
+  padding-top: var(--space-3);
+}
+
+.historyDisclosure summary {
+  cursor: pointer;
+  color: var(--color-accent-700);
+  font-size: var(--text-meta);
+}
+
+.historyDisclosure summary:hover { color: var(--color-accent); }
+
+.feedbackRail .historyDisclosure { border-top: 0; padding-top: 0; }
+
+.feedbackRail .railNote,
+.submissionHistory .railNote {
+  width: auto;
+  max-width: none;
+  margin: 0;
 }
 
 .historyHeading {
@@ -154,8 +258,8 @@
 }
 
 .submissionRevision[data-current="true"] {
-  border-left: 2px solid var(--color-accent);
-  padding-left: var(--space-4);
+  border-top: 0;
+  padding-top: 0;
 }
 
 .revisionHeading {
@@ -172,7 +276,7 @@
   color: var(--color-accent-700);
   font-family: var(--font-heading);
   font-size: var(--text-body);
-  font-variant-numeric: tabular-nums;
+  font-variant-numeric: var(--figure-ui);
 }
 
 .revisionHeading h3 { margin: 0; font-size: var(--text-section); }
@@ -281,9 +385,8 @@
 .composer,
 .confirmationPanel {
   display: grid;
-  gap: var(--space-4);
+  gap: var(--space-3);
   border-top: 1px solid var(--color-divider);
-  border-bottom: 1px solid var(--color-divider);
   padding: var(--space-4) 0;
 }
 
@@ -294,25 +397,48 @@
   gap: var(--space-4);
 }
 
-.composerHeading h2 { margin: var(--space-1) 0 0; font-size: var(--text-section); }
+.composerHeading h2 { margin: 0; font-size: var(--text-section); }
+
+.composerActions {
+  display: flex;
+  flex-wrap: wrap;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
 
 .composerLead,
 .confirmationLead {
-  margin: 0;
+  margin: var(--space-1) 0 0;
   color: var(--color-neutral-700);
   font-size: var(--text-meta);
-  line-height: 1.7;
+  font-variant-numeric: var(--figure-ui);
+  line-height: 1.6;
+}
+
+.aiNote {
+  margin: 0;
+  border: 1px solid var(--color-divider);
+  border-left: 2px solid var(--color-accent);
+  border-radius: var(--radius-md);
+  background: transparent;
+  padding: var(--space-2) var(--space-3);
+  color: var(--color-neutral-700);
+  font-size: var(--text-meta);
+  line-height: 1.6;
 }
 
 .composerForm { display: grid; gap: var(--space-2); }
-.composerForm > label { color: color-mix(in srgb, var(--color-text) 70%, transparent); font-size: var(--text-meta); }
+.composerForm > label,
+.fieldHead label { color: color-mix(in srgb, var(--color-text) 70%, transparent); font-size: var(--text-meta); }
 
 .composerForm textarea:hover,
 .writingField textarea:hover { border-color: color-mix(in srgb, var(--color-text) 45%, transparent); }
 
 .composerForm textarea {
   width: 100%;
-  min-height: 220px;
+  min-height: calc(var(--space-8) * 6);
   border: 1px solid var(--color-divider);
   border-radius: var(--radius-md);
   background: transparent;
@@ -323,7 +449,31 @@
   resize: vertical;
 }
 
+.composerForm textarea.compactTextarea { min-height: calc(var(--space-8) * 4); }
+
 .composerForm textarea:focus { border-color: var(--color-accent); outline-offset: 0; }
+
+.fieldHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.fieldHead span {
+  color: var(--color-neutral-700);
+  font-size: var(--text-meta);
+  font-variant-numeric: var(--figure-ui);
+}
+
+.fieldHead span[data-over-limit="true"] { color: var(--stroke-heavy); font-weight: var(--font-heading-weight); }
+
+.fieldHint {
+  margin: 0;
+  color: var(--color-neutral-700);
+  font-size: var(--text-meta);
+  line-height: 1.6;
+}
 
 .fieldMeta,
 .prepareRow {
@@ -341,7 +491,7 @@
 .prepareRow {
   align-items: center;
   border-top: 1px solid var(--color-divider);
-  padding-top: var(--space-4);
+  padding-top: var(--space-3);
   color: var(--color-neutral-700);
   font-size: var(--text-meta);
 }
@@ -440,32 +590,64 @@
 .evaluationCitations {
   display: grid;
   gap: var(--space-2);
-  margin: var(--space-2) 0 0;
+  margin: 0;
   border-top: 1px solid var(--color-divider);
-  border-bottom: 1px solid var(--color-divider);
-  padding: var(--space-4) 0;
+  padding: var(--space-3) 0 0;
 }
 
 .structuredFeedbackFields legend,
 .evaluationDimension legend,
 .evaluationCitations legend {
-  padding: 0 6px;
+  padding: 0;
   color: var(--color-accent-700);
   font-family: var(--font-heading);
-  font-size: var(--text-subhead);
+  font-size: var(--text-ui);
   font-weight: var(--font-heading-weight);
+  font-variant-numeric: var(--figure-ui);
 }
 
-.structuredFeedbackFields > p,
-.evaluationDimension > p {
-  margin: 0 0 var(--space-1);
+.choiceGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.choiceGrid > div { display: grid; gap: var(--space-2); min-width: 0; }
+
+.levelScale {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+}
+
+.levelScale > div {
+  min-width: 0;
+  border-top: 1px solid var(--color-divider);
+  padding: var(--space-2) var(--space-3) var(--space-2) 0;
+}
+
+.levelScale > div:nth-child(even) {
+  border-left: 1px solid var(--color-divider);
+  padding-right: 0;
+  padding-left: var(--space-3);
+}
+
+.levelScale dt {
+  color: var(--color-accent-700);
+  font-family: var(--font-ui);
+  font-size: var(--text-label);
+}
+
+.levelScale dd {
+  margin: var(--space-1) 0 0;
   color: var(--color-neutral-700);
   font-size: var(--text-meta);
-  line-height: 1.6;
+  line-height: 1.5;
 }
 
 .structuredFeedbackFields label,
-.evaluationDimension label { color: color-mix(in srgb, var(--color-text) 70%, transparent); font-size: var(--text-meta); }
+.evaluationDimension label,
+.choiceGrid label { color: color-mix(in srgb, var(--color-text) 70%, transparent); font-size: var(--text-meta); }
 
 .structuredFeedbackFields select,
 .evaluationDimension select {
@@ -523,7 +705,6 @@
 }
 
 .legacyFeedbackStructure { grid-column: 2; margin: var(--space-2) 0 0; color: var(--color-neutral-700); font-size: var(--text-meta); }
-.evaluationCitations { border-style: solid; }
 
 .evaluationCitations label {
   display: flex;
@@ -554,50 +735,50 @@
 .evaluationOutcomeList small { color: var(--color-neutral-700); font-size: var(--text-meta); }
 
 @media (max-width: 1023px) {
-  .pageHeader,
-  .contextFacts,
-  .workspaceGrid { padding-right: var(--space-6); padding-left: var(--space-6); }
-  .workspaceGrid { grid-template-columns: 1fr; }
-  .feedbackRail { position: static; }
-  .contextLine {
-  width: min(calc(100% - 72px), 1128px);
-  max-width: 46em;
-  margin: 0 auto;
-  border-top: 1px solid var(--color-divider);
-  border-bottom: 1px solid var(--color-divider);
-  padding: var(--space-3) 0;
-  color: var(--color-neutral-700);
-  font-size: var(--text-meta);
-  font-variant-numeric: tabular-nums;
-  line-height: 1.7;
-}
-
-.railNote { width: calc(100% - 48px); }
+  .contextFacts { padding-right: var(--space-6); padding-left: var(--space-6); }
+  .workspaceGrid,
+  .workspaceGrid[data-rail-open="false"] {
+    grid-template-columns: 1fr;
+    height: auto;
+    overflow: visible;
+  }
+  .submissionHistory,
+  .feedbackRail,
+  .workspaceGrid[data-rail-open="false"] .feedbackRail {
+    overflow: visible;
+    border-right: 0;
+    height: auto;
+    padding: var(--space-6);
+  }
+  .railToggle { display: none; }
+  .workspaceGrid[data-rail-open="false"] .railBody {
+    display: grid;
+    overflow: visible;
+  }
+  .railBody { overflow: visible; }
+  .railNote { width: auto; }
 }
 
 @media (max-width: 767px) {
-  .pageHeader { display: grid; padding: var(--space-6) var(--space-4) var(--space-6); }
+  .paneHeading { padding-bottom: var(--space-3); }
   .contextFacts { grid-template-columns: 1fr; padding: 0 var(--space-4); }
   .contextFacts > div { border-bottom: 0; border-left: 0 !important; }
   .contextFacts > div:last-child { border-bottom: 1px solid var(--color-divider); }
-  .workspaceGrid { padding: var(--space-6) var(--space-4) calc(var(--space-8) * 1.3); }
-  .contextLine {
-  width: min(calc(100% - 72px), 1128px);
-  max-width: 46em;
-  margin: 0 auto;
-  border-top: 1px solid var(--color-divider);
-  border-bottom: 1px solid var(--color-divider);
-  padding: var(--space-3) 0;
-  color: var(--color-neutral-700);
-  font-size: var(--text-meta);
-  font-variant-numeric: tabular-nums;
-  line-height: 1.7;
-}
-
-.railNote { width: calc(100% - 32px); }
+  .workspaceGrid { height: auto; }
+  .submissionHistory,
+  .feedbackRail { padding: var(--space-6) var(--space-4) calc(var(--space-8) * 1.3); }
+  .statusLine { grid-template-columns: 1fr; }
   .revisionHeading,
   .composerHeading,
-  .prepareRow { display: grid; }
+  .prepareRow,
+  .composerActions { display: grid; }
+  .choiceGrid,
+  .levelScale { grid-template-columns: 1fr; }
+  .levelScale > div:nth-child(even) {
+    border-left: 0;
+    padding-right: 0;
+    padding-left: 0;
+  }
   .suggestionAction,
   .suggestionAction .secondaryButton { width: 100%; }
   .feedbackVersions article { grid-template-columns: 1fr; }

@@ -29,12 +29,19 @@ import {
 
 nextEnvironment.loadEnvConfig(process.cwd());
 
-const DEMO_PREFIX = "【演示】";
-const COMPLETE_TITLE = `${DEMO_PREFIX}校园节水行动`;
-const LIVE_TITLE = `${DEMO_PREFIX}校园用水现场调查`;
-const CLOSED_TITLE = `${DEMO_PREFIX}节水倡议展示`;
-const EDITING_TITLE = `${DEMO_PREFIX}饮水区用水记录`;
-const READY_TITLE = `${DEMO_PREFIX}教室采光改造提案`;
+const COMPLETE_TITLE = "校园节水行动";
+const LIVE_TITLE = "校园用水现场调查";
+const CLOSED_TITLE = "节水倡议展示";
+const EDITING_TITLE = "饮水区用水记录";
+const READY_TITLE = "教室采光改造提案";
+const DEMO_TITLES = [
+  COMPLETE_TITLE,
+  LIVE_TITLE,
+  CLOSED_TITLE,
+  EDITING_TITLE,
+  READY_TITLE,
+] as const;
+const LEGACY_DEMO_PREFIX = "【演示】";
 
 const DEMO_CLASSROOM_ID = "7e7e7e7e-7e7e-4e7e-8e7e-7e7e7e7e7e01";
 const DEMO_CLASSROOM_NAME = "七年一班";
@@ -272,7 +279,13 @@ async function resetDemoActivities(
   ownerId: string,
 ): Promise<number> {
   const drafts = await database.activityDraft.findMany({
-    where: { ownerId, title: { startsWith: DEMO_PREFIX } },
+    where: {
+      ownerId,
+      OR: [
+        { title: { in: [...DEMO_TITLES] } },
+        { title: { startsWith: LEGACY_DEMO_PREFIX } },
+      ],
+    },
     select: {
       id: true,
       release: {

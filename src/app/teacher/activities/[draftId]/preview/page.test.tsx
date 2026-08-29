@@ -24,6 +24,8 @@ vi.mock("../../../../../server/queries/teacher-activity-workspace", () => ({
 vi.mock("../../../_components/teacher-shell", () => ({
   TeacherAccessGate: () => <div>安全门</div>,
   TeacherPage: ({ children }: { children: ReactNode }) => <>{children}</>,
+  teacherHomeCrumb: { href: "/teacher", label: "教师工作台" },
+  activityStudioCrumb: { href: "/teacher/activities", label: "活动设计" },
 }));
 vi.mock("./publish-panel", () => ({ PublishPanel: () => <aside data-manual-publish="true" /> }));
 

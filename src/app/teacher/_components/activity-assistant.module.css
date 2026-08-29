@@ -7,13 +7,27 @@
 }
 
 .assistant[data-surface="panel"] {
-  grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+  grid-template-rows: minmax(0, 1fr) auto;
   width: 100%;
   height: 100%;
   min-height: 0;
-  gap: var(--space-3);
+  gap: var(--space-2);
   margin: 0;
-  padding: var(--space-3) var(--space-4) var(--space-4);
+  padding: var(--space-3);
+}
+
+.conversation {
+  display: grid;
+  align-content: start;
+  gap: var(--space-3);
+}
+
+.assistant[data-surface="panel"] .conversation {
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: var(--space-1);
 }
 
 .assistant[data-surface="panel"] .header {
@@ -26,28 +40,46 @@
 
 .assistant[data-surface="panel"] .boundaryNote,
 .assistant[data-surface="panel"] .emptyPrompt {
-  padding: var(--space-3);
-  line-height: 1.6;
+  padding: var(--space-2) var(--space-3);
+  line-height: 1.55;
 }
 
 .assistant[data-surface="panel"] .emptyPrompt {
   min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  border: 0;
+  padding: 0;
+  color: var(--color-neutral-700);
+}
+
+.transcript {
+  display: grid;
 }
 
 .assistant[data-surface="panel"] .transcript {
   min-height: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding-right: var(--space-1);
+  overflow: visible;
+  padding-right: 0;
+}
+
+.turn {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: var(--space-4);
+  padding: var(--space-4) 0;
+}
+
+.turn + .turn {
+  border-top: 1px solid var(--color-divider);
 }
 
 .assistant[data-surface="panel"] .turn {
   grid-template-columns: 1fr;
-  gap: var(--space-2);
+  gap: var(--space-1);
   padding: var(--space-3) 0;
+}
+
+.assistant[data-surface="panel"] .turn + .turn {
+  border-top: 0;
 }
 
 .assistant[data-surface="panel"] .approval dl,
@@ -55,21 +87,30 @@
   grid-template-columns: 1fr;
 }
 
-.assistant[data-surface="panel"] .inlineActions,
-.assistant[data-surface="panel"] .composerFooter {
+.assistant[data-surface="panel"] .inlineActions {
   align-items: stretch;
   flex-direction: column;
 }
 
-.assistant[data-surface="panel"] .inlineActions button,
-.assistant[data-surface="panel"] .composerFooter button { width: 100%; }
+.assistant[data-surface="panel"] .inlineActions button { width: 100%; }
 
 .assistant[data-surface="panel"] .composer {
-  gap: var(--space-2);
-  padding-top: var(--space-3);
+  gap: var(--space-1);
+  padding-top: var(--space-2);
 }
 
-.assistant[data-surface="panel"] .composer textarea { min-height: 84px; }
+.assistant[data-surface="panel"] .composerFooter {
+  align-items: center;
+  flex-wrap: nowrap;
+  flex-direction: row;
+  justify-content: space-between;
+  margin-top: 0;
+  padding: var(--space-1) var(--space-2) var(--space-2);
+}
+
+.assistant[data-surface="panel"] .composerFooter button:not(.stopButton) {
+  width: auto;
+}
 
 .header {
   display: flex;
@@ -148,22 +189,6 @@
 }
 
 .boundaryNote a:hover { text-decoration: underline; }
-
-.transcript {
-  display: grid;
-  border-top: 1px solid var(--color-divider);
-  border-bottom: 1px solid var(--color-divider);
-}
-
-.turn {
-  display: grid;
-  grid-template-columns: 92px minmax(0, 1fr);
-  gap: var(--space-4);
-  border-bottom: 1px solid var(--color-divider);
-  padding: var(--space-4) 0;
-}
-
-.turn:last-child { border-bottom: 0; }
 
 .turnBody > p,
 .toolProgress,
@@ -285,14 +310,26 @@
 
 .inlineActions,
 .composerFooter {
+  --composer-action-size: calc(var(--text-ui) * 1.15 + var(--space-2) * 1.6 + 2px);
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
   margin-top: var(--space-3);
 }
 
+.composerActions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+
 .inlineActions button,
 .composerFooter button {
+  box-sizing: border-box;
+  min-height: var(--composer-action-size);
   border: 1px solid var(--color-accent);
   border-radius: var(--radius-md);
   background: transparent;
@@ -318,11 +355,78 @@
 .inlineActions button:disabled,
 .composerFooter button:disabled { cursor: wait; opacity: .45; }
 
+.composerFooter .stopButton {
+  box-sizing: border-box;
+  display: grid;
+  width: var(--composer-action-size);
+  min-width: var(--composer-action-size);
+  max-width: var(--composer-action-size);
+  height: var(--composer-action-size);
+  min-height: var(--composer-action-size);
+  max-height: var(--composer-action-size);
+  flex: 0 0 var(--composer-action-size);
+  align-self: center;
+  aspect-ratio: 1 / 1;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--color-divider);
+  border-radius: 50%;
+  background: transparent;
+  padding: 0;
+  color: var(--color-neutral-800);
+  line-height: 0;
+}
+
+.composerFooter .stopButton:hover:not(:disabled) {
+  border-color: var(--color-accent);
+  background: var(--primary-tint);
+  color: var(--color-accent-700);
+}
+
+.composerFooter .stopButton svg {
+  display: block;
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linejoin: round;
+  stroke-width: 1.7;
+}
+
 .composer {
   display: grid;
   gap: var(--space-2);
   border-top: 1px solid var(--color-divider);
   padding-top: var(--space-4);
+}
+
+.composerField { display: grid; }
+
+.composerHiddenLabel {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.composerStatus {
+  margin: 0;
+  color: var(--color-neutral-700);
+  font-family: var(--font-ui);
+  font-size: var(--text-kicker);
+  letter-spacing: .08em;
+}
+
+.assistant[data-surface="panel"] .composerField {
+  position: relative;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+}
+
+.assistant[data-surface="panel"] .composerField:focus-within {
+  border-color: var(--color-accent);
 }
 
 .composer label { font-family: var(--font-heading); font-size: var(--text-subhead); font-weight: var(--font-heading-weight); }
@@ -340,8 +444,24 @@
 }
 
 .composer textarea:focus { border-color: var(--color-accent); outline-offset: 0; }
-.composerFooter { align-items: center; }
-.composerFooter > span { color: var(--color-neutral-700); font-size: var(--text-meta); }
+
+.assistant[data-surface="panel"] .composer textarea {
+  min-height: calc(var(--space-8) + var(--space-4));
+  border: 0;
+  padding: var(--space-2) var(--space-3) 0;
+}
+
+.assistant[data-surface="panel"] .composer textarea:focus {
+  border-color: transparent;
+}
+
+.assistant[data-surface="panel"] .composer textarea:focus-visible { outline: none; }
+.composerFooter > span {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--color-neutral-700);
+  font-size: var(--text-meta);
+}
 
 @media (max-width: 767px) {
   .assistant:not([data-surface="panel"]) { padding: 0 var(--space-4) var(--space-6); }
@@ -350,9 +470,9 @@
   .approval dl,
   .proposalSummary { grid-template-columns: 1fr; }
   .inlineActions,
-  .composerFooter { align-items: stretch; flex-direction: column; }
+  .assistant:not([data-surface="panel"]) .composerFooter { align-items: stretch; flex-direction: column; }
   .inlineActions button,
-  .composerFooter button { width: 100%; }
+  .assistant:not([data-surface="panel"]) .composerFooter button { width: 100%; }
 }
 
 /* 引用就地展开：来源名 · 章节 + 原文片段。教师不必离开对话就能核对依据。 */

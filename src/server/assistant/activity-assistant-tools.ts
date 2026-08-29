@@ -315,6 +315,7 @@ export const currentTeacherContextOutputSchema = z
     kind: z.enum([
       "TEACHER_DASHBOARD",
       "ACTIVITY_NEW",
+      "ACTIVITY_STUDIO",
       "ACTIVITY_DRAFT",
       "ACTIVITY_PREVIEW",
       "RELEASE_SUBMISSIONS",
@@ -527,6 +528,12 @@ export function mapCurrentTeacherContext(
       kind: "ACTIVITY_NEW",
       label: "新建学习活动",
       href: "/teacher/activities/new",
+    },
+    ACTIVITY_STUDIO: {
+      status: "AVAILABLE",
+      kind: "ACTIVITY_STUDIO",
+      label: "活动设计",
+      href: "/teacher/activities",
     },
     TEACHER_INSIGHTS: {
       status: "AVAILABLE",

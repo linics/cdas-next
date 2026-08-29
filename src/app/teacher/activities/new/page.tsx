@@ -12,6 +12,8 @@ import {
 import {
   TeacherAccessGate,
   TeacherPage,
+  activityStudioCrumb,
+  teacherHomeCrumb,
 } from "../../_components/teacher-shell";
 import { ActivityDraftForm } from "../activity-draft-form";
 import { emptyActivityDraftValues } from "../activity-draft-action-state";
@@ -42,7 +44,10 @@ export default async function NewTeacherActivityPage() {
   }
 
   return (
-    <TeacherPage actorName={actor.displayName} breadcrumb="教师工作台 › 活动设计">
+    <TeacherPage
+      actorName={actor.displayName}
+      breadcrumb={[teacherHomeCrumb, activityStudioCrumb, { label: "新建" }]}
+    >
       <div className={styles.pageContent}>
         <header className={styles.pageHeader}>
           <div>

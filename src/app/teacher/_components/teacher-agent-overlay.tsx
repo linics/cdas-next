@@ -19,11 +19,13 @@ const panelTitleId = "teacher-agent-panel-title";
 export function TeacherAgentOverlay({
   children,
   classrooms,
+  startOpen = false,
 }: Readonly<{
   children: ReactNode;
   classrooms: ActivityAssistantClassroom[];
+  startOpen?: boolean;
 }>) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(startOpen);
   const launcherRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
 
@@ -67,6 +69,7 @@ export function TeacherAgentOverlay({
               <div>
                 <p className={styles.eyebrow}>CDAS Agent · 试行</p>
                 <h2 id={panelTitleId}>独立会话</h2>
+                <p className={styles.duty}>教师工作区与活动设计</p>
               </div>
               <button
                 ref={closeRef}

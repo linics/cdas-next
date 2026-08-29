@@ -11,6 +11,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 # CDAS Next repository rules
 
 - Read `PRODUCT.md`, `DOMAIN.md`, `ACCEPTANCE.md`, and `AGENT.md` before changing business behavior.
+- Any teacher/student-visible UI change must follow `design-system/cdas-next/CLASSICAL.md` and `src/app/globals.css` tokens. Do not follow historical `design-system/cdas-next/MASTER.md`.
 - Keep the first phase inside one modular Next.js application. Do not add a second backend, workflow engine, RAG system, or multi-Agent layer without a new accepted decision record.
 - Authentication identifies the caller; authorization belongs in server-side domain commands and must check resource ownership or membership on every call.
 - UI actions and Agent tools must call the same domain commands. Neither may import Prisma directly.
