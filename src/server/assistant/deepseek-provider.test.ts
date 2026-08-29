@@ -12,8 +12,9 @@ vi.mock("@ai-sdk/openai-compatible", () => ({
 
 import {
   createDeepSeekModel,
-  deepSeekAgentLoopProviderOptions,
-  deepSeekDrafterProviderOptions,
+  deepSeekNamedToolProviderOptions,
+  deepSeekProviderOptionsForToolChoice,
+  deepSeekThinkingProviderOptions,
 } from "./deepseek-provider";
 
 describe("DeepSeek provider boundary", () => {
@@ -43,19 +44,31 @@ describe("DeepSeek provider boundary", () => {
   });
 
   it("uses V4 non-thinking mode for the named publish tool choice", () => {
-    expect(deepSeekAgentLoopProviderOptions).toEqual({
+    expect(deepSeekNamedToolProviderOptions).toEqual({
       deepseek: { thinking: { type: "disabled" } },
     });
   });
 
-  it("lets the toolless drafters think, and keeps the two settings apart", () => {
-    expect(deepSeekDrafterProviderOptions).toEqual({
+  it("lets everything else think, and keeps the two settings apart", () => {
+    expect(deepSeekThinkingProviderOptions).toEqual({
       deepseek: { reasoningEffort: "high" },
     });
-    // Sharing one constant is what silently pinned the drafters to the agent
-    // loop's tool_choice constraint in the first place.
-    expect(deepSeekDrafterProviderOptions).not.toEqual(
-      deepSeekAgentLoopProviderOptions,
+    // Sharing one constant is what silently spread the named-tool constraint to
+    // calls that never name a tool.
+    expect(deepSeekThinkingProviderOptions).not.toEqual(
+      deepSeekNamedToolProviderOptions,
     );
+  });
+
+  it("withholds thinking from exactly the turns that name a tool", () => {
+    expect(deepSeekProviderOptionsForToolChoice("auto")).toBe(
+      deepSeekThinkingProviderOptions,
+    );
+    expect(
+      deepSeekProviderOptionsForToolChoice({
+        type: "tool",
+        toolName: "publish_activity_release",
+      }),
+    ).toBe(deepSeekNamedToolProviderOptions);
   });
 });

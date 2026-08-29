@@ -30,7 +30,7 @@ import {
 } from "./assistant-config";
 import {
   createDeepSeekModel,
-  deepSeekDrafterProviderOptions,
+  deepSeekThinkingProviderOptions,
 } from "./deepseek-provider";
 import {
   FeedbackWorkspaceQueryError,
@@ -151,7 +151,7 @@ async function generateSuggestion(
     instructions:
       "你是 K12 教师的形成性反馈起草助手。你只能提出可编辑建议，不能替教师给出最终反馈。严格服从输出 schema 和证据边界，全程使用简体中文。",
     prompt: buildTeacherFeedbackSuggestionPrompt(input),
-    providerOptions: deepSeekDrafterProviderOptions,
+    providerOptions: deepSeekThinkingProviderOptions,
     // Thinking costs wall clock: this call ran ~2s without it and ~13s at the
     // high gear. 30s left no headroom above that mean for a slow day.
     timeout: 60_000,
