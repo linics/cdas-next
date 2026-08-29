@@ -311,7 +311,7 @@ describe("student release page access boundary", () => {
 
     expect(markup).toContain("当前账号：陈同学 · 学生");
     expect(markup).toContain("退出登录");
-    expect(markup).toContain("还没有正式修订");
+    expect(markup).toContain("尚无正式提交");
     expect(mocks.getStudentFeedbackWorkspace).not.toHaveBeenCalled();
   });
 
@@ -342,7 +342,7 @@ describe("student release page access boundary", () => {
     expect(markup).toContain("校园调查组");
     expect(markup).toContain("陈同学（记录）");
     expect(markup).toContain("周同学（汇报）");
-    expect(markup).toContain("同一份阶段草稿、附件、正式修订和教师反馈");
+    expect(markup).toContain("同一份草稿、附件、提交记录和教师反馈");
   });
 
   it("renders the complete structured task book from the immutable release snapshot", async () => {
@@ -387,30 +387,30 @@ describe("student release page access boundary", () => {
 
     const markup = await renderPage();
 
-    expect(markup).toContain("历史成员 · 唯读");
+    expect(markup).toContain("历史成员 · 只读");
     expect(markup).toContain('data-can-write="false"');
     expect(markup).toContain("第一版正式观察记录");
     expect(markup).toContain("第二版正式观察记录");
     expect(markup).toContain("林老师");
     expect(markup).toContain("反馈第 2 版");
     expect(markup).toContain("反馈第 1 版");
-    expect(markup).toContain("教师手写");
+    expect(markup).toContain("教师撰写");
     expect(markup).toContain("AI 建议，教师已确认");
     expect(markup).toContain("按反馈修改并重交");
     expect(markup).toContain("基础支持");
-    expect(markup).toContain("旧反馈未指定结构化下一步与支架");
+    expect(markup).toContain("早期反馈未包含下一步与支架信息");
     expect(markup).toContain(
       'dateTime="2026-08-18T11:00:00.000Z"',
     );
     expect(markup).not.toContain(`台${"北"}时间`);
     expect(markup).toContain("单位已补齐，再说明两次数据的差值。");
     expect(markup).toContain("先补上两次读数的单位。");
-    expect(markup).toContain("此正式修订尚无教师已确认的反馈");
+    expect(markup).toContain("该版本尚无教师反馈");
     expect(markup).toContain("评价第 1 版");
     expect(markup).toContain("第一版量规综评：问题清楚，证据仍不足。");
     expect(markup).toContain("证据不足");
     expect(markup).toContain("优秀");
-    expect(markup).toContain("此正式修订尚无教师已确认的量规评价");
+    expect(markup).toContain("该版本尚无量规评价");
     expect(markup).not.toContain("feedback-payload-hash-secret");
     expect(markup).not.toContain("agent-run-secret");
     expect(markup).not.toContain("尚未确认的反馈不能显示");
@@ -438,7 +438,7 @@ describe("student release page access boundary", () => {
 
     const markup = await renderPage();
 
-    expect(markup).toContain("已关闭 · 唯读");
+    expect(markup).toContain("已关闭 · 只读");
     expect(markup).toContain('data-submission-editor="true" data-can-write="false"');
     expect(markup).not.toContain('data-can-write="true"');
   });

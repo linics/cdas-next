@@ -65,19 +65,19 @@ export default async function TeacherActivityPage({
             <p className={styles.eyebrow}>活动设计 / 草稿版本 {draft.version}</p>
             <h1>{content.title}</h1>
             <p>
-              当前页面读取不可变修订 {draft.revision.version}，于{" "}
-              <LocalizedDateTime dateTime={draft.revision.createdAt} /> 创建。
-              成功保存才会前进版本。
+              当前内容创建于{" "}
+              <LocalizedDateTime dateTime={draft.revision.createdAt} />
+              ；每次保存都会生成新版本，历史版本保留。
             </p>
           </div>
         </header>
         {content.schemaVersion === 1 ? (
           <article className={styles.legacyReadPanel}>
             <header>
-              <p className={styles.eyebrow}>历史 schema v1 · 原样只读</p>
+              <p className={styles.eyebrow}>旧版内容 · 只读</p>
               <h2>升级前先核对原活动内容</h2>
               <p>
-                下面六段历史内容不会被伪造成新字段。请以它们为参考补齐任务书；成功保存后会追加一条 v2 修订，原修订保持不变。
+                以下为原活动内容，仅供参考。请据此补齐新版任务书；保存后原内容仍会保留。
               </p>
             </header>
             <section><h3>活动摘要</h3><p>{content.summary}</p></section>

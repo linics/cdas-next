@@ -260,7 +260,7 @@ describe("teacher feedback page access boundary", () => {
     expect(markup).toContain('data-revision="1"');
     expect(markup).toContain('data-feedback-version="1"');
     expect(markup).toContain(`data-initial-body="${currentFeedbackBody}"`);
-    expect(markup).toContain("这份发布快照是 schema v1，没有四档量规");
+    expect(markup).toContain("该活动使用旧版任务书，未包含量规");
     expect(markup).not.toContain("data-evaluation-composer");
   });
 

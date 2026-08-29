@@ -130,7 +130,7 @@ describe("ActivityAssistant", () => {
     );
 
     expect(markup).toContain('data-surface="panel"');
-    expect(markup).toContain("教师工作区与活动设计");
+    expect(markup).toContain("教师工作台与活动设计");
     expect(markup).toContain("可分配职责");
     expect(markup).toContain("所有站内跳转都由你点击");
     expect(markup).not.toContain("当前职责");

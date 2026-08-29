@@ -70,9 +70,9 @@ export default async function TeacherActivityStudioPage() {
         <header className={styles.pageHeader}>
           <div>
             <p className={styles.eyebrow}>活动设计 / 草稿</p>
-            <h1>还没发给学生的稿子</h1>
+            <h1>未发布的活动草稿</h1>
             <p>
-              这里只放编辑中和可预览的草稿。已经发布的活动在工作台的班级里，不在这份名单里再出现一次。
+              这里管理编辑中与可预览的草稿；已发布的活动请在工作台按班级查看。
             </p>
           </div>
           <div className={styles.pageHeaderActions}>
@@ -89,14 +89,14 @@ export default async function TeacherActivityStudioPage() {
           <section className={styles.dashboardSection}>
             <header className={styles.sectionHeader}>
               <div>
-                <p className={styles.eyebrow}>可继续写</p>
+                <p className={styles.eyebrow}>继续编辑</p>
                 <h2>我的草稿</h2>
               </div>
               <span>{openDrafts.length} 份</span>
             </header>
             {openDrafts.length === 0 ? (
               <p className={styles.emptyState}>
-                没有进行中的草稿。使用「新建学习活动」开始第一份可追溯版本。
+                暂无进行中的草稿。点击「新建学习活动」开始设计。
               </p>
             ) : (
               <div className={styles.activityList}>

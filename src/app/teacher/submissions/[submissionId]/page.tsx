@@ -72,7 +72,7 @@ function FeedbackHistory({ revision }: { revision: FormalRevision }) {
                   {index === 0 ? <strong>当前版本</strong> : null}
                   {feedbackRevision.source === "AI_ASSISTED"
                     ? "AI 建议 · 教师已确认"
-                    : "教师手写"}
+                    : "教师撰写"}
                   <LocalizedDateTime
                     dateTime={feedbackRevision.confirmedAt}
                   />
@@ -96,7 +96,7 @@ function FeedbackHistory({ revision }: { revision: FormalRevision }) {
                 </div>
               ) : (
                 <p className={styles.legacyFeedbackStructure}>
-                  旧反馈未指定结构化下一步与支架
+                  早期反馈未包含下一步与支架信息
                 </p>
               )}
             </article>
@@ -107,7 +107,7 @@ function FeedbackHistory({ revision }: { revision: FormalRevision }) {
         </div>
       ) : (
         <p className={styles.emptyFeedback}>
-          这版正式提交尚未创建教师反馈。
+          该版本尚无教师反馈。
         </p>
       )}
     </section>
@@ -140,7 +140,7 @@ function EvaluationHistory({ revision }: { revision: FormalRevision }) {
                   {index === 0 ? <strong>当前版本</strong> : null}
                   {evaluationRevision.source === "AI_ASSISTED"
                     ? "AI 建议 · 教师已确认"
-                    : "教师手写"}
+                    : "教师撰写"}
                   <LocalizedDateTime
                     dateTime={evaluationRevision.confirmedAt}
                   />
@@ -191,7 +191,7 @@ function EvaluationHistory({ revision }: { revision: FormalRevision }) {
         </div>
       ) : (
         <p className={styles.emptyFeedback}>
-          这版正式提交尚未创建量规评价。
+          该版本尚无量规评价。
         </p>
       )}
     </section>
@@ -242,7 +242,7 @@ function SubmissionRevision({
         </header>
       )}
 
-      {current ? null : <p className={styles.formalLabel}>正式修订 · 内容不可覆盖</p>}
+      {current ? null : <p className={styles.formalLabel}>正式提交 · 不可修改</p>}
       {revision.textEvidence ? (
         <div className={styles.submissionBody}>{revision.textEvidence}</div>
       ) : null}
@@ -331,7 +331,7 @@ export default async function TeacherSubmissionPage({
     : "尚无反馈";
   const evaluationStatus =
     content.schemaVersion !== 2
-      ? "v1 快照无量规"
+      ? "旧版任务书无量规"
       : latestEvaluationRevision
         ? `已确认 v${latestEvaluationRevision.version}`
         : "尚无评价";
@@ -510,7 +510,7 @@ export default async function TeacherSubmissionPage({
               <div className={styles.railNote} role="note">
                 <p className={styles.eyebrow}>量规评价</p>
                 <p>
-                  这份发布快照是 schema v1，没有四档量规，因此不开放证据绑定评价。形成性反馈仍可手写确认。
+                  该活动使用旧版任务书，未包含量规，无法进行量规评价；形成性反馈仍可正常撰写。
                 </p>
               </div>
             )}

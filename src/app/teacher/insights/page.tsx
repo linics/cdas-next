@@ -93,7 +93,7 @@ function RubricCard({
         <h3>{card.title}</h3>
         <p>{card.classroomName} · 无量规</p>
         <p className={workspaceStyles.emptyState}>
-          该发布是旧版任务书，没有四档量规，因此不统计薄弱项。
+          该发布使用旧版任务书，无量规，不参与统计。
         </p>
       </article>
     );
@@ -104,7 +104,7 @@ function RubricCard({
         <h3>{card.title}</h3>
         <p>{card.classroomName}</p>
         <p className={workspaceStyles.emptyState}>
-          还没有已确认的量规评价。教师确认评价后，才会出现各维度档位分布。
+          暂无已确认的量规评价；确认评价后会显示各维度档位分布。
         </p>
       </article>
     );
@@ -158,7 +158,7 @@ function StageCard({
         <h3>{card.title}</h3>
         <p>{card.classroomName}</p>
         <p className={workspaceStyles.emptyState}>
-          当前班级没有可统计的学生或小组，因此没有阶段卡点。
+          当前班级暂无可统计的学生或小组。
         </p>
       </article>
     );
@@ -213,7 +213,7 @@ function ImprovementCard({
   if (improvement.reviseCount === 0) {
     return (
       <p className={workspaceStyles.emptyState}>
-        还没有要求修改并重交的反馈，因此暂不统计重交率或评价变化。
+        暂无要求重交的反馈，暂不统计重交率与评价变化。
       </p>
     );
   }
@@ -249,7 +249,7 @@ function ImprovementCard({
       </dl>
       {improvement.evaluationPairs === 0 ? (
         <p className={workspaceStyles.emptyState}>
-          已有重交，但重交前后都还没有量规评价，因此看不到档位升降。
+          已有重交，但重交前后尚无量规评价，暂无法比较档位变化。
         </p>
       ) : (
         <>
@@ -321,9 +321,9 @@ export default async function TeacherInsightsPage({
         <header className={workspaceStyles.pageHeader}>
           <div>
             <p className={workspaceStyles.eyebrow}>教师工作台 / 过程诊断</p>
-            <h1>各发布的阶段、量规与重交情况</h1>
+            <h1>阶段进度、量规表现与重交改善</h1>
             <p>
-              这里只汇总你仍可查看提交的发布。数字来自正式修订、已确认反馈和已确认量规评价，不读取工作草稿或证据原文。
+              汇总你可查看的各次发布，统计基于正式提交与已确认的反馈、评价。
             </p>
           </div>
           <Link className={workspaceStyles.secondaryButton} href="/teacher">
@@ -354,11 +354,11 @@ export default async function TeacherInsightsPage({
                 </select>
                 <button type="submit">筛选</button>
               </div>
-              <small>不同发布的量规分别统计，不会混在同一张表里。</small>
+              <small>各次发布的量规分别统计。</small>
             </form>
           ) : (
             <p className={workspaceStyles.emptyState}>
-              还没有可查看的发布。发布活动并保持班级管理权后，这里才会出现诊断。
+              暂无可查看的发布。发布活动后，这里会出现过程诊断。
             </p>
           )}
 
@@ -366,7 +366,7 @@ export default async function TeacherInsightsPage({
             <p className={workspaceStyles.eyebrow}>量规诊断</p>
             <h2>量规薄弱项</h2>
             <p className={styles.cardLead}>
-              每个发布只使用当前正式修订上最新一份已确认评价；低档位（需改进）占比最高的维度会标成薄弱项。
+              统计各次发布最新一份已确认评价；「需改进」占比最高的维度标记为薄弱项。
             </p>
             {hasReleases
               ? dashboard.rubric.map((card) => (
@@ -379,7 +379,7 @@ export default async function TeacherInsightsPage({
             <p className={workspaceStyles.eyebrow}>阶段进度</p>
             <h2>阶段卡点</h2>
             <p className={styles.cardLead}>
-              小组按组计、未分组学生按人计。所处阶段与教师提交页、学生活动页使用同一套进度算法；要求重交不会把学生退回上一阶段。
+              小组按组统计，未分组学生按人统计；要求重交不会使学生退回上一阶段。
             </p>
             {hasReleases
               ? dashboard.stages.map((card) => (
@@ -392,7 +392,7 @@ export default async function TeacherInsightsPage({
             <p className={workspaceStyles.eyebrow}>重交与改善</p>
             <h2>反馈后改善</h2>
             <p className={styles.cardLead}>
-              重交率统计教师要求修改重交、且随后出现更高修订号的提交。评价变化只比较重交前后都有量规评价的样本。
+              重交率统计被要求重交后完成重新提交的比例；评价变化仅比较重交前后均有量规评价的样本。
             </p>
             <ImprovementCard
               hasReleases={hasReleases}

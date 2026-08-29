@@ -38,18 +38,18 @@ type ReleaseGroupKey = "resubmit" | "active" | "closed";
 const groupDetails = {
   resubmit: {
     number: "01",
-    title: "要重交",
-    detail: "老师看过了，要你按反馈改完再交一次。",
+    title: "待重交",
+    detail: "教师已要求修改，请按反馈调整后重新提交。",
   },
   active: {
     number: "02",
     title: "进行中",
-    detail: "还能继续做：有的等你开始，有的等老师看，有的已经有反馈可以读。",
+    detail: "尚未开始、已提交待反馈或已收到反馈的活动都在这里。",
   },
   closed: {
     number: "03",
     title: "已关闭",
-    detail: "还能翻看，但不能再保存或提交。",
+    detail: "仅可查看，不能再保存或提交。",
   },
 } satisfies Record<
   ReleaseGroupKey,
@@ -74,7 +74,7 @@ function releaseStatusLabel(release: StudentRelease): string {
     return "已关闭";
   }
   if (!release.access.canWrite) {
-    return "历史唯读";
+    return "历史只读";
   }
   if (release.submission.followUp === "AWAITING_RESUBMISSION") {
     return "待重交";
@@ -135,13 +135,13 @@ function ReleaseRow({
     now > new Date(release.dueAt);
   const progressParts = [
     release.submission.latestRevisionNumber > 0
-      ? `正式修订 ${release.submission.latestRevisionNumber} 版`
-      : "尚无正式修订",
+      ? `已提交第 ${release.submission.latestRevisionNumber} 版`
+      : "尚未正式提交",
     release.submission.hasWorkingCopy ? "有未提交草稿" : null,
     release.submission.followUp === "AWAITING_RESUBMISSION" ? "待重交" : null,
     release.submission.followUp === "RESUBMISSION_IN_PROGRESS" ? "重交中" : null,
-    release.submission.hasCurrentFeedback ? "当前版已有反馈" : null,
-    release.submission.hasCurrentEvaluation ? "当前版已有量规评价" : null,
+    release.submission.hasCurrentFeedback ? "已有反馈" : null,
+    release.submission.hasCurrentEvaluation ? "已有评价" : null,
   ].filter((part): part is string => part !== null);
 
   return (
@@ -270,14 +270,14 @@ export default async function StudentDashboardPage() {
       <div className={styles.dashboardMain}>
         <header className={styles.dashboardHeader}>
           <div>
-            <p className={styles.eyebrow}>学生工作区 / 学习活动</p>
+            <p className={styles.eyebrow}>学生工作台 / 学习活动</p>
             <h1>我的学习活动</h1>
-            <p>只显示你当前可参与或依法保留读取权限的发布活动。</p>
+            <p>这里汇总所有对你开放的学习活动。</p>
           </div>
           {/* 计数跟着分组走，同一套口径，不再另立五个状态。 */}
           <dl className={styles.summaryLine}>
             <div>
-              <dt>要重交</dt>
+              <dt>待重交</dt>
               <dd>{grouped.resubmit.length}</dd>
             </div>
             <div>

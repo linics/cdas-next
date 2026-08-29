@@ -188,7 +188,7 @@ export function SubmissionEditor({
             <div>
               <strong>第 {latestRevisionNumber} 版 · 开始下一版</strong>
               <p>
-                正式修订不可覆盖。系统会复制第 {latestRevisionNumber} 版文字、检查点与附件作为新草稿，现有修订与反馈都会保留。
+                已提交的版本不可修改。开始重交后，系统会以第 {latestRevisionNumber} 版内容为基础创建新草稿，已有版本与反馈全部保留。
               </p>
             </div>
             <button
@@ -232,8 +232,8 @@ export function SubmissionEditor({
         }}
         placeholder={
           canWrite
-            ? "在这里整理可核验的观察、数据与说明…"
-            : "当前没有保存的工作草稿。"
+            ? "在这里整理你的观察、数据与说明…"
+            : "当前没有保存的草稿。"
         }
         readOnly={!canWrite}
         aria-describedby="text-evidence-help text-evidence-count"
@@ -242,7 +242,7 @@ export function SubmissionEditor({
       <div className={styles.fieldMeta}>
         <p id="text-evidence-help">
           {canWrite
-            ? "⌘ / Ctrl + Enter 可保存草稿；正式提交只采用最近一次已保存版本。"
+            ? "按 ⌘ / Ctrl + Enter 保存草稿；正式提交以最近一次保存的内容为准。"
             : readOnlyMessage}
         </p>
         <span
@@ -273,7 +273,7 @@ export function SubmissionEditor({
             ) : null}
           </>
         ) : (
-          "先保存一份工作草稿，再确认正式提交。未正式提交的工作草稿只有你自己可见。"
+          "先保存草稿，再正式提交。正式提交前，草稿内容不会对教师可见。"
         )}
       </p>
       <ActionNotice state={resubmitState} />
@@ -296,7 +296,7 @@ export function SubmissionEditor({
             <fieldset className={styles.checkpointFieldset}>
               <legend>阶段证据检查点</legend>
               <p>
-                明确勾选本阶段已经覆盖的证据要求；正式提交会把这些选择固化进历史。
+                勾选本阶段已完成的证据要求；这些选择会随正式提交一并记录。
               </p>
               {phase.evidence.map((evidence, index) => {
                 const evidenceIndex = index + 1;
@@ -333,8 +333,8 @@ export function SubmissionEditor({
               {hasUnsavedChanges
                 ? "有尚未保存的修改"
                 : workingCopy
-                  ? "页面内容与已保存草稿一致"
-                  : "尚未创建工作草稿"}
+                  ? "所有修改已保存"
+                  : "尚未创建草稿"}
             </span>
             <button
               className={styles.secondaryButton}
@@ -371,11 +371,11 @@ export function SubmissionEditor({
             <p className={styles.eyebrow}>正式提交</p>
             <h3>
               {isPastDue
-                ? `迟交第 ${latestRevisionNumber + 1} 版`
-                : `创建第 ${latestRevisionNumber + 1} 版正式修订`}
+                ? `提交第 ${latestRevisionNumber + 1} 版（迟交）`
+                : `提交第 ${latestRevisionNumber + 1} 版`}
             </h3>
             <p>
-              将固定采用工作草稿 {workingCopy.version}。提交后若要修改，需显式开始重交，旧版不会被覆盖。
+              将以当前已保存的草稿为准。提交后内容不可修改；如需调整，可开始重交，历史版本会保留。
             </p>
           </div>
           <form action={submitAction} ref={submitFormRef}>
@@ -411,8 +411,8 @@ export function SubmissionEditor({
             confirmLabel={isPastDue ? "确认正式迟交" : "确认正式提交"}
             detail={
               isPastDue
-                ? `将工作草稿 ${workingCopy.version} 固定为第 ${latestRevisionNumber + 1} 版正式迟交。提交后不能覆盖此版本。`
-                : `将工作草稿 ${workingCopy.version} 固定为第 ${latestRevisionNumber + 1} 版正式修订。提交后不能覆盖此版本。`
+                ? `将把当前草稿提交为第 ${latestRevisionNumber + 1} 版，并标记为迟交。提交后该版本不可修改。`
+                : `将把当前草稿提交为第 ${latestRevisionNumber + 1} 版。提交后该版本不可修改。`
             }
             onCancel={() => setSubmitConfirmationOpen(false)}
             onConfirm={() => {
@@ -426,9 +426,9 @@ export function SubmissionEditor({
           {hasUnsavedChanges ? (
             <p className={styles.commitHint}>请先保存当前修改，再正式提交。</p>
           ) : !hasVisibleSavedText ? (
-            <p className={styles.commitHint}>至少保存一段可见文字后才能正式提交。</p>
+            <p className={styles.commitHint}>请先保存一段文字内容，再正式提交。</p>
           ) : !attachmentsReady ? (
-            <p className={styles.commitHint}>请等待所有附件通过安全检查，或移除未通过的附件。</p>
+            <p className={styles.commitHint}>请等待附件完成内容验证，或移除未通过的附件。</p>
           ) : null}
         </div>
       ) : null}

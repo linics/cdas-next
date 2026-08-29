@@ -319,7 +319,7 @@ def main() -> None:
                 "button", name="打开 CDAS Agent 独立会话", exact=True
             ).click()
             teacher.get_by_role(
-                "heading", name="教师工作区与活动设计", exact=True
+                "heading", name="教师工作台与活动设计", exact=True
             ).wait_for()
             teacher.locator('#activity-assistant-prompt[data-hydrated="true"]').fill(
                 CREATE_PROMPT.format(title=title)
@@ -370,7 +370,7 @@ def main() -> None:
             teacher.get_by_text("草稿修订 2", exact=True).wait_for()
             teacher.get_by_text(EDITED_SUMMARY, exact=True).wait_for()
             teacher.get_by_role(
-                "heading", name="教师工作区与活动设计", exact=True
+                "heading", name="教师工作台与活动设计", exact=True
             ).wait_for()
             teacher.locator('#activity-assistant-prompt[data-hydrated="true"]').fill(
                 PUBLISH_PROMPT.format(classroom=classroom)
@@ -493,7 +493,7 @@ def main() -> None:
             checks.append({"code": "STALE_STUDENT_WRITE_REJECTED_AFTER_CLOSE", "status": "PASS"})
             student.reload(wait_until="domcontentloaded")
             assert_origin(student.url, base)
-            wait_text(student, "已关闭 · 唯读")
+            wait_text(student, "已关闭 · 只读")
             readonly = student.locator("#text-evidence")
             readonly.wait_for(state="visible")
             write_buttons = ("保存草稿", "正式提交", "正式迟交", "开始重交")

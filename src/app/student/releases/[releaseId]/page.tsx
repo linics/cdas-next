@@ -57,7 +57,7 @@ function ReleaseBrief({
       <div className={styles.briefBody}>
         {content.schemaVersion === 2 ? <>
           <section><h3>总体任务</h3><p>{content.taskInstructions}</p></section>
-          <section><h3>任务链</h3><ol>{content.phases.map((phase) => <li key={phase.name}><strong>{phase.name}</strong><br />要完成：{phase.action}<br />情境：{phase.context}<br />可以怎么做：{phase.support}<br />要交：{phase.evidence.map((evidence) => `${evidenceTypeLabel(evidence.type)}：${evidence.description}`).join("；")}<br />老师会看什么：{phase.evaluationFocus}</li>)}</ol></section>
+          <section><h3>任务链</h3><ol>{content.phases.map((phase) => <li key={phase.name}><strong>{phase.name}</strong><br />任务：{phase.action}<br />情境：{phase.context}<br />学习支持：{phase.support}<br />需提交：{phase.evidence.map((evidence) => `${evidenceTypeLabel(evidence.type)}：${evidence.description}`).join("；")}<br />评价要点：{phase.evaluationFocus}</li>)}</ol></section>
           <section><h3>评价标准</h3><ul>{content.rubricDimensions.map((dimension) => <li key={dimension.name}><strong>{dimension.name}</strong><br />优秀：{dimension.excellent}<br />良好：{dimension.good}<br />合格：{dimension.pass}<br />需改进：{dimension.improve}</li>)}</ul></section>
         </> : <>
           <section><h3>任务说明</h3><p>{content.taskInstructions}</p></section>
@@ -117,7 +117,7 @@ function RevisionHistory({
     <section className={styles.historySection} aria-labelledby="history-title">
       <div className={styles.historyHeading}>
         <div>
-          <p className={styles.eyebrow}>不可变历史</p>
+          <p className={styles.eyebrow}>提交历史</p>
           <h2 id="history-title">我的提交与反馈</h2>
         </div>
         <span>{revisions.length} 版</span>
@@ -125,7 +125,7 @@ function RevisionHistory({
 
       {revisions.length === 0 ? (
         <p className={styles.emptyHistory}>
-          还没有正式修订。保存的工作草稿不会出现在这份历史中。
+          尚无正式提交。未提交的草稿不会显示在历史中。
         </p>
       ) : (
         <div className={styles.revisionList}>
@@ -167,7 +167,7 @@ function RevisionHistory({
                     </span>
                   </div>
                 </summary>
-                <p className={styles.formalNote}>正式修订 · 内容不可覆盖</p>
+                <p className={styles.formalNote}>正式提交 · 不可修改</p>
                 {revision.textEvidence ? (
                   <div className={styles.revisionText}>
                     {revision.textEvidence}
@@ -206,7 +206,7 @@ function RevisionHistory({
                     <div>
                       <p className={styles.eyebrow}>教师反馈</p>
                       <h4 id={feedbackHeadingId}>
-                        {feedback ? feedback.teacher.displayName : "尚待确认"}
+                        {feedback ? feedback.teacher.displayName : "待确认"}
                       </h4>
                     </div>
                     {feedback ? (
@@ -234,7 +234,7 @@ function RevisionHistory({
                             <p>
                               {feedback.teacher.displayName} · {entry.source ===
                               "MANUAL"
-                                ? "教师手写"
+                                ? "教师撰写"
                                 : "AI 建议，教师已确认"}
                             </p>
                             <LocalizedDateTime dateTime={entry.confirmedAt} />
@@ -255,7 +255,7 @@ function RevisionHistory({
                             </div>
                           ) : (
                             <p className={styles.legacyFeedbackStructure}>
-                              旧反馈未指定结构化下一步与支架
+                              早期反馈未包含下一步与支架信息
                             </p>
                           )}
                         </li>
@@ -263,7 +263,7 @@ function RevisionHistory({
                     </ol>
                   ) : (
                     <p className={styles.emptyFeedback}>
-                      此正式修订尚无教师已确认的反馈。
+                      该版本尚无教师反馈。
                     </p>
                   )}
                 </section>
@@ -276,7 +276,7 @@ function RevisionHistory({
                     <div>
                       <p className={styles.eyebrow}>量规评价</p>
                       <h4 id={evaluationHeadingId}>
-                        {evaluation ? evaluation.teacher.displayName : "尚待确认"}
+                        {evaluation ? evaluation.teacher.displayName : "待确认"}
                       </h4>
                     </div>
                     {evaluation ? (
@@ -304,7 +304,7 @@ function RevisionHistory({
                             <p>
                               {evaluation.teacher.displayName} · {entry.source ===
                               "MANUAL"
-                                ? "教师手写"
+                                ? "教师撰写"
                                 : "AI 建议，教师已确认"}
                             </p>
                             <LocalizedDateTime dateTime={entry.confirmedAt} />
@@ -354,7 +354,7 @@ function RevisionHistory({
                     </ol>
                   ) : (
                     <p className={styles.emptyFeedback}>
-                      此正式修订尚无教师已确认的量规评价。
+                      该版本尚无量规评价。
                     </p>
                   )}
                 </section>
@@ -460,7 +460,7 @@ function PhaseFocus({
       <section className={styles.phaseFocus} aria-label="整项终稿">
         <p className={styles.eyebrow}>混合提交 / 整项终稿</p>
         <p className={styles.phaseStory}>
-          所有阶段已经正式提交。现在整理跨阶段说明、最终成果和必要附件。
+          各阶段均已正式提交。请整理最终成果与必要附件，完成整项终稿。
         </p>
       </section>
     ) : null;
@@ -474,9 +474,9 @@ function PhaseFocus({
       {/* 首句是情境，不是标签 —— 学生先读到自己在这个故事里要干什么。 */}
       <p className={styles.phaseStory}>{phase.context}</p>
       <dl>
-        <div><dt>这一步做什么</dt><dd>{phase.action}</dd></div>
+        <div><dt>任务内容</dt><dd>{phase.action}</dd></div>
         <div>
-          <dt>要交什么</dt>
+          <dt>需提交的证据</dt>
           <dd>
             {phase.evidence
               .map(
@@ -486,8 +486,8 @@ function PhaseFocus({
               .join("；")}
           </dd>
         </div>
-        <div><dt>可以怎么做</dt><dd>{phase.support}</dd></div>
-        <div><dt>老师会看什么</dt><dd>{phase.evaluationFocus}</dd></div>
+        <div><dt>学习支持</dt><dd>{phase.support}</dd></div>
+        <div><dt>评价要点</dt><dd>{phase.evaluationFocus}</dd></div>
       </dl>
       <p className={styles.phaseDue} data-late={isPastDue ? "true" : undefined}>
         {dueAt ? (
@@ -500,8 +500,8 @@ function PhaseFocus({
       </p>
       {showLateWarning ? (
         <InlineAlert tone="warning">
-          <strong>截止时间已过，但活动仍开放。</strong>{" "}
-          你仍可保存并正式提交；新创建的正式修订会永久标记为迟交。
+          <strong>截止时间已过，活动仍开放。</strong>{" "}
+          你仍可保存并正式提交，但新提交会标记为迟交。
         </InlineAlert>
       ) : null}
     </section>
@@ -600,14 +600,14 @@ export default async function StudentReleasePage({
       ? (content.phases[selectedPhaseIndex - 1] ?? null)
       : null;
   const readOnlyMessage = isActive
-    ? "你当前保留这份活动与自己提交的唯读权限，但已不是可写的班级成员。"
-    : "活动已关闭，现有工作草稿与正式修订仍可查看，但不能再保存或提交。";
+    ? "你已不是该班级的当前成员，仍可查看这份活动与自己的提交，但不能再修改。"
+    : "活动已关闭，草稿与已提交内容仍可查看，但不能再保存或提交。";
   const statusLabel = !isActive
     ? workspace.release.status === "ARCHIVED"
-      ? "已封存 · 唯读"
-      : "已关闭 · 唯读"
+      ? "已封存 · 只读"
+      : "已关闭 · 只读"
     : !canWrite
-      ? "历史成员 · 唯读"
+      ? "历史成员 · 只读"
       : isPastDue
         ? "截止已过 · 可迟交"
         : "开放提交";
@@ -654,7 +654,7 @@ export default async function StudentReleasePage({
                 .join("、")}
             </p>
             <p>
-              你们使用同一份阶段草稿、附件、正式修订和教师反馈。任一成员保存后，其他成员刷新即可看到最新版本。
+              全组共用同一份草稿、附件、提交记录和教师反馈；任一成员保存后，其他成员刷新即可看到最新内容。
             </p>
           </section>
         ) : null}

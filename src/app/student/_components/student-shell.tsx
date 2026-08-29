@@ -18,14 +18,14 @@ export function StudentAccessGate({
           eyebrow: "登录服务未设置",
           title: "学生工作台当前没有开放",
           detail:
-            "系统无法验证学生身份，因此不会读取班级活动、提交记录或教师反馈。设置 Clerk 后再进入。",
+            "系统当前无法验证学生身份，不会读取任何班级活动、提交记录或教师反馈。完成登录服务配置后即可使用。",
         }
       : code === "USER_NOT_PROVISIONED"
         ? {
             eyebrow: "学生账号尚未创建",
             title: "找不到对应的学生身份",
             detail:
-              "当前 Clerk 账号尚未关联 CDAS Next 学生。请先完成账号预先设置与班级成员设置。",
+              "当前登录账号尚未关联学生身份。请联系管理员完成账号与班级配置。",
           }
         : {
             eyebrow: "需要登录",
@@ -47,9 +47,9 @@ export function StudentAccessGate({
         </Link>
         <div className={gateStyles.pitch}>
           <p className={gateStyles.eyebrow}>学生工作台</p>
-          <h1>接到活动，交出证据，看清老师怎么说</h1>
+          <h1>查看活动、提交证据、获得教师反馈</h1>
           <p>
-            只显示发给你班的活动。正式提交留下版本；老师确认反馈后，你再按下一步修改或继续。
+            这里只显示发布给你所在班级的活动。每次正式提交都会保留版本，收到教师反馈后可以继续修改或推进。
           </p>
         </div>
         <ol className={gateStyles.steps}>
@@ -90,7 +90,7 @@ export function StudentAccessGate({
           <Link className={gateStyles.backLink} href="/">返回首页</Link>
         </div>
         <p className={gateStyles.gateNote}>
-          学生工作区 · 未通过身份确认前不会读取任何活动与提交数据。
+          学生工作台 · 身份确认前不会读取任何活动与提交数据。
         </p>
       </main>
     </div>

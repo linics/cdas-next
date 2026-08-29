@@ -73,9 +73,9 @@ export default async function TeacherKnowledgePage({
         <header className={workspaceStyles.pageHeader}>
           <div>
             <p className={workspaceStyles.eyebrow}>活动设计 / 官方依据</p>
-            <h1>检索首版课程标准语料</h1>
+            <h1>检索课程标准</h1>
             <p>
-              这里只收录教育部 2022 年课程方案及首版演示涉及的学科标准。结果用于追查设计依据，不自动判定活动是否符合课程标准。
+              收录教育部 2022 年版课程方案与部分学科课程标准，供设计活动时查证依据；检索结果不构成合规判定。
             </p>
           </div>
           <Link
@@ -99,7 +99,7 @@ export default async function TeacherKnowledgePage({
               />
               <button type="submit">检索官方标准</button>
             </div>
-            <small>检索不调用模型；即使 AI 助手不可用，这里仍可独立使用。</small>
+            <small>检索基于官方文本原文，不依赖 AI。</small>
           </form>
 
           {sourceId && sectionId ? (
@@ -114,7 +114,7 @@ export default async function TeacherKnowledgePage({
               </article>
             ) : (
               <p className={styles.emptyResult}>
-                这个来源章节不在首版白名单中，系统没有展示或代填内容。
+                该章节不在当前收录范围内。
               </p>
             )
           ) : null}
@@ -123,7 +123,7 @@ export default async function TeacherKnowledgePage({
             <section className={styles.results} aria-labelledby="search-results-title">
               <header>
                 <div>
-                  <p className={workspaceStyles.eyebrow}>确定性词法检索</p>
+                  <p className={workspaceStyles.eyebrow}>检索结果</p>
                   <h2 id="search-results-title">“{query}”的结果</h2>
                 </div>
                 <span>{search.results.length} 条</span>
@@ -141,7 +141,7 @@ export default async function TeacherKnowledgePage({
                 </ol>
               ) : (
                 <p className={styles.emptyResult}>
-                  首版语料没有直接匹配。请换用课程目标、学业质量、跨学科实践、数据分析等课标术语；系统不会拿设计理论或 AI 案例补位。
+                  没有找到匹配内容。请尝试使用「课程目标」「学业质量」「跨学科实践」等课标术语重新检索。
                 </p>
               )}
             </section>
@@ -149,8 +149,8 @@ export default async function TeacherKnowledgePage({
             <section className={styles.results} aria-labelledby="corpus-sources-title">
               <header>
                 <div>
-                  <p className={workspaceStyles.eyebrow}>版本 1 白名单</p>
-                  <h2 id="corpus-sources-title">当前 5 份官方来源</h2>
+                  <p className={workspaceStyles.eyebrow}>收录范围</p>
+                  <h2 id="corpus-sources-title">已收录的官方来源</h2>
                 </div>
               </header>
               <ul className={styles.sourceList}>

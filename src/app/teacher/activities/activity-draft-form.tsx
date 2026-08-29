@@ -85,7 +85,7 @@ export function ActivityDraftForm({ initialState }: { initialState: ActivityDraf
       <input type="hidden" name="idempotencyKey" value={state.nextIdempotencyKey} />
       <input type="hidden" name="content" value={JSON.stringify(normalized)} />
 
-      <Section number={1} title="基本设置" detail="沿用原版 CTS 的学段、学科、作业类型和周期；截止时间仍在发布时设置。">
+      <Section number={1} title="基本设置" detail="设置学段、学科、作业类型与周期；截止时间在发布时设置。">
         <div className={styles.taskGrid}>
           <label>活动标题<input id="activity-title" value={activeValues.title} onChange={(event) => update("title", event.target.value)} disabled={disabled} maxLength={120} required /></label>
           <label>探究主题<input value={activeValues.topic} onChange={(event) => update("topic", event.target.value)} disabled={disabled} maxLength={160} required /></label>
@@ -103,7 +103,7 @@ export function ActivityDraftForm({ initialState }: { initialState: ActivityDraf
         <fieldset className={styles.optionFieldset}><legend>跨学科概念（可选，最多两项）</legend><div className={styles.optionList}>{crossDisciplinaryConcepts.map((concept) => <label key={concept.code}><input type="checkbox" checked={activeValues.crossDisciplinaryConceptCodes.includes(concept.code)} disabled={disabled || (!activeValues.crossDisciplinaryConceptCodes.includes(concept.code) && activeValues.crossDisciplinaryConceptCodes.length >= 2)} onChange={() => setValues((current) => ({ ...current, crossDisciplinaryConceptCodes: current.crossDisciplinaryConceptCodes.includes(concept.code) ? current.crossDisciplinaryConceptCodes.filter((code) => code !== concept.code) : [...current.crossDisciplinaryConceptCodes, concept.code] }))} />{concept.label}：{concept.description}</label>)}</div></fieldset>
       </Section>
 
-      <Section number={2} title="背景与三维目标" detail="背景会单独展示给学生；目标保留知识与技能、过程与方法、情感态度三个维度。">
+      <Section number={2} title="背景与三维目标" detail="背景将单独展示给学生；目标涵盖知识与技能、过程与方法、情感态度三个维度。">
         <label>背景设定<textarea value={activeValues.backgroundSetting} onChange={(event) => update("backgroundSetting", event.target.value)} disabled={disabled} required /></label>
         <div className={styles.taskGrid}>
           <label>知识与技能目标<textarea value={activeValues.objectiveKnowledge} onChange={(event) => update("objectiveKnowledge", event.target.value)} disabled={disabled} required /></label>
@@ -131,7 +131,7 @@ export function ActivityDraftForm({ initialState }: { initialState: ActivityDraf
         {activeValues.phases.length < 4 ? <button type="button" className={styles.secondaryButton} onClick={addPhase} disabled={disabled}>添加第 4 阶段</button> : null}
       </Section>
 
-      <Section number={4} title="评价量规" detail="四项默认维度均保留优秀、良好、合格、需改进四档描述，学生会在发布任务书中看到这些成功标准。">
+      <Section number={4} title="评价量规" detail="每个维度包含优秀、良好、合格、需改进四档描述；学生会在任务书中看到这些标准。">
         <div className={styles.rubricList}>{activeValues.rubricDimensions.map((dimension, index) => <fieldset className={styles.rubricCard} key={index}><legend>维度 {index + 1}</legend><div className={styles.taskGrid}>
           <label className={styles.taskFull}>评价维度<input value={dimension.name} onChange={(event) => updateRubric(index, "name", event.target.value)} disabled={disabled} required /></label>
           {(["excellent", "good", "pass", "improve"] as const).map((level) => <label key={level}>{({ excellent: "优秀", good: "良好", pass: "合格", improve: "需改进" })[level]}<textarea value={dimension[level]} onChange={(event) => updateRubric(index, level, event.target.value)} disabled={disabled} required /></label>)}
@@ -146,7 +146,7 @@ export function ActivityDraftForm({ initialState }: { initialState: ActivityDraf
 
     <aside className={styles.editorRail} aria-label="草稿状态与下一步">
       <p className={styles.eyebrow}>草稿状态</p><h2>{state.persistedStatus ? statusLabels[state.persistedStatus] : "尚未创建"}</h2>
-      <p>{state.expectedVersion ? `当前以版本 ${state.expectedVersion} 为保存基准。每次成功保存都会追加不可变修订。` : "第一次保存会创建版本 1 与对应的不可变修订。"}</p>
+      <p>{state.expectedVersion ? `当前基于版本 ${state.expectedVersion} 编辑；每次保存都会生成新版本，历史版本保留。` : "首次保存将创建版本 1。"}</p>
       {state.status !== "idle" ? <div className={styles.actionNotice} data-status={state.status} role={state.status === "success" ? "status" : "alert"} aria-live="polite"><span aria-hidden="true">{state.status === "success" ? "✓" : state.status === "conflict" ? "↻" : "!"}</span><p>{state.message}</p></div> : null}
       {isConflict && draftHref ? <Link className={styles.conflictLink} href={draftHref} target="_blank" rel="noreferrer">在新标签页打开最新版本</Link> : null}
       <div className={styles.actionStack}>{state.draftId && state.persistedStatus === "READY_FOR_PREVIEW" ? <Link className={styles.primaryLink} href={`/teacher/activities/${state.draftId}/preview`}>查看发布预览 <span aria-hidden="true">→</span></Link> : null}{state.persistedStatus === "SEALED" && state.draftId ? <Link className={styles.secondaryButton} href={`/teacher/activities/${state.draftId}/preview`}>查看已封存内容</Link> : null}<Link className={styles.secondaryButton} href="/teacher/activities">返回活动设计</Link></div>

@@ -18,18 +18,18 @@ export default function HomePage() {
         <p>跨学科学习活动工作台</p>
       </header>
       <main className={styles.main} id="main-content">
-        <p className={styles.kicker}>选择工作区</p>
+        <p className={styles.kicker}>选择工作台</p>
         <h1 id="home-title">让一次学习活动，从设计走到证据。</h1>
         <p className={styles.lead}>
-          教师设计、发布并反馈；学生提交可核验的学习证据。每个正式动作都保留清楚的版本与归属。
+          教师在这里设计、发布活动并给出反馈，学生提交学习证据。全过程保留版本记录，可随时回溯。
         </p>
 
         <section className={styles.workspaceList} aria-labelledby="home-title">
           <Link className={styles.workspaceLink} href="/teacher">
             <h2>教师工作台</h2>
-            <p>查看活动草稿、已发布活动和需要反馈的学生提交。</p>
+            <p>管理活动草稿与已发布活动，处理待反馈的学生提交。</p>
             <span className={styles.workspaceAction}>
-              进入教师端
+              进入教师工作台
               <svg
                 aria-hidden="true"
                 fill="none"
@@ -48,9 +48,9 @@ export default function HomePage() {
           </Link>
           <Link className={styles.workspaceLink} href="/student">
             <h2>学生工作台</h2>
-            <p>优先查看待完成活动、已提交证据和教师反馈。</p>
+            <p>查看待完成的活动、已提交的证据和教师反馈。</p>
             <span className={styles.workspaceAction}>
-              进入学生端
+              进入学生工作台
               <svg
                 aria-hidden="true"
                 fill="none"
@@ -74,12 +74,12 @@ export default function HomePage() {
         </p>
 
         <section className={styles.note} aria-labelledby="workflow-title">
-          <p className={styles.noteIndex}>工作边界</p>
+          <p className={styles.noteIndex}>平台边界</p>
           <div>
-            <h2 id="workflow-title">当前支持的教学闭环</h2>
+            <h2 id="workflow-title">完整的教学闭环</h2>
             <p>
-              创建活动 → 明确确认发布 → 学生提交学习证据 → 教师确认反馈与评价 →
-              学生回看。AI 只协助准备，不能代替教师作出正式决定。
+              从创建活动、确认发布，到学生提交证据、教师反馈与评价，再到学生回看，全程可追溯。AI
+              仅辅助准备内容，正式决定始终由教师作出。
             </p>
           </div>
         </section>

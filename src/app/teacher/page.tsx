@@ -49,7 +49,7 @@ function ReleaseCatalogRow({ release }: { release: DashboardRelease }) {
       <span className={styles.activityMeta}>
         {release.progress
           ? `${release.progress.submittedCount}/${release.progress.cohortSize} 已正式提交`
-          : "无读取权限"}
+          : "无查看权限"}
         {release.dueAt ? " · " : ""}
         {release.dueAt ? (
           <>
@@ -142,10 +142,10 @@ export default async function TeacherDashboardPage() {
       <div className={styles.pageContent}>
         <header className={styles.pageHeader}>
           <div>
-            <p className={styles.eyebrow}>教师工作台 / 今日</p>
-            <h1>该处理的提交，和你教的班</h1>
+            <p className={styles.eyebrow}>教师工作台 / 概览</p>
+            <h1>待处理的提交与班级</h1>
             <p>
-              待办只放评阅。活动本身按班级收纳。还在写的稿子在「活动设计」。
+              集中处理待评阅的学生提交；已发布活动按班级归类，未发布的草稿在「活动设计」中。
             </p>
           </div>
         </header>
@@ -155,10 +155,10 @@ export default async function TeacherDashboardPage() {
             <section className={styles.dashboardSection}>
               <header className={styles.sectionHeader}>
                 <div>
-                  <p className={styles.eyebrow}>需要我处理</p>
+                  <p className={styles.eyebrow}>待处理</p>
                   <h2>待办</h2>
                 </div>
-                <span>{actionable.length} 个发布</span>
+                <span>{actionable.length} 项</span>
               </header>
               {actionable.length === 0 ? (
                 <p className={styles.emptyState}>
@@ -208,14 +208,14 @@ export default async function TeacherDashboardPage() {
             <section className={styles.dashboardSection}>
               <header className={styles.sectionHeader}>
                 <div>
-                  <p className={styles.eyebrow}>我教的班</p>
+                  <p className={styles.eyebrow}>任教班级</p>
                   <h2>班级</h2>
                 </div>
                 <span>{dashboard.classrooms.length} 个</span>
               </header>
               {dashboard.classrooms.length === 0 ? (
                 <p className={styles.emptyState}>
-                  当前没有预先配置给你的班级，因此可保存草稿，但不能准备发布。请由系统管理流程先创建班级归属。
+                  暂无分配给你的班级。你仍可保存活动草稿，待管理员完成班级配置后即可发布。
                 </p>
               ) : (
                 <div className={styles.classroomCardList}>
@@ -242,7 +242,7 @@ export default async function TeacherDashboardPage() {
                         </header>
                         {releases.length === 0 ? (
                           <p className={styles.asideNote}>
-                            尚未向这个班发布活动。
+                            尚未向该班级发布活动。
                           </p>
                         ) : (
                           <div className={styles.activityList}>
@@ -265,7 +265,7 @@ export default async function TeacherDashboardPage() {
                     <header className={styles.classroomCardHead}>
                       <div>
                         <p className={styles.eyebrow}>历史发布</p>
-                        <h3>当前管不了的班</h3>
+                        <h3>已不在管理范围的班级</h3>
                       </div>
                     </header>
                     <div className={styles.activityList}>
@@ -280,7 +280,7 @@ export default async function TeacherDashboardPage() {
                 </div>
               ) : null}
               <p className={styles.asideNote}>
-                只有班级管理者可以发布活动与阅读提交；班级管理权变更后，历史发布仍保留，但不再可读。
+                仅班级管理教师可以发布活动和查看提交；管理权变更后，历史发布仍会保留，但不再可见。
               </p>
             </section>
           </div>

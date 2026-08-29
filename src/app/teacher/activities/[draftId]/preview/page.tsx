@@ -73,10 +73,10 @@ export default async function TeacherActivityPreviewPage({
       <div className={styles.pageContent}>
         <header className={styles.pageHeader}>
           <div>
-            <p className={styles.eyebrow}>发布管理 / 精确版本预览</p>
+            <p className={styles.eyebrow}>发布管理 / 版本预览</p>
             <h1>{content.title}</h1>
             <p>
-              此页读取草稿版本 {workspace.draft.version} 的精确不可变修订。准备与确认不会采用浏览器提交的正文。
+              以下内容来自草稿版本 {workspace.draft.version}，即发布时将固定的内容。
             </p>
           </div>
           <Link

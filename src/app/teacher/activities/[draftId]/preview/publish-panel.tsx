@@ -49,18 +49,18 @@ export function PublishPanel({
         <p className={styles.eyebrow}>发布参数</p>
         <h2>选择班级与期限</h2>
         <p>
-          准备动作只会固定精确版本与参数；活动仍需在独立确认面板中由教师确认。
+          先设置发布参数并准备确认；活动需经你最终确认后才会发布。
         </p>
 
         {workspace.classrooms.length === 0 ? (
           <p className={styles.configurationNote} role="note">
-            当前没有由你管理的班级。班级必须先由系统预先配置，这里不提供无效的新增按钮。
+            暂无你管理的班级。请联系管理员完成班级配置后再发布。
           </p>
         ) : workspace.draft.status !== "READY_FOR_PREVIEW" ? (
           <p className={styles.configurationNote} role="note">
             {workspace.draft.status === "SEALED"
               ? "这份草稿已封存，不能再次准备发布。"
-              : "请先回到编辑页，将精确版本保存为「可预览」。"}
+              : "请先回到编辑页，将草稿保存为「可预览」。"}
           </p>
         ) : (
           <form className={styles.parameterForm} action={prepareAction}>
@@ -95,7 +95,7 @@ export function PublishPanel({
               </select>
             </label>
             <label>
-              截止时间（依当前装置时区，可不填）
+              截止时间（按本机时区填写，可不填）
               <input
                 type="datetime-local"
                 value={localDateTimeInput}
@@ -103,7 +103,7 @@ export function PublishPanel({
                 aria-invalid={dueAtInstant === null}
               />
               <small>
-                提交时会转成固定时间点。超过截止时间但活动仍为开放状态时，学生可迟交并保留迟交标记。
+                保存后按固定时间点记录。活动开放期间超过截止时间，学生仍可提交，但会标记为迟交。
               </small>
             </label>
             <button
@@ -111,7 +111,7 @@ export function PublishPanel({
               type="submit"
               disabled={preparePending || !canPrepare}
             >
-              {preparePending ? "正在准备…" : "准备精确发布确认"}
+              {preparePending ? "正在准备…" : "准备发布确认"}
             </button>
           </form>
         )}
@@ -130,7 +130,7 @@ export function PublishPanel({
           <ConfirmDialog
             open={isConfirmDialogOpen}
             title="确认发布活动"
-            detail={<div className={styles.dialogDetail}><p>将草稿版本 {confirmation.draftVersion} 发布给 {confirmation.classroom.name}。发布后内容不可原位修改。</p><dl><div><dt>截止时间</dt><dd>{confirmation.dueAt ? <LocalizedDateTime dateTime={confirmation.dueAt} /> : "未设置"}</dd></div><div><dt>确认有效至</dt><dd><LocalizedDateTime dateTime={confirmation.expiresAt} includeSeconds /></dd></div></dl><p>参数摘要：<code>{confirmation.payloadHash}</code></p></div>}
+            detail={<div className={styles.dialogDetail}><p>将草稿版本 {confirmation.draftVersion} 发布给 {confirmation.classroom.name}。发布后内容不可修改。</p><dl><div><dt>截止时间</dt><dd>{confirmation.dueAt ? <LocalizedDateTime dateTime={confirmation.dueAt} /> : "未设置"}</dd></div><div><dt>确认有效至</dt><dd><LocalizedDateTime dateTime={confirmation.expiresAt} includeSeconds /></dd></div></dl><p>参数摘要：<code>{confirmation.payloadHash}</code></p></div>}
             confirmLabel="确认并发布"
             pending={decisionPending}
             onCancel={() => setDismissedConfirmationId(confirmation.actionIntentId)}

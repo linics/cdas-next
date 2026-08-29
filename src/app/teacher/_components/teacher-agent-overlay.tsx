@@ -88,7 +88,7 @@ export function TeacherAgentOverlay({
               <div>
                 <p className={styles.eyebrow}>CDAS Agent · 试行</p>
                 <h2 id={panelTitleId}>独立会话</h2>
-                <p className={styles.duty}>教师工作区与活动设计</p>
+                <p className={styles.duty}>教师工作台与活动设计</p>
               </div>
               <button
                 ref={closeRef}
