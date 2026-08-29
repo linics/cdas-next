@@ -6,6 +6,8 @@ let sourceFingerprint = "";
 try { sourceFingerprint = createSourceFingerprint(); } catch { sourceFingerprint = ""; }
 
 const nextConfig: NextConfig = {
+  // Self-host on a small VPS: ship only the traced server + static assets.
+  output: "standalone",
   // Next replaces values declared here at build time; runtime env cannot alter
   // the deployment identity that health proof reports.
   env: {

@@ -46,6 +46,7 @@
     "dev": "next dev",
     "build": "next build --webpack",
     "start": "next start",
+    "self-host:deploy": "bash scripts/self-host/deploy.sh",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
