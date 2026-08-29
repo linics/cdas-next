@@ -655,6 +655,9 @@ def run_real_model_browser_flow(
     broker_secret: str,
 ) -> None:
     title = f"E2E AI 草稿 {marker}"
+    attachment_fixture = (
+        REPOSITORY_ROOT / "scripts" / "probe" / "fixtures" / "student-work.png"
+    )
     prompt = f"""資料已完整。請先調用 search_knowledge 檢索官方課程方案及物理、數學、語文課程標準，再用 read_source_section 核對相關原文；之後提出 D-033 結構化任務理解與設計建議，至少引用兩個不同官方來源，等待教師確認後才建立草稿；不要發佈，也不要提問。
 標題必須逐字為：{title}
 請建立完整跨學科任務書：初中七年級，主學科物理，融合數學與語文；探究性作業、調查探究、中等探究、一次性提交、2周。
@@ -701,12 +704,11 @@ def run_real_model_browser_flow(
             page.get_by_role(
                 "button", name="打开 CDAS Agent 独立会话", exact=True
             ).click()
-            page.get_by_role(
-                "heading", name="教师工作台与活动设计", exact=True
-            ).wait_for()
-            page.locator(
+            assistant_prompt = page.locator(
                 '#activity-assistant-prompt[data-hydrated="true"]'
-            ).fill(
+            )
+            assistant_prompt.wait_for()
+            assistant_prompt.fill(
                 "请先确认我当前所在的页面，再读取这份草稿的完整任务书，"
                 "然后只用一句话说明第二个阶段在情境承接上还差什么。"
                 "只读取，不要建立新草稿，也不要发布。"
@@ -770,10 +772,10 @@ def run_real_model_browser_flow(
             page.get_by_role(
                 "button", name="打开 CDAS Agent 独立会话", exact=True
             ).click()
-            page.get_by_role(
-                "heading", name="教师工作台与活动设计", exact=True
-            ).wait_for()
-            textarea = page.locator("#activity-assistant-prompt")
+            textarea = page.locator(
+                '#activity-assistant-prompt[data-hydrated="true"]'
+            )
+            textarea.wait_for()
             submit = page.get_by_role("button", name="交给助手整理", exact=True)
             textarea.fill(prompt)
             if not submit.is_enabled():
@@ -867,10 +869,15 @@ def run_real_model_browser_flow(
             ).click()
             page.locator("#text-evidence").fill(
                 f"{marker} 我在教学楼三楼记录了两次水表读数，第二次比第一次多，"
-                "我认为是午休时段用水集中造成的。"
+                "具体差值、柱状图和漏水备注都在附件里，请结合附件判断。"
             )
             page.get_by_role("button", name="保存草稿", exact=True).click()
             wait_for_text(page, "草稿已保存")
+            page.locator('input[type="file"]').set_input_files(
+                str(attachment_fixture)
+            )
+            wait_for_text(page, "文件已上传并完成内容验证，可正式提交。")
+            page.get_by_text("可正式提交", exact=False).wait_for()
             page.get_by_role("button", name="正式提交", exact=True).click()
             confirm_dialog(page, "确认正式提交？", "确认正式提交")
             wait_for_text(page, "第 1 版已正式提交")
@@ -900,6 +907,11 @@ def run_real_model_browser_flow(
                 raise E2eFailure("REAL_MODEL_FEEDBACK_DRAFT_NEXT_STEP_MISSING")
             if page.locator("#teacher-feedback-support-level").input_value() == "":
                 raise E2eFailure("REAL_MODEL_FEEDBACK_DRAFT_SUPPORT_LEVEL_MISSING")
+            if not any(
+                fact in drafted_feedback
+                for fact in ("6.7", "25.6", "11.3", "食堂", "滴水")
+            ):
+                raise E2eFailure("REAL_MODEL_FEEDBACK_IGNORED_ATTACHMENT")
             # The verifier proves this text never reached the audit trail.
             (artifacts / "drafted-feedback.txt").write_text(
                 drafted_feedback, encoding="utf-8"
@@ -919,6 +931,15 @@ def run_real_model_browser_flow(
                 "AI 建议已填入当前表单。请逐维核对、修改后，再准备评价确认。",
                 exact=True,
             ).wait_for(timeout=120_000)
+            attachment_citations = page.get_by_role(
+                "checkbox",
+                name=f"引用附件 {attachment_fixture.name}",
+                exact=True,
+            )
+            if attachment_citations.count() == 0 or not attachment_citations.evaluate_all(
+                "elements => elements.some((element) => element.checked)"
+            ):
+                raise E2eFailure("REAL_MODEL_EVALUATION_ATTACHMENT_CITATION_MISSING")
             screenshot(page, artifacts, "06-real-model-evaluation-draft")
             prepare_evaluation = page.get_by_role(
                 "button", name="准备评价确认", exact=True
@@ -938,12 +959,11 @@ def run_real_model_browser_flow(
             page.get_by_role(
                 "button", name="打开 CDAS Agent 独立会话", exact=True
             ).click()
-            page.get_by_role(
-                "heading", name="教师工作台与活动设计", exact=True
-            ).wait_for()
-            page.locator(
+            assistant_prompt = page.locator(
                 '#activity-assistant-prompt[data-hydrated="true"]'
-            ).fill(
+            )
+            assistant_prompt.wait_for()
+            assistant_prompt.fill(
                 f"先列出我的发布，再读《{read_title}》这次发布的过程诊断，"
                 "告诉我学生卡在哪个阶段、量规哪一维最弱。不要建立或改写任何草稿。"
             )
@@ -1049,6 +1069,13 @@ def main() -> int:
             "E2E_CLERK_TICKET_SECRET": broker_secret,
         }
     )
+    if real_model_smoke:
+        runtime_environment.update(
+            {
+                "ATTACHMENT_STORAGE_ENABLED": "1",
+                "ATTACHMENT_STORAGE_DIR": str(artifacts / "attachments"),
+            }
+        )
     if not real_model_smoke:
         runtime_environment.update(
             {

@@ -151,6 +151,7 @@ const mocks = {
   finishRun: vi.fn(),
   completeRun: vi.fn(),
   generateSuggestion: vi.fn(),
+  readAttachments: vi.fn(),
 };
 
 function dependencies(): TeacherFeedbackSuggestionDependencies {
@@ -163,7 +164,7 @@ describe("teacher feedback suggestion prompt", () => {
       phase: null,
       textEvidence: "我记录了三次用水读数。",
       confirmedCheckpoints: [],
-      attachmentCount: 0,
+      attachments: [],
     });
 
     // Derived from the schema, so adding a field without naming it in the
@@ -186,6 +187,7 @@ describe("teacher feedback suggestion boundary", () => {
     mocks.getConfig.mockReturnValue({
       apiKey: "test-key",
       model: "deepseek-v4-flash",
+      attachmentVisionModel: "deepseek-v4-flash-vision-exp",
       approvalSecret: "s".repeat(32),
     });
     mocks.createModel.mockReturnValue(model);
@@ -216,6 +218,16 @@ describe("teacher feedback suggestion boundary", () => {
       nextStep: "REVISE",
       supportLevel: "STANDARD",
     });
+    mocks.readAttachments.mockResolvedValue([
+      {
+        attachmentId: hiddenAttachmentId,
+        status: "READABLE",
+        method: "VISION",
+        content: "图中表格记录了三处用水差值。",
+        truncated: false,
+        note: null,
+      },
+    ]);
   });
 
   function input(overrides?: Partial<{ submissionRevisionNumber: number }>) {
@@ -243,11 +255,13 @@ describe("teacher feedback suggestion boundary", () => {
     const [, modelInput] = mocks.generateSuggestion.mock.calls[0] ?? [];
     const serialized = JSON.stringify(modelInput);
     expect(serialized).toContain("我记录了三次用水读数");
-    // Prior feedback, attachment names and the student identity never leave.
+    // Prior feedback, attachment names and the student identity never leave;
+    // the authorized ID and bounded reading do.
     expect(serialized).not.toContain("不得发送给模型的附件名");
     expect(serialized).not.toContain("不得发送给模型的旧反馈");
     expect(serialized).not.toContain("陈同学");
-    expect(serialized).toContain('"attachmentCount":1');
+    expect(serialized).toContain(hiddenAttachmentId);
+    expect(serialized).toContain("三处用水差值");
     expect(mocks.completeRun).toHaveBeenCalledWith(
       database,
       expect.objectContaining({ source: "AGENT", actorId }),
@@ -358,7 +372,7 @@ describe("teacher feedback suggestion boundary", () => {
     expect(mocks.completeRun).not.toHaveBeenCalled();
   });
 
-  it("fails a completed draft when the feedback version moved before return", async () => {
+  it("fails before the drafting model when feedback moves during attachment reading", async () => {
     mocks.getWorkspace
       .mockResolvedValueOnce(workspace())
       .mockResolvedValueOnce(workspace({ feedbackVersion: 2 }));
@@ -368,6 +382,30 @@ describe("teacher feedback suggestion boundary", () => {
     ).rejects.toEqual(
       new TeacherFeedbackSuggestionError("STALE_SUBMISSION_REVISION"),
     );
+    expect(mocks.generateSuggestion).not.toHaveBeenCalled();
+    expect(mocks.completeRun).not.toHaveBeenCalled();
+    expect(mocks.finishRun).toHaveBeenCalledWith(
+      database,
+      expect.objectContaining({ source: "AGENT" }),
+      expect.objectContaining({
+        status: "FAILED",
+        failureCode: "FEEDBACK_SUGGESTION_STALE_REVISION",
+      }),
+    );
+  });
+
+  it("fails a completed draft when the feedback version moves before return", async () => {
+    mocks.getWorkspace
+      .mockResolvedValueOnce(workspace())
+      .mockResolvedValueOnce(workspace())
+      .mockResolvedValueOnce(workspace({ feedbackVersion: 2 }));
+
+    await expect(
+      suggestTeacherFeedback(database, context, input(), dependencies()),
+    ).rejects.toEqual(
+      new TeacherFeedbackSuggestionError("STALE_SUBMISSION_REVISION"),
+    );
+    expect(mocks.generateSuggestion).toHaveBeenCalledOnce();
     expect(mocks.completeRun).not.toHaveBeenCalled();
     expect(mocks.finishRun).toHaveBeenCalledWith(
       database,

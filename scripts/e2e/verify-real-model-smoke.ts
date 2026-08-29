@@ -1,5 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import { z } from "zod";
+import { teacherEvaluationOutcomeSchema } from "../../src/domain/evaluation/teacher-evaluation-intent";
 import { createDatabaseClient } from "../../src/server/db/client";
 import {
   loadE2eEnvironment,
@@ -162,10 +164,40 @@ async function main(): Promise<void> {
     const evaluationRevision =
       await database.teacherEvaluationRevision.findFirst({
         where: { agentRunId: evaluationSuggestionRun.id },
+        include: {
+          evaluation: {
+            include: {
+              submissionRevision: {
+                include: { attachments: true },
+              },
+            },
+          },
+        },
       });
     invariant(
       evaluationRevision?.source === "AI_ASSISTED",
       "E2E_REAL_MODEL_EVALUATION_PROVENANCE_MISSING",
+    );
+    const evaluationOutcomes = z
+      .array(teacherEvaluationOutcomeSchema)
+      .parse(evaluationRevision.outcomes);
+    const formalAttachmentIds = new Set(
+      evaluationRevision.evaluation.submissionRevision.attachments.map(
+        (attachment) => attachment.attachmentId,
+      ),
+    );
+    const citedAttachmentIds = evaluationOutcomes.flatMap((outcome) =>
+      outcome.status === "LEVEL"
+        ? outcome.citations.flatMap((citation) =>
+            citation.kind === "attachment" ? [citation.attachmentId] : [],
+          )
+        : [],
+    );
+    invariant(
+      citedAttachmentIds.some((attachmentId) =>
+        formalAttachmentIds.has(attachmentId),
+      ),
+      "E2E_REAL_MODEL_EVALUATION_ATTACHMENT_CITATION_MISSING",
     );
 
     const suggestionAudits = await database.actionAudit.findMany({
@@ -269,6 +301,7 @@ async function main(): Promise<void> {
             evaluationSuggestionAgentRunStatus: evaluationSuggestionRun.status,
             feedbackRevisionSource: feedbackRevision.source,
             evaluationRevisionSource: evaluationRevision.source,
+            evaluationAttachmentCitations: citedAttachmentIds.length,
             suggestionAudits: suggestionAudits.length,
             suggestionBodyPersisted: false,
             executionAgentRunStatus: run.status,

@@ -9,9 +9,12 @@ const modelIdSchema = z
   .max(200)
   .regex(/^deepseek-[a-z0-9][a-z0-9._:-]*$/);
 
+const defaultAttachmentVisionModel = "deepseek-v4-flash-vision-exp";
+
 const enabledConfigSchema = z.object({
   apiKey: z.string().trim().min(1).max(2_000),
   model: modelIdSchema,
+  attachmentVisionModel: modelIdSchema,
   approvalSecret: z.string().min(32).max(4_096),
 });
 
@@ -73,7 +76,19 @@ export function getActivityAssistantConfig(
     );
   }
 
-  return enabledConfigSchema.parse({ apiKey, model, approvalSecret });
+  const attachmentVisionModel =
+    environment.AI_ATTACHMENT_VISION_MODEL?.trim() ||
+    defaultAttachmentVisionModel;
+  if (!modelIdSchema.safeParse(attachmentVisionModel).success) {
+    throw new ActivityAssistantConfigError("AI_MODEL_NOT_CONFIGURED");
+  }
+
+  return enabledConfigSchema.parse({
+    apiKey,
+    model,
+    attachmentVisionModel,
+    approvalSecret,
+  });
 }
 
 /**

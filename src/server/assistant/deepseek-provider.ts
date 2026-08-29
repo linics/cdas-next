@@ -65,3 +65,22 @@ export function createDeepSeekModel(
     apiKey: config.apiKey,
   }).chatModel(config.model);
 }
+
+/**
+ * Attachment images use a bounded, tool-free subcall rather than moving the
+ * whole teacher workflow onto an experimental vision model. The description
+ * returned by that subcall is the only image-derived value the drafting model
+ * receives.
+ */
+export function createDeepSeekAttachmentVisionModel(
+  config: Pick<
+    ActivityAssistantConfig,
+    "apiKey" | "attachmentVisionModel"
+  >,
+): LanguageModel {
+  return createOpenAICompatible({
+    name: "deepseek",
+    baseURL: deepSeekBaseUrl,
+    apiKey: config.apiKey,
+  }).chatModel(config.attachmentVisionModel);
+}

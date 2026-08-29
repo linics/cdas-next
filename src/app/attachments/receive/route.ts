@@ -10,6 +10,7 @@ import { createUiCommandContext } from "../../../server/commands/create-ui-comma
 import { getDatabaseClient } from "../../../server/db/client";
 
 const attachmentIdSchema = z.uuid();
+const MAX_MULTIPART_OVERHEAD_BYTES = 1024 * 1024;
 
 /**
  * The self-hosted upload path: with no Blob to presign against, the bytes come
@@ -29,21 +30,30 @@ export async function POST(request: Request) {
     );
   }
   try {
+    const commandContext = await createUiCommandContext();
+    const contentLength = Number(request.headers.get("content-length"));
+    if (
+      Number.isFinite(contentLength) &&
+      contentLength > MAX_ATTACHMENT_BYTES + MAX_MULTIPART_OVERHEAD_BYTES
+    ) {
+      return Response.json({ error: "ATTACHMENT_TOO_LARGE" }, { status: 413 });
+    }
     const form = await request.formData();
     const attachmentId = attachmentIdSchema.parse(form.get("attachmentId"));
     const file = form.get("file");
     if (!(file instanceof File)) {
       return Response.json({ error: "ATTACHMENT_FILE_REQUIRED" }, { status: 400 });
     }
-    // Checked before reading the body into memory: the reservation already
-    // bounded the size, and this is the box with 2GB of RAM.
+    // request.formData() has materialized the file by this point. The header
+    // guard above rejects ordinary oversized multipart requests before that;
+    // this check remains authoritative for the parsed file itself.
     if (file.size > MAX_ATTACHMENT_BYTES) {
       return Response.json({ error: "ATTACHMENT_TOO_LARGE" }, { status: 413 });
     }
 
     const attachment = await getWritableSubmissionAttachmentStorageRecord(
       getDatabaseClient(),
-      await createUiCommandContext(),
+      commandContext,
       { attachmentId },
     );
     if (attachment.status !== "UPLOAD_PENDING") {

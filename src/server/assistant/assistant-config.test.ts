@@ -20,6 +20,7 @@ describe("activity assistant configuration", () => {
     expect(getActivityAssistantConfig(validEnvironment)).toEqual({
       apiKey: "deepseek-test-key",
       model: "deepseek-v4-flash",
+      attachmentVisionModel: "deepseek-v4-flash-vision-exp",
       approvalSecret: "s".repeat(32),
     });
   });
@@ -51,6 +52,10 @@ describe("activity assistant configuration", () => {
     ],
     [
       { ...validEnvironment, AI_MODEL: "openai/gpt-5-mini" },
+      "AI_MODEL_NOT_CONFIGURED",
+    ],
+    [
+      { ...validEnvironment, AI_ATTACHMENT_VISION_MODEL: "openai/gpt-5" },
       "AI_MODEL_NOT_CONFIGURED",
     ],
     [

@@ -235,7 +235,12 @@ export function AttachmentEditor({
                 {attachment.status === "READY" ? (
                   <>
                     <AttachmentPreview attachment={attachment} />
-                    <a href={`/attachments/${attachment.id}/download`}>下载</a>
+                    <a
+                      href={`/attachments/${attachment.id}/download`}
+                      download={attachment.filename}
+                    >
+                      下载
+                    </a>
                   </>
                 ) : attachment.status === "SCAN_PENDING" && canWrite ? (
                   <button type="button" disabled={busy} onClick={() => refresh(attachment.id)}>

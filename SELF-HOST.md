@@ -60,6 +60,7 @@ export CDAS_PUBLIC_ORIGIN=http://122.51.77.121
 # optional:
 # export DEEPSEEK_API_KEY=...
 # export AI_TOOL_APPROVAL_SECRET=...
+# export AI_ATTACHMENT_VISION_MODEL=deepseek-v4-flash-vision-exp
 # export AI_PROVIDER_DISABLED=0
 
 chmod +x scripts/self-host/*.sh

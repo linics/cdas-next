@@ -73,6 +73,7 @@ export function AttachmentPreview({
               <a
                 className={styles.previewDownload}
                 href={downloadHref(attachment.id)}
+                download={attachment.filename}
               >
                 下载原件
               </a>

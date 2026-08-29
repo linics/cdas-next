@@ -11,6 +11,7 @@ vi.mock("@ai-sdk/openai-compatible", () => ({
 }));
 
 import {
+  createDeepSeekAttachmentVisionModel,
   createDeepSeekModel,
   deepSeekNamedToolProviderOptions,
   deepSeekProviderOptionsForToolChoice,
@@ -41,6 +42,17 @@ describe("DeepSeek provider boundary", () => {
       "deepseek-v4-flash",
     );
     expect(model).toEqual({ provider: "deepseek.chat" });
+  });
+
+  it("keeps the experimental vision model inside the attachment subcall", () => {
+    createDeepSeekAttachmentVisionModel({
+      apiKey: "deepseek-secret-key",
+      attachmentVisionModel: "deepseek-v4-flash-vision-exp",
+    });
+
+    expect(mocks.chatModel).toHaveBeenCalledWith(
+      "deepseek-v4-flash-vision-exp",
+    );
   });
 
   it("uses V4 non-thinking mode for the named publish tool choice", () => {

@@ -9,6 +9,12 @@ import {
 import { isSubmissionAudienceMemberWhere } from "../submissions/submission-audience";
 
 const inputSchema = z.strictObject({ attachmentId: z.uuid() });
+const currentRevisionInputSchema = z.strictObject({
+  attachmentId: z.uuid(),
+  submissionId: z.uuid(),
+  submissionRevisionId: z.uuid(),
+  submissionRevisionNumber: z.int().positive(),
+});
 
 export class SubmissionAttachmentAccessError extends Error {
   constructor(public readonly code: "FORBIDDEN" | "NOT_FOUND") {
@@ -114,6 +120,66 @@ export async function getAuthorizedSubmissionAttachmentDownload(
               },
             },
           },
+    select: {
+      id: true,
+      storageKey: true,
+      mediaType: true,
+      originalFilename: true,
+    },
+  });
+  if (!attachment) {
+    throw new SubmissionAttachmentAccessError("NOT_FOUND");
+  }
+  return attachment;
+}
+
+/**
+ * Authorize an attachment specifically as evidence from the current formal
+ * revision. Unlike the first-party download query, this deliberately rejects
+ * an attachment that remains in immutable history after a newer revision is
+ * submitted. Suggestion readers must use this check before loading bytes or
+ * sending any derived content to a model.
+ */
+export async function getAuthorizedCurrentRevisionAttachmentDownload(
+  database: PrismaClient,
+  commandContext: CommandContext,
+  rawInput: z.input<typeof currentRevisionInputSchema>,
+) {
+  const input = currentRevisionInputSchema.parse(rawInput);
+  const context = resolveCommandContext(commandContext, ["UI"]);
+  const actor = await database.appUser.findUnique({
+    where: { id: context.actorId },
+    select: { role: true },
+  });
+  if (!actor) {
+    throw new SubmissionAttachmentAccessError("NOT_FOUND");
+  }
+  if (actor.role !== "TEACHER") {
+    throw new SubmissionAttachmentAccessError("FORBIDDEN");
+  }
+
+  const attachment = await database.submissionAttachment.findFirst({
+    where: {
+      id: input.attachmentId,
+      submissionId: input.submissionId,
+      status: "READY",
+      revisions: {
+        some: {
+          submissionRevisionId: input.submissionRevisionId,
+          submissionRevision: {
+            revisionNumber: input.submissionRevisionNumber,
+            submission: {
+              id: input.submissionId,
+              latestRevisionNumber: input.submissionRevisionNumber,
+              release: {
+                publisherId: context.actorId,
+                classroom: { managerId: context.actorId },
+              },
+            },
+          },
+        },
+      },
+    },
     select: {
       id: true,
       storageKey: true,

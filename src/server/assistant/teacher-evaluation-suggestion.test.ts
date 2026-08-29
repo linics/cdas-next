@@ -149,6 +149,7 @@ const mocks = {
   finishRun: vi.fn(),
   completeRun: vi.fn(),
   generateSuggestion: vi.fn(),
+  readAttachments: vi.fn(),
 };
 
 function dependencies(): TeacherEvaluationSuggestionDependencies {
@@ -161,6 +162,7 @@ describe("teacher evaluation suggestion prompt", () => {
       rubricDimensions: waterConservationTaskBook.rubricDimensions,
       textEvidence: "我记录了三次用水读数。",
       checkpoints: [],
+      attachments: [],
     });
 
     // Derived from the schema, so adding a field without naming it in the
@@ -190,6 +192,7 @@ describe("teacher evaluation suggestion boundary", () => {
     mocks.getConfig.mockReturnValue({
       apiKey: "test-key",
       model: "deepseek-v4-flash",
+      attachmentVisionModel: "deepseek-v4-flash-vision-exp",
       approvalSecret: "s".repeat(32),
     });
     mocks.createModel.mockReturnValue(model);
@@ -219,6 +222,16 @@ describe("teacher evaluation suggestion boundary", () => {
       outcomes: validOutcomes(),
       summary: "现有文字和检查点支持部分量规判断，仍请教师逐维核对。",
     });
+    mocks.readAttachments.mockResolvedValue([
+      {
+        attachmentId: hiddenAttachmentId,
+        status: "READABLE",
+        method: "VISION",
+        content: "图中表格记录了三处用水差值。",
+        truncated: false,
+        note: null,
+      },
+    ]);
   });
 
   it("uses only current readable evidence and closes a valid run as succeeded", async () => {
@@ -238,13 +251,14 @@ describe("teacher evaluation suggestion boundary", () => {
       submissionRevisionId: revisionId,
       submissionRevisionNumber: 1,
     });
-    expect(mocks.getWorkspace).toHaveBeenCalledTimes(2);
+    expect(mocks.getWorkspace).toHaveBeenCalledTimes(3);
     const safeInput = mocks.generateSuggestion.mock.calls[0]?.[1];
     const serializedInput = JSON.stringify(safeInput);
     expect(serializedInput).toContain("三次用水读数");
     expect(serializedInput).toContain("evidenceIndex");
     expect(serializedInput).not.toContain("不得发送给模型的附件名");
-    expect(serializedInput).not.toContain(hiddenAttachmentId);
+    expect(serializedInput).toContain(hiddenAttachmentId);
+    expect(serializedInput).toContain("三处用水差值");
     expect(serializedInput).not.toContain("不得发送给模型的旧反馈");
     expect(serializedInput).not.toContain("不得发送给模型的旧评价");
     expect(mocks.completeRun).toHaveBeenCalledWith(
@@ -347,7 +361,7 @@ describe("teacher evaluation suggestion boundary", () => {
     expect(mocks.startRun).not.toHaveBeenCalled();
   });
 
-  it("rejects attachment citations and closes the run as invalid output", async () => {
+  it("accepts a citation to an attachment that was actually read", async () => {
     mocks.generateSuggestion.mockResolvedValue({
       outcomes: validOutcomes().map((outcome, index) =>
         index === 0
@@ -357,7 +371,54 @@ describe("teacher evaluation suggestion boundary", () => {
             }
           : outcome,
       ),
-      summary: "模型不得引用附件。",
+      summary: "模型引用了本次已读取的附件。",
+    });
+
+    await expect(
+      suggestTeacherEvaluation(
+        database,
+        context,
+        {
+          submissionId,
+          submissionRevisionId: revisionId,
+          submissionRevisionNumber: 1,
+        },
+        dependencies(),
+      ),
+    ).resolves.toMatchObject({
+      outcomes: expect.arrayContaining([
+        expect.objectContaining({
+          citations: [
+            { kind: "attachment", attachmentId: hiddenAttachmentId },
+          ],
+        }),
+      ]),
+    });
+  });
+
+  it("rejects a citation when the attachment could not be read", async () => {
+    mocks.readAttachments.mockResolvedValue([
+      {
+        attachmentId: hiddenAttachmentId,
+        status: "UNREADABLE",
+        method: "FAILED",
+        content: null,
+        truncated: false,
+        note: "附件读取失败。",
+      },
+    ]);
+    mocks.generateSuggestion.mockResolvedValue({
+      outcomes: validOutcomes().map((outcome, index) =>
+        index === 0
+          ? {
+              ...outcome,
+              citations: [
+                { kind: "attachment", attachmentId: hiddenAttachmentId },
+              ],
+            }
+          : outcome,
+      ),
+      summary: "不可读附件不能成为评价依据。",
     });
 
     await expect(
@@ -372,15 +433,6 @@ describe("teacher evaluation suggestion boundary", () => {
         dependencies(),
       ),
     ).rejects.toEqual(new TeacherEvaluationSuggestionError("INVALID_OUTPUT"));
-    expect(mocks.finishRun).toHaveBeenCalledWith(
-      database,
-      { ...context, source: "AGENT" },
-      {
-        agentRunId: runId,
-        status: "FAILED",
-        failureCode: "EVALUATION_SUGGESTION_INVALID_OUTPUT",
-      },
-    );
   });
 
   it("requires insufficient evidence when no readable evidence exists", async () => {
@@ -410,7 +462,7 @@ describe("teacher evaluation suggestion boundary", () => {
     );
   });
 
-  it("fails a completed model result when the current revision changes before return", async () => {
+  it("fails before the drafting model when the revision changes during attachment reading", async () => {
     mocks.getWorkspace
       .mockResolvedValueOnce(workspace())
       .mockResolvedValueOnce(
@@ -434,6 +486,43 @@ describe("teacher evaluation suggestion boundary", () => {
     ).rejects.toEqual(
       new TeacherEvaluationSuggestionError("STALE_SUBMISSION_REVISION"),
     );
+    expect(mocks.generateSuggestion).not.toHaveBeenCalled();
+    expect(mocks.finishRun).toHaveBeenCalledWith(
+      database,
+      { ...context, source: "AGENT" },
+      expect.objectContaining({
+        status: "FAILED",
+        failureCode: "EVALUATION_SUGGESTION_STALE_REVISION",
+      }),
+    );
+  });
+
+  it("fails a completed model result when the current revision changes before return", async () => {
+    mocks.getWorkspace
+      .mockResolvedValueOnce(workspace())
+      .mockResolvedValueOnce(workspace())
+      .mockResolvedValueOnce(
+        workspace({
+          revisionId: "d0000000-0000-4000-8000-00000000000d",
+          revisionNumber: 2,
+        }),
+      );
+
+    await expect(
+      suggestTeacherEvaluation(
+        database,
+        context,
+        {
+          submissionId,
+          submissionRevisionId: revisionId,
+          submissionRevisionNumber: 1,
+        },
+        dependencies(),
+      ),
+    ).rejects.toEqual(
+      new TeacherEvaluationSuggestionError("STALE_SUBMISSION_REVISION"),
+    );
+    expect(mocks.generateSuggestion).toHaveBeenCalledOnce();
     expect(mocks.finishRun).toHaveBeenCalledWith(
       database,
       { ...context, source: "AGENT" },
