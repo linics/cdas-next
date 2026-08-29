@@ -21,6 +21,7 @@ describe("TeacherAgentOverlay", () => {
     expect(markup).toContain('aria-expanded="false"');
     expect(markup).toContain('aria-controls="teacher-agent-panel"');
     expect(markup).toContain("打开 CDAS Agent 独立会话");
+    expect(markup).toContain('data-open="false"');
     expect(markup).not.toContain('data-agent-conversation="true"');
   });
 

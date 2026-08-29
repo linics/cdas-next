@@ -108,8 +108,8 @@
      笔画。这里只给一档更深的墨色，不引入调色板以外的红。 */
   --stroke-heavy: var(--color-neutral-900);
 
-  --motion-fast: 160ms cubic-bezier(.2, .8, .2, 1);
-  --motion-medium: 240ms cubic-bezier(.2, .8, .2, 1);
+  --motion-fast: 160ms cubic-bezier(0.23, 1, 0.32, 1);
+  --motion-medium: 240ms cubic-bezier(0.23, 1, 0.32, 1);
   --z-nav: 20;
   --z-overlay: 100;
   --toolbar-height: 52px;
@@ -183,5 +183,17 @@ time, th, td, output { font-variant-numeric: var(--figure-ui); }
     transition-duration: .01ms !important;
     animation-duration: .01ms !important;
     animation-iteration-count: 1 !important;
+  }
+}
+
+html:has([data-fill-viewport]) {
+  height: 100dvh;
+  overflow: hidden;
+}
+
+@media (max-width: 1023px) {
+  html:has([data-fill-viewport]) {
+    height: auto;
+    overflow: visible;
   }
 }

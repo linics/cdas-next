@@ -61,23 +61,31 @@
   transition:
     background var(--motion-fast),
     border-color var(--motion-fast),
-    color var(--motion-fast);
+    color var(--motion-fast),
+    transform var(--motion-fast);
 }
 .primaryButton,
 .primaryLink { border-color: var(--color-accent); background: transparent; color: var(--color-accent-700); }
 .primaryButton:hover:not(:disabled),
 .primaryLink:hover { background: color-mix(in srgb, var(--color-accent) 12%, transparent); }
 .primaryButton:active:not(:disabled),
-.primaryLink:active { background: color-mix(in srgb, var(--color-accent) 22%, transparent); }
+.primaryLink:active {
+  background: color-mix(in srgb, var(--color-accent) 22%, transparent);
+  transform: scale(0.97);
+}
 .secondaryButton {
   border-color: var(--color-divider);
   background: transparent;
   color: var(--color-text);
 }
 .secondaryButton:hover:not(:disabled) { background: color-mix(in srgb, var(--color-text) 7%, transparent); }
-.secondaryButton:active:not(:disabled) { background: color-mix(in srgb, var(--color-text) 14%, transparent); }
+.secondaryButton:active:not(:disabled) {
+  background: color-mix(in srgb, var(--color-text) 14%, transparent);
+  transform: scale(0.97);
+}
 .dangerButton { border-color: var(--stroke-heavy); background: transparent; color: var(--stroke-heavy); }
 .dangerButton:hover:not(:disabled) { background: var(--ink-tint); }
+.dangerButton:active:not(:disabled) { transform: scale(0.97); }
 .primaryButton:disabled,
 .secondaryButton:disabled,
 .dangerButton:disabled { cursor: not-allowed; opacity: .45; }
@@ -268,10 +276,13 @@
   font-weight: var(--font-heading-weight);
   line-height: 1.15;
   white-space: nowrap;
-  transition: background var(--motion-fast);
+  transition: background var(--motion-fast), transform var(--motion-fast);
 }
 .cardAction:hover { background: color-mix(in srgb, var(--color-accent) 12%, transparent); }
-.cardAction:active { background: color-mix(in srgb, var(--color-accent) 22%, transparent); }
+.cardAction:active {
+  background: color-mix(in srgb, var(--color-accent) 22%, transparent);
+  transform: scale(0.97);
+}
 .releaseAudit {
   margin: var(--space-3) 0 0;
   border-top: 1px solid var(--color-divider);

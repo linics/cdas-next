@@ -166,7 +166,7 @@ class Clock {
     return new Date();
   }
 
-  tick(_minutes = 0): Date {
+  tick(): Date {
     return this.now();
   }
 }

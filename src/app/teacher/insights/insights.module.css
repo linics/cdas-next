@@ -53,10 +53,15 @@
   font-family: var(--font-ui);
   font-size: var(--text-ui);
   font-weight: var(--font-heading-weight);
+  transition: background var(--motion-fast), transform var(--motion-fast);
 }
 
 .filterForm button:hover {
   background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+}
+
+.filterForm button:active {
+  transform: scale(0.97);
 }
 
 .filterForm small {

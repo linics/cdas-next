@@ -514,6 +514,7 @@
   color: var(--color-text);
   font-size: var(--text-ui);
   font-weight: var(--font-heading-weight);
+  transition: background var(--motion-fast), transform var(--motion-fast);
 }
 
 .prepareButton,
@@ -522,6 +523,13 @@
 .prepareButton:hover:not(:disabled),
 .confirmButton:hover:not(:disabled),
 .signInButton:hover:not(:disabled) { background: var(--primary-tint); color: var(--color-accent-700); }
+.prepareButton:active:not(:disabled),
+.confirmButton:active:not(:disabled),
+.cancelButton:active:not(:disabled),
+.signInButton:active:not(:disabled),
+.secondaryButton:active:not(:disabled) {
+  transform: scale(0.97);
+}
 .prepareButton:disabled,
 .confirmButton:disabled,
 .cancelButton:disabled { cursor: not-allowed; opacity: .45; }

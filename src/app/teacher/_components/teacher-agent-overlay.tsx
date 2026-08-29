@@ -15,6 +15,7 @@ import styles from "./teacher-agent-overlay.module.css";
 
 const panelId = "teacher-agent-panel";
 const panelTitleId = "teacher-agent-panel-title";
+const panelMotionMs = 240;
 
 export function TeacherAgentOverlay({
   children,
@@ -26,8 +27,23 @@ export function TeacherAgentOverlay({
   startOpen?: boolean;
 }>) {
   const [open, setOpen] = useState(startOpen);
+  const [rendered, setRendered] = useState(startOpen);
   const launcherRef = useRef<HTMLButtonElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (open) {
+      setRendered(true);
+      return;
+    }
+
+    if (!rendered) {
+      return;
+    }
+
+    const hide = window.setTimeout(() => setRendered(false), panelMotionMs);
+    return () => window.clearTimeout(hide);
+  }, [open, rendered]);
 
   useEffect(() => {
     if (!open) {
@@ -59,11 +75,14 @@ export function TeacherAgentOverlay({
     <ActivityAssistantSessionProvider>
       {children}
       <div className={styles.overlay} data-open={open}>
-        {open ? (
+        {rendered ? (
           <aside
             className={styles.panel}
             id={panelId}
+            data-open={open}
+            aria-hidden={!open}
             aria-labelledby={panelTitleId}
+            inert={!open}
           >
             <header className={styles.panelHeader}>
               <div>
