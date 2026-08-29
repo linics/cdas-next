@@ -659,7 +659,14 @@ async function main(): Promise<void> {
       database,
       existingComplete?.release?.id,
     );
-    if (reset || stale) {
+    const leftoverPrefixed = await database.activityDraft.findFirst({
+      where: {
+        ownerId: teacher.id,
+        title: { startsWith: LEGACY_DEMO_PREFIX },
+      },
+      select: { id: true },
+    });
+    if (reset || stale || leftoverPrefixed) {
       await resetDemoActivities(database, teacher.id);
       existingComplete = await findDraftRelease(
         database,
