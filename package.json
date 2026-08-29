@@ -17,6 +17,7 @@
     "e2e:closed-loop": "python3 scripts/e2e/run-closed-loop.py",
     "e2e:real-model": "python3 scripts/e2e/run-closed-loop.py --real-model-smoke",
     "e2e:attachment-vision": "tsx scripts/e2e/probe-attachment-vision.ts",
+    "test:real-model-injection": "vitest run --config vitest.real-model.config.ts",
     "probe:glm": "tsx scripts/probe/glm-tool-choice.ts",
     "probe:vision": "tsx scripts/probe/attachment-vision.ts",
     "staging:preflight": "node --import tsx scripts/staging/preflight.ts",
