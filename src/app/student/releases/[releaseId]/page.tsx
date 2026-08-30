@@ -15,6 +15,7 @@ import {
   teacherEvaluationLevelLabels,
   teacherEvaluationOutcomeStatusLabels,
 } from "../../../../domain/evaluation/teacher-evaluation-policy";
+import { AttachmentPreview } from "../../../_components/attachment-preview";
 import { LocalizedDateTime } from "../../../_components/localized-date-time";
 import { InlineAlert, StatusBadge } from "../../../_components/ui";
 import { WorkspaceShell } from "../../../_components/workspace-shell";
@@ -189,10 +190,19 @@ function RevisionHistory({
                   <ul className={styles.formalAttachmentList}>
                     {revision.attachments.map((attachment) => (
                       <li key={attachment.id}>
-                        <a href={`/attachments/${attachment.id}/download`}>
-                          {attachment.filename}
-                        </a>
-                        <span>{Math.ceil(attachment.byteSize / 1024)} KB</span>
+                        <div>
+                          <strong>{attachment.filename}</strong>
+                          <span>{Math.ceil(attachment.byteSize / 1024)} KB</span>
+                        </div>
+                        <div className={styles.attachmentActions}>
+                          <AttachmentPreview attachment={attachment} />
+                          <a
+                            href={`/attachments/${attachment.id}/download`}
+                            download={attachment.filename}
+                          >
+                            下载
+                          </a>
+                        </div>
                       </li>
                     ))}
                   </ul>

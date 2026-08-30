@@ -64,11 +64,11 @@ function dependencies(overrides: Record<string, unknown> = {}) {
     getDownload: vi.fn(async () => ({ stream: bytesStream() })),
   } as unknown as AttachmentStorage;
   return {
+    storage,
     createStorage: vi.fn(() => storage),
     authorize,
     createVisionModel: vi.fn(() => ({}) as LanguageModel),
     describeImage: vi.fn(async () => "表格显示教学楼差值为 6.7。"),
-    extractPdfText: vi.fn(async () => ""),
     extractDocxText: vi.fn(async () => "学生在文档中解释了节水建议。"),
     ...overrides,
   };
@@ -122,7 +122,7 @@ describe("submission attachment suggestion reader", () => {
     expect(JSON.stringify(result)).not.toContain("never-forward-this-name");
   });
 
-  it("marks scanned PDFs and legacy doc files as unreadable without guessing", async () => {
+  it("marks PDFs and legacy doc files as unreadable without guessing", async () => {
     const deps = dependencies();
     const result = await readSubmissionAttachmentsForSuggestion(
       database,
@@ -140,8 +140,8 @@ describe("submission attachment suggestion reader", () => {
       expect.objectContaining({
         attachmentId: pdfId,
         status: "UNREADABLE",
-        method: "PDF_TEXT",
-        note: expect.stringContaining("OCR"),
+        method: "UNSUPPORTED",
+        note: expect.stringContaining("PDF"),
       }),
       expect.objectContaining({
         attachmentId: docId,
@@ -150,6 +150,7 @@ describe("submission attachment suggestion reader", () => {
         note: expect.stringContaining(".doc"),
       }),
     ]);
+    expect(deps.storage.getDownload).toHaveBeenCalledOnce();
     expect(deps.extractDocxText).not.toHaveBeenCalled();
   });
 

@@ -1,5 +1,6 @@
 import "server-only";
 
+import { inflateRawSync } from "node:zlib";
 import { generateText, type LanguageModel } from "ai";
 import type { PrismaClient } from "../../generated/prisma/client";
 import type { CommandContext } from "../commands/command-context";
@@ -25,6 +26,208 @@ import {
 
 const MAX_EXTRACTED_CODE_POINTS = 12_000;
 
+// These limits are deliberately below the attachment's 20 MiB transport
+// ceiling. They bound the work a document parser may ask the process to do,
+// rather than relying on the parser's final string being small after a ZIP has
+// already expanded in memory.
+const MAX_DOCX_ENTRIES = 512;
+const MAX_DOCX_ENTRY_UNCOMPRESSED_BYTES = 8 * 1024 * 1024;
+const MAX_DOCX_TOTAL_UNCOMPRESSED_BYTES = 32 * 1024 * 1024;
+
+const ZIP_EOCD_SIGNATURE = 0x06054b50;
+const ZIP_CENTRAL_DIRECTORY_SIGNATURE = 0x02014b50;
+const ZIP_LOCAL_FILE_SIGNATURE = 0x04034b50;
+
+function readUint16LE(bytes: Uint8Array, offset: number): number {
+  return bytes[offset]! | (bytes[offset + 1]! << 8);
+}
+
+function readUint32LE(bytes: Uint8Array, offset: number): number {
+  return (
+    bytes[offset]! |
+    (bytes[offset + 1]! << 8) |
+    (bytes[offset + 2]! << 16) |
+    (bytes[offset + 3]! << 24)
+  ) >>> 0;
+}
+
+/**
+ * Check the ZIP central directory before Mammoth gets a chance to inflate an
+ * entry. Mammoth uses JSZip internally and does not expose an uncompressed
+ * size budget, so this check is the expansion boundary for DOCX files.
+ */
+function assertBoundedDocxArchive(bytes: Uint8Array): void {
+  const minimumEndOfCentralDirectoryLength = 22;
+  if (bytes.byteLength < minimumEndOfCentralDirectoryLength) {
+    throw new Error("DOCX_ARCHIVE_INVALID");
+  }
+
+  // A ZIP comment can be up to 65535 bytes. Search only that bounded tail so
+  // a malicious byte sequence elsewhere cannot make this scan unbounded.
+  const searchStart = Math.max(
+    0,
+    bytes.byteLength - minimumEndOfCentralDirectoryLength - 65_535,
+  );
+  let endOfCentralDirectory = -1;
+  for (
+    let offset = bytes.byteLength - minimumEndOfCentralDirectoryLength;
+    offset >= searchStart;
+    offset -= 1
+  ) {
+    if (readUint32LE(bytes, offset) === ZIP_EOCD_SIGNATURE) {
+      endOfCentralDirectory = offset;
+      break;
+    }
+  }
+  if (endOfCentralDirectory < 0) {
+    throw new Error("DOCX_ARCHIVE_INVALID");
+  }
+
+  const diskNumber = readUint16LE(bytes, endOfCentralDirectory + 4);
+  const centralDirectoryDisk = readUint16LE(bytes, endOfCentralDirectory + 6);
+  const entriesOnDisk = readUint16LE(bytes, endOfCentralDirectory + 8);
+  const totalEntries = readUint16LE(bytes, endOfCentralDirectory + 10);
+  const centralDirectorySize = readUint32LE(
+    bytes,
+    endOfCentralDirectory + 12,
+  );
+  const centralDirectoryOffset = readUint32LE(
+    bytes,
+    endOfCentralDirectory + 16,
+  );
+
+  // ZIP64 and split archives are not needed for a <=20 MiB DOCX. Rejecting
+  // them avoids treating sentinel values as real sizes or offsets.
+  if (
+    diskNumber !== 0 ||
+    centralDirectoryDisk !== 0 ||
+    entriesOnDisk !== totalEntries ||
+    totalEntries === 0xffff ||
+    centralDirectorySize === 0xffffffff ||
+    centralDirectoryOffset === 0xffffffff ||
+    totalEntries > MAX_DOCX_ENTRIES
+  ) {
+    throw new Error("DOCX_ARCHIVE_LIMIT_EXCEEDED");
+  }
+
+  const centralDirectoryEnd = centralDirectoryOffset + centralDirectorySize;
+  if (
+    centralDirectoryOffset > bytes.byteLength ||
+    centralDirectoryEnd > bytes.byteLength ||
+    centralDirectoryEnd > endOfCentralDirectory
+  ) {
+    throw new Error("DOCX_ARCHIVE_INVALID");
+  }
+
+  let cursor = centralDirectoryOffset;
+  let totalUncompressedBytes = 0;
+  for (let entryNumber = 0; entryNumber < totalEntries; entryNumber += 1) {
+    if (
+      cursor + 46 > centralDirectoryEnd ||
+      readUint32LE(bytes, cursor) !== ZIP_CENTRAL_DIRECTORY_SIGNATURE
+    ) {
+      throw new Error("DOCX_ARCHIVE_INVALID");
+    }
+
+    const flags = readUint16LE(bytes, cursor + 8);
+    const compressionMethod = readUint16LE(bytes, cursor + 10);
+    const compressedSize = readUint32LE(bytes, cursor + 20);
+    const uncompressedSize = readUint32LE(bytes, cursor + 24);
+    const filenameLength = readUint16LE(bytes, cursor + 28);
+    const extraLength = readUint16LE(bytes, cursor + 30);
+    const commentLength = readUint16LE(bytes, cursor + 32);
+    const localHeaderOffset = readUint32LE(bytes, cursor + 42);
+
+    if (
+      compressedSize === 0xffffffff ||
+      uncompressedSize === 0xffffffff ||
+      (flags & 1) !== 0 ||
+      (compressionMethod !== 0 && compressionMethod !== 8) ||
+      uncompressedSize > MAX_DOCX_ENTRY_UNCOMPRESSED_BYTES
+    ) {
+      throw new Error("DOCX_ARCHIVE_LIMIT_EXCEEDED");
+    }
+
+    const priorUncompressedBytes = totalUncompressedBytes;
+    totalUncompressedBytes += uncompressedSize;
+    if (totalUncompressedBytes > MAX_DOCX_TOTAL_UNCOMPRESSED_BYTES) {
+      throw new Error("DOCX_ARCHIVE_LIMIT_EXCEEDED");
+    }
+
+    // Validate and inspect the actual local entry before Mammoth/JSZip can
+    // inflate it. A central-directory size is metadata supplied by the file;
+    // the local bytes are the expansion boundary we can enforce ourselves.
+    if (
+      localHeaderOffset + 30 > bytes.byteLength ||
+      readUint32LE(bytes, localHeaderOffset) !== ZIP_LOCAL_FILE_SIGNATURE
+    ) {
+      throw new Error("DOCX_ARCHIVE_INVALID");
+    }
+    const localFlags = readUint16LE(bytes, localHeaderOffset + 6);
+    const localCompressionMethod = readUint16LE(
+      bytes,
+      localHeaderOffset + 8,
+    );
+    const localCompressedSize = readUint32LE(bytes, localHeaderOffset + 18);
+    const localUncompressedSize = readUint32LE(bytes, localHeaderOffset + 22);
+    const localFilenameLength = readUint16LE(bytes, localHeaderOffset + 26);
+    const localExtraLength = readUint16LE(bytes, localHeaderOffset + 28);
+    const dataOffset =
+      localHeaderOffset + 30 + localFilenameLength + localExtraLength;
+    const dataEnd = dataOffset + compressedSize;
+    if (
+      (localFlags & 1) !== 0 ||
+      localCompressionMethod !== compressionMethod ||
+      dataOffset > bytes.byteLength ||
+      dataEnd > bytes.byteLength ||
+      dataEnd > centralDirectoryOffset ||
+      ((localFlags & 8) === 0 &&
+        (localCompressedSize !== compressedSize ||
+          localUncompressedSize !== uncompressedSize))
+    ) {
+      throw new Error("DOCX_ARCHIVE_INVALID");
+    }
+
+    const compressedData = bytes.subarray(dataOffset, dataEnd);
+    let actualUncompressedSize: number;
+    if (compressionMethod === 0) {
+      actualUncompressedSize = compressedData.byteLength;
+    } else {
+      try {
+        actualUncompressedSize = inflateRawSync(compressedData, {
+          maxOutputLength:
+            Math.min(
+              MAX_DOCX_ENTRY_UNCOMPRESSED_BYTES,
+              MAX_DOCX_TOTAL_UNCOMPRESSED_BYTES - priorUncompressedBytes,
+            ),
+        }).byteLength;
+      } catch {
+        throw new Error("DOCX_ARCHIVE_LIMIT_EXCEEDED");
+      }
+    }
+    if (
+      actualUncompressedSize > MAX_DOCX_ENTRY_UNCOMPRESSED_BYTES ||
+      actualUncompressedSize >
+        MAX_DOCX_TOTAL_UNCOMPRESSED_BYTES - priorUncompressedBytes
+    ) {
+      throw new Error("DOCX_ARCHIVE_LIMIT_EXCEEDED");
+    }
+    if (actualUncompressedSize !== uncompressedSize) {
+      throw new Error("DOCX_ARCHIVE_INVALID");
+    }
+
+    const recordLength = 46 + filenameLength + extraLength + commentLength;
+    cursor += recordLength;
+    if (cursor > centralDirectoryEnd) {
+      throw new Error("DOCX_ARCHIVE_INVALID");
+    }
+  }
+
+  if (cursor !== centralDirectoryEnd) {
+    throw new Error("DOCX_ARCHIVE_INVALID");
+  }
+}
+
 export type FormalAttachmentForSuggestion = Readonly<{
   id: string;
   kind: "IMAGE" | "PDF" | "WORD";
@@ -40,7 +243,7 @@ export type FormalRevisionAttachmentScope = Readonly<{
 export type SubmissionAttachmentReading = Readonly<{
   attachmentId: string;
   status: "READABLE" | "UNREADABLE";
-  method: "VISION" | "PDF_TEXT" | "DOCX_TEXT" | "UNSUPPORTED" | "FAILED";
+  method: "VISION" | "DOCX_TEXT" | "UNSUPPORTED" | "FAILED";
   content: string | null;
   truncated: boolean;
   note: string | null;
@@ -64,7 +267,6 @@ type AttachmentReaderDependencies = Readonly<{
     bytes: Uint8Array,
     mediaType: string,
   ) => Promise<string>;
-  extractPdfText: (bytes: Uint8Array) => Promise<string>;
   extractDocxText: (bytes: Uint8Array) => Promise<string>;
 }>;
 
@@ -139,40 +341,12 @@ export async function describeImage(
   return result.text;
 }
 
-/**
- * Exported so the real library can be exercised against real files. The unit
- * tests for the reader itself substitute these, which is right for testing the
- * reader's branching but leaves the parsers themselves uncovered — and a parser
- * that only ever runs behind a stub is one nobody notices breaking.
- */
-export async function extractPdfText(bytes: Uint8Array): Promise<string> {
-  const { getDocument } = await import(
-    "pdfjs-dist/legacy/build/pdf.mjs"
-  );
-  const loadingTask = getDocument({
-    data: bytes,
-    useSystemFonts: true,
-  });
-  const document = await loadingTask.promise;
-  try {
-    const pages: string[] = [];
-    for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
-      const page = await document.getPage(pageNumber);
-      const content = await page.getTextContent();
-      pages.push(
-        content.items
-          .flatMap((item) => ("str" in item ? [item.str] : []))
-          .join(" "),
-      );
-    }
-    return pages.join("\n\n");
-  } finally {
-    await loadingTask.destroy();
-  }
-}
-
-/** Exported for the same reason as extractPdfText. */
+/** Exported so the real library can be exercised against a real DOCX fixture. */
 export async function extractDocxText(bytes: Uint8Array): Promise<string> {
+  if (bytes.byteLength > MAX_ATTACHMENT_BYTES) {
+    throw new Error("DOCX_RAW_SIZE_LIMIT_EXCEEDED");
+  }
+  assertBoundedDocxArchive(bytes);
   const mammoth = await import("mammoth");
   const result = await mammoth.extractRawText({
     buffer: Buffer.from(bytes),
@@ -185,7 +359,6 @@ const defaultDependencies: AttachmentReaderDependencies = {
   authorize: getAuthorizedCurrentRevisionAttachmentDownload,
   createVisionModel: createDeepSeekAttachmentVisionModel,
   describeImage,
-  extractPdfText,
   extractDocxText,
 };
 
@@ -247,6 +420,22 @@ export async function readSubmissionAttachmentsForSuggestion(
     ) {
       throw new SubmissionAttachmentReaderError("NOT_FOUND");
     }
+    if (candidate.kind === "PDF") {
+      // PDF.js materializes a decoded page content stream before its public
+      // text stream yields the first chunk, so output/page counters cannot stop
+      // a small high-expansion PDF from exhausting this process. Until the
+      // parser runs behind a proven process-level resource boundary, keep PDF
+      // available for the authorized human preview/download path but never feed
+      // it to the drafting model.
+      readings.push(
+        unreadable(
+          candidate.id,
+          "UNSUPPORTED",
+          "PDF 自动文本解析暂未启用，教师需查看原件后判断。",
+        ),
+      );
+      continue;
+    }
     if (!storage) {
       readings.push(
         unreadable(
@@ -272,9 +461,6 @@ export async function readSubmissionAttachmentsForSuggestion(
           authorized.mediaType,
         );
         method = "VISION";
-      } else if (candidate.kind === "PDF") {
-        rawText = await dependencies.extractPdfText(bytes);
-        method = "PDF_TEXT";
       } else if (
         authorized.mediaType ===
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
@@ -298,9 +484,7 @@ export async function readSubmissionAttachmentsForSuggestion(
           unreadable(
             candidate.id,
             method,
-            candidate.kind === "PDF"
-              ? "PDF 没有可抽取文字，可能是扫描件；本期不做 OCR。"
-              : "附件没有得到可核验内容，教师需查看原件后判断。",
+            "附件没有得到可核验内容，教师需查看原件后判断。",
           ),
         );
         continue;

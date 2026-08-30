@@ -90,6 +90,8 @@ const releaseId = "10000000-0000-4000-8000-000000000001";
 const submissionId = "20000000-0000-4000-8000-000000000002";
 const firstRevisionId = "30000000-0000-4000-8000-000000000003";
 const secondRevisionId = "40000000-0000-4000-8000-000000000004";
+const imageAttachmentId = "41000000-0000-4000-8000-000000000004";
+const docxAttachmentId = "42000000-0000-4000-8000-000000000004";
 const teacherId = "60000000-0000-4000-8000-000000000006";
 const trustedContext = {
   actorId: "50000000-0000-4000-8000-000000000005",
@@ -427,6 +429,52 @@ describe("student release page access boundary", () => {
       trustedContext,
       { submissionId },
     );
+  });
+
+  it("keeps preview and download available on formal revision attachments", async () => {
+    const submissionWithAttachments = {
+      ...submittedSubmission,
+      revisions: [
+        {
+          ...submittedSubmission.revisions[0],
+          attachments: [
+            {
+              id: imageAttachmentId,
+              filename: "水表记录.png",
+              mediaType: "image/png",
+              byteSize: 67 * 1024,
+            },
+            {
+              id: docxAttachmentId,
+              filename: "节水建议.docx",
+              mediaType:
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+              byteSize: 32 * 1024,
+            },
+          ],
+        },
+        submittedSubmission.revisions[1],
+      ],
+    };
+    mocks.getStudentReleaseWorkspace.mockResolvedValue({
+      ...workspace,
+      submission: submissionWithAttachments,
+      submissions: [submissionWithAttachments],
+    });
+
+    const markup = await renderPage();
+
+    expect(markup).toContain("水表记录.png");
+    expect(markup).toContain("节水建议.docx");
+    expect(markup).toContain("预览");
+    expect(markup).toContain(
+      `href="/attachments/${imageAttachmentId}/download"`,
+    );
+    expect(markup).toContain(
+      `href="/attachments/${docxAttachmentId}/download"`,
+    );
+    expect(markup.match(/>预览<\/button>/gu)).toHaveLength(1);
+    expect(markup.match(/ download="/gu)).toHaveLength(3);
   });
 
   it("passes no write capability to the submission workspace when the release is closed", async () => {
