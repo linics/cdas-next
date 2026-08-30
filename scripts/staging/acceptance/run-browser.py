@@ -320,35 +320,51 @@ def attachment_download_href(page: Page, filename: str) -> str:
     return href
 
 
-def assert_attachment_preview(page: Page, filename: str, expected_href: str, code: str) -> None:
+def assert_attachment_preview(page: Page, filename: str, expected_href: str, prefix: str) -> None:
     """
     Preview is an overlay over the evidence, never a replacement for it.
 
-    So this proves three things and not merely that a button exists: the bytes
-    render in place from the same authorised route the download uses, the image
-    actually decoded rather than failing to load, and the original file is still
-    offered inside the overlay. Closing it must leave the page where it was.
+    Each step carries its own code. One code for the whole overlay would say
+    only "preview failed", and every one of these steps fails for a different
+    reason: a missing control, an unauthorised source, bytes that arrived but
+    would not decode, an overlay that swallowed the download or the page.
     """
     row = page.locator("li").filter(has_text=filename).last
     button = row.get_by_role("button", name="预览", exact=True)
-    wait_visible(button, code)
+    wait_visible(button, f"{prefix}_PREVIEW_BUTTON_MISSING")
     before = page.url
     button.click()
     dialog = page.locator("dialog[open]").filter(has_text=filename)
-    wait_visible(dialog.get_by_role("heading", name=filename, exact=True), code)
+    wait_visible(
+        dialog.get_by_role("heading", name=filename, exact=True),
+        f"{prefix}_PREVIEW_TITLE_MISSING",
+    )
     image = dialog.locator("img")
-    wait_visible(image, code)
+    wait_visible(image, f"{prefix}_PREVIEW_IMAGE_MISSING")
     if image.get_attribute("src") != expected_href:
-        raise AcceptanceFailure(code)
-    # A broken image is still a visible <img>; only the decoded size proves the
-    # per-actor stream actually served renderable bytes into this origin.
-    if not image.evaluate("element => element.complete && element.naturalWidth > 0"):
-        raise AcceptanceFailure(code)
-    wait_visible(dialog.get_by_role("link", name="下载原件", exact=True), code)
+        raise AcceptanceFailure(f"{prefix}_PREVIEW_SOURCE_MISMATCH")
+    # A broken image is still a visible <img>: the element gets a box from its
+    # border before any bytes arrive. Wait for the decode rather than sampling
+    # `complete`, which is simply false while the request is still in flight —
+    # over a real network that is most of the time just after the click.
+    # decode() rejects if the bytes never render, so this is the whole proof.
+    try:
+        image.evaluate("element => element.decode()")
+    except PlaywrightError as error:
+        raise AcceptanceFailure(f"{prefix}_PREVIEW_IMAGE_NOT_DECODED") from error
+    if image.evaluate("element => element.naturalWidth") < 1:
+        raise AcceptanceFailure(f"{prefix}_PREVIEW_IMAGE_NOT_DECODED")
+    wait_visible(
+        dialog.get_by_role("link", name="下载原件", exact=True),
+        f"{prefix}_PREVIEW_DOWNLOAD_MISSING",
+    )
     dialog.get_by_role("button", name="关闭", exact=True).click()
-    dialog.wait_for(state="hidden", timeout=30_000)
+    try:
+        dialog.wait_for(state="hidden", timeout=30_000)
+    except PlaywrightError as error:
+        raise AcceptanceFailure(f"{prefix}_PREVIEW_NOT_DISMISSED") from error
     if page.url != before:
-        raise AcceptanceFailure(code)
+        raise AcceptanceFailure(f"{prefix}_PREVIEW_NAVIGATED")
 
 
 def assert_attachment_download(page: Page, filename: str, expected_sha256: str) -> None:
@@ -816,7 +832,7 @@ def run() -> None:
                 student,
                 attachment_filename,
                 attachment_href,
-                "STAGING_ACCEPTANCE_STUDENT_ATTACHMENT_PREVIEW_FAILED",
+                "STAGING_ACCEPTANCE_STUDENT_ATTACHMENT",
             )
             checks.append({"code": "STUDENT_PRIVATE_ATTACHMENT_PREVIEW", "status": "PASS"})
             student.get_by_role("button", name="正式提交", exact=True).click()
@@ -861,7 +877,7 @@ def run() -> None:
                 teacher,
                 attachment_filename,
                 attachment_href,
-                "STAGING_ACCEPTANCE_TEACHER_ATTACHMENT_PREVIEW_FAILED",
+                "STAGING_ACCEPTANCE_TEACHER_ATTACHMENT",
             )
             checks.append({"code": "TEACHER_FORMAL_ATTACHMENT_PREVIEW", "status": "PASS"})
             feedback(teacher, feedback_text)

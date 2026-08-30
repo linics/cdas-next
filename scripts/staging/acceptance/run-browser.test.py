@@ -215,7 +215,19 @@ class BrowserContractTests(unittest.TestCase):
         self.assertIn("TEACHER_FORMAL_ATTACHMENT_PREVIEW", source)
         self.assertIn('get_by_role("button", name="预览", exact=True)', source)
         self.assertIn('get_by_role("link", name="下载原件", exact=True)', source)
-        self.assertIn("element.complete && element.naturalWidth > 0", source)
+        self.assertIn("element => element.decode()", source)
+        self.assertIn("element => element.naturalWidth", source)
+        for suffix in (
+            "_PREVIEW_BUTTON_MISSING",
+            "_PREVIEW_TITLE_MISSING",
+            "_PREVIEW_IMAGE_MISSING",
+            "_PREVIEW_SOURCE_MISMATCH",
+            "_PREVIEW_IMAGE_NOT_DECODED",
+            "_PREVIEW_DOWNLOAD_MISSING",
+            "_PREVIEW_NOT_DISMISSED",
+            "_PREVIEW_NAVIGATED",
+        ):
+            self.assertIn(suffix, source)
         self.assertIn("STAGING_ACCEPTANCE_TEACHER_EVALUATION_SUMMARY_MISSING", source)
         self.assertIn("STAGING_ACCEPTANCE_REVIEW_COVERAGE_MISSING", source)
         self.assertIn("REVIEW_COVERAGE_VISIBLE", source)
