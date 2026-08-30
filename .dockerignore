@@ -1,0 +1,23 @@
+# Git metadata and local secrets never belong in a trial image.
+.git
+.env*
+.clerk
+*.pem
+
+# Local dependency/build output is platform-specific and regenerated in Docker.
+node_modules
+.pnpm-store
+.next
+out
+build
+coverage
+playwright-report
+test-results
+output
+
+# Tooling/editor noise.
+.DS_Store
+*.tsbuildinfo
+*.log
+__pycache__
+*.pyc

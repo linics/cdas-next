@@ -1,0 +1,74 @@
+name: cdas-next-v3-trial
+
+x-application: &application
+  build:
+    context: ../..
+    dockerfile: deploy/trial/Dockerfile
+  image: cdas-next-v3-trial:${CDAS_DEPLOYMENT_ID:-local}
+  env_file:
+    - ../../../runtime.env
+  environment:
+    NODE_ENV: production
+    NEXT_TELEMETRY_DISABLED: "1"
+    NODE_OPTIONS: --max-old-space-size=1024
+    PORT: "3000"
+
+services:
+  database:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${TRIAL_DATABASE_NAME:?TRIAL_DATABASE_NAME is required}
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    healthcheck:
+      test:
+        ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    volumes:
+      - trial-postgres:/var/lib/postgresql/data
+    mem_limit: 384m
+
+  migrate:
+    <<: *application
+    command: ["migrate"]
+    restart: "no"
+    depends_on:
+      database:
+        condition: service_healthy
+    mem_limit: 512m
+
+  app:
+    <<: *application
+    command: ["app"]
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    ports:
+      - "127.0.0.1:3001:3000"
+    healthcheck:
+      test:
+        ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3000/api/health').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))\""]
+      interval: 15s
+      timeout: 5s
+      retries: 12
+      start_period: 5m
+    mem_limit: 1280m
+
+  seed:
+    <<: *application
+    command: ["seed"]
+    restart: "no"
+    profiles: ["seed"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    mem_limit: 768m
+
+volumes:
+  trial-postgres:
+    name: cdas-next-v3-trial-postgres
