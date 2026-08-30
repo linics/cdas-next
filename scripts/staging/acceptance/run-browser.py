@@ -732,7 +732,10 @@ def run() -> None:
             other_student.locator(f'a[href="{activity_href}?phase=1"]').click()
             wait_text(other_student, phase_one_evidence)
             other_student.locator(f'a[href="{activity_href}?phase=2"]').click()
-            other_student.get_by_text("第 2 阶段", exact=True).wait_for(state="visible")
+            wait_visible(
+                other_student.locator('section[aria-label^="第 2 阶段"]'),
+                "STAGING_ACCEPTANCE_STUDENT_PHASE_FOCUS_MISSING",
+            )
             other_student.get_by_role("checkbox", name=re.compile("Stage 2 synthetic text evidence")).check()
             other_student.locator("#text-evidence").fill(phase_two_evidence)
             other_student.get_by_role("button", name="保存草稿", exact=True).click()
