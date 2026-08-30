@@ -35,6 +35,13 @@ import {
   readOfficialKnowledgeSection,
   searchOfficialKnowledge,
 } from "../knowledge/official-corpus";
+import { teacherAgentPageKindSchema } from "../../domain/assistant/teacher-agent-page-context";
+import { teacherProductSurfaces } from "../../domain/assistant/teacher-product-surfaces";
+import {
+  MAX_ATTACHMENT_BYTES,
+  MAX_SUBMISSION_ATTACHMENTS,
+  supportedAttachmentFormats,
+} from "../../domain/submission/attachment-policy";
 
 const actorId = "10000000-0000-4000-8000-000000000001";
 const runId = "20000000-0000-4000-8000-000000000002";
@@ -408,6 +415,53 @@ function dependencies(): ActivityAssistantHandlerDependencies {
       }),
   };
 }
+
+describe("product surface instructions", () => {
+  // The assistant is asked what the product can do far more often than it is
+  // asked to draft an activity. Answering that from the tool list alone makes
+  // it say 「我不能」 about features that exist — which teaches the teacher the
+  // product cannot do it either. These walk the same catalogues the pages are
+  // routed and validated from, so a page that moves or a format that is added
+  // fails here before it reaches a teacher.
+  it("describes every teacher page the assistant can be standing on", () => {
+    const text = buildActivityAssistantInstructions([]);
+    const described = new Set(
+      teacherProductSurfaces.map((surface) => surface.kind),
+    );
+
+    for (const kind of teacherAgentPageKindSchema.options) {
+      if (kind === "UNKNOWN_TEACHER_PAGE") continue;
+      expect(described).toContain(kind);
+    }
+    for (const surface of teacherProductSurfaces) {
+      expect(text).toContain(surface.path);
+      expect(text).toContain(surface.label);
+    }
+  });
+
+  it("states the attachment limits and formats the policy actually enforces", () => {
+    const text = buildActivityAssistantInstructions([]);
+
+    expect(text).toContain(`最多 ${MAX_SUBMISSION_ATTACHMENTS} 个`);
+    expect(text).toContain(`${MAX_ATTACHMENT_BYTES / (1024 * 1024)} MB`);
+    for (const format of supportedAttachmentFormats) {
+      for (const extension of format.extensions) {
+        expect(text).toContain(extension);
+      }
+    }
+  });
+
+  it("sends evaluation help to the review drafters instead of refusing it", () => {
+    // The refusal this replaces was accurate about the chat and wrong about the
+    // product: a teacher asked whether it could help judge work including
+    // attachments — exactly what D-044/D-052/D-055 built — and was told no.
+    const text = buildActivityAssistantInstructions([]);
+
+    expect(text).toContain("让助手起草这一版反馈");
+    expect(text).toContain("让助手起草这一版评价");
+    expect(text).toContain("起草时会读当前正式修订的附件");
+  });
+});
 
 describe("buildActivityAssistantInstructions", () => {
   it.each([

@@ -9,6 +9,7 @@ import {
   type DisciplineCode,
 } from "../../domain/activity/activity-content";
 import type { TeacherAgentPageContext } from "../../domain/assistant/teacher-agent-page-context";
+import { teacherProductSurfaces } from "../../domain/assistant/teacher-product-surfaces";
 import {
   changedTaskBookAreas,
   taskBookAreaSchema,
@@ -542,43 +543,45 @@ export function mapCurrentTeacherContext(
   pageContext: TeacherAgentPageContext,
   workspace: TeacherActivityDashboard,
 ): CurrentTeacherContextOutput {
+  // Labels and paths for the fixed pages come from the same catalogue the
+  // instructions are generated from. Two hand-kept copies of a route is how the
+  // assistant ends up naming a page that has moved.
+  const fixedPage = (
+    kind: Extract<
+      TeacherAgentPageContext["kind"],
+      | "TEACHER_DASHBOARD"
+      | "ACTIVITY_NEW"
+      | "ACTIVITY_STUDIO"
+      | "TEACHER_INSIGHTS"
+      | "TEACHER_KNOWLEDGE"
+    >,
+  ): CurrentTeacherContextOutput => {
+    const surface = teacherProductSurfaces.find(
+      (candidate) => candidate.kind === kind,
+    );
+    if (!surface) throw new Error("TEACHER_PRODUCT_SURFACE_MISSING");
+    return {
+      status: "AVAILABLE",
+      kind,
+      label: surface.label,
+      href: surface.path,
+    };
+  };
   const staticContexts: Partial<
     Record<TeacherAgentPageContext["kind"], CurrentTeacherContextOutput>
   > = {
-    TEACHER_DASHBOARD: {
-      status: "AVAILABLE",
-      kind: "TEACHER_DASHBOARD",
-      label: "教师工作台",
-      href: "/teacher",
-    },
-    ACTIVITY_NEW: {
-      status: "AVAILABLE",
-      kind: "ACTIVITY_NEW",
-      label: "新建学习活动",
-      href: "/teacher/activities/new",
-    },
-    ACTIVITY_STUDIO: {
-      status: "AVAILABLE",
-      kind: "ACTIVITY_STUDIO",
-      label: "活动设计",
-      href: "/teacher/activities",
-    },
-    TEACHER_INSIGHTS: {
-      status: "AVAILABLE",
-      kind: "TEACHER_INSIGHTS",
-      label: "过程诊断",
-      href: "/teacher/insights",
-    },
-    TEACHER_KNOWLEDGE: {
-      status: "AVAILABLE",
-      kind: "TEACHER_KNOWLEDGE",
-      label: "课程依据",
-      href: "/teacher/knowledge",
-    },
+    TEACHER_DASHBOARD: fixedPage("TEACHER_DASHBOARD"),
+    ACTIVITY_NEW: fixedPage("ACTIVITY_NEW"),
+    ACTIVITY_STUDIO: fixedPage("ACTIVITY_STUDIO"),
+    TEACHER_INSIGHTS: fixedPage("TEACHER_INSIGHTS"),
+    TEACHER_KNOWLEDGE: fixedPage("TEACHER_KNOWLEDGE"),
     SUBMISSION_REVIEW: {
       status: "AVAILABLE",
       kind: "SUBMISSION_REVIEW",
-      label: "提交评阅页（本批不读取学生或提交详情）",
+      // No href: this chat is never given a submission id. The label says what
+      // the page itself offers, because a teacher standing on it who asks for
+      // help evaluating should be pointed at the drafters, not refused.
+      label: "提交评阅台（本会话不读取学生或提交详情；反馈与评价起草按钮在该页上）",
       href: null,
     },
     UNKNOWN_TEACHER_PAGE: {

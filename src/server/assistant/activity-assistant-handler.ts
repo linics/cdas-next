@@ -13,6 +13,7 @@ import {
   type LanguageModel,
   type ToolCallRepairFunction,
 } from "ai";
+import { buildProductSurfaceInstructions } from "../../domain/assistant/teacher-product-surfaces";
 import type { AppUser, PrismaClient } from "../../generated/prisma/client";
 import {
   AuthenticationError,
@@ -339,6 +340,8 @@ export function buildActivityAssistantInstructions(
 - 证据要逐级递进：后一阶段的证据应当建立在前一阶段的产出之上，而不是各交各的。
 - 在任务理解摘要里自查并说明：三个阶段是否同一个故事、证据是否逐级递进。若自查不过，
   先改任务书再提交，不要提交后再解释。
+
+${buildProductSurfaceInstructions()}
 
 你的唯一业务范围是：
 0. 可以识别当前教师页面，并查询当前教师有权查看的班级、活动草稿、发布摘要与待办。只使用只读工具返回的结构化结果；不得猜测其他资源、学生或评阅详情。工具返回的站内链接必须留给教师点击，不得声称已经自动跳转。
