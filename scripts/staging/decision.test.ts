@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { evaluateStagingDecision, expectedEvidenceChecks, isStagingDecision, requiredManualAttestations } from "./decision";
+import { evaluateStagingPreflight } from "./contracts";
+import { evaluateStagingDecision, expectedEvidenceChecks, isStagingDecision, preflightEvidencePresentCodes, requiredManualAttestations } from "./decision";
 
 const passingEvidence = (schema: keyof typeof expectedEvidenceChecks) => ({
   schema,
@@ -12,7 +13,7 @@ const passingEvidence = (schema: keyof typeof expectedEvidenceChecks) => ({
     code,
     status: "PASS",
     ...(
-      schema === "staging-preflight.v1" && ["STAGING_BASE_URL_HTTPS_REMOTE", "STAGING_VERCEL_PROJECT_NAME", "DATABASE_URL_REMOTE_POOLED", "DIRECT_URL_REMOTE_DIRECT", "DATABASE_URL_TLS_REQUIRED", "DIRECT_URL_TLS_REQUIRED", "CLERK_TEST_PUBLISHABLE_KEY", "CLERK_TEST_SECRET_KEY", "STAGING_TEST_TEACHER_CLERK_ID", "STAGING_TEST_STUDENT_CLERK_ID", "CDAS_DEPLOYMENT_ID", "STAGING_HEALTH_PROOF_SECRET", "DEEPSEEK_CONFIG_WHEN_ENABLED"].includes(code)
+      schema === "staging-preflight.v1" && preflightEvidencePresentCodes.has(code)
         ? { present: true }
         : {}
     ),
@@ -68,6 +69,20 @@ describe("evaluateStagingDecision", () => {
 
     expect(evaluateStagingDecision({ ...passingInput(), preflight: truncated }).decision).toBe("NO_GO");
     expect(evaluateStagingDecision({ ...passingInput(), preflight: missingPresent }).decision).toBe("NO_GO");
+  });
+
+  // The aggregator restates the preflight vocabulary instead of trusting the
+  // evidence it is handed, so a check added to the preflight and not here would
+  // silently turn every real run into NO_GO. Compare the two directly. The
+  // preflight emits every code unconditionally, so any environment exposes the
+  // full vocabulary; an empty one keeps this test free of configuration.
+  it("expects exactly the preflight vocabulary the preflight emits", () => {
+    const emitted = evaluateStagingPreflight({}).checks;
+
+    expect(emitted.map((check) => check.code)).toEqual([...expectedEvidenceChecks["staging-preflight.v1"]]);
+    expect(emitted.filter((check) => "present" in check).map((check) => check.code).sort()).toEqual(
+      [...preflightEvidencePresentCodes].sort(),
+    );
   });
 
   it("accepts only the exact nested final-decision shape", () => {
