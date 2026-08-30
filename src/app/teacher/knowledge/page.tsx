@@ -75,7 +75,7 @@ export default async function TeacherKnowledgePage({
             <p className={workspaceStyles.eyebrow}>活动设计 / 官方依据</p>
             <h1>检索课程标准</h1>
             <p>
-              收录教育部 2022 年版课程方案与部分学科课程标准，供设计活动时查证依据；检索结果不构成合规判定。
+              收录教育部 2022 年版课程方案与 14 门学科课程标准，供设计跨学科任务时查证依据；检索结果不构成合规判定。
             </p>
           </div>
           <Link

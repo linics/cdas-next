@@ -49,7 +49,7 @@ export function PublishPanel({
         <p className={styles.eyebrow}>发布参数</p>
         <h2>选择班级与期限</h2>
         <p>
-          先设置发布参数并准备确认；活动需经你最终确认后才会发布。
+          先设置发布参数并准备确认；跨学科任务需经你最终确认后才会发布。
         </p>
 
         {workspace.classrooms.length === 0 ? (
@@ -103,7 +103,7 @@ export function PublishPanel({
                 aria-invalid={dueAtInstant === null}
               />
               <small>
-                保存后按固定时间点记录。活动开放期间超过截止时间，学生仍可提交，但会标记为迟交。
+                保存后按固定时间点记录。跨学科任务开放期间超过截止时间，学生仍可提交，但会标记为迟交。
               </small>
             </label>
             <button
@@ -129,7 +129,7 @@ export function PublishPanel({
           </form>
           <ConfirmDialog
             open={isConfirmDialogOpen}
-            title="确认发布活动"
+            title="确认发布跨学科任务"
             detail={<div className={styles.dialogDetail}><p>将草稿版本 {confirmation.draftVersion} 发布给 {confirmation.classroom.name}。发布后内容不可修改。</p><dl><div><dt>截止时间</dt><dd>{confirmation.dueAt ? <LocalizedDateTime dateTime={confirmation.dueAt} /> : "未设置"}</dd></div><div><dt>确认有效至</dt><dd><LocalizedDateTime dateTime={confirmation.expiresAt} includeSeconds /></dd></div></dl><p>参数摘要：<code>{confirmation.payloadHash}</code></p></div>}
             confirmLabel="确认并发布"
             pending={decisionPending}

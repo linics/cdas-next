@@ -122,7 +122,7 @@ describe("teacher activity studio", () => {
     const markup = await renderPage();
     expect(markup).toContain("饮水区用水记录");
     expect(markup).toContain("教室采光改造提案");
-    expect(markup).toContain("新建学习活动");
+    expect(markup).toContain("新建跨学科任务");
     expect(markup).not.toContain("校园用水现场调查");
   });
 });

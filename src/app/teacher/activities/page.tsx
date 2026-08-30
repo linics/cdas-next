@@ -64,15 +64,15 @@ export default async function TeacherActivityStudioPage() {
   return (
     <TeacherPage
       actorName={dashboard.actor.displayName}
-      breadcrumb={[teacherHomeCrumb, { label: "活动设计" }]}
+      breadcrumb={[teacherHomeCrumb, { label: "跨学科任务" }]}
     >
       <div className={styles.pageContent}>
         <header className={styles.pageHeader}>
           <div>
-            <p className={styles.eyebrow}>活动设计 / 草稿</p>
-            <h1>未发布的活动草稿</h1>
+            <p className={styles.eyebrow}>跨学科任务 / 草稿</p>
+            <h1>未发布的跨学科任务草稿</h1>
             <p>
-              这里管理编辑中与可预览的草稿；已发布的活动请在工作台按班级查看。
+              这里管理编辑中与可预览的草稿；已发布的跨学科任务请在工作台按班级查看。
             </p>
           </div>
           <div className={styles.pageHeaderActions}>
@@ -80,7 +80,7 @@ export default async function TeacherActivityStudioPage() {
               检索课程标准
             </Link>
             <Link className={styles.primaryLink} href="/teacher/activities/new">
-              新建学习活动 <span aria-hidden="true">＋</span>
+              新建跨学科任务 <span aria-hidden="true">＋</span>
             </Link>
           </div>
         </header>
@@ -96,7 +96,7 @@ export default async function TeacherActivityStudioPage() {
             </header>
             {openDrafts.length === 0 ? (
               <p className={styles.emptyState}>
-                暂无进行中的草稿。点击「新建学习活动」开始设计。
+                暂无进行中的草稿。点击「新建跨学科任务」开始设计。
               </p>
             ) : (
               <div className={styles.activityList}>

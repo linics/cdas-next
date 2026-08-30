@@ -410,6 +410,16 @@
   padding: var(--space-3) var(--space-8) calc(var(--space-8) * 2);
 }
 .editorForm { min-width: 0; border-top: 1px solid var(--color-divider); }
+.legacyUpgradeNotice {
+  margin: var(--space-4) 0 0;
+  border: 1px solid var(--color-accent-300);
+  border-radius: var(--radius-md);
+  background: var(--color-accent-100);
+  padding: var(--space-3);
+  color: var(--color-neutral-800);
+  font-size: var(--text-meta);
+  line-height: 1.65;
+}
 .formSection {
   display: grid;
   grid-template-columns: 38px minmax(0, 1fr);

@@ -41,6 +41,7 @@ import {
   isComposerSubmitKey,
   isFollowingTranscriptBottom,
 } from "./activity-assistant";
+import { waterConservationTaskBookV3 } from "../../../fixtures/water-conservation-v3";
 
 const draftId = "10000000-0000-4000-8000-000000000001";
 const classroomId = "20000000-0000-4000-8000-000000000002";
@@ -53,13 +54,10 @@ const draftProposal = {
   },
   teacherRequirements: ["七年级", "校园节水"],
   assumptions: [],
-  integratedDisciplineContributions: [
-    { disciplineCode: "math", necessaryContribution: "整理水表读数。" },
-  ],
-  alignmentChains: [
-    { objectiveKind: "knowledge", objective: "理解数据。", task: "观察。", evidence: "记录。", assessment: "完整。" },
-    { objectiveKind: "process", objective: "分析数据。", task: "比较。", evidence: "表格。", assessment: "有据。" },
-    { objectiveKind: "emotion", objective: "承担责任。", task: "建议。", evidence: "建议稿。", assessment: "可行。" },
+  learningGoalAlignments: [
+    { learningGoalId: "goal-physics", task: "观察。", evidence: "记录。", assessment: "完整。" },
+    { learningGoalId: "goal-math", task: "比较。", evidence: "表格。", assessment: "有据。" },
+    { learningGoalId: "goal-chinese", task: "建议。", evidence: "建议稿。", assessment: "可行。" },
   ],
   sourceReferences: [
     {
@@ -70,7 +68,7 @@ const draftProposal = {
       reason: "用于校准跨学科任务的真实情境与实践要求。",
     },
   ],
-  content: {},
+  content: waterConservationTaskBookV3,
 };
 
 function helpers(
@@ -112,14 +110,14 @@ describe("ActivityAssistant", () => {
   it("states the manual safety boundary and keeps a bounded prompt", () => {
     const markup = renderAssistant();
 
-    expect(markup).toContain("把活动构想整理成可编辑草稿");
+    expect(markup).toContain("把任务构想整理成可编辑草稿");
     expect(markup).toContain("没有你的明确确认就不会发布");
     expect(markup).toContain('maxLength="4000"');
     expect(markup).toContain('data-hydrated="false"');
     expect(markup).toMatch(
       /<textarea[^>]*id="activity-assistant-prompt"[^>]*disabled=""/u,
     );
-    expect(markup).toContain("手动创建与编辑活动仍可正常使用");
+    expect(markup).toContain("手动创建与编辑跨学科任务仍可正常使用");
     expect(markup).not.toContain("AI_TOOL_APPROVAL_SECRET");
   });
 
@@ -131,7 +129,7 @@ describe("ActivityAssistant", () => {
     );
 
     expect(markup).toContain('data-surface="panel"');
-    expect(markup).toContain("教师工作台与活动设计");
+    expect(markup).toContain("教师工作台与跨学科任务设计");
     expect(markup).toContain("可分配职责");
     expect(markup).toContain("所有站内跳转都由你点击");
     expect(markup).not.toContain("当前职责");
@@ -320,7 +318,7 @@ describe("ActivityAssistant", () => {
     expect(markup).toContain("目标—任务—证据—评价一致性链");
     expect(markup).toContain("本次设计参考了哪些依据");
     expect(markup).toContain("用于校准跨学科任务的真实情境与实践要求");
-    expect(markup).toContain("不代表活动已自动通过课程标准合规审查");
+    expect(markup).toContain("不代表跨学科任务已自动通过课程标准合规审查");
     expect(markup).toContain("确认理解并创建草稿");
     expect(markup).toContain("继续补充");
     expect(markup).not.toContain("draft-signed-but-never-rendered");
@@ -542,7 +540,7 @@ describe("ActivityAssistant", () => {
       [{ id: classroomId, name: "七年一班" }],
       true,
     );
-    expect(markup).toContain("继续核对活动并准备发布");
+    expect(markup).toContain("继续核对跨学科任务并准备发布");
     expect(markup).toContain("确认发布这个精确版本");
     expect(markup).toContain("七年一班");
   });

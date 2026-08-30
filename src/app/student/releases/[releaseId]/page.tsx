@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { ZodError } from "zod";
 import {
   evidenceTypeLabel,
+  type ActivityContentStructured,
 } from "../../../../domain/activity/activity-content";
 import {
   teacherFeedbackNextStepLabels,
@@ -37,7 +38,7 @@ import { StudentAccessGate } from "../../_components/student-shell";
 import styles from "./submission-workspace.module.css";
 
 const studentNavigation = [
-  { href: "/student", label: "我的活动" },
+  { href: "/student", label: "我的跨学科任务" },
 ] as const;
 
 function ReleaseBrief({
@@ -59,6 +60,11 @@ function ReleaseBrief({
           <section><h3>总体任务</h3><p>{content.taskInstructions}</p></section>
           <section><h3>任务链</h3><ol>{content.phases.map((phase) => <li key={phase.name}><strong>{phase.name}</strong><br />任务：{phase.action}<br />情境：{phase.context}<br />学习支持：{phase.support}<br />需提交：{phase.evidence.map((evidence) => `${evidenceTypeLabel(evidence.type)}：${evidence.description}`).join("；")}<br />评价要点：{phase.evaluationFocus}</li>)}</ol></section>
           <section><h3>评价标准</h3><ul>{content.rubricDimensions.map((dimension) => <li key={dimension.name}><strong>{dimension.name}</strong><br />优秀：{dimension.excellent}<br />良好：{dimension.good}<br />合格：{dimension.pass}<br />需改进：{dimension.improve}</li>)}</ul></section>
+        </> : content.schemaVersion === 3 ? <>
+          <section><h3>总体任务</h3><p>{content.taskInstructions}</p></section>
+          <section><h3>学习目标</h3><ol>{content.learningGoals.map((goal) => <li key={goal.id}>{goal.description}</li>)}</ol></section>
+          <section><h3>阶段任务</h3><ol>{content.phases.map((phase) => <li key={phase.name}><strong>{phase.name}</strong><br />任务：{phase.action}<br />需提交：{phase.evidence.map((evidence) => `${evidenceTypeLabel(evidence.type)}：${evidence.description}`).join("；")}</li>)}</ol></section>
+          <section><h3>评价量规</h3><ul>{content.rubricDimensions.map((dimension) => <li key={dimension.name}><strong>{dimension.name}</strong><br />优秀：{dimension.excellent}<br />良好：{dimension.good}<br />达标：{dimension.pass}<br />需改进：{dimension.improve}</li>)}</ul></section>
         </> : <>
           <section><h3>任务说明</h3><p>{content.taskInstructions}</p></section>
           <section><h3>学习目标</h3><ol>{content.learningObjectives.map((objective) => <li key={objective}>{objective}</li>)}</ol></section>
@@ -79,12 +85,12 @@ function ActivityBackground({
   snapshot: StudentReleaseWorkspace["release"]["snapshot"];
 }) {
   const { content } = snapshot;
-  if (content.schemaVersion !== 2) {
+  if (content.schemaVersion !== 2 && content.schemaVersion !== 3) {
     return null;
   }
   return (
-    <section className={styles.activityBackground} aria-label="活动背景">
-      <p className={styles.eyebrow}>活动背景</p>
+    <section className={styles.activityBackground} aria-label="任务背景">
+      <p className={styles.eyebrow}>任务背景</p>
       <p>{content.backgroundSetting}</p>
     </section>
   );
@@ -98,7 +104,7 @@ function RevisionHistory({
   submission: StudentReleaseWorkspace["submission"];
   feedbackWorkspace: StudentFeedbackWorkspace | null;
   phase: StudentReleaseWorkspace["release"]["snapshot"]["content"] extends infer Content
-    ? Content extends { schemaVersion: 2; phases: infer Phases }
+    ? Content extends { schemaVersion: 2 | 3; phases: infer Phases }
       ? Phases extends ReadonlyArray<infer Phase>
         ? Phase | null
         : null
@@ -375,7 +381,7 @@ function PhaseNavigator({
   selectedPhaseIndex: number;
 }) {
   const content = workspace.release.snapshot.content;
-  if (workspace.execution.version !== 1 || content.schemaVersion !== 2) {
+  if (workspace.execution.version !== 1 || (content.schemaVersion !== 2 && content.schemaVersion !== 3)) {
     return null;
   }
 
@@ -446,10 +452,7 @@ function PhaseFocus({
   isPastDue,
   showLateWarning,
 }: {
-  phase: Extract<
-    StudentReleaseWorkspace["release"]["snapshot"]["content"],
-    { schemaVersion: 2 }
-  >["phases"][number] | null;
+  phase: ActivityContentStructured["phases"][number] | null;
   phaseIndex: number;
   dueAt: string | null;
   isPastDue: boolean;
@@ -500,7 +503,7 @@ function PhaseFocus({
       </p>
       {showLateWarning ? (
         <InlineAlert tone="warning">
-          <strong>截止时间已过，活动仍开放。</strong>{" "}
+          <strong>截止时间已过，跨学科任务仍开放。</strong>{" "}
           你仍可保存并正式提交，但新提交会标记为迟交。
         </InlineAlert>
       ) : null}
@@ -596,12 +599,12 @@ export default async function StudentReleasePage({
   const canWrite = workspace.access.canWrite;
   const content = workspace.release.snapshot.content;
   const selectedPhase =
-    content.schemaVersion === 2 && selectedPhaseIndex > 0
+    (content.schemaVersion === 2 || content.schemaVersion === 3) && selectedPhaseIndex > 0
       ? (content.phases[selectedPhaseIndex - 1] ?? null)
       : null;
   const readOnlyMessage = isActive
-    ? "你已不是该班级的当前成员，仍可查看这份活动与自己的提交，但不能再修改。"
-    : "活动已关闭，草稿与已提交内容仍可查看，但不能再保存或提交。";
+    ? "你已不是该班级的当前成员，仍可查看这份跨学科任务与自己的提交，但不能再修改。"
+    : "跨学科任务已关闭，草稿与已提交内容仍可查看，但不能再保存或提交。";
   const statusLabel = !isActive
     ? workspace.release.status === "ARCHIVED"
       ? "已封存 · 只读"
@@ -619,16 +622,16 @@ export default async function StudentReleasePage({
       audience="学生"
       actorName={workspace.actor.displayName}
       breadcrumb={[
-        { href: "/student", label: "我的学习活动" },
+        { href: "/student", label: "我的跨学科任务" },
         { label: content.title },
       ]}
       navigation={studentNavigation}
     >
       <div className={styles.releasePage}>
-        <Link className={styles.backLink} href="/student">← 返回我的活动</Link>
+        <Link className={styles.backLink} href="/student">← 返回我的跨学科任务</Link>
         <header className={styles.releaseHeader}>
           <div>
-            <p className={styles.eyebrow}>学习活动 / 阶段证据</p>
+            <p className={styles.eyebrow}>跨学科任务 / 阶段证据</p>
             <h1>{content.title}</h1>
             <p>{content.summary}</p>
           </div>

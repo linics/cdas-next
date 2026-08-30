@@ -362,7 +362,7 @@ describe("student release page access boundary", () => {
     expect(markup).toContain('aria-label="学生工作台导航"');
     expect(markup).toContain('href="/student"');
     // 背景常驻在折叠之外 —— 收起来学生就从「第 N 阶段」读起，没头没尾。
-    expect(markup).toContain("活动背景");
+    expect(markup).toContain("任务背景");
     expect(markup).toContain("你们是七年级节水观察员");
     // 折叠里保留学生用得上的三段
     expect(markup).toContain("总体任务");

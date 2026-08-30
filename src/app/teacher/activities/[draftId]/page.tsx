@@ -62,7 +62,7 @@ export default async function TeacherActivityPage({
       <div className={styles.pageContent}>
         <header className={styles.pageHeader}>
           <div>
-            <p className={styles.eyebrow}>活动设计 / 草稿版本 {draft.version}</p>
+            <p className={styles.eyebrow}>跨学科任务 / 草稿版本 {draft.version}</p>
             <h1>{content.title}</h1>
             <p>
               当前内容创建于{" "}
@@ -75,12 +75,12 @@ export default async function TeacherActivityPage({
           <article className={styles.legacyReadPanel}>
             <header>
               <p className={styles.eyebrow}>旧版内容 · 只读</p>
-              <h2>升级前先核对原活动内容</h2>
+              <h2>升级前先核对原跨学科任务内容</h2>
               <p>
-                以下为原活动内容，仅供参考。请据此补齐新版任务书；保存后原内容仍会保留。
+                以下为原跨学科任务内容，仅供参考。请据此补齐新版任务书；保存后原内容仍会保留。
               </p>
             </header>
-            <section><h3>活动摘要</h3><p>{content.summary}</p></section>
+            <section><h3>任务摘要</h3><p>{content.summary}</p></section>
             <section><h3>学习目标</h3><ol>{content.learningObjectives.map((item) => <li key={item}>{item}</li>)}</ol></section>
             <section><h3>任务说明</h3><p>{content.taskInstructions}</p></section>
             <section><h3>提交证据</h3><ul>{content.evidenceRequirements.map((item) => <li key={item}>{item}</li>)}</ul></section>

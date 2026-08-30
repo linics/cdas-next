@@ -22,7 +22,7 @@ import {
   formatDateTimeInstant,
   LocalizedDateTime,
 } from "../../_components/localized-date-time";
-import type { ActivityContentV2 } from "../../../domain/activity/activity-content";
+import type { ActivityContentStructured, ActivityContentV3 } from "../../../domain/activity/activity-content";
 import {
   taskBookAreaLabels,
   type TaskBookArea,
@@ -112,7 +112,7 @@ type TeacherDraftDetailOutput =
       published: boolean;
       editHref: string;
       previewHref: string;
-      content: ActivityContentV2;
+      content: ActivityContentStructured;
     }
   | {
       status: "LEGACY_SNAPSHOT";
@@ -127,7 +127,7 @@ type ActivityDraftRevisionProposal = {
   draftId: string;
   expectedVersion: number;
   changes: Array<{ area: TaskBookArea; change: string; reason: string }>;
-  content: ActivityContentV2;
+  content: ActivityContentStructured;
 };
 
 type ReleaseInsightsOutput =
@@ -253,13 +253,8 @@ type ActivityDraftProposal = {
   };
   teacherRequirements: string[];
   assumptions: string[];
-  integratedDisciplineContributions: Array<{
-    disciplineCode: string;
-    necessaryContribution: string;
-  }>;
-  alignmentChains: Array<{
-    objectiveKind: "knowledge" | "process" | "emotion";
-    objective: string;
+  learningGoalAlignments: Array<{
+    learningGoalId: string;
     task: string;
     evidence: string;
     assessment: string;
@@ -269,7 +264,7 @@ type ActivityDraftProposal = {
     sectionId: string;
     reason: string;
   }>;
-  content: ActivityContentV2;
+  content: ActivityContentV3;
 };
 
 type ActivityAssistantMessage = UIMessage<
@@ -425,12 +420,6 @@ function DueAtLabel({ dueAt }: { dueAt: string | null }) {
   return <LocalizedDateTime dateTime={dueAt} />;
 }
 
-const objectiveKindLabel = {
-  knowledge: "知识与技能",
-  process: "过程与方法",
-  emotion: "情感态度",
-} as const;
-
 const readOnlyDraftStatusLabel = {
   EDITING: "编辑中",
   READY_FOR_PREVIEW: "可预览",
@@ -517,10 +506,10 @@ function ActivityDraftProposalCard({
       <section className={styles.proposalSection} aria-label="跨学科必要性">
         <h3>跨学科必要性</h3>
         <dl>
-          {proposal.integratedDisciplineContributions.map((item) => (
+          {proposal.content.disciplineContributions.map((item) => (
             <div key={item.disciplineCode}>
               <dt>{item.disciplineCode}</dt>
-              <dd>{item.necessaryContribution}</dd>
+              <dd>贡献：{item.contribution}<br />不可替代性：{item.necessity}</dd>
             </div>
           ))}
         </dl>
@@ -528,11 +517,10 @@ function ActivityDraftProposalCard({
       <section className={styles.proposalSection} aria-label="目标任务证据评价一致性链">
         <h3>目标—任务—证据—评价一致性链</h3>
         <dl>
-          {proposal.alignmentChains.map((chain) => (
-            <div key={chain.objectiveKind}>
-              <dt>{objectiveKindLabel[chain.objectiveKind]}</dt>
+          {proposal.learningGoalAlignments.map((chain) => (
+            <div key={chain.learningGoalId}>
+              <dt>{proposal.content.learningGoals.find((goal) => goal.id === chain.learningGoalId)?.description ?? chain.learningGoalId}</dt>
               <dd>
-                目标：{chain.objective}<br />
                 任务：{chain.task}<br />
                 证据：{chain.evidence}<br />
                 评价：{chain.assessment}
@@ -584,7 +572,7 @@ function ActivityDraftProposalCard({
           </p>
         )}
         <p className={styles.referenceCaveat}>
-          引用用于说明设计依据，不代表活动已自动通过课程标准合规审查。
+          引用用于说明设计依据，不代表跨学科任务已自动通过课程标准合规审查。
         </p>
       </section>
       <div className={styles.inlineActions}>
@@ -601,7 +589,7 @@ function ActivityDraftProposalCard({
             onRespond({
               id: approval.id,
               approved: false,
-              reason: "教师选择继续补充活动要求",
+              reason: "教师选择继续补充跨学科任务要求",
             })
           }
         >
@@ -803,17 +791,17 @@ export function ActivityAssistant({
       className={styles.assistant}
       data-surface={surface}
       {...(surface === "panel"
-        ? { "aria-label": "教师工作台与活动设计" }
+        ? { "aria-label": "教师工作台与跨学科任务设计" }
         : { "aria-labelledby": assistantTitleId })}
     >
       {surface === "panel" ? null : (
         <header className={styles.header}>
           <div>
-            <p className={styles.eyebrow}>AI 活动助手 · 试行</p>
+            <p className={styles.eyebrow}>AI 跨学科任务助手 · 试行</p>
             <h2 id={assistantTitleId}>
               {continuationOnly
-                ? "继续核对活动并准备发布"
-                : "把活动构想整理成可编辑草稿"}
+                ? "继续核对跨学科任务并准备发布"
+                : "把任务构想整理成可编辑草稿"}
             </h2>
           </div>
           {busy ? (
@@ -832,12 +820,12 @@ export function ActivityAssistant({
         <p className={styles.boundaryNote}>
         {surface === "panel" ? (
           <>
-            可识别当前页面，查询你的班级、草稿、发布与待办，也可检索课程依据、设计活动，并经你确认后创建草稿或发布。所有站内跳转都由你点击；刷新会话即清空，手动流程不受影响。
+            可识别当前页面，查询你的班级、草稿、发布与待办，也可检索课程依据、设计跨学科任务，并经你确认后创建草稿或发布。所有站内跳转都由你点击；刷新会话即清空，手动流程不受影响。
           </>
         ) : (
           <>
-            这是独立的教师会话，可检索官方课程依据、设计活动，并在你确认后创建「可预览」草稿。发布前会另行列出草稿版本、班级与截止时间，没有你的明确确认就不会发布。
-            助手不可用时，手动创建与编辑活动仍可正常使用。你也可以
+            这是独立的教师会话，可检索官方课程依据、设计跨学科任务，并在你确认后创建「可预览」草稿。发布前会另行列出草稿版本、班级与截止时间，没有你的明确确认就不会发布。
+            助手不可用时，手动创建与编辑跨学科任务仍可正常使用。你也可以
             <Link href="/teacher/knowledge">直接检索首版官方课程标准</Link>。
           </>
         )}
@@ -852,7 +840,7 @@ export function ActivityAssistant({
               key={message.id}
             >
               <p className={styles.speaker}>
-                {message.role === "user" ? "你" : "活动助手"}
+                {message.role === "user" ? "你" : "跨学科任务助手"}
               </p>
               <div className={styles.turnBody}>
                 {message.parts.map((part, index) => {
@@ -938,7 +926,7 @@ export function ActivityAssistant({
                               ))}
                             </ul>
                           ) : (
-                            <p>当前没有活动草稿。</p>
+                            <p>当前没有跨学科任务草稿。</p>
                           )}
                         </div>
                       );
@@ -952,7 +940,7 @@ export function ActivityAssistant({
                     }
                     return (
                       <p className={styles.toolProgress} key={part.toolCallId}>
-                        正在查询你的活动草稿…
+                        正在查询你的跨学科任务草稿…
                       </p>
                     );
                   }
@@ -1003,7 +991,7 @@ export function ActivityAssistant({
                               })}
                             </ul>
                           ) : (
-                            <p>当前没有活动发布。</p>
+                            <p>当前没有跨学科任务发布。</p>
                           )}
                         </div>
                       );
@@ -1109,7 +1097,7 @@ export function ActivityAssistant({
                     if (part.state === "output-error") {
                       return (
                         <p className={styles.errorText} key={part.toolCallId}>
-                          官方标准检索失败；你仍可继续手动设计活动。
+                          官方标准检索失败；你仍可继续手动设计跨学科任务。
                         </p>
                       );
                     }
@@ -1492,7 +1480,7 @@ export function ActivityAssistant({
                     if (part.state === "output-available") {
                       return (
                         <div className={styles.toolResult} key={part.toolCallId}>
-                          <strong>活动已发布</strong>
+                          <strong>跨学科任务已发布</strong>
                           <p>
                             <DueAtLabel dueAt={part.output.publishedAt} />{" "}
                             完成不可变快照。
@@ -1531,14 +1519,14 @@ export function ActivityAssistant({
       ) : (
         <p className={styles.emptyPrompt}>
           {surface === "panel"
-            ? "可分配职责：告诉我当前页面，列出我的班级、草稿、发布和待办；也可检索课程依据、整理活动设计、创建草稿或准备发布。"
-            : "例如：「帮我设计一个七年级校园节水活动，学生要记录两次水表读数，并用证据提出改善建议。」"}
+            ? "可分配职责：告诉我当前页面，列出我的班级、草稿、发布和待办；也可检索课程依据、整理跨学科任务设计、创建草稿或准备发布。"
+            : "例如：「帮我设计一个七年级校园节水跨学科任务，学生要记录两次水表读数，并用证据提出改善建议。」"}
         </p>
       )}
 
       {error ? (
         <p className={styles.errorText} role="alert">
-          助手当前无法完成请求。手动创建与编辑活动仍可正常使用。
+          助手当前无法完成请求。手动创建与编辑跨学科任务仍可正常使用。
         </p>
       ) : null}
       </div>
@@ -1555,12 +1543,12 @@ export function ActivityAssistant({
             {busy ? "处理中" : "描述下一步"}
           </span>
         ) : (
-          <label htmlFor="activity-assistant-prompt">描述活动构想或下一步</label>
+          <label htmlFor="activity-assistant-prompt">描述跨学科任务构想或下一步</label>
         )}
         <div className={styles.composerField}>
           {surface === "panel" ? (
             <label className={styles.composerHiddenLabel} htmlFor="activity-assistant-prompt">
-              描述活动构想或下一步
+              描述跨学科任务构想或下一步
             </label>
           ) : null}
           <textarea

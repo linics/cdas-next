@@ -1,72 +1,54 @@
 @import "tailwindcss";
 
-/* ══════════════════════════════════════════════════════════════════════════
-   Classical — the token sheet, ported verbatim from the design system
-   (`_ds/classical-…/styles.css`) plus the two 中文 adjustments the prototype
-   documents. Every colour, font, spacing, radius and shadow comes from here.
-   Never hard-code a hex, a font name or a px value these tokens carry.
-   ══════════════════════════════════════════════════════════════════════ */
+/* Education SaaS — quiet blue surfaces, clear hierarchy, and system sans
+   fonts. Components consume these roles rather than importing a visual theme. */
 :root {
   color-scheme: light;
 
-  --color-bg: #f3f2f2;
-  --color-surface: #eae9e9;
-  --color-text: #201f1d;
-  --color-accent: #b68235;
-  --color-accent-2: #ac803e;
-  --color-divider: color-mix(in srgb, #201f1d 16%, transparent);
+  --color-bg: #f5f7fb;
+  --color-surface: #ffffff;
+  --color-text: #1e293b;
+  --color-accent: #2563eb;
+  --color-accent-2: #0f766e;
+  --color-divider: color-mix(in srgb, #334155 16%, transparent);
 
   /* Tonal ramps — generated in OKLCH on one shared lightness scale, so the
      same step of any role matches the others in visual value. */
-  --color-neutral-100: #f8f4f4;
-  --color-neutral-200: #eae7e7;
-  --color-neutral-300: #d7d3d3;
-  --color-neutral-400: #bab6b6;
-  --color-neutral-500: #9b9797;
-  --color-neutral-600: #7d7979;
-  --color-neutral-700: #605d5d;
-  --color-neutral-800: #444141;
-  --color-neutral-900: #2d2b2b;
+  --color-neutral-100: #f8fafc;
+  --color-neutral-200: #eef2f7;
+  --color-neutral-300: #dbe3ee;
+  --color-neutral-400: #c0ccdc;
+  --color-neutral-500: #94a3b8;
+  --color-neutral-600: #64748b;
+  --color-neutral-700: #475569;
+  --color-neutral-800: #334155;
+  --color-neutral-900: #1e293b;
 
-  --color-accent-100: #fff3e4;
-  --color-accent-200: #ffe3bf;
-  --color-accent-300: #facb8d;
-  --color-accent-400: #e1ad66;
-  --color-accent-500: #c28d41;
-  --color-accent-600: #a06f24;
-  --color-accent-700: #7d5411;
-  --color-accent-800: #5a3b0a;
-  --color-accent-900: #3a270d;
+  --color-accent-100: #eff6ff;
+  --color-accent-200: #dbeafe;
+  --color-accent-300: #bfdbfe;
+  --color-accent-400: #93c5fd;
+  --color-accent-500: #3b82f6;
+  --color-accent-600: #2563eb;
+  --color-accent-700: #1d4ed8;
+  --color-accent-800: #1e40af;
+  --color-accent-900: #1e3a8a;
 
-  /* Mono scheme: no second accent was chosen. These carry a machine-derived
-     stand-in kept only so both sets resolve — treat them as one role. */
-  --color-accent-2-100: #fff3e4;
-  --color-accent-2-200: #ffe3be;
-  --color-accent-2-300: #f5cd96;
-  --color-accent-2-400: #dbaf70;
-  --color-accent-2-500: #bc8f4e;
-  --color-accent-2-600: #9b7232;
-  --color-accent-2-700: #79561f;
-  --color-accent-2-800: #573d14;
-  --color-accent-2-900: #382810;
+  --color-accent-2-100: #f0fdfa;
+  --color-accent-2-200: #ccfbf1;
+  --color-accent-2-300: #99f6e4;
+  --color-accent-2-400: #5eead4;
+  --color-accent-2-500: #14b8a6;
+  --color-accent-2-600: #0d9488;
+  --color-accent-2-700: #0f766e;
+  --color-accent-2-800: #115e59;
+  --color-accent-2-900: #134e4a;
 
-  --font-heading: var(--font-heading-loaded), var(--font-cjk-loaded), "Songti SC", "STSong", serif;
-  --font-heading-weight: 600; /* bold is retired — semibold is the interface
-     headings' ceiling; display sizes go lighter still, to the normal cut */
-  --font-body: var(--font-body-loaded), var(--font-cjk-loaded), "Songti SC", "STSong", serif;
-  /* 界面小字（按钮、标签、分段控件、表头、字段名）全是中文，字形来自 Noto Serif SC，
-     行盒若按 Cormorant/Lora 的度量计算，两套度量叠加会让上下留白不对称。
-     让度量和字形出自同一个字，并显式定行高；拉丁标题仍走 Cormorant。
+  --font-heading: var(--font-cjk-loaded), "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+  --font-heading-weight: 700;
+  --font-body: var(--font-cjk-loaded), "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+  --font-ui: var(--font-cjk-loaded), "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
 
-     另：Classical 的 10/11/12px 三档是按拉丁字形定的，中文在这几档上笔画会糊。
-     界面小字的下限整体抬一档（kicker 11、tag 12、字段名 13），并且正文颜色最浅
-     只到 --color-neutral-700（5.83:1）—— neutral-600 在这块底色上只有 3.85:1。
-     这是本项目对 Classical 的两处中文适配之一，另一处是按钮内边距。 */
-  --font-ui: var(--font-cjk-loaded), "Songti SC", "STSong", serif;
-
-  /* Classical 出厂密度是 1.15×（4.6 / 9.2 / …），那是给拉丁文本的行宽定的。
-     中文字面本身就比拉丁密实，同样的留白会显得版面发空，所以密度收回 1.0×。
-     这是 token 层的调参，不是逐处覆写 —— 要再松再紧，只改这六个值。 */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -74,30 +56,24 @@
   --space-6: 24px;
   --space-8: 32px;
 
-  /* ── 字号层级 ─────────────────────────────────────────────────────────
-     Classical 的标题阶 42/32/25/20/16 原样保留；界面小字阶按中文抬了一档。
-     每个模块只准写角色名，不准再写 px —— 之前 11 个模块各自攒了一套字号，
-     同一个「区块标题」在教师端是 20px、学生端 24px、课程依据 26px，
-     所以每页看起来轻重不一。 */
-  --text-display: 42px;  /* 页面主标题 h1 */
-  --text-title: 32px;    /* 门禁页、整屏面板标题 */
-  --text-card: 25px;     /* 卡片标题、页面主内容块标题 */
-  --text-section: 20px;  /* 区块标题、列表行标题、对话框标题 */
-  --text-subhead: 16px;  /* 小标题、字段组标题（靠字族与字重区分，不靠字号） */
-  --text-body: 16px;     /* 正文 */
-  --text-ui: 15px;       /* 按钮、输入框 */
-  --text-meta: 14px;     /* 次要信息、行内元数据 */
-  --text-label: 13px;    /* 字段名、状态、表头 */
-  --text-kicker: 12px;   /* kicker、tag、脚注 */
+  --text-display: 36px;
+  --text-title: 28px;
+  --text-card: 22px;
+  --text-section: 18px;
+  --text-subhead: 16px;
+  --text-body: 15px;
+  --text-ui: 14px;
+  --text-meta: 13px;
+  --text-label: 13px;
+  --text-kicker: 12px;
 
-  --radius-sm: 2px;
-  --radius-md: 4px;
-  --radius-lg: 7px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
 
-  /* Elevation — derived from the ground: a whisper, never a heavy drop. */
-  --shadow-sm: 0 1px 2px color-mix(in srgb, var(--color-neutral-900) 14%, transparent);
-  --shadow-md: 0 3px 10px color-mix(in srgb, var(--color-neutral-900) 16%, transparent);
-  --shadow-lg: 0 12px 32px color-mix(in srgb, var(--color-neutral-900) 22%, transparent);
+  --shadow-sm: 0 1px 2px color-mix(in srgb, var(--color-neutral-900) 7%, transparent);
+  --shadow-md: 0 6px 18px color-mix(in srgb, var(--color-neutral-900) 9%, transparent);
+  --shadow-lg: 0 16px 40px color-mix(in srgb, var(--color-neutral-900) 13%, transparent);
 
   /* — the only derived values, all resolved from the palette above — */
   --primary-tint: color-mix(in srgb, var(--color-accent) 12%, transparent);
@@ -115,8 +91,7 @@
   --toolbar-height: 52px;
   --sidebar-width: 232px;
   --content-width: 1200px;
-  /* Counts, versions and tables: lining + tabular. Cormorant's default
-     oldstyle 1 sits like a short roman I and does not share height with 3. */
+  /* Counts, versions and tables use stable lining/tabular figures. */
   --figure-ui: tabular-nums lining-nums;
 }
 
@@ -144,7 +119,7 @@ h1, h2, h3, h4, h5, h6 {
   letter-spacing: -.015em;
   margin: 0 0 var(--space-2);
 }
-h1 { font-size: var(--text-display); font-weight: 400; } /* display sizes take the normal cut */
+h1 { font-size: var(--text-display); }
 h2 { font-size: var(--text-title); }
 h3 { font-size: var(--text-card); }
 h4 { font-size: var(--text-section); }
