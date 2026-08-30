@@ -34,10 +34,10 @@ After source sync and environment bootstrap, run from the remote source root:
 
 ```bash
 sudo docker compose --project-name cdas-next-v3-trial \
-  --env-file ../runtime.env -f deploy/trial/compose.yaml up -d --build app
+  --env-file ../runtime.env -f deploy/trial/compose.yaml up -d --no-build app
 
 sudo docker compose --project-name cdas-next-v3-trial \
-  --env-file ../runtime.env -f deploy/trial/compose.yaml --profile seed up seed
+  --env-file ../runtime.env -f deploy/trial/compose.yaml --profile seed up --no-build seed
 ```
 
 The first command starts PostgreSQL, applies migrations, performs the production
