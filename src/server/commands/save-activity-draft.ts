@@ -77,6 +77,25 @@ function hashValue(value: unknown): string {
 }
 
 function contentColumns(content: ActivityContent) {
+  if (content.schemaVersion === 3) {
+    // v3 owns goals, phase evidence and rubric dimensions only once. These
+    // scalar columns are retained for legacy list/read compatibility and are
+    // deterministically projected at the write boundary.
+    return {
+      schemaVersion: content.schemaVersion,
+      taskBook: content,
+      title: content.title,
+      summary: content.summary,
+      learningObjectives: content.learningGoals.map((goal) => goal.description),
+      taskInstructions: content.taskInstructions,
+      evidenceRequirements: [...new Set(
+        content.phases.flatMap((phase) =>
+          phase.evidence.map((evidence) => evidence.description),
+        ),
+      )],
+      feedbackCriteria: content.rubricDimensions.map((dimension) => dimension.name),
+    };
+  }
   return {
     schemaVersion: content.schemaVersion,
     taskBook: content.schemaVersion === 2 ? content : Prisma.DbNull,

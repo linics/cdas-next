@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { waterConservationTaskBook } from "../../fixtures/water-conservation";
+import { waterConservationTaskBookV3 } from "../../fixtures/water-conservation-v3";
 
 vi.mock("server-only", () => ({}));
 
@@ -26,14 +26,10 @@ const draftProposal = {
   },
   teacherRequirements: ["七年级", "校园节水"],
   assumptions: [],
-  integratedDisciplineContributions: [
-    { disciplineCode: "math", necessaryContribution: "整理和解释调查数据。" },
-    { disciplineCode: "chinese", necessaryContribution: "公开表达有依据的建议。" },
-  ],
-  alignmentChains: [
-    { objectiveKind: "knowledge", objective: "理解用水资料。", task: "观察。", evidence: "观察记录。", assessment: "资料完整。" },
-    { objectiveKind: "process", objective: "分析资料。", task: "整理。", evidence: "统计表。", assessment: "结论有据。" },
-    { objectiveKind: "emotion", objective: "承担责任。", task: "建议。", evidence: "建议稿。", assessment: "方案可行。" },
+  learningGoalAlignments: [
+    { learningGoalId: "goal-physics", task: "观察。", evidence: "观察记录。", assessment: "资料完整。" },
+    { learningGoalId: "goal-math", task: "整理。", evidence: "统计表。", assessment: "结论有据。" },
+    { learningGoalId: "goal-chinese", task: "建议。", evidence: "建议稿。", assessment: "方案可行。" },
   ],
   sourceReferences: searchOfficialKnowledge({
     query: "初中跨学科实践 数据分析 评价",
@@ -51,7 +47,7 @@ const draftProposal = {
       sectionId: result.sectionId,
       reason: "用于校准活动目标、证据与评价。",
     })),
-  content: waterConservationTaskBook,
+  content: waterConservationTaskBookV3,
 };
 
 const proposalSearchInput = {
@@ -484,7 +480,7 @@ describe("activity assistant request validation", () => {
               published: false,
               editHref: `/teacher/activities/${draftId}`,
               previewHref: `/teacher/activities/${draftId}/preview`,
-              content: waterConservationTaskBook,
+              content: waterConservationTaskBookV3,
             }
           : { status: "NOT_FOUND" as const, draftId },
       },
@@ -522,7 +518,7 @@ describe("activity assistant request validation", () => {
                       reason: "阶段之间读起来不连贯。",
                     },
                   ],
-                  content: waterConservationTaskBook,
+                  content: waterConservationTaskBookV3,
                 },
                 approval: {
                   id: "approval_1",
@@ -744,7 +740,7 @@ describe("activity assistant request validation", () => {
                     draftId: "30000000-0000-4000-8000-000000000003",
                     expectedVersion: 3,
                     changes: [],
-                    content: waterConservationTaskBook,
+                    content: waterConservationTaskBookV3,
                   },
                   approval: { id: "approval_1", signature: "s".repeat(64) },
                 },
@@ -790,7 +786,7 @@ describe("activity assistant request validation", () => {
                         reason: "阶段之间读起来不连贯。",
                       },
                     ],
-                    content: waterConservationTaskBook,
+                  content: waterConservationTaskBookV3,
                   },
                   approval: {
                     id: "approval_1",

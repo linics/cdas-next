@@ -3,7 +3,7 @@
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { activityContentV2Schema } from "../../../domain/activity/activity-content";
+import { activityContentStructuredSchema } from "../../../domain/activity/activity-content";
 import { AuthenticationError } from "../../../server/auth/current-actor";
 import { createUiCommandContext } from "../../../server/commands/create-ui-command-context";
 import { saveActivityDraft, SaveActivityDraftError } from "../../../server/commands/save-activity-draft";
@@ -40,7 +40,7 @@ function state(previous: ActivityDraftActionState, overrides: Partial<ActivityDr
 function parsedValues(formData: FormData, fallback: ActivityDraftFormValues): ActivityDraftFormValues {
   const raw = formData.get("content");
   if (typeof raw !== "string") return fallback;
-  try { return normalizeTaskBookValues(activityContentV2Schema.parse(JSON.parse(raw))); } catch { return fallback; }
+  try { return normalizeTaskBookValues(activityContentStructuredSchema.parse(JSON.parse(raw))); } catch { return fallback; }
 }
 
 function failureState(previous: ActivityDraftActionState, values: ActivityDraftFormValues, error: unknown): ActivityDraftActionState {
@@ -71,7 +71,7 @@ export async function saveActivityDraftAction(previous: ActivityDraftActionState
     const input = formSchema.parse({
       draftId: formData.get("draftId"), expectedVersion: formData.get("expectedVersion"), desiredStatus: formData.get("desiredStatus"), content: formData.get("content"), idempotencyKey: formData.get("idempotencyKey"),
     });
-    const content = normalizeTaskBookValues(activityContentV2Schema.parse(JSON.parse(input.content)));
+    const content = normalizeTaskBookValues(activityContentStructuredSchema.parse(JSON.parse(input.content)));
     const context = await createUiCommandContext();
     const result = await saveActivityDraft(getDatabaseClient(), context, {
       draftId: input.draftId, expectedVersion: input.expectedVersion, desiredStatus: input.desiredStatus,

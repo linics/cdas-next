@@ -206,7 +206,7 @@ export async function listStudentReleases(
     );
     const hasCurrentEvaluation = Boolean(
       submission &&
-        content.schemaVersion === 2 &&
+        (content.schemaVersion === 2 || content.schemaVersion === 3) &&
         submission.latestRevisionNumber > 0 &&
         currentRevision?.revisionNumber ===
           submission.latestRevisionNumber &&

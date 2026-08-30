@@ -1,86 +1,20 @@
 {
   "schemaVersion": 1,
   "sources": [
-    {
-      "id": "course-plan-2022",
-      "file": "01-course-plan-2022.md",
-      "title": "义务教育课程方案（2022年版）",
-      "publisher": "中华人民共和国教育部",
-      "version": "2022年版",
-      "schoolStages": ["PRIMARY", "MIDDLE"],
-      "disciplineCodes": [],
-      "includedTopLevelHeadings": [
-        "一、培养目标",
-        "二、基本原则",
-        "三、课程设置",
-        "四、课程标准编制与教材编写",
-        "五、课程实施"
-      ],
-      "sourceUrl": "https://www.moe.gov.cn/srcsite/A26/s8001/202204/t20220420_619921.html"
-    },
-    {
-      "id": "chinese-standard-2022",
-      "file": "03-chinese-standard-2022.md",
-      "title": "义务教育语文课程标准（2022年版）",
-      "publisher": "中华人民共和国教育部",
-      "version": "2022年版",
-      "schoolStages": ["PRIMARY", "MIDDLE"],
-      "disciplineCodes": ["chinese"],
-      "includedTopLevelHeadings": [
-        "三、课程目标",
-        "四、课程内容",
-        "五、学业质量",
-        "六、课程实施"
-      ],
-      "sourceUrl": "https://www.moe.gov.cn/srcsite/A26/s8001/202204/t20220420_619921.html"
-    },
-    {
-      "id": "physics-standard-2022",
-      "file": "08-physics-standard-2022.md",
-      "title": "义务教育物理课程标准（2022年版）",
-      "publisher": "中华人民共和国教育部",
-      "version": "2022年版",
-      "schoolStages": ["MIDDLE"],
-      "disciplineCodes": ["physics"],
-      "includedTopLevelHeadings": [
-        "三、课程目标",
-        "四、课程内容",
-        "五、学业质量",
-        "六、课程实施"
-      ],
-      "sourceUrl": "https://www.moe.gov.cn/srcsite/A26/s8001/202204/t20220420_619921.html"
-    },
-    {
-      "id": "info-tech-standard-2022",
-      "file": "10-info-tech-standard-2022.md",
-      "title": "义务教育信息科技课程标准（2022年版）",
-      "publisher": "中华人民共和国教育部",
-      "version": "2022年版",
-      "schoolStages": ["PRIMARY", "MIDDLE"],
-      "disciplineCodes": ["infoTech"],
-      "includedTopLevelHeadings": [
-        "三、课程目标",
-        "四、课程内容",
-        "五、学业质量",
-        "六、课程实施"
-      ],
-      "sourceUrl": "https://www.moe.gov.cn/srcsite/A26/s8001/202204/t20220420_619921.html"
-    },
-    {
-      "id": "math-standard-2022",
-      "file": "14-math-standard-2022.md",
-      "title": "义务教育数学课程标准（2022年版）",
-      "publisher": "中华人民共和国教育部",
-      "version": "2022年版",
-      "schoolStages": ["PRIMARY", "MIDDLE"],
-      "disciplineCodes": ["math"],
-      "includedTopLevelHeadings": [
-        "三、课程目标",
-        "四、课程内容",
-        "五、学业质量",
-        "六、课程实施"
-      ],
-      "sourceUrl": "https://www.moe.gov.cn/srcsite/A26/s8001/202204/t20220420_619921.html"
-    }
+    { "id": "course-plan-2022", "file": "01-course-plan-2022.md", "title": "义务教育课程方案（2022年版）", "publisher": "中华人民共和国教育部", "version": "2022年版", "schoolStages": ["PRIMARY", "MIDDLE"], "disciplineCodes": [], "includedTopLevelHeadings": ["一、培养目标", "二、基本原则", "三、课程设置", "四、课程标准编制与教材编写", "五、课程实施"], "sourceUrl": "https://www.moe.gov.cn/srcsite/A26/s8001/202204/t20220420_619921.html" },
+    { "id": "politics-standard-2022", "file": "02-politics-standard-2022.md", "title": "义务教育道德与法治课程标准（2022年版）", "publisher": "中华人民共和国教育部", "version": "2022年版", "schoolStages": ["PRIMARY", "MIDDLE"], "disciplineCodes": ["politics"], "includedTopLevelHeadings": ["三、课程目标", "四、课程内容", "五、学业质量", "六、课程实施"], "sourceUrl": "https://www.moe.gov.cn/srcsite/A26/s8001/202204/t20220420_619921.html" },
+    { "id": "chinese-standard-2022", "file": "03-chinese-standard-2022.md", "title": "义务教育语文课程标准（2022年版）", "publisher": "中华人民共和国教育部", "version": "2022年版", "schoolStages": ["PRIMARY", "MIDDLE"], "disciplineCodes": ["chinese"], "includedTopLevelHeadings": ["三、课程目标", "四、课程内容", "五、学业质量", "六、课程实施"], "sourceUrl": "https://www.moe.gov.cn/srcsite/A26/s8001/202204/t20220420_619921.html" },
+    { "id": "history-standard-2022", "file": "04-history-standard-2022.md", "title": "义务教育历史课程标准（2022年版）", "publisher": "中华人民共和国教育部", "version": "2022年版", "schoolStages": ["MIDDLE"], "disciplineCodes": ["history"], "includedTopLevelHeadings": ["三、课程目标", "四、课程内容", "五、学业质量", "六、课程实施"], "sourceUrl": "https://www.moe.gov.cn/srcsite/A26/s8001/202204/t20220420_619921.html" },
+    { "id": "english-standard-2022", "file": "05-english-standard-2022.md", "title": "义务教育英语课程标准（2022年版）", "publisher": "中华人民共和国教育部", "version": "2022年版", "schoolStages": ["PRIMARY", "MIDDLE"], "disciplineCodes": ["english"], "includedTopLevelHeadings": ["三、课程目标", "四、课程内容", "五、学业质量", "六、课程实施"], "sourceUrl": "https://www.moe.gov.cn/srcsite/A26/s8001/202204/t20220420_619921.html" },
+    { "id": "geography-standard-2022", "file": "06-geography-standard-2022.md", "title": "义务教育地理课程标准（2022年版）", "publisher": "中华人民共和国教育部", "version": "2022年版", "schoolStages": ["MIDDLE"], "disciplineCodes": ["geography"], "includedTopLevelHeadings": ["三、课程目标", "四、课程内容", "五、学业质量", "六、课程实施"], "sourceUrl": "https://www.moe.gov.cn/srcsite/A26/s8001/202204/t20220420_619921.html" },
+    { "id": "science-standard-2022", "file": "07-science-standard-2022.md", "title": "义务教育科学课程标准（2022年版）", "publisher": "中华人民共和国教育部", "version": "2022年版", "schoolStages": ["PRIMARY"], "disciplineCodes": ["science"], "includedTopLevelHeadings": ["三、课程目标", "四、课程内容", "五、学业质量", "六、课程实施"], "sourceUrl": "https://www.moe.gov.cn/srcsite/A26/s8001/202204/t20220420_619921.html" },
+    { "id": "physics-standard-2022", "file": "08-physics-standard-2022.md", "title": "义务教育物理课程标准（2022年版）", "publisher": "中华人民共和国教育部", "version": "2022年版", "schoolStages": ["MIDDLE"], "disciplineCodes": ["physics"], "includedTopLevelHeadings": ["三、课程目标", "四、课程内容", "五、学业质量", "六、课程实施"], "sourceUrl": "https://www.moe.gov.cn/srcsite/A26/s8001/202204/t20220420_619921.html" },
+    { "id": "biology-standard-2022", "file": "09-biology-standard-2022.md", "title": "义务教育生物学课程标准（2022年版）", "publisher": "中华人民共和国教育部", "version": "2022年版", "schoolStages": ["MIDDLE"], "disciplineCodes": ["biology"], "includedTopLevelHeadings": ["三、课程目标", "四、课程内容", "五、学业质量", "六、课程实施"], "sourceUrl": "https://www.moe.gov.cn/srcsite/A26/s8001/202204/t20220420_619921.html" },
+    { "id": "info-tech-standard-2022", "file": "10-info-tech-standard-2022.md", "title": "义务教育信息科技课程标准（2022年版）", "publisher": "中华人民共和国教育部", "version": "2022年版", "schoolStages": ["PRIMARY", "MIDDLE"], "disciplineCodes": ["infoTech"], "includedTopLevelHeadings": ["三、课程目标", "四、课程内容", "五、学业质量", "六、课程实施"], "sourceUrl": "https://www.moe.gov.cn/srcsite/A26/s8001/202204/t20220420_619921.html" },
+    { "id": "sports-standard-2022", "file": "11-sports-standard-2022.md", "title": "义务教育体育与健康课程标准（2022年版）", "publisher": "中华人民共和国教育部", "version": "2022年版", "schoolStages": ["PRIMARY", "MIDDLE"], "disciplineCodes": ["sports"], "includedTopLevelHeadings": ["三、课程目标", "四、课程内容", "五、学业质量", "六、课程实施"], "sourceUrl": "https://www.moe.gov.cn/srcsite/A26/s8001/202204/t20220420_619921.html" },
+    { "id": "arts-standard-2022", "file": "12-arts-standard-2022.md", "title": "义务教育艺术课程标准（2022年版）", "publisher": "中华人民共和国教育部", "version": "2022年版", "schoolStages": ["PRIMARY", "MIDDLE"], "disciplineCodes": ["arts"], "includedTopLevelHeadings": ["四、课程目标", "五、课程内容", "六、学业质量", "七、课程实施"], "sourceUrl": "https://www.moe.gov.cn/srcsite/A26/s8001/202204/t20220420_619921.html" },
+    { "id": "labor-standard-2022", "file": "13-labor-standard-2022.md", "title": "义务教育劳动课程标准（2022年版）", "publisher": "中华人民共和国教育部", "version": "2022年版", "schoolStages": ["PRIMARY", "MIDDLE"], "disciplineCodes": ["labor"], "includedTopLevelHeadings": ["三、课程目标", "四、课程内容", "五、劳动素养要求", "六、课程实施"], "sourceUrl": "https://www.moe.gov.cn/srcsite/A26/s8001/202204/t20220420_619921.html" },
+    { "id": "math-standard-2022", "file": "14-math-standard-2022.md", "title": "义务教育数学课程标准（2022年版）", "publisher": "中华人民共和国教育部", "version": "2022年版", "schoolStages": ["PRIMARY", "MIDDLE"], "disciplineCodes": ["math"], "includedTopLevelHeadings": ["三、课程目标", "四、课程内容", "五、学业质量", "六、课程实施"], "sourceUrl": "https://www.moe.gov.cn/srcsite/A26/s8001/202204/t20220420_619921.html" },
+    { "id": "chemistry-standard-2022", "file": "15-chemistry-standard-2022.md", "title": "义务教育化学课程标准（2022年版）", "publisher": "中华人民共和国教育部", "version": "2022年版", "schoolStages": ["MIDDLE"], "disciplineCodes": ["chemistry"], "includedTopLevelHeadings": ["三、课程目标", "四、课程内容", "五、学业质量", "六、课程实施"], "sourceUrl": "https://www.moe.gov.cn/srcsite/A26/s8001/202204/t20220420_619921.html" }
   ]
 }

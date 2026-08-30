@@ -202,7 +202,8 @@ function modelInput(
 ): SuggestionModelInput {
   const content = workspace.submission.release.snapshot.content;
   const phase =
-    content.schemaVersion === 2 && workspace.submission.phaseIndex > 0
+    (content.schemaVersion === 2 || content.schemaVersion === 3) &&
+    workspace.submission.phaseIndex > 0
       ? (content.phases[workspace.submission.phaseIndex - 1] ?? null)
       : null;
   return {

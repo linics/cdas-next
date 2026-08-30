@@ -4,8 +4,8 @@ import { createHash } from "node:crypto";
 import { tool } from "ai";
 import { z } from "zod";
 import {
-  activityContentV2Schema,
-  disciplineCodeSchema,
+  activityContentV3Schema,
+  activityContentStructuredSchema,
   type DisciplineCode,
 } from "../../domain/activity/activity-content";
 import type { TeacherAgentPageContext } from "../../domain/assistant/teacher-agent-page-context";
@@ -67,11 +67,10 @@ export const publishActivityToolInputSchema = z
   .strict();
 
 const proposalText = z.string().trim().min(1).max(600);
-const firstCorpusDisciplineCodes = new Set<DisciplineCode>([
-  "chinese",
-  "math",
-  "physics",
-  "infoTech",
+const officialCorpusDisciplineCodes = new Set<DisciplineCode>([
+  "politics", "chinese", "math", "english", "science", "history",
+  "geography", "physics", "chemistry", "biology", "infoTech", "labor",
+  "arts", "sports",
 ]);
 
 const taskUnderstandingSummarySchema = z
@@ -80,13 +79,6 @@ const taskUnderstandingSummarySchema = z
     studentAction: proposalText,
     intendedOutcome: proposalText,
     evidenceAndAssessment: proposalText,
-  })
-  .strict();
-
-const integratedDisciplineContributionSchema = z
-  .object({
-    disciplineCode: disciplineCodeSchema,
-    necessaryContribution: proposalText,
   })
   .strict();
 
@@ -104,10 +96,9 @@ const activityDraftSourceReferenceSchema = z
   })
   .strict();
 
-const alignmentChainSchema = z
+const learningGoalAlignmentSchema = z
   .object({
-    objectiveKind: z.enum(["knowledge", "process", "emotion"]),
-    objective: proposalText,
+    learningGoalId: z.string().trim().regex(/^[a-z][a-z0-9_-]{0,63}$/),
     task: proposalText,
     evidence: proposalText,
     assessment: proposalText,
@@ -117,40 +108,24 @@ const alignmentChainSchema = z
 /**
  * The L1 design proposal is intentionally a narrow, one-shot artifact. It is
  * not stored as a separate business entity: the teacher either approves this
- * exact input and creates its editable v2 draft, or rejects it without a
+ * exact input and creates its editable v3 draft, or rejects it without a
  * write. The content remains the sole persisted task book.
  */
 /**
- * Two facts in this payload are not the model's to remember: the schema
- * version is a constant, and the integrated discipline codes are exactly the
- * keys of the contributions it already wrote. Asking for either again only
- * creates a way to be inconsistent, so both are filled in before validation.
- * A list the model does supply is still checked against the contributions.
+ * The schema version is server-controlled. The task book remains the only
+ * persisted canonical artifact and owns discipline contributions itself.
  */
 function completeDraftProposalInput(value: unknown): unknown {
   if (!value || typeof value !== "object") return value;
   const proposal = value as Record<string, unknown>;
   const content = proposal.content;
   if (!content || typeof content !== "object") return value;
-  const contributions = Array.isArray(proposal.integratedDisciplineContributions)
-    ? proposal.integratedDisciplineContributions
-    : [];
-  const derivedCodes = contributions
-    .map((item) =>
-      item && typeof item === "object"
-        ? (item as { disciplineCode?: unknown }).disciplineCode
-        : undefined,
-    )
-    .filter((code): code is string => typeof code === "string");
   const draft = content as Record<string, unknown>;
-  const codes = draft.integratedDisciplineCodes;
   return {
     ...proposal,
     content: {
       ...draft,
-      schemaVersion: 2,
-      integratedDisciplineCodes:
-        Array.isArray(codes) && codes.length > 0 ? codes : derivedCodes,
+      schemaVersion: 3,
     },
   };
 }
@@ -162,54 +137,20 @@ export const activityDraftProposalSchema = z.preprocess(
     taskUnderstandingSummary: taskUnderstandingSummarySchema,
     teacherRequirements: z.array(proposalText).min(1).max(12),
     assumptions: z.array(proposalText).max(8),
-    integratedDisciplineContributions: z
-      .array(integratedDisciplineContributionSchema)
-      .min(1)
-      .max(14),
-    alignmentChains: z.array(alignmentChainSchema).length(3),
-    sourceReferences: z.array(activityDraftSourceReferenceSchema).max(4),
-    content: activityContentV2Schema,
+    learningGoalAlignments: z.array(learningGoalAlignmentSchema).min(2).max(8),
+    sourceReferences: z.array(activityDraftSourceReferenceSchema).max(8),
+    content: activityContentV3Schema,
   })
   .strict()
   .superRefine((proposal, context) => {
-    const expectedDisciplines = new Set(proposal.content.integratedDisciplineCodes);
-    const suppliedDisciplines = proposal.integratedDisciplineContributions.map(
-      (item) => item.disciplineCode,
-    );
-    const suppliedSet = new Set(suppliedDisciplines);
-    if (suppliedSet.size !== suppliedDisciplines.length) {
+    const goalIds = proposal.content.learningGoals.map((goal) => goal.id);
+    const alignedGoalIds = proposal.learningGoalAlignments.map((chain) => chain.learningGoalId);
+    if (new Set(alignedGoalIds).size !== alignedGoalIds.length || alignedGoalIds.length !== goalIds.length || goalIds.some((id) => !alignedGoalIds.includes(id))) {
       context.addIssue({
         code: "custom",
-        path: ["integratedDisciplineContributions"],
-        message: "Each integrated discipline may contribute exactly once",
-        params: { reason: "DISCIPLINE_REPEATED" },
-      });
-    } else if (
-      suppliedSet.size !== expectedDisciplines.size ||
-      [...expectedDisciplines].some((code) => !suppliedSet.has(code))
-    ) {
-      context.addIssue({
-        code: "custom",
-        path: ["integratedDisciplineContributions"],
-        message:
-          "Integrated discipline contributions must cover each integrated discipline exactly once",
-        params: { reason: "DISCIPLINE_CONTRIBUTIONS" },
-      });
-    }
-
-    const kinds = proposal.alignmentChains.map((chain) => chain.objectiveKind);
-    if (
-      new Set(kinds).size !== 3 ||
-      !["knowledge", "process", "emotion"].every((kind) =>
-        kinds.includes(kind as (typeof kinds)[number]),
-      )
-    ) {
-      context.addIssue({
-        code: "custom",
-        path: ["alignmentChains"],
-        message:
-          "Alignment chains must contain knowledge, process, and emotion exactly once",
-        params: { reason: "ALIGNMENT_CHAINS" },
+        path: ["learningGoalAlignments"],
+        message: "Every learning goal requires one task-evidence-assessment alignment",
+        params: { reason: "LEARNING_GOAL_ALIGNMENT" },
       });
     }
 
@@ -218,11 +159,11 @@ export const activityDraftProposalSchema = z.preprocess(
       proposal.content.mainDisciplineCode,
       ...proposal.content.integratedDisciplineCodes,
     ]);
-    const coveredByFirstCorpus = [...activityDisciplines].some((code) =>
-      firstCorpusDisciplineCodes.has(code),
+    const coveredByOfficialCorpus = [...activityDisciplines].some((code) =>
+      officialCorpusDisciplineCodes.has(code),
     );
     if (
-      coveredByFirstCorpus &&
+      coveredByOfficialCorpus &&
       (proposal.sourceReferences.length < 2 ||
         new Set(proposal.sourceReferences.map((reference) => reference.sourceId))
           .size < 2)
@@ -231,7 +172,7 @@ export const activityDraftProposalSchema = z.preprocess(
         code: "custom",
         path: ["sourceReferences"],
         message:
-          "Activities covered by the first official corpus require two distinct official sources",
+          "Activities covered by the official corpus require two distinct official sources",
         params: { reason: "TOO_FEW_SOURCES" },
       });
     }
@@ -439,7 +380,7 @@ export const activityDraftRevisionProposalSchema = z
     draftId: z.uuid(),
     expectedVersion: z.int().positive(),
     changes: z.array(revisionChangeSchema).min(1).max(8),
-    content: activityContentV2Schema,
+    content: activityContentStructuredSchema,
   })
   .strict()
   .superRefine((proposal, context) => {
@@ -894,7 +835,7 @@ export function createActivityAssistantTools({
 
     create_activity_draft: tool({
       description:
-        "把教师已经说明清楚的完整跨学科任务书储存成可预览、可继续编辑的活动草稿。所有文字使用简体中文。content.schemaVersion 与 content.integratedDisciplineCodes 由服务端补齐，不要自己填：学科以你写的融合学科贡献为准。作业类型只用 practical、inquiry、project；practical 子类型只用 visit、simulation、observation；inquiry 子类型只用 literature、survey、experiment；project 的 assignmentSubtype 必须为 null。融合学科贡献用学科目录里的英文 code，每个融合学科各写一条，不得包含主学科。sourceReferences 每一条都必须是本轮 read_source_section 已返回 FOUND 的章节，数量不得超过已通读章节。必须包含三维目标、三至四个连续阶段、类型化证据及四档量规，不能臆造缺失事实。",
+        "把教师已经说明清楚的完整跨学科任务书储存成可预览、可继续编辑的 v3 草稿。所有文字使用简体中文。content.schemaVersion 由服务端固定为 3。每个选定学科（主学科和融合学科）都要在 disciplineContributions 中写一条贡献与不可替代性说明；learningGoals 中每个目标挂 1–3 条静态目录内、适配学段年级的核心素养引用。每个目标都必须由阶段和量规关联，阶段证据只用 text/document/image/confirm 四种真实支持类型。sourceReferences 每一条都必须是本轮 read_source_section 已返回 FOUND 的章节，数量不得超过已通读章节；不能臆造缺失事实。",
       inputSchema: proposalAfterReadingSchema,
       outputSchema: createdDraftToolOutputSchema,
       strict: true,

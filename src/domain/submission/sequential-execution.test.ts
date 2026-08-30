@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { waterConservationTaskBook } from "../../fixtures/water-conservation";
+import { waterConservationTaskBookV3 } from "../../fixtures/water-conservation-v3";
 import {
   executionVersionForContent,
   resolveSubmissionExecutionScope,
@@ -52,5 +53,13 @@ describe("sequential submission execution", () => {
     expect(() =>
       resolveSubmissionExecutionScope(0, waterConservationTaskBook, 1),
     ).toThrowError(new SubmissionExecutionError("INVALID_PHASE"));
+  });
+
+  it("uses v3 frozen phases without changing v2 execution behaviour", () => {
+    const phased = { ...waterConservationTaskBookV3, submissionMode: "phased" as const };
+    expect(executionVersionForContent(phased)).toBe(1);
+    expect(resolveSubmissionExecutionScope(1, phased, 1).phase?.name).toBe(
+      "观察与问题界定",
+    );
   });
 });

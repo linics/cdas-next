@@ -2,7 +2,8 @@ import { z } from "zod";
 import {
   activityContentSchema,
   type ActivityContent,
-  type ActivityContentV2,
+  type ActivityContentStructured,
+  isStructuredTaskBook,
 } from "../activity/activity-content";
 
 export const phaseIndexSchema = z.int().min(0).max(4);
@@ -26,7 +27,7 @@ export type SubmissionExecutionScope = Readonly<{
   evidenceCount: number;
   mode: "once" | "phased" | "mixed";
   nextPhaseIndex: number | null;
-  phase: ActivityContentV2["phases"][number] | null;
+  phase: ActivityContentStructured["phases"][number] | null;
 }>;
 
 export class SubmissionExecutionError extends Error {
@@ -39,7 +40,7 @@ export class SubmissionExecutionError extends Error {
 }
 
 export function executionVersionForContent(content: ActivityContent): 0 | 1 {
-  return content.schemaVersion === 2 && content.submissionMode !== "once"
+  return isStructuredTaskBook(content) && content.submissionMode !== "once"
     ? 1
     : 0;
 }
@@ -70,7 +71,7 @@ export function resolveSubmissionExecutionScope(
 
   if (
     executionVersion !== 1 ||
-    content.schemaVersion !== 2 ||
+    !isStructuredTaskBook(content) ||
     content.submissionMode === "once"
   ) {
     throw new SubmissionExecutionError("INVALID_PHASE");

@@ -1,7 +1,7 @@
 import { simulateReadableStream } from "ai";
 import { MockLanguageModelV4 } from "ai/test";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { waterConservationTaskBook } from "../../fixtures/water-conservation";
+import { waterConservationTaskBookV3 } from "../../fixtures/water-conservation-v3";
 import type { AppUser, PrismaClient } from "../../generated/prisma/client";
 
 vi.mock("server-only", () => ({}));
@@ -39,7 +39,7 @@ const approvalRunId = "80000000-0000-4000-8000-000000000008";
 const executionRunId = "90000000-0000-4000-8000-000000000009";
 const replayRunId = "a0000000-0000-4000-8000-00000000000a";
 const now = new Date("2026-08-20T04:00:00.000Z");
-const content = waterConservationTaskBook;
+const content = waterConservationTaskBookV3;
 const proposal: ActivityDraftProposal = {
   taskUnderstandingSummary: {
     realWorldContext: "学校准备开展节水行动。",
@@ -49,15 +49,12 @@ const proposal: ActivityDraftProposal = {
   },
   teacherRequirements: ["七年级", "校园节水", "有证据的改善建议"],
   assumptions: [],
-  integratedDisciplineContributions: [
-    { disciplineCode: "math", necessaryContribution: "整理和解释调查数据。" },
-    { disciplineCode: "chinese", necessaryContribution: "公开表达有依据的建议。" },
-  ],
-  alignmentChains: [
-    { objectiveKind: "knowledge", objective: content.objectiveKnowledge, task: content.phases[0].action, evidence: content.phases[0].evidence[0].description, assessment: content.phases[0].evaluationFocus },
-    { objectiveKind: "process", objective: content.objectiveProcess, task: content.phases[1].action, evidence: content.phases[1].evidence[0].description, assessment: content.phases[1].evaluationFocus },
-    { objectiveKind: "emotion", objective: content.objectiveEmotion, task: content.phases[2].action, evidence: content.phases[2].evidence[0].description, assessment: content.phases[2].evaluationFocus },
-  ],
+  learningGoalAlignments: content.learningGoals.map((goal, index) => ({
+    learningGoalId: goal.id,
+    task: content.phases[Math.min(index, content.phases.length - 1)]!.action,
+    evidence: content.phases[Math.min(index, content.phases.length - 1)]!.evidence[0]!.description,
+    assessment: content.phases[Math.min(index, content.phases.length - 1)]!.evaluationFocus,
+  })),
   sourceReferences: searchOfficialKnowledge({
     query: "初中跨学科实践 数据分析 评价",
     schoolStage: "MIDDLE",
@@ -435,9 +432,7 @@ describe("buildActivityAssistantInstructions", () => {
     expect(text).toContain("read_source_section 已返回 FOUND");
     expect(text).toContain("引用数量不得超过已通读章节数");
     expect(text).toContain("优先只引用 2 条已通读来源");
-    expect(text).toContain(
-      "content.schemaVersion 与 content.integratedDisciplineCodes 不用你填",
-    );
+    expect(text).toContain("content.schemaVersion 不用填，服务端固定为 3");
   });
 
   it("pins the assistant to 简体中文 and to backward design", () => {
@@ -1008,9 +1003,9 @@ describe("activity assistant route handler", () => {
   it("repairs one invalid proposal payload and still requires approval", async () => {
     const invalidProposal = {
       ...proposal,
-      integratedDisciplineContributions: [
-        ...proposal.integratedDisciplineContributions,
-        ...proposal.integratedDisciplineContributions,
+      learningGoalAlignments: [
+        ...proposal.learningGoalAlignments,
+        proposal.learningGoalAlignments[0]!,
       ],
     };
     const repairModel = new MockLanguageModelV4({
@@ -1054,9 +1049,9 @@ describe("activity assistant route handler", () => {
   it("attempts repair at most once and fails closed when it does not help", async () => {
     const invalidProposal = {
       ...proposal,
-      integratedDisciplineContributions: [
-        ...proposal.integratedDisciplineContributions,
-        ...proposal.integratedDisciplineContributions,
+      learningGoalAlignments: [
+        ...proposal.learningGoalAlignments,
+        proposal.learningGoalAlignments[0]!,
       ],
     };
     const stubbornModel = new MockLanguageModelV4({

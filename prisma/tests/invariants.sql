@@ -117,6 +117,59 @@ END
 $test$;
 
 DO $test$
+DECLARE
+  valid_task_book_v3 JSONB := $json$
+  {
+    "schemaVersion": 3,
+    "title": "v3 结构化任务书",
+    "topic": "校园节水",
+    "summary": "从真实现象形成证据与建议。",
+    "schoolStage": "MIDDLE",
+    "grade": 7,
+    "mainDisciplineCode": "physics",
+    "integratedDisciplineCodes": ["math"],
+    "disciplineContributions": [
+      {"disciplineCode":"physics","contribution":"解释用水现象。","necessity":"缺少物理解释则无法说明机理。"},
+      {"disciplineCode":"math","contribution":"整理调查数据。","necessity":"缺少数据则无法核验判断。"}
+    ],
+    "assignmentType": "inquiry",
+    "assignmentSubtype": "survey",
+    "inquiryDepth": "intermediate",
+    "submissionMode": "phased",
+    "durationWeeks": 2,
+    "backgroundSetting": "学校需要同学们提出有证据的节水建议。",
+    "taskInstructions": "完成观察、分析和公开建议。",
+    "learningGoals": [
+      {"id":"goal-physics","description":"能说明用水问题。","competencyReferences":[{"disciplineCode":"physics","competencyCode":"scientific_inquiry"}]},
+      {"id":"goal-math","description":"能用数据支持判断。","competencyReferences":[{"disciplineCode":"math","competencyCode":"abstraction_ability"}]}
+    ],
+    "phases": [
+      {"name":"观察","action":"观察场景。","context":"选择真实地点。","support":"使用记录表。","learningGoalIds":["goal-physics"],"evidence":[{"type":"text","description":"观察记录"}],"evaluationFocus":"问题清楚。","suggestedLessons":1},
+      {"name":"分析","action":"分析数据。","context":"比较记录。","support":"使用统计表。","learningGoalIds":["goal-physics","goal-math"],"evidence":[{"type":"document","description":"统计表"}],"evaluationFocus":"证据可靠。","suggestedLessons":1},
+      {"name":"表达","action":"提出建议。","context":"面向真实对象。","support":"按证据组织表达。","learningGoalIds":["goal-math"],"evidence":[{"type":"text","description":"建议稿"}],"evaluationFocus":"建议可行。","suggestedLessons":1}
+    ],
+    "rubricDimensions": [
+      {"name":"问题意识","excellent":"清楚可查。","good":"较清楚。","pass":"基本相关。","improve":"问题不清。","learningGoalIds":["goal-physics"]},
+      {"name":"证据质量","excellent":"完整可靠。","good":"较充分。","pass":"有证据。","improve":"证据不足。","learningGoalIds":["goal-math"]},
+      {"name":"跨学科连接","excellent":"连接清楚。","good":"使用两科。","pass":"使用一科。","improve":"没有连接。","learningGoalIds":["goal-physics","goal-math"]},
+      {"name":"方案表达","excellent":"具体可行。","good":"较具体。","pass":"有建议。","improve":"建议空泛。","learningGoalIds":["goal-math"]}
+    ]
+  }
+  $json$::JSONB;
+BEGIN
+  IF NOT "cdas_activity_task_book_v3_is_valid"(valid_task_book_v3) THEN
+    RAISE EXCEPTION 'the valid v3 task-book fixture was rejected';
+  END IF;
+  IF "cdas_activity_task_book_v3_is_valid"(jsonb_set(valid_task_book_v3, '{phases,0,learningGoalIds,0}', '"unknown-goal"'::JSONB)) THEN
+    RAISE EXCEPTION 'a v3 task book with an unknown goal link was accepted';
+  END IF;
+  IF "cdas_activity_task_book_v3_is_valid"(jsonb_set(valid_task_book_v3, '{assignmentType}', '"project"'::JSONB)) THEN
+    RAISE EXCEPTION 'a project v3 task book retaining inquiry fields was accepted';
+  END IF;
+END
+$test$;
+
+DO $test$
 BEGIN
   BEGIN
     INSERT INTO agent_runs (

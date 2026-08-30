@@ -33,7 +33,7 @@ function context(actorId: string, now: Date): CommandContext {
 }
 
 function writableFixtureContent(content: ActivityContent): ActivityContent {
-  if (content.schemaVersion === 2) return content;
+  if (content.schemaVersion === 2 || content.schemaVersion === 3) return content;
   return {
     ...waterConservationTaskBook,
     submissionMode: "once",

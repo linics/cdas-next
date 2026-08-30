@@ -458,7 +458,7 @@ function mapSubmissionHistory(
     phaseName:
       submission.phaseIndex === 0
         ? null
-        : content.schemaVersion === 2
+        : content.schemaVersion === 2 || content.schemaVersion === 3
           ? (content.phases[submission.phaseIndex - 1]?.name ?? null)
           : null,
     latestRevisionNumber: submission.latestRevisionNumber,

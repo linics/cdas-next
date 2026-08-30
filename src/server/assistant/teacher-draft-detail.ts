@@ -1,7 +1,7 @@
 import "server-only";
 
 import { z } from "zod";
-import { activityContentV2Schema } from "../../domain/activity/activity-content";
+import { activityContentV2Schema, activityContentV3Schema } from "../../domain/activity/activity-content";
 import type { PrismaClient } from "../../generated/prisma/client";
 import type { CommandContext } from "../commands/command-context";
 import {
@@ -35,7 +35,7 @@ export const teacherDraftDetailOutputSchema = z.discriminatedUnion("status", [
       published: z.boolean(),
       editHref: draftEditHrefSchema,
       previewHref: draftPreviewHrefSchema,
-      content: activityContentV2Schema,
+      content: z.union([activityContentV2Schema, activityContentV3Schema]),
     })
     .strict(),
   z
@@ -107,7 +107,7 @@ export function createTeacherDraftDetailReader({
 
     const editHref = `/teacher/activities/${draft.id}`;
     const previewHref = `/teacher/activities/${draft.id}/preview`;
-    if (draft.revision.content.schemaVersion !== 2) {
+    if (draft.revision.content.schemaVersion !== 2 && draft.revision.content.schemaVersion !== 3) {
       return teacherDraftDetailOutputSchema.parse({
         status: "LEGACY_SNAPSHOT",
         draftId: draft.id,

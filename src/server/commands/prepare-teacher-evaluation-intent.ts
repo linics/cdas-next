@@ -211,7 +211,7 @@ async function runTransaction(
         }
         throw error;
       }
-      if (content.schemaVersion !== 2) {
+      if (content.schemaVersion !== 2 && content.schemaVersion !== 3) {
         throw new PrepareTeacherEvaluationIntentError("RUBRIC_UNAVAILABLE");
       }
 

@@ -1,4 +1,7 @@
 import { z } from "zod";
+import {
+  findCoreCompetency,
+} from "../curriculum/core-competencies";
 
 const nonBlankText = z.string().trim().min(1);
 
@@ -98,6 +101,17 @@ export const evidenceTypes = [
   { code: "link", label: "链接" },
 ] as const;
 
+/** Evidence types the current submission and attachment pipeline can actually
+ * collect and, where applicable, make available to the teacher. v2 retains
+ * video/link so historic snapshots parse unchanged; v3 must not promise them.
+ */
+export const supportedEvidenceTypes = [
+  { code: "text", label: "文字记录", studentCanSubmit: true, aiCanRead: true },
+  { code: "document", label: "PDF / DOC / DOCX 文档", studentCanSubmit: true, aiCanRead: true },
+  { code: "image", label: "图片", studentCanSubmit: true, aiCanRead: true },
+  { code: "confirm", label: "现场确认", studentCanSubmit: false, aiCanRead: false },
+] as const;
+
 const phaseEvidenceSchema = z.object({
   type: z.enum(["text", "document", "image", "video", "confirm", "link"]),
   description: nonBlankText.max(300),
@@ -188,28 +202,164 @@ export const activityContentV2Schema = z.object({
   }
 });
 
-export const activityContentSchema = z.union([activityContentV1Schema, activityContentV2Schema]);
+const learningGoalSchema = z.object({
+  id: z.string().trim().regex(/^[a-z][a-z0-9_-]{0,63}$/),
+  description: nonBlankText.max(500),
+  competencyReferences: z.array(z.object({
+    disciplineCode: disciplineCodeSchema,
+    competencyCode: z.string().trim().regex(/^[a-z][a-z0-9_]{1,79}$/),
+  }).strict()).min(1).max(3),
+}).strict();
+
+const disciplineContributionSchema = z.object({
+  disciplineCode: disciplineCodeSchema,
+  contribution: nonBlankText.max(500),
+  necessity: nonBlankText.max(500),
+}).strict();
+
+const taskBookV3EvidenceSchema = z.object({
+  type: z.enum(["text", "document", "image", "confirm"]),
+  description: nonBlankText.max(300),
+}).strict();
+
+const taskBookV3PhaseSchema = z.object({
+  name: nonBlankText.max(80),
+  action: nonBlankText.max(300),
+  context: nonBlankText.max(500),
+  support: nonBlankText.max(500),
+  learningGoalIds: z.array(z.string().trim().regex(/^[a-z][a-z0-9_-]{0,63}$/)).min(1).max(8),
+  evidence: z.array(taskBookV3EvidenceSchema).min(1).max(4),
+  evaluationFocus: nonBlankText.max(300),
+  suggestedLessons: z.int().min(1).max(16),
+}).strict();
+
+export const taskBookV3RubricDimensionSchema = rubricDimensionSchema.extend({
+  learningGoalIds: z.array(z.string().trim().regex(/^[a-z][a-z0-9_-]{0,63}$/)).min(1).max(8),
+}).strict();
+
+/**
+ * v3 is a separate canonical task book. It purposefully has no v2 projection
+ * fields: scalar columns are derived on persistence so teachers do not have
+ * to keep two copies of goals, evidence or criteria in sync.
+ */
+export const activityContentV3Schema = z.object({
+  schemaVersion: z.literal(3),
+  title: nonBlankText.max(120),
+  topic: nonBlankText.max(160),
+  summary: nonBlankText.max(600),
+  schoolStage: z.enum(schoolStages),
+  grade: z.int().min(1).max(9),
+  mainDisciplineCode: disciplineCodeSchema,
+  integratedDisciplineCodes: z.array(disciplineCodeSchema).min(1).max(14),
+  disciplineContributions: z.array(disciplineContributionSchema).min(2).max(15),
+  assignmentType: assignmentTypeSchema,
+  assignmentSubtype: assignmentSubtypeSchema.nullable(),
+  inquiryDepth: z.enum(["basic", "intermediate", "deep"]).nullable(),
+  submissionMode: z.enum(["phased", "once", "mixed"]),
+  durationWeeks: z.int().min(1).max(16),
+  backgroundSetting: nonBlankText.max(1_200),
+  taskInstructions: nonBlankText.max(5_000),
+  learningGoals: z.array(learningGoalSchema).min(2).max(8),
+  phases: z.array(taskBookV3PhaseSchema).min(3).max(4),
+  rubricDimensions: z.array(taskBookV3RubricDimensionSchema).min(4).max(8),
+}).strict().superRefine((content, context) => {
+  const expectedStage = content.grade <= 6 ? "PRIMARY" : "MIDDLE";
+  if (content.schoolStage !== expectedStage) {
+    context.addIssue({ code: "custom", path: ["grade"], message: "Grade must belong to the selected school stage" });
+  }
+  const supportsStage = (code: DisciplineCode) =>
+    disciplineCatalog.find((discipline) => discipline.code === code)?.stages.some((stage) => stage === content.schoolStage) ?? false;
+  const selectedDisciplines = [content.mainDisciplineCode, ...content.integratedDisciplineCodes];
+  if (!supportsStage(content.mainDisciplineCode)) {
+    context.addIssue({ code: "custom", path: ["mainDisciplineCode"], message: "Main discipline is unavailable for this school stage" });
+  }
+  if (new Set(content.integratedDisciplineCodes).size !== content.integratedDisciplineCodes.length || content.integratedDisciplineCodes.includes(content.mainDisciplineCode)) {
+    context.addIssue({ code: "custom", path: ["integratedDisciplineCodes"], message: "Integrated disciplines must be distinct and cannot include the main discipline" });
+  }
+  if (content.integratedDisciplineCodes.some((code) => !supportsStage(code))) {
+    context.addIssue({ code: "custom", path: ["integratedDisciplineCodes"], message: "Integrated discipline is unavailable for this school stage" });
+  }
+  const contributionCodes = content.disciplineContributions.map((item) => item.disciplineCode);
+  if (new Set(contributionCodes).size !== contributionCodes.length || contributionCodes.length !== selectedDisciplines.length || selectedDisciplines.some((code) => !contributionCodes.includes(code))) {
+    context.addIssue({ code: "custom", path: ["disciplineContributions"], message: "Every selected discipline needs one contribution and necessity statement" });
+  }
+  const practical = new Set(assignmentSubtypes.practical.map((item) => item.code));
+  const inquiry = new Set(assignmentSubtypes.inquiry.map((item) => item.code));
+  if (content.assignmentType === "project" && content.assignmentSubtype !== null) {
+    context.addIssue({ code: "custom", path: ["assignmentSubtype"], message: "Project tasks do not have a subtype" });
+  }
+  if (content.assignmentType === "practical" && !practical.has(content.assignmentSubtype as never)) {
+    context.addIssue({ code: "custom", path: ["assignmentSubtype"], message: "Practical tasks require a practical subtype" });
+  }
+  if (content.assignmentType === "inquiry" && !inquiry.has(content.assignmentSubtype as never)) {
+    context.addIssue({ code: "custom", path: ["assignmentSubtype"], message: "Inquiry tasks require an inquiry subtype" });
+  }
+  if ((content.assignmentType === "inquiry") !== (content.inquiryDepth !== null)) {
+    context.addIssue({ code: "custom", path: ["inquiryDepth"], message: "Inquiry depth is required only for inquiry tasks" });
+  }
+  const goalIds = content.learningGoals.map((goal) => goal.id);
+  if (new Set(goalIds).size !== goalIds.length) {
+    context.addIssue({ code: "custom", path: ["learningGoals"], message: "Learning goal identifiers must be unique" });
+  }
+  content.learningGoals.forEach((goal, goalIndex) => {
+    const references = new Set<string>();
+    goal.competencyReferences.forEach((reference, referenceIndex) => {
+      const key = `${reference.disciplineCode}:${reference.competencyCode}`;
+      if (references.has(key)) {
+        context.addIssue({ code: "custom", path: ["learningGoals", goalIndex, "competencyReferences", referenceIndex], message: "Core competency references must not repeat" });
+      }
+      references.add(key);
+      const competency = findCoreCompetency(reference.disciplineCode, reference.competencyCode);
+      if (!selectedDisciplines.includes(reference.disciplineCode) || !competency || !competency.schoolStages.includes(content.schoolStage) || content.grade < competency.gradeRange[0] || content.grade > competency.gradeRange[1]) {
+        context.addIssue({ code: "custom", path: ["learningGoals", goalIndex, "competencyReferences", referenceIndex], message: "Core competency reference is not available for the selected stage and grade" });
+      }
+    });
+  });
+  const phaseCoverage = new Set<string>();
+  const rubricCoverage = new Set<string>();
+  const validateGoalLinks = (ids: readonly string[], path: (string | number)[], coverage: Set<string>) => {
+    if (new Set(ids).size !== ids.length || ids.some((id) => !goalIds.includes(id))) {
+      context.addIssue({ code: "custom", path, message: "Learning-goal links must be unique existing goal identifiers" });
+    }
+    ids.forEach((id) => coverage.add(id));
+  };
+  content.phases.forEach((phase, index) => validateGoalLinks(phase.learningGoalIds, ["phases", index, "learningGoalIds"], phaseCoverage));
+  content.rubricDimensions.forEach((dimension, index) => validateGoalLinks(dimension.learningGoalIds, ["rubricDimensions", index, "learningGoalIds"], rubricCoverage));
+  goalIds.forEach((id) => {
+    if (!phaseCoverage.has(id)) context.addIssue({ code: "custom", path: ["learningGoals"], message: `Learning goal ${id} must be covered by a phase` });
+    if (!rubricCoverage.has(id)) context.addIssue({ code: "custom", path: ["learningGoals"], message: `Learning goal ${id} must be covered by a rubric dimension` });
+  });
+});
+
+export const activityContentStructuredSchema = z.union([activityContentV2Schema, activityContentV3Schema]);
+export const activityContentSchema = z.union([activityContentV1Schema, activityContentStructuredSchema]);
 
 export type ActivityContentV1 = z.infer<typeof activityContentV1Schema>;
 export type ActivityContentV2 = z.infer<typeof activityContentV2Schema>;
+export type ActivityContentV3 = z.infer<typeof activityContentV3Schema>;
+export type ActivityContentStructured = ActivityContentV2 | ActivityContentV3;
 export type ActivityContent = z.infer<typeof activityContentSchema>;
+
+export function isStructuredTaskBook(content: ActivityContent): content is ActivityContentStructured {
+  return content.schemaVersion === 2 || content.schemaVersion === 3;
+}
 
 export function disciplineLabel(code: DisciplineCode): string {
   return disciplineCatalog.find((discipline) => discipline.code === code)?.label ?? code;
 }
 
-export function assignmentTypeDetails(code: ActivityContentV2["assignmentType"]) {
+export function assignmentTypeDetails(code: ActivityContentStructured["assignmentType"]) {
   return assignmentTypes.find((type) => type.code === code)!;
 }
 
 export function assignmentSubtypeLabel(
-  assignmentType: ActivityContentV2["assignmentType"],
-  code: ActivityContentV2["assignmentSubtype"],
+  assignmentType: ActivityContentStructured["assignmentType"],
+  code: ActivityContentStructured["assignmentSubtype"],
 ): string | null {
   if (assignmentType === "project" || code === null) return null;
   return assignmentSubtypes[assignmentType].find((subtype) => subtype.code === code)?.label ?? code;
 }
 
-export function evidenceTypeLabel(code: ActivityContentV2["phases"][number]["evidence"][number]["type"]): string {
+export function evidenceTypeLabel(code: (typeof evidenceTypes)[number]["code"]): string {
   return evidenceTypes.find((type) => type.code === code)?.label ?? code;
 }

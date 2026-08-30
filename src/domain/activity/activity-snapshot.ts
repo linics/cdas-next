@@ -13,22 +13,26 @@ function postgresJsonbKeyOrder(left: string, right: string): number {
 }
 
 /**
- * v2 is deliberately serialized in PostgreSQL jsonb's stable textual order.
+ * Structured task books are deliberately serialized in PostgreSQL jsonb's
+ * stable textual order.
  * The release-integrity trigger can therefore recalculate the same hash from
  * the immutable JSON task book without implementing a second JSON standard.
  * v1 remains on canonicalize@4 and is intentionally untouched.
  */
-export function canonicalizeActivityContentV2(value: unknown): string {
+export function canonicalizeStructuredActivityContent(value: unknown): string {
   if (value === null || typeof value !== "object") return JSON.stringify(value);
   if (Array.isArray(value)) {
-    return `[${value.map(canonicalizeActivityContentV2).join(", ")}]`;
+    return `[${value.map(canonicalizeStructuredActivityContent).join(", ")}]`;
   }
   const record = value as Record<string, unknown>;
   return `{${Object.keys(record)
     .sort(postgresJsonbKeyOrder)
-    .map((key) => `${JSON.stringify(key)}: ${canonicalizeActivityContentV2(record[key])}`)
+    .map((key) => `${JSON.stringify(key)}: ${canonicalizeStructuredActivityContent(record[key])}`)
     .join(", ")}}`;
 }
+
+/** Kept for v2 callers and historical hash-contract tests. */
+export const canonicalizeActivityContentV2 = canonicalizeStructuredActivityContent;
 
 export function createActivitySnapshot(content: unknown): {
   content: ActivityContent;
@@ -38,7 +42,7 @@ export function createActivitySnapshot(content: unknown): {
   const canonicalContent =
     parsed.schemaVersion === 1
       ? canonicalize(parsed)
-      : canonicalizeActivityContentV2(parsed);
+      : canonicalizeStructuredActivityContent(parsed);
 
   if (canonicalContent === undefined) {
     throw new TypeError("Activity snapshot cannot be canonicalized");

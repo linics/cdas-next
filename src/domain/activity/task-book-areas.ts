@@ -1,11 +1,10 @@
 import { z } from "zod";
-import type { ActivityContentV2 } from "./activity-content";
+import type { ActivityContentStructured } from "./activity-content";
 
 /**
- * The teacher-facing regions of a v2 task book. They exist so a proposed
- * revision can state what it touches in words the teacher recognises from the
- * draft form, and so the server can check that statement against the actual
- * difference instead of trusting it.
+ * Teacher-recognisable task-book regions. They are used by the assistant's
+ * revision approval gate: a proposed change must describe exactly the
+ * regions it actually alters.
  */
 export const taskBookAreas = [
   "BASIC_SETTINGS",
@@ -18,75 +17,67 @@ export const taskBookAreas = [
 ] as const;
 
 export type TaskBookArea = (typeof taskBookAreas)[number];
-
 export const taskBookAreaSchema = z.enum(taskBookAreas);
 
-type ContentField = Exclude<keyof ActivityContentV2, "schemaVersion">;
-
-/**
- * Every v2 field except `schemaVersion` belongs to exactly one area. A field
- * added to the content schema without being placed here would silently become
- * invisible to the scope check, so the type of this table is exhaustive.
- */
-const areaFields: Readonly<Record<TaskBookArea, readonly ContentField[]>> = {
-  BASIC_SETTINGS: [
-    "title",
-    "topic",
-    "summary",
-    "schoolStage",
-    "grade",
-    "mainDisciplineCode",
-    "integratedDisciplineCodes",
-    "crossDisciplinaryConceptCodes",
-    "assignmentType",
-    "assignmentSubtype",
-    "inquiryDepth",
-    "submissionMode",
-    "durationWeeks",
-  ],
-  BACKGROUND: ["backgroundSetting"],
-  OBJECTIVES: [
-    "objectiveKnowledge",
-    "objectiveProcess",
-    "objectiveEmotion",
-    "learningObjectives",
-  ],
-  TASK_INSTRUCTIONS: ["taskInstructions"],
-  PHASES: ["phases"],
-  EVIDENCE: ["evidenceRequirements"],
-  RUBRIC: ["rubricDimensions", "feedbackCriteria"],
-};
-
-const fieldArea = new Map<ContentField, TaskBookArea>(
-  taskBookAreas.flatMap((area) =>
-    areaFields[area].map((field) => [field, area] as const),
-  ),
-);
-
 export const taskBookAreaLabels: Readonly<Record<TaskBookArea, string>> = {
-  BASIC_SETTINGS: "基本设置",
+  BASIC_SETTINGS: "基本信息",
   BACKGROUND: "背景设定",
-  OBJECTIVES: "三维目标",
+  OBJECTIVES: "学习目标与跨学科设计",
   TASK_INSTRUCTIONS: "总体任务",
-  PHASES: "任务链阶段",
-  EVIDENCE: "证据要求",
-  RUBRIC: "评价标准",
+  PHASES: "阶段任务",
+  EVIDENCE: "学习证据",
+  RUBRIC: "评价量规",
 };
 
+function jsonEqual(left: unknown, right: unknown): boolean {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function v3PhaseWithoutEvidence(phase: ActivityContentStructured["phases"][number]) {
+  return Object.fromEntries(
+    Object.entries(phase).filter(([field]) => field !== "evidence"),
+  );
+}
+
 /**
- * Which areas actually differ between two task books. Comparison is by
- * canonical JSON of each field, so reordering an array counts as a change:
- * phase order and rubric order are meaning, not presentation.
+ * v2 keeps scalar objective/evidence projections, whereas v3 owns goals,
+ * phase evidence and rubric links canonically. This comparison intentionally
+ * splits V3 phase task design from phase evidence, so a teacher cannot claim
+ * to only adjust evidence while silently changing the task sequence.
  */
 export function changedTaskBookAreas(
-  before: ActivityContentV2,
-  after: ActivityContentV2,
+  before: ActivityContentStructured,
+  after: ActivityContentStructured,
 ): TaskBookArea[] {
+  if (before.schemaVersion !== after.schemaVersion) return [...taskBookAreas];
   const changed = new Set<TaskBookArea>();
-  for (const [field, area] of fieldArea) {
-    if (JSON.stringify(before[field]) !== JSON.stringify(after[field])) {
-      changed.add(area);
-    }
+
+  if (before.schemaVersion === 2 && after.schemaVersion === 2) {
+    const v2Fields: Readonly<Record<TaskBookArea, readonly (keyof typeof before)[]>> = {
+      BASIC_SETTINGS: ["title", "topic", "summary", "schoolStage", "grade", "mainDisciplineCode", "integratedDisciplineCodes", "crossDisciplinaryConceptCodes", "assignmentType", "assignmentSubtype", "inquiryDepth", "submissionMode", "durationWeeks"],
+      BACKGROUND: ["backgroundSetting"],
+      OBJECTIVES: ["objectiveKnowledge", "objectiveProcess", "objectiveEmotion", "learningObjectives"],
+      TASK_INSTRUCTIONS: ["taskInstructions"],
+      PHASES: ["phases"],
+      EVIDENCE: ["evidenceRequirements"],
+      RUBRIC: ["rubricDimensions", "feedbackCriteria"],
+    };
+    taskBookAreas.forEach((area) => {
+      if (v2Fields[area].some((field) => !jsonEqual(before[field], after[field]))) changed.add(area);
+    });
+  } else if (before.schemaVersion === 3 && after.schemaVersion === 3) {
+    const basicFields: ReadonlyArray<keyof typeof before> = [
+      "title", "topic", "summary", "schoolStage", "grade", "mainDisciplineCode",
+      "integratedDisciplineCodes", "assignmentType", "assignmentSubtype", "inquiryDepth",
+      "submissionMode", "durationWeeks",
+    ];
+    if (basicFields.some((field) => !jsonEqual(before[field], after[field]))) changed.add("BASIC_SETTINGS");
+    if (!jsonEqual(before.backgroundSetting, after.backgroundSetting)) changed.add("BACKGROUND");
+    if (!jsonEqual(before.learningGoals, after.learningGoals) || !jsonEqual(before.disciplineContributions, after.disciplineContributions)) changed.add("OBJECTIVES");
+    if (!jsonEqual(before.taskInstructions, after.taskInstructions)) changed.add("TASK_INSTRUCTIONS");
+    if (!jsonEqual(before.phases.map(v3PhaseWithoutEvidence), after.phases.map(v3PhaseWithoutEvidence))) changed.add("PHASES");
+    if (!jsonEqual(before.phases.map((phase) => phase.evidence), after.phases.map((phase) => phase.evidence))) changed.add("EVIDENCE");
+    if (!jsonEqual(before.rubricDimensions, after.rubricDimensions)) changed.add("RUBRIC");
   }
   return taskBookAreas.filter((area) => changed.has(area));
 }

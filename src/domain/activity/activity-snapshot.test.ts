@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { waterConservationActivity, waterConservationTaskBook } from "../../fixtures/water-conservation";
+import { waterConservationTaskBookV3 } from "../../fixtures/water-conservation-v3";
 import { canonicalizeActivityContentV2, createActivitySnapshot } from "./activity-snapshot";
 
 describe("createActivitySnapshot", () => {
@@ -52,6 +53,15 @@ describe("createActivitySnapshot", () => {
     expect(snapshot.contentHash).toHaveLength(64);
     expect(canonicalizeActivityContentV2({ ...waterConservationTaskBook })).toBe(
       canonicalizeActivityContentV2(waterConservationTaskBook),
+    );
+  });
+
+  it("hashes a v3 canonical task book without changing the v1/v2 contracts", () => {
+    const snapshot = createActivitySnapshot(waterConservationTaskBookV3);
+    expect(snapshot.content).toEqual(waterConservationTaskBookV3);
+    expect(snapshot.contentHash).toHaveLength(64);
+    expect(snapshot.contentHash).not.toBe(
+      createActivitySnapshot({ ...waterConservationTaskBookV3, title: "另一任务" }).contentHash,
     );
   });
 });

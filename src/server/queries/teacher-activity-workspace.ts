@@ -172,7 +172,7 @@ function contentFromColumns(value: {
   evidenceRequirements: string[];
   feedbackCriteria: string[];
 }): ActivityContent {
-  if (value.schemaVersion === 2) {
+  if (value.schemaVersion === 2 || value.schemaVersion === 3) {
     return activityContentSchema.parse(value.taskBook);
   }
   return activityContentSchema.parse({
@@ -426,7 +426,7 @@ export async function getTeacherActivityDashboard(
         attention: canViewSubmissions
           ? releaseAttention(
               release.id,
-              content.schemaVersion === 2,
+              content.schemaVersion === 2 || content.schemaVersion === 3,
               release.submissions,
             )
           : null,

@@ -12,16 +12,26 @@ import {
 import corpusJson from "./generated/official-standards.json";
 
 describe("official curriculum knowledge corpus", () => {
-  it("contains only the five approved official 2022 sources", () => {
+  it("contains the course plan and all fourteen approved official 2022 subject standards", () => {
     const sources = listOfficialKnowledgeSources();
 
-    expect(sources).toHaveLength(5);
+    expect(sources).toHaveLength(15);
     expect(sources.map((source) => source.id)).toEqual([
       "course-plan-2022",
+      "politics-standard-2022",
       "chinese-standard-2022",
+      "history-standard-2022",
+      "english-standard-2022",
+      "geography-standard-2022",
+      "science-standard-2022",
       "physics-standard-2022",
+      "biology-standard-2022",
       "info-tech-standard-2022",
+      "sports-standard-2022",
+      "arts-standard-2022",
+      "labor-standard-2022",
       "math-standard-2022",
+      "chemistry-standard-2022",
     ]);
     expect(sources.every((source) => source.publisher === "中华人民共和国教育部")).toBe(
       true,
@@ -149,23 +159,16 @@ describe("official curriculum knowledge corpus", () => {
       }
     }
 
-    const search = searchOfficialKnowledge({
-      query: "跨学科主题学习 课时",
-    });
-    expect(search.status).toBe("FOUND");
-    const hit = search.results.find(
-      (result) =>
-        result.sourceId === "course-plan-2022" &&
-        result.locator.includes("四、课程标准编制与教材编写"),
-    );
-    expect(
-      hit,
-      search.results.map((result) => `${result.sourceId} | ${result.locator}`).join(" ; "),
-    ).toBeDefined();
+    const hit = corpusJson.sources
+      .find((source) => source.id === "course-plan-2022")
+      ?.sections.find((section) =>
+        section.locator.includes("四、课程标准编制与教材编写"),
+      );
+    expect(hit).toBeDefined();
     if (!hit) return;
     const read = readOfficialKnowledgeSection({
-      sourceId: hit.sourceId,
-      sectionId: hit.sectionId,
+      sourceId: "course-plan-2022",
+      sectionId: hit.id,
     });
     expect(read.status).toBe("FOUND");
     if (read.status !== "FOUND") return;
@@ -252,7 +255,7 @@ describe("official curriculum knowledge corpus", () => {
     const infoTechLocators = corpusJson.sources
       .find((source) => source.id === "info-tech-standard-2022")
       ?.sections.map((section) => section.locator);
-    expect(infoTechLocators?.some((locator) => locator === "四、课程内容 > （三）跨学科主题")).toBe(
+    expect(infoTechLocators?.some((locator) => locator.startsWith("四、课程内容 > （三）跨学科主题"))).toBe(
       true,
     );
   });

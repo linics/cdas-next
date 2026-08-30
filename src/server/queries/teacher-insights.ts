@@ -266,15 +266,15 @@ export async function getTeacherInsights(
     const content = activityContentSchema.parse(row.snapshot.content);
     const executionVersion = row.executionVersion === 1 ? 1 : 0;
     const submissionMode =
-      executionVersion === 1 && content.schemaVersion === 2
+      executionVersion === 1 && (content.schemaVersion === 2 || content.schemaVersion === 3)
         ? content.submissionMode
         : "once";
     const phases =
-      executionVersion === 1 && content.schemaVersion === 2
+      executionVersion === 1 && (content.schemaVersion === 2 || content.schemaVersion === 3)
         ? content.phases.map((phase) => ({ name: phase.name }))
         : [];
     const rubricDimensions =
-      content.schemaVersion === 2
+      content.schemaVersion === 2 || content.schemaVersion === 3
         ? content.rubricDimensions.map((dimension) => ({ name: dimension.name }))
         : null;
     return [

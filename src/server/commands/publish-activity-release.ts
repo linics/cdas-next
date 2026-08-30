@@ -229,7 +229,7 @@ async function runTransaction(
       }
 
       const snapshot = createActivitySnapshot(
-        revision.schemaVersion === 2
+        revision.schemaVersion === 2 || revision.schemaVersion === 3
           ? revision.taskBook
           : {
               schemaVersion: 1,

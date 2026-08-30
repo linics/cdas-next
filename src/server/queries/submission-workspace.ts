@@ -364,11 +364,11 @@ export async function getStudentReleaseWorkspace(
   }
   const content = activityContentSchema.parse(release.snapshot.content);
   const phaseCount =
-    release.executionVersion === 1 && content.schemaVersion === 2
+    release.executionVersion === 1 && (content.schemaVersion === 2 || content.schemaVersion === 3)
       ? content.phases.length
       : 0;
   const submissionMode =
-    release.executionVersion === 1 && content.schemaVersion === 2
+    release.executionVersion === 1 && (content.schemaVersion === 2 || content.schemaVersion === 3)
       ? content.submissionMode
       : "once";
   const submissionByPhase = new Map(
@@ -559,15 +559,15 @@ export async function getTeacherReleaseSubmissions(
 
   const content = activityContentSchema.parse(release.snapshot.content);
   const submissionMode =
-    release.executionVersion === 1 && content.schemaVersion === 2
+    release.executionVersion === 1 && (content.schemaVersion === 2 || content.schemaVersion === 3)
       ? content.submissionMode
       : "once";
   const phaseCount =
-    release.executionVersion === 1 && content.schemaVersion === 2
+    release.executionVersion === 1 && (content.schemaVersion === 2 || content.schemaVersion === 3)
       ? content.phases.length
       : 0;
 
-  const rubricAvailable = content.schemaVersion === 2;
+  const rubricAvailable = content.schemaVersion === 2 || content.schemaVersion === 3;
   const submissions: TeacherReleaseSubmissions["submissions"] =
     release.submissions
       .filter((submission) => submission.latestRevisionNumber > 0)
@@ -602,7 +602,7 @@ export async function getTeacherReleaseSubmissions(
           ? release.executionVersion === 1
             ? "整项终稿"
             : null
-          : content.schemaVersion === 2
+          : content.schemaVersion === 2 || content.schemaVersion === 3
             ? (content.phases[submission.phaseIndex - 1]?.name ?? null)
             : null,
       student: submission.student ?? {

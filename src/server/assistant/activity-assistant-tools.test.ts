@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { ActivityContentV2 } from "../../domain/activity/activity-content";
+import { waterConservationTaskBookV3 } from "../../fixtures/water-conservation-v3";
 import type { PrismaClient } from "../../generated/prisma/client";
 import { DecideActionIntentError } from "../commands/decide-action-intent";
 import { PreparePublishActivityIntentError } from "../commands/prepare-publish-activity-intent";
@@ -70,15 +70,7 @@ const approvalContext: CommandContext = {
   traceId: "approval-tool-trace",
   clock: () => now,
 };
-const content: ActivityContentV2 = {
-  schemaVersion: 2, title: "校園節水行動", topic: "校園節水", summary: "記錄水表並提出改善建議", schoolStage: "MIDDLE", grade: 7, mainDisciplineCode: "physics", integratedDisciplineCodes: ["math"], crossDisciplinaryConceptCodes: [], assignmentType: "inquiry", assignmentSubtype: "survey", inquiryDepth: "intermediate", submissionMode: "once", durationWeeks: 2, backgroundSetting: "學校要改善用水，同學們以真實場景完成調查。", objectiveKnowledge: "理解用水資料。", objectiveProcess: "使用資料支持結論。", objectiveEmotion: "願意參與校園節水。", learningObjectives: ["理解用水資料。", "使用資料支持結論。", "願意參與校園節水。"], taskInstructions: "記錄兩次水表讀數並解釋差異。", evidenceRequirements: ["時間與讀數", "分析結論", "改善建議"], feedbackCriteria: ["問題意識", "證據品質", "跨學科連結", "方案表達"], phases: [
-    { name: "觀察", action: "記錄用水。", context: "在校園觀察。", support: "使用記錄表。", evidence: [{ type: "text", description: "時間與讀數" }], evaluationFocus: "資料完整。", suggestedLessons: 1 },
-    { name: "分析", action: "整理資料。", context: "比較讀數。", support: "使用表格。", evidence: [{ type: "document", description: "分析表" }], evaluationFocus: "結論有據。", suggestedLessons: 1 },
-    { name: "建議", action: "提出建議。", context: "面向校園。", support: "使用建議模板。", evidence: [{ type: "text", description: "建議稿" }], evaluationFocus: "方案可行。", suggestedLessons: 1 },
-  ], rubricDimensions: [
-    { name: "問題意識", excellent: "清楚", good: "較清楚", pass: "基本", improve: "需補充" }, { name: "證據品質", excellent: "完整", good: "較完整", pass: "基本", improve: "需補充" }, { name: "跨學科連結", excellent: "清楚", good: "較清楚", pass: "基本", improve: "需補充" }, { name: "方案表達", excellent: "可行", good: "較可行", pass: "基本", improve: "需補充" },
-  ],
-};
+const content = waterConservationTaskBookV3;
 
 const proposal: ActivityDraftProposal = {
   taskUnderstandingSummary: {
@@ -89,14 +81,12 @@ const proposal: ActivityDraftProposal = {
   },
   teacherRequirements: ["七年級", "校園節水", "記錄兩次水表讀數"],
   assumptions: [],
-  integratedDisciplineContributions: [
-    { disciplineCode: "math", necessaryContribution: "整理與比較水表讀數。" },
-  ],
-  alignmentChains: [
-    { objectiveKind: "knowledge", objective: "理解用水資料。", task: "辨識讀數差異。", evidence: "讀數紀錄。", assessment: "資料完整。" },
-    { objectiveKind: "process", objective: "使用資料支持結論。", task: "整理資料。", evidence: "分析表。", assessment: "結論有據。" },
-    { objectiveKind: "emotion", objective: "願意參與校園節水。", task: "提出建議。", evidence: "建議稿。", assessment: "方案可行。" },
-  ],
+  learningGoalAlignments: content.learningGoals.map((goal, index) => ({
+    learningGoalId: goal.id,
+    task: content.phases[Math.min(index, content.phases.length - 1)]!.action,
+    evidence: content.phases[Math.min(index, content.phases.length - 1)]!.evidence[0]!.description,
+    assessment: content.phases[Math.min(index, content.phases.length - 1)]!.evaluationFocus,
+  })),
   sourceReferences: searchOfficialKnowledge({
     query: "初中跨学科实践 数据分析 评价",
     schoolStage: "MIDDLE",
@@ -361,30 +351,27 @@ describe("activity assistant tools", () => {
     });
   });
 
-  it("requires exact integrated-discipline coverage and three unique alignment chains", () => {
+  it("requires canonical v3 learning-goal coverage and unique alignments", () => {
     expect(activityDraftProposalSchema.safeParse(proposal).success).toBe(true);
     expect(
       activityDraftProposalSchema.safeParse({
         ...proposal,
-        integratedDisciplineContributions: [],
+        learningGoalAlignments: [],
       }).success,
     ).toBe(false);
     expect(
       activityDraftProposalSchema.safeParse({
         ...proposal,
-        integratedDisciplineContributions: [
-          { disciplineCode: "math", necessaryContribution: "整理数据。" },
-          { disciplineCode: "math", necessaryContribution: "重复。" },
-        ],
+        learningGoalAlignments: [proposal.learningGoalAlignments[0]!, proposal.learningGoalAlignments[0]!],
       }).success,
     ).toBe(false);
     expect(
       activityDraftProposalSchema.safeParse({
         ...proposal,
-        alignmentChains: [
-          proposal.alignmentChains[0],
-          proposal.alignmentChains[0],
-          proposal.alignmentChains[2],
+        learningGoalAlignments: [
+          proposal.learningGoalAlignments[0]!,
+          proposal.learningGoalAlignments[0]!,
+          proposal.learningGoalAlignments[2]!,
         ],
       }).success,
     ).toBe(false);
@@ -418,10 +405,9 @@ describe("activity assistant tools", () => {
     ).toBe(false);
   });
 
-  it("fills in the constants the model should not have to restate", async () => {
+  it("server-controls the v3 schema version without fabricating canonical fields", async () => {
     const partialContent: Record<string, unknown> = { ...proposal.content };
     delete partialContent.schemaVersion;
-    delete partialContent.integratedDisciplineCodes;
 
     const parsed = activityDraftProposalSchema.safeParse({
       ...proposal,
@@ -429,12 +415,7 @@ describe("activity assistant tools", () => {
     });
 
     expect(parsed.success).toBe(true);
-    expect(parsed.data?.content.schemaVersion).toBe(2);
-    expect(parsed.data?.content.integratedDisciplineCodes).toEqual(
-      proposal.integratedDisciplineContributions.map(
-        (item) => item.disciplineCode,
-      ),
-    );
+    expect(parsed.data?.content.schemaVersion).toBe(3);
   });
 
   it("still rejects contributions that disagree with a supplied discipline list", async () => {
@@ -447,10 +428,10 @@ describe("activity assistant tools", () => {
     expect(
       activityDraftProposalSchema.safeParse({
         ...proposal,
-        integratedDisciplineContributions: [
-          ...proposal.integratedDisciplineContributions,
-          { disciplineCode: "chinese", necessaryContribution: "公开表达建议。" },
-        ],
+        content: {
+          ...proposal.content,
+          disciplineContributions: proposal.content.disciplineContributions.slice(0, 2),
+        },
       }).success,
     ).toBe(false);
   });
