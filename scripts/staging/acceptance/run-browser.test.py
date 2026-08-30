@@ -164,6 +164,8 @@ class BrowserContractTests(unittest.TestCase):
         self.assertIn('get_by_role("link", name="导出评阅名册", exact=True)', source)
         self.assertIn("DASHBOARD_ATTENTION_VISIBLE", source)
         self.assertIn('locator("article").filter(has_text=title)', source)
+        self.assertIn('classroom_row.locator(\'a[href^="/teacher/classrooms/"]\')', source)
+        self.assertIn("STAGING_ACCEPTANCE_MEMBER_LINK_MISSING", source)
         self.assertIn('dashboard_release.get_by_text("待反馈 2", exact=False)', source)
         self.assertIn('dashboard_release.get_by_text("待评价 2", exact=False)', source)
         self.assertIn('dashboard_release.get_by_text("待重交 1", exact=False)', source)

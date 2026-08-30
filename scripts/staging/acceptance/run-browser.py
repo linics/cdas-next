@@ -618,7 +618,13 @@ def run() -> None:
             checks.append({"code": "WRONG_ROLE_STUDENT_ROOT_GUIDANCE", "status": "PASS"})
             teacher.goto(f"{remote}/teacher", wait_until="domcontentloaded"); assert_origin(teacher.url, remote)
             classroom_row = teacher.locator("article").filter(has_text=classroom_name)
-            members_href = classroom_row.get_by_role("link", name="管理成员 →", exact=True).get_attribute("href")
+            # The card's way into member management is the link to the roster, not
+            # the words on it: that label carries the live member count and is free
+            # to move. Wait on the destination, so a card that never renders fails
+            # by name here instead of as an anonymous Playwright timeout.
+            members_link = classroom_row.locator('a[href^="/teacher/classrooms/"]')
+            wait_visible(members_link, "STAGING_ACCEPTANCE_MEMBER_LINK_MISSING")
+            members_href = members_link.get_attribute("href")
             if not members_href or not re.fullmatch(r"/teacher/classrooms/[0-9a-f-]+/members", members_href):
                 raise AcceptanceFailure("STAGING_ACCEPTANCE_MEMBER_LINK_MISSING")
             teacher.get_by_role("link", name="新建学习活动", exact=True).click()
