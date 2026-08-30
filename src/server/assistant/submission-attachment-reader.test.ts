@@ -9,6 +9,7 @@ import {
   SubmissionAttachmentAccessError,
 } from "../attachments/submission-attachment-access";
 import type { CommandContext } from "../commands/command-context";
+import { supportedAttachmentFormats } from "../../domain/submission/attachment-policy";
 import {
   readSubmissionAttachmentsForSuggestion,
   SubmissionAttachmentReaderError,
@@ -152,6 +153,29 @@ describe("submission attachment suggestion reader", () => {
     ]);
     expect(deps.storage.getDownload).toHaveBeenCalledOnce();
     expect(deps.extractDocxText).not.toHaveBeenCalled();
+  });
+
+  // The assistant tells teachers which attachments it can read before anyone
+  // opens one, from the format catalogue rather than from this file. If the two
+  // ever disagree the assistant promises a reading that never happens.
+  it("reads exactly the formats the policy catalogue says it reads", async () => {
+    const readable = supportedAttachmentFormats.filter(
+      (format) => format.assistantReading !== "NONE",
+    );
+    const unreadable = supportedAttachmentFormats.filter(
+      (format) => format.assistantReading === "NONE",
+    );
+
+    expect(unreadable.map((format) => format.mediaType).sort()).toEqual(
+      ["application/msword", "application/pdf"].sort(),
+    );
+    expect(
+      readable.every((format) =>
+        format.kind === "IMAGE"
+          ? format.assistantReading === "VISION"
+          : format.assistantReading === "DOCX_TEXT",
+      ),
+    ).toBe(true);
   });
 
   it("re-authorizes before reporting unavailable storage", async () => {

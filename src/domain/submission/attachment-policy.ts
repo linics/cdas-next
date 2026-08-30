@@ -6,26 +6,52 @@ export const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024;
 // `disposition` decides whether the browser may render the bytes in place or must
 // take them as a download. Only formats a browser renders natively are inline;
 // Word is not one of them, and a download is the honest answer for it.
+//
+// `assistantReading` records how the review drafters read the format today. It
+// is here rather than only in the reader because the assistant has to be able
+// to tell a teacher which attachments it can read before anyone opens one;
+// `submission-attachment-reader.test.ts` asserts the reader still agrees.
 const formats = {
-  "image/jpeg": { kind: "IMAGE", extensions: ["jpg", "jpeg"], disposition: "inline" },
-  "image/png": { kind: "IMAGE", extensions: ["png"], disposition: "inline" },
-  "image/webp": { kind: "IMAGE", extensions: ["webp"], disposition: "inline" },
-  "application/pdf": { kind: "PDF", extensions: ["pdf"], disposition: "inline" },
+  "image/jpeg": { kind: "IMAGE", extensions: ["jpg", "jpeg"], disposition: "inline", assistantReading: "VISION" },
+  "image/png": { kind: "IMAGE", extensions: ["png"], disposition: "inline", assistantReading: "VISION" },
+  "image/webp": { kind: "IMAGE", extensions: ["webp"], disposition: "inline", assistantReading: "VISION" },
+  "application/pdf": { kind: "PDF", extensions: ["pdf"], disposition: "inline", assistantReading: "NONE" },
   "application/msword": {
     kind: "WORD",
     extensions: ["doc"],
     disposition: "attachment",
+    assistantReading: "NONE",
   },
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document": {
     kind: "WORD",
     extensions: ["docx"],
     disposition: "attachment",
+    assistantReading: "DOCX_TEXT",
   },
 } as const;
 
 export type AttachmentKind = (typeof formats)[keyof typeof formats]["kind"];
 export type AttachmentDisposition = "inline" | "attachment";
+export type AttachmentAssistantReading = "VISION" | "DOCX_TEXT" | "NONE";
 export type SupportedAttachmentMediaType = keyof typeof formats;
+
+export type SupportedAttachmentFormat = Readonly<{
+  mediaType: SupportedAttachmentMediaType;
+  kind: AttachmentKind;
+  extensions: readonly string[];
+  disposition: AttachmentDisposition;
+  assistantReading: AttachmentAssistantReading;
+}>;
+
+/** The catalogue itself, for surfaces that must describe what is accepted. */
+export const supportedAttachmentFormats: readonly SupportedAttachmentFormat[] =
+  Object.entries(formats).map(([mediaType, format]) => ({
+    mediaType: mediaType as SupportedAttachmentMediaType,
+    kind: format.kind,
+    extensions: format.extensions,
+    disposition: format.disposition,
+    assistantReading: format.assistantReading,
+  }));
 
 function normalizedFilename(value: string): string {
   return value.normalize("NFC").trim();
