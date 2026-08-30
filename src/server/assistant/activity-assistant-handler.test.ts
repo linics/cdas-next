@@ -1,6 +1,14 @@
 import { simulateReadableStream } from "ai";
 import { MockLanguageModelV4 } from "ai/test";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  assignmentSubtypes,
+  assignmentTypes,
+  crossDisciplinaryConcepts,
+  disciplineCatalog,
+  inquiryDepths,
+  submissionModes,
+} from "../../domain/activity/activity-content";
 import { waterConservationTaskBook } from "../../fixtures/water-conservation";
 import type { AppUser, PrismaClient } from "../../generated/prisma/client";
 
@@ -402,6 +410,74 @@ function dependencies(): ActivityAssistantHandlerDependencies {
 }
 
 describe("buildActivityAssistantInstructions", () => {
+  it.each([
+    ["学科目录", disciplineCatalog],
+    ["作业类型", assignmentTypes],
+    ["探究深度", inquiryDepths],
+    ["提交模式", submissionModes],
+    ["跨学科概念", crossDisciplinaryConcepts],
+    ["实践性子类型", assignmentSubtypes.practical],
+    ["探究性子类型", assignmentSubtypes.inquiry],
+  ])(
+    "states every %s code the payload will be validated against",
+    (_label, catalog) => {
+      // The model is rejected for missing a closed vocabulary it was never
+      // shown. These lists are generated from the same catalogs that do the
+      // rejecting, and this walks them so the instructions cannot fall behind
+      // the domain — when a discipline is added, or the cross-disciplinary
+      // concepts are dropped, this fails until the text follows.
+      const text = buildActivityAssistantInstructions([]);
+
+      for (const entry of catalog) {
+        expect(text).toContain(`${entry.code}（${entry.label}）`);
+      }
+    },
+  );
+
+  it("says what to do when a closed vocabulary is emptied", () => {
+    // 跨学科概念 is expected to be dropped. On that day the instructions must
+    // tell the model to send an empty array, not keep listing labels the schema
+    // no longer accepts — so the sentence is generated, not typed out.
+    const text = buildActivityAssistantInstructions([]);
+
+    expect(text).toContain("crossDisciplinaryConceptCodes");
+    // Widened for the same reason the instruction builder widens it: the tuple
+    // is provably non-empty today, and the empty case is exactly the future
+    // this test exists to cover.
+    const concepts: readonly { code: string; label: string }[] =
+      crossDisciplinaryConcepts;
+    if (concepts.length === 0) {
+      expect(text).toContain("必须留空数组");
+    } else {
+      expect(text).toContain("可选 0–2 个跨学科概念");
+    }
+  });
+
+  it("names which disciplines each stage actually offers", () => {
+    const text = buildActivityAssistantInstructions([]);
+
+    // The catalog already rejects a middle-school activity that names 科学 —
+    // in 初中 it splits into 物理/化学/生物/地理 — but nothing used to tell the
+    // model, so it chose science, the payload died on an opaque validation
+    // code, and the teacher only saw that no draft was created.
+    expect(text).toContain("science（科学）");
+    expect(text).toContain("physics（物理）");
+    expect(text).toContain("初中没有「科学」这门课");
+
+    const primaryLine = text.slice(
+      text.indexOf("小学 1–6 年级："),
+      text.indexOf("初中 7–9 年级："),
+    );
+    const middleLine = text.slice(
+      text.indexOf("初中 7–9 年级："),
+      text.indexOf("初中没有「科学」这门课"),
+    );
+    expect(primaryLine).toContain("science（科学）");
+    expect(middleLine).not.toContain("science（科学）");
+    expect(middleLine).toContain("biology（生物学）");
+  });
+
+
   it("tells the model that every pausing tool call is itself the confirmation", () => {
     const text = buildActivityAssistantInstructions([]);
 
@@ -430,7 +506,12 @@ describe("buildActivityAssistantInstructions", () => {
 
   it("lists legal assignment subtypes and the unread-citation rule", () => {
     const text = buildActivityAssistantInstructions([]);
-    expect(text).toContain("inquiry 配 literature、survey、experiment");
+    // Now rendered from assignmentSubtypes rather than typed out, so the pairs
+    // carry their labels and a new subtype cannot be legal in the schema while
+    // missing from the instructions.
+    expect(text).toContain(
+      "inquiry 配 literature（文献探究）、survey（调查探究）、experiment（实验探究）",
+    );
     expect(text).toContain("project 的 assignmentSubtype 必须为 null");
     expect(text).toContain("read_source_section 已返回 FOUND");
     expect(text).toContain("引用数量不得超过已通读章节数");
@@ -701,11 +782,11 @@ describe("activity assistant route handler", () => {
     expect(mocks.publishRelease).not.toHaveBeenCalled();
     expect(languageModel.doStreamCalls).toHaveLength(4);
     expect(languageModel.doStreamCalls[0]?.toolChoice).toEqual({ type: "auto" });
-    // Designing an activity is where the assistant writes the most, and it
-    // names no tool — so it keeps the reasoning gear rather than the pin that
-    // only the named-tool turns need.
+    // Designing an activity names no tool, so it reasons rather than taking the
+    // pin only named-tool turns need — at the loop's own lower gear, since
+    // retrieval pays it on every step within one shared timeout.
     expect(languageModel.doStreamCalls[0]?.providerOptions).toEqual({
-      deepseek: { reasoningEffort: "high" },
+      deepseek: { reasoningEffort: "low" },
     });
     expect(languageModel.doStreamCalls[0]?.maxOutputTokens).toBe(16_000);
   });

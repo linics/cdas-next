@@ -383,9 +383,10 @@
   padding: var(--space-3) 0;
 }
 
-.attachmentList li > div:first-child { display: grid; min-width: 0; gap: 3px; }
+.attachmentList li > div:first-child,
+.formalAttachmentList li > div:first-child { display: grid; min-width: 0; gap: 3px; }
 .attachmentList strong,
-.formalAttachmentList a { overflow-wrap: anywhere; }
+.formalAttachmentList strong { overflow-wrap: anywhere; }
 .attachmentList li > div:first-child span,
 .formalAttachmentList span { color: var(--color-neutral-700); font-size: var(--text-meta); }
 .attachmentList li[data-status="READY"] strong { color: var(--color-neutral-800); }

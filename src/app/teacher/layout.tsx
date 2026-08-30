@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { connection } from "next/server";
 import { ZodError } from "zod";
 import { AuthenticationError } from "../../server/auth/current-actor";
 import { isActivityAssistantEnabled } from "../../server/assistant/assistant-config";
@@ -20,6 +21,7 @@ function reportTeacherAgentContextFailure(error: unknown): void {
 export default async function TeacherLayout({
   children,
 }: Readonly<{ children: ReactNode }>) {
+  await connection();
   let context;
   try {
     context = await createUiCommandContext();

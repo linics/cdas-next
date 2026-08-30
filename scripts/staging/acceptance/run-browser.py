@@ -269,6 +269,19 @@ def wait_text(page: Page, text: str) -> None:
     page.get_by_text(text, exact=False).last.wait_for(state="visible", timeout=30_000)
 
 
+def open_confirmed_records(page: Page) -> None:
+    """
+    Confirmed feedback and evaluation sit in a fold that starts collapsed, so
+    the review workspace opens on the writing surface rather than on history.
+    Every save re-renders the page and closes it again, so open it by its state
+    rather than toggling it.
+    """
+    summary = page.locator("summary").filter(has_text="已确认记录")
+    wait_visible(summary, "STAGING_ACCEPTANCE_CONFIRMED_RECORDS_MISSING")
+    if not summary.evaluate("element => element.parentElement.open"):
+        summary.click()
+
+
 def wait_visible(locator: object, code: str) -> None:
     try:
         locator.wait_for(state="visible", timeout=30_000)
@@ -305,6 +318,53 @@ def attachment_download_href(page: Page, filename: str) -> str:
     if not href or not re.fullmatch(r"/attachments/[0-9a-f-]{36}/download", href):
         raise AcceptanceFailure("STAGING_ACCEPTANCE_ATTACHMENT_LINK_INVALID")
     return href
+
+
+def assert_attachment_preview(page: Page, filename: str, expected_href: str, prefix: str) -> None:
+    """
+    Preview is an overlay over the evidence, never a replacement for it.
+
+    Each step carries its own code. One code for the whole overlay would say
+    only "preview failed", and every one of these steps fails for a different
+    reason: a missing control, an unauthorised source, bytes that arrived but
+    would not decode, an overlay that swallowed the download or the page.
+    """
+    row = page.locator("li").filter(has_text=filename).last
+    button = row.get_by_role("button", name="预览", exact=True)
+    wait_visible(button, f"{prefix}_PREVIEW_BUTTON_MISSING")
+    before = page.url
+    button.click()
+    dialog = page.locator("dialog[open]").filter(has_text=filename)
+    wait_visible(
+        dialog.get_by_role("heading", name=filename, exact=True),
+        f"{prefix}_PREVIEW_TITLE_MISSING",
+    )
+    image = dialog.locator("img")
+    wait_visible(image, f"{prefix}_PREVIEW_IMAGE_MISSING")
+    if image.get_attribute("src") != expected_href:
+        raise AcceptanceFailure(f"{prefix}_PREVIEW_SOURCE_MISMATCH")
+    # A broken image is still a visible <img>: the element gets a box from its
+    # border before any bytes arrive. Wait for the decode rather than sampling
+    # `complete`, which is simply false while the request is still in flight —
+    # over a real network that is most of the time just after the click.
+    # decode() rejects if the bytes never render, so this is the whole proof.
+    try:
+        image.evaluate("element => element.decode()")
+    except PlaywrightError as error:
+        raise AcceptanceFailure(f"{prefix}_PREVIEW_IMAGE_NOT_DECODED") from error
+    if image.evaluate("element => element.naturalWidth") < 1:
+        raise AcceptanceFailure(f"{prefix}_PREVIEW_IMAGE_NOT_DECODED")
+    wait_visible(
+        dialog.get_by_role("link", name="下载原件", exact=True),
+        f"{prefix}_PREVIEW_DOWNLOAD_MISSING",
+    )
+    dialog.get_by_role("button", name="关闭", exact=True).click()
+    try:
+        dialog.wait_for(state="hidden", timeout=30_000)
+    except PlaywrightError as error:
+        raise AcceptanceFailure(f"{prefix}_PREVIEW_NOT_DISMISSED") from error
+    if page.url != before:
+        raise AcceptanceFailure(f"{prefix}_PREVIEW_NAVIGATED")
 
 
 def assert_attachment_download(page: Page, filename: str, expected_sha256: str) -> None:
@@ -618,9 +678,22 @@ def run() -> None:
             checks.append({"code": "WRONG_ROLE_STUDENT_ROOT_GUIDANCE", "status": "PASS"})
             teacher.goto(f"{remote}/teacher", wait_until="domcontentloaded"); assert_origin(teacher.url, remote)
             classroom_row = teacher.locator("article").filter(has_text=classroom_name)
-            members_href = classroom_row.get_by_role("link", name="管理成员 →", exact=True).get_attribute("href")
+            # The card's way into member management is the link to the roster, not
+            # the words on it: that label carries the live member count and is free
+            # to move. Wait on the destination, so a card that never renders fails
+            # by name here instead of as an anonymous Playwright timeout.
+            members_link = classroom_row.locator('a[href^="/teacher/classrooms/"]')
+            wait_visible(members_link, "STAGING_ACCEPTANCE_MEMBER_LINK_MISSING")
+            members_href = members_link.get_attribute("href")
             if not members_href or not re.fullmatch(r"/teacher/classrooms/[0-9a-f-]+/members", members_href):
                 raise AcceptanceFailure("STAGING_ACCEPTANCE_MEMBER_LINK_MISSING")
+            # Drafting moved out of the workspace home: the home is the release
+            # and classroom view, and the activity studio is its own section.
+            # Reach it the way a teacher does, through the sidebar, addressing
+            # the entry by where it goes rather than by what it is called.
+            teacher.locator('#workspace-navigation a[href="/teacher/activities"]').click()
+            teacher.wait_for_url(re.compile(r"/teacher/activities$"))
+            assert_origin(teacher.url, remote)
             teacher.get_by_role("link", name="新建学习活动", exact=True).click()
             teacher.wait_for_url(re.compile(r"/teacher/activities/new$"))
             assert_origin(teacher.url, remote)
@@ -680,9 +753,24 @@ def run() -> None:
                 raise AcceptanceFailure("STAGING_ACCEPTANCE_STUDENT_LINK_MISSING")
             activity.click()
             assert_origin(student.url, remote)
-            for heading in ("任务设置", "背景设定", "学习目标", "总体任务", "任务链", "评价标准"):
+            # The student reads a different document from the one the teacher
+            # designs: the background leads the page, and the rest of the task
+            # book sits in a fold that starts collapsed. The design-side and
+            # audit-side sections are deliberately not published to the student
+            # at all, so this asserts what a v2 snapshot actually offers.
+            wait_visible(
+                student.locator('section[aria-label="活动背景"]'),
+                "STAGING_ACCEPTANCE_STUDENT_BACKGROUND_MISSING",
+            )
+            student.locator("summary").filter(has_text="查看完整任务书").click()
+            for heading in ("总体任务", "任务链", "评价标准"):
                 student.get_by_role("heading", name=heading, level=3, exact=True).wait_for()
-            student.get_by_text("第 1 阶段", exact=True).wait_for(state="visible")
+            # The stage panel labels itself with the stage and its name, so
+            # match the label's stem rather than a phrase the copy composes.
+            wait_visible(
+                student.locator('section[aria-label^="第 1 阶段"]'),
+                "STAGING_ACCEPTANCE_STUDENT_PHASE_FOCUS_MISSING",
+            )
             if student.locator('[data-locked="true"]').filter(has_text="调查与分析").count() != 1:
                 raise AcceptanceFailure("STAGING_ACCEPTANCE_PHASE_ORDER_NOT_LOCKED")
             student.get_by_role("checkbox", name=re.compile("Stage 1 synthetic text evidence")).check()
@@ -704,7 +792,10 @@ def run() -> None:
             other_student.locator(f'a[href="{activity_href}?phase=1"]').click()
             wait_text(other_student, phase_one_evidence)
             other_student.locator(f'a[href="{activity_href}?phase=2"]').click()
-            other_student.get_by_text("第 2 阶段", exact=True).wait_for(state="visible")
+            wait_visible(
+                other_student.locator('section[aria-label^="第 2 阶段"]'),
+                "STAGING_ACCEPTANCE_STUDENT_PHASE_FOCUS_MISSING",
+            )
             other_student.get_by_role("checkbox", name=re.compile("Stage 2 synthetic text evidence")).check()
             other_student.locator("#text-evidence").fill(phase_two_evidence)
             other_student.get_by_role("button", name="保存草稿", exact=True).click()
@@ -719,22 +810,40 @@ def run() -> None:
             student.locator(f'a[href="{activity_href}?phase=2"]').click()
             wait_text(student, phase_two_evidence)
             student.locator(f'a[href="{activity_href}?phase=3"]').click()
-            student.get_by_text("第 3 阶段", exact=True).wait_for(state="visible")
+            wait_visible(
+                student.locator('section[aria-label^="第 3 阶段"]'),
+                "STAGING_ACCEPTANCE_STUDENT_PHASE_FOCUS_MISSING",
+            )
             student.get_by_role("checkbox", name=re.compile("Stage 3 synthetic text evidence")).check()
             student.locator("#text-evidence").fill(evidence)
             student.get_by_role("button", name="保存草稿", exact=True).click()
             wait_text(student, "草稿已保存")
             student.reload(wait_until="domcontentloaded")
             assert_origin(student.url, remote)
-            student.get_by_text("第 3 阶段", exact=True).wait_for(state="visible")
+            wait_visible(
+                student.locator('section[aria-label^="第 3 阶段"]'),
+                "STAGING_ACCEPTANCE_STUDENT_PHASE_FOCUS_MISSING",
+            )
             upload_student_attachment(student, attachment_filename, attachment_bytes)
             attachment_href = attachment_download_href(student, attachment_filename)
             assert_attachment_download(student, attachment_filename, attachment_sha256)
             checks.append({"code": "STUDENT_PRIVATE_ATTACHMENT_UPLOAD_AND_DOWNLOAD", "status": "PASS"})
+            assert_attachment_preview(
+                student,
+                attachment_filename,
+                attachment_href,
+                "STAGING_ACCEPTANCE_STUDENT_ATTACHMENT",
+            )
+            checks.append({"code": "STUDENT_PRIVATE_ATTACHMENT_PREVIEW", "status": "PASS"})
             student.get_by_role("button", name="正式提交", exact=True).click()
             confirm(student, "确认正式提交？", "确认正式提交")
             wait_text(student, "第 1 版已正式提交")
-            student.get_by_text("第 3/3 阶段", exact=True).wait_for(state="visible")
+            # The last stage is now behind the student. The navigator is where
+            # that shows: its entry for this stage carries the submitted state.
+            wait_visible(
+                student.locator(f'a[href="{activity_href}?phase=3"]').get_by_text("已提交", exact=True),
+                "STAGING_ACCEPTANCE_STUDENT_PHASE_NOT_SUBMITTED",
+            )
             checks.append({"code": "SEQUENTIAL_PHASE_EXECUTION", "status": "PASS"})
             denied = student.goto(f"{remote}{release_href}", wait_until="domcontentloaded")
             assert_origin(student.url, remote)
@@ -762,7 +871,17 @@ def run() -> None:
                 raise AcceptanceFailure("STAGING_ACCEPTANCE_ATTACHMENT_LINK_CHANGED")
             assert_attachment_download(teacher, attachment_filename, attachment_sha256)
             checks.append({"code": "TEACHER_FORMAL_ATTACHMENT_DOWNLOAD", "status": "PASS"})
+            # The point of the overlay is that the review workspace no longer
+            # has to be left to look at the evidence being reviewed.
+            assert_attachment_preview(
+                teacher,
+                attachment_filename,
+                attachment_href,
+                "STAGING_ACCEPTANCE_TEACHER_ATTACHMENT",
+            )
+            checks.append({"code": "TEACHER_FORMAL_ATTACHMENT_PREVIEW", "status": "PASS"})
             feedback(teacher, feedback_text)
+            open_confirmed_records(teacher)
             teacher.locator('[aria-labelledby^="feedback-history-"]').last.get_by_text(
                 feedback_text,
                 exact=True,
@@ -776,6 +895,7 @@ def run() -> None:
                 exact=True,
             ).wait_for(state="visible")
             evaluation(teacher, evaluation_text, attachment_filename)
+            open_confirmed_records(teacher)
             wait_evaluation_history(teacher, evaluation_text)
             teacher.locator('[aria-labelledby^="evaluation-history-"]').last.get_by_text(
                 "证据不足",
@@ -817,7 +937,15 @@ def run() -> None:
             checks.append({"code": "REVIEW_ROSTER_EXPORT_VISIBLE", "status": "PASS"})
             teacher.goto(f"{remote}/teacher", wait_until="domcontentloaded")
             assert_origin(teacher.url, remote)
-            dashboard_release = teacher.locator("article").filter(has_text=title)
+            # The workspace home keeps outstanding work in its own todo rows,
+            # separate from the classroom catalogue. Both link to this release,
+            # and only the todo row names the classroom next to the activity and
+            # what is still owed — so that pair is what identifies it.
+            dashboard_release = (
+                teacher.locator(f'a[href="{release_href}"]')
+                .filter(has_text=title)
+                .filter(has_text=classroom_name)
+            )
             wait_visible(
                 dashboard_release.get_by_text("待反馈 2", exact=False),
                 "STAGING_ACCEPTANCE_DASHBOARD_ATTENTION_MISSING",

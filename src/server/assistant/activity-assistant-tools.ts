@@ -121,11 +121,24 @@ const alignmentChainSchema = z
  * write. The content remains the sole persisted task book.
  */
 /**
- * Two facts in this payload are not the model's to remember: the schema
- * version is a constant, and the integrated discipline codes are exactly the
- * keys of the contributions it already wrote. Asking for either again only
- * creates a way to be inconsistent, so both are filled in before validation.
- * A list the model does supply is still checked against the contributions.
+ * Two facts in this payload are not the model's to remember: the schema version
+ * is a constant, and the integrated discipline codes are exactly the keys of the
+ * contributions it already wrote. Asking for either again only creates a way to
+ * be inconsistent, so both are filled in before validation.
+ *
+ * The derivation is authoritative, not a fallback. Keeping a list the model
+ * supplied and then validating it against the contributions punished the model
+ * for answering a field the instructions had already told it to leave alone —
+ * and it did answer it, because a required-looking schema field almost always
+ * gets filled. Measured on a real design run: asked for an activity spanning a
+ * discipline outside the first-version corpus, the assistant honestly reported
+ * it could cite no source for that discipline, dropped it from the
+ * contributions, left it in the codes it was not supposed to write, and the
+ * whole proposal was rejected. Deriving the codes makes that class of
+ * disagreement impossible rather than merely detected. Every other rule about
+ * these codes still runs — no repeats, never the main discipline, and each one
+ * available for the school stage — and now reports against the contributions,
+ * which is where the model can actually fix it.
  */
 function completeDraftProposalInput(value: unknown): unknown {
   if (!value || typeof value !== "object") return value;
@@ -149,8 +162,15 @@ function completeDraftProposalInput(value: unknown): unknown {
     content: {
       ...draft,
       schemaVersion: 2,
+      // Only fall back to what the model wrote when there is nothing to derive
+      // from, so a payload with no contributions fails on the contributions
+      // rather than on a field the model was told not to write.
       integratedDisciplineCodes:
-        Array.isArray(codes) && codes.length > 0 ? codes : derivedCodes,
+        derivedCodes.length > 0
+          ? derivedCodes
+          : Array.isArray(codes)
+            ? codes
+            : [],
     },
   };
 }
@@ -894,7 +914,7 @@ export function createActivityAssistantTools({
 
     create_activity_draft: tool({
       description:
-        "把教师已经说明清楚的完整跨学科任务书储存成可预览、可继续编辑的活动草稿。所有文字使用简体中文。content.schemaVersion 与 content.integratedDisciplineCodes 由服务端补齐，不要自己填：学科以你写的融合学科贡献为准。作业类型只用 practical、inquiry、project；practical 子类型只用 visit、simulation、observation；inquiry 子类型只用 literature、survey、experiment；project 的 assignmentSubtype 必须为 null。融合学科贡献用学科目录里的英文 code，每个融合学科各写一条，不得包含主学科。sourceReferences 每一条都必须是本轮 read_source_section 已返回 FOUND 的章节，数量不得超过已通读章节。必须包含三维目标、三至四个连续阶段、类型化证据及四档量规，不能臆造缺失事实。",
+        "把教师已经说明清楚的完整跨学科任务书储存成可预览、可继续编辑的活动草稿。所有文字使用简体中文。content.schemaVersion 与 content.integratedDisciplineCodes 由服务端补齐，不要自己填：学科以你写的融合学科贡献为准。作业类型只用 practical、inquiry、project；practical 子类型只用 visit、simulation、observation；inquiry 子类型只用 literature、survey、experiment；project 的 assignmentSubtype 必须为 null。融合学科贡献用学科目录里的英文 code，每个融合学科各写一条，不得包含主学科。教师要求的融合学科即使在首版语料里找不到依据，也仍要写它的贡献条目，只在贡献说明里讲清楚缺依据；漏写会把这个学科从活动里去掉。sourceReferences 每一条都必须是本轮 read_source_section 已返回 FOUND 的章节，数量不得超过已通读章节。必须包含三维目标、三至四个连续阶段、类型化证据及四档量规，不能臆造缺失事实。",
       inputSchema: proposalAfterReadingSchema,
       outputSchema: createdDraftToolOutputSchema,
       strict: true,

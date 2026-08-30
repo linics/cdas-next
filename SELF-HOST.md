@@ -7,7 +7,23 @@ Default target: `122.51.77.121` (Tencent SA3.MEDIUM2, 2C/2G). The previous
 ## Capacity
 
 - Fits small-class demo / internal trial (about 1 teacher + 5–15 light students).
-- Keep `AI_PROVIDER_DISABLED=1` and leave attachments off on 2GB RAM.
+- Keep `AI_PROVIDER_DISABLED=1` on 2GB RAM.
+- Attachments run on this box's own disk. Set both:
+
+  ```
+  ATTACHMENT_STORAGE_ENABLED=1
+  ATTACHMENT_STORAGE_DIR=/opt/cdas-next/shared/attachments
+  ```
+
+  That path sits **outside** `releases/`, so the `--link-dest` rotation a deploy
+  performs never touches student files. Budget disk for 20MB x 5 per submission,
+  and back that directory up alongside the database — nothing else holds those
+  bytes.
+
+  The guarantee matches the Vercel Blob path rather than weakening it: that one
+  never scanned for malware either. Both verify the declared media type against
+  the file's own signature, through the same shared check, and reject a file
+  renamed into a type it is not.
 - Never run `pnpm build` on the VPS; build on a workstation or CI, then upload the standalone release.
 
 ## Public entry (Tencent without ICP)
@@ -44,6 +60,7 @@ export CDAS_PUBLIC_ORIGIN=http://122.51.77.121
 # optional:
 # export DEEPSEEK_API_KEY=...
 # export AI_TOOL_APPROVAL_SECRET=...
+# export AI_ATTACHMENT_VISION_MODEL=deepseek-v4-flash-vision-exp
 # export AI_PROVIDER_DISABLED=0
 
 chmod +x scripts/self-host/*.sh

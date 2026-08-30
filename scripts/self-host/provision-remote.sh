@@ -87,13 +87,15 @@ if [[ -d "$CONF_DIR" ]]; then
 fi
 
 ENV_FILE=/opt/cdas-next/shared/.env
+install -d -m 0750 -o ubuntu -g ubuntu /opt/cdas-next/shared/attachments
 if [[ ! -f "$ENV_FILE" ]]; then
   umask 077
   cat >"$ENV_FILE" <<EOF
 DATABASE_URL=postgresql://cdas:${DB_PASSWORD}@127.0.0.1:5432/cdas_next
 DIRECT_URL=postgresql://cdas:${DB_PASSWORD}@127.0.0.1:5432/cdas_next
 AI_PROVIDER_DISABLED=1
-ATTACHMENT_STORAGE_ENABLED=
+ATTACHMENT_STORAGE_ENABLED=1
+ATTACHMENT_STORAGE_DIR=/opt/cdas-next/shared/attachments
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
 CLERK_SECRET_KEY=
 EOF

@@ -12,6 +12,7 @@ import {
   teacherEvaluationLevelLabels,
   teacherEvaluationOutcomeStatusLabels,
 } from "../../../../domain/evaluation/teacher-evaluation-policy";
+import { AttachmentPreview } from "../../../_components/attachment-preview";
 import { LocalizedDateTime } from "../../../_components/localized-date-time";
 import { AuthenticationError } from "../../../../server/auth/current-actor";
 import { isActivityAssistantEnabled } from "../../../../server/assistant/assistant-config";
@@ -263,10 +264,14 @@ function SubmissionRevision({
         <ul className={styles.formalAttachmentList}>
           {revision.attachments.map((attachment) => (
             <li key={attachment.id}>
-              <a href={`/attachments/${attachment.id}/download`}>
+              <a
+                href={`/attachments/${attachment.id}/download`}
+                download={attachment.filename}
+              >
                 {attachment.filename}
               </a>
               <span>{Math.ceil(attachment.byteSize / 1024)} KB</span>
+              <AttachmentPreview attachment={attachment} />
             </li>
           ))}
         </ul>

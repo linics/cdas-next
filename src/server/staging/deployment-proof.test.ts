@@ -53,6 +53,50 @@ describe("deployment proof", () => {
     expect(createDeploymentConfigurationProof({ ...input, aiProviderDisabled: "unexpected" })).toBeUndefined();
   });
 
+  it("binds the attachment vision model, and treats its default as no change", () => {
+    const enabled = {
+      ...input,
+      aiProviderDisabled: "0",
+      deepseekApiKey: "deepseek-key-for-staging-012345",
+      aiModel: "deepseek-v4-flash",
+      aiToolApprovalSecret: "a".repeat(32),
+    };
+    const proof = createDeploymentConfigurationProof(enabled);
+
+    // A deployment that reads attachments calls this second model, so swapping
+    // it has to move the proof — otherwise the identity the staging gate binds
+    // would not describe which models actually run.
+    expect(
+      createDeploymentConfigurationProof({
+        ...enabled,
+        attachmentVisionModel: "deepseek-v9-vision",
+      }),
+    ).not.toBe(proof);
+
+    // Unset and explicitly set to the runtime default are the same deployment.
+    // The proof is computed both in the health route and in the staging
+    // verifier; if these disagreed the gate would fail on a matching config.
+    expect(
+      createDeploymentConfigurationProof({
+        ...enabled,
+        attachmentVisionModel: "deepseek-v4-flash-vision-exp",
+      }),
+    ).toBe(proof);
+    expect(
+      createDeploymentConfigurationProof({
+        ...enabled,
+        attachmentVisionModel: "   ",
+      }),
+    ).toBe(proof);
+
+    expect(
+      createDeploymentConfigurationProof({
+        ...enabled,
+        attachmentVisionModel: "not a model id",
+      }),
+    ).toBeUndefined();
+  });
+
   it("never exposes the Clerk secret or its hash in the proof", () => {
     const proof = createDeploymentConfigurationProof(input);
 

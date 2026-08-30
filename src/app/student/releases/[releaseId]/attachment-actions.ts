@@ -8,7 +8,7 @@ import {
   createSubmissionAttachmentUpload,
   refreshSubmissionAttachmentScan,
 } from "../../../../server/attachments/submission-attachment-service";
-import { createAttachmentStorageFromEnvironment } from "../../../../server/attachments/vercel-blob-attachment-storage";
+import { createAttachmentStorage } from "../../../../server/attachments/attachment-storage-factory";
 import {
   removeSubmissionAttachment,
   SubmissionAttachmentCommandError,
@@ -75,7 +75,7 @@ function failure(error: unknown): AttachmentActionResult {
 }
 
 function storageOrFailure() {
-  return createAttachmentStorageFromEnvironment();
+  return createAttachmentStorage();
 }
 
 export async function reserveAttachmentUploadAction(

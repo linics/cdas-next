@@ -242,6 +242,38 @@ def switch_account(
     raise E2eFailure("CLERK_SWITCH_RETRY_EXHAUSTED")
 
 
+def assert_stop_control_exists(page: Page) -> None:
+    """Prove the settle guard's locator is real, while a stream is in flight.
+
+    `settle_assistant_stream` waits for the stop control to go, and a wait for
+    something to vanish passes trivially when the selector matches nothing. That
+    is how five settle guards silently did nothing for the life of this script:
+    they looked for a button named 「停止」 while it is named 「停止生成」, so
+    every wait returned instantly and the script navigated through live streams.
+
+    Checking existence has to happen where streaming is guaranteed — right after
+    submitting — because by the time a turn's result has been asserted it may
+    legitimately be finished and the control legitimately gone.
+    """
+    page.get_by_role("button", name="停止生成", exact=True).wait_for(
+        state="attached", timeout=30_000
+    )
+
+
+def settle_assistant_stream(page: Page) -> None:
+    """Wait for the assistant turn to finish before navigating away.
+
+    Navigating mid-stream aborts the request and leaves a CANCELLED AgentRun
+    that says nothing about what the turn actually did.
+
+    Deliberately tolerant of a turn that has already finished: the control is
+    gone either way. `assert_stop_control_exists` is what keeps this honest.
+    """
+    page.get_by_role("button", name="停止生成", exact=True).wait_for(
+        state="detached", timeout=120_000
+    )
+
+
 def screenshot(page: Page, artifacts: Path, name: str) -> None:
     page.screenshot(path=artifacts / f"{name}.png", full_page=True)
 
@@ -392,6 +424,11 @@ def run_browser_flow(
                 raise E2eFailure("FOREIGN_TEACHER_DRAFT_NOT_HIDDEN")
 
             page.goto(f"{base_url}/teacher", wait_until="domcontentloaded")
+            # Drafting lives in the activity studio, not on the workspace home.
+            # Follow the sidebar entry by its destination: the label is free to
+            # move, the route is the contract.
+            page.locator('#workspace-navigation a[href="/teacher/activities"]').click()
+            page.wait_for_url(f"{base_url}/teacher/activities")
             page.get_by_role("link", name="新建学习活动", exact=True).click()
             page.wait_for_url(f"{base_url}/teacher/activities/new")
 
@@ -655,6 +692,9 @@ def run_real_model_browser_flow(
     broker_secret: str,
 ) -> None:
     title = f"E2E AI 草稿 {marker}"
+    attachment_fixture = (
+        REPOSITORY_ROOT / "scripts" / "probe" / "fixtures" / "student-work.png"
+    )
     prompt = f"""資料已完整。請先調用 search_knowledge 檢索官方課程方案及物理、數學、語文課程標準，再用 read_source_section 核對相關原文；之後提出 D-033 結構化任務理解與設計建議，至少引用兩個不同官方來源，等待教師確認後才建立草稿；不要發佈，也不要提問。
 標題必須逐字為：{title}
 請建立完整跨學科任務書：初中七年級，主學科物理，融合數學與語文；探究性作業、調查探究、中等探究、一次性提交、2周。
@@ -701,17 +741,17 @@ def run_real_model_browser_flow(
             page.get_by_role(
                 "button", name="打开 CDAS Agent 独立会话", exact=True
             ).click()
-            page.get_by_role(
-                "heading", name="教师工作台与活动设计", exact=True
-            ).wait_for()
-            page.locator(
+            assistant_prompt = page.locator(
                 '#activity-assistant-prompt[data-hydrated="true"]'
-            ).fill(
+            )
+            assistant_prompt.wait_for()
+            assistant_prompt.fill(
                 "请先确认我当前所在的页面，再读取这份草稿的完整任务书，"
                 "然后只用一句话说明第二个阶段在情境承接上还差什么。"
                 "只读取，不要建立新草稿，也不要发布。"
             )
             page.get_by_role("button", name="交给助手整理", exact=True).click()
+            assert_stop_control_exists(page)
             page.get_by_text(f"读取草稿 · {read_title}", exact=True).wait_for(
                 timeout=120_000
             )
@@ -722,9 +762,7 @@ def run_real_model_browser_flow(
             # Let the read turn settle before reloading. Navigating mid-stream
             # would abort it and leave a CANCELLED AgentRun that says nothing
             # about the read itself.
-            page.get_by_role("button", name="停止", exact=True).wait_for(
-                state="detached", timeout=120_000
-            )
+            settle_assistant_stream(page)
             # The transcript scrolls inside the panel, so bring the result the
             # assertions just proved into frame before capturing evidence.
             page.get_by_text(f"读取草稿 · {read_title}", exact=True).scroll_into_view_if_needed()
@@ -755,9 +793,7 @@ def run_real_model_browser_flow(
             )
             if page.url != draft_url:
                 raise E2eFailure("REAL_MODEL_DRAFT_REVISION_NAVIGATED")
-            page.get_by_role("button", name="停止", exact=True).wait_for(
-                state="detached", timeout=120_000
-            )
+            settle_assistant_stream(page)
             page.get_by_text("草稿已改写 · 版本 1 → 2", exact=True).scroll_into_view_if_needed()
             screenshot(page, artifacts, "02-real-model-draft-revised")
 
@@ -770,10 +806,10 @@ def run_real_model_browser_flow(
             page.get_by_role(
                 "button", name="打开 CDAS Agent 独立会话", exact=True
             ).click()
-            page.get_by_role(
-                "heading", name="教师工作台与活动设计", exact=True
-            ).wait_for()
-            textarea = page.locator("#activity-assistant-prompt")
+            textarea = page.locator(
+                '#activity-assistant-prompt[data-hydrated="true"]'
+            )
+            textarea.wait_for()
             submit = page.get_by_role("button", name="交给助手整理", exact=True)
             textarea.fill(prompt)
             if not submit.is_enabled():
@@ -805,9 +841,7 @@ def run_real_model_browser_flow(
             screenshot(page, artifacts, "03-real-model-draft-proposal")
             # The idle badge this used to wait for no longer exists; the panel
             # now only marks the busy state. Wait for that to clear instead.
-            page.get_by_role("button", name="停止", exact=True).wait_for(
-                state="detached", timeout=120_000
-            )
+            settle_assistant_stream(page)
             proposal.get_by_role(
                 "button", name="确认理解并创建草稿", exact=True
             ).click()
@@ -867,10 +901,21 @@ def run_real_model_browser_flow(
             ).click()
             page.locator("#text-evidence").fill(
                 f"{marker} 我在教学楼三楼记录了两次水表读数，第二次比第一次多，"
-                "我认为是午休时段用水集中造成的。"
+                "具体差值、柱状图和漏水备注都在附件里，请结合附件判断。"
             )
             page.get_by_role("button", name="保存草稿", exact=True).click()
             wait_for_text(page, "草稿已保存")
+            page.locator('input[type="file"]').set_input_files(
+                str(attachment_fixture)
+            )
+            wait_for_text(page, "文件已上传并完成内容验证，可正式提交。")
+            # Assert the attachment row itself reached READY, by structure. A
+            # bare text match on the status word now resolves to two elements —
+            # the row's own "67 KB · 可正式提交" and the message above — and a
+            # copy change would move it again.
+            page.locator(
+                '[data-attachment-editor] li[data-status="READY"]'
+            ).filter(has_text=attachment_fixture.name).wait_for()
             page.get_by_role("button", name="正式提交", exact=True).click()
             confirm_dialog(page, "确认正式提交？", "确认正式提交")
             wait_for_text(page, "第 1 版已正式提交")
@@ -900,6 +945,11 @@ def run_real_model_browser_flow(
                 raise E2eFailure("REAL_MODEL_FEEDBACK_DRAFT_NEXT_STEP_MISSING")
             if page.locator("#teacher-feedback-support-level").input_value() == "":
                 raise E2eFailure("REAL_MODEL_FEEDBACK_DRAFT_SUPPORT_LEVEL_MISSING")
+            if not any(
+                fact in drafted_feedback
+                for fact in ("6.7", "25.6", "11.3", "食堂", "滴水")
+            ):
+                raise E2eFailure("REAL_MODEL_FEEDBACK_IGNORED_ATTACHMENT")
             # The verifier proves this text never reached the audit trail.
             (artifacts / "drafted-feedback.txt").write_text(
                 drafted_feedback, encoding="utf-8"
@@ -907,6 +957,10 @@ def run_real_model_browser_flow(
             screenshot(page, artifacts, "05-real-model-feedback-draft")
             page.get_by_role("button", name="准备确认", exact=True).click()
             confirm_dialog(page, "确认并保存最终反馈", "确认并保存最终反馈")
+            # Confirmed records live in a native <details> that CLASSICAL.md
+            # requires to start collapsed, so the provenance line is in the DOM
+            # but not visible. Open it the way a teacher would, then assert.
+            page.locator("summary").filter(has_text="已确认记录").click()
             page.get_by_text("AI 建议 · 教师已确认").first.wait_for(
                 timeout=120_000
             )
@@ -919,6 +973,15 @@ def run_real_model_browser_flow(
                 "AI 建议已填入当前表单。请逐维核对、修改后，再准备评价确认。",
                 exact=True,
             ).wait_for(timeout=120_000)
+            attachment_citations = page.get_by_role(
+                "checkbox",
+                name=f"引用附件 {attachment_fixture.name}",
+                exact=True,
+            )
+            if attachment_citations.count() == 0 or not attachment_citations.evaluate_all(
+                "elements => elements.some((element) => element.checked)"
+            ):
+                raise E2eFailure("REAL_MODEL_EVALUATION_ATTACHMENT_CITATION_MISSING")
             screenshot(page, artifacts, "06-real-model-evaluation-draft")
             prepare_evaluation = page.get_by_role(
                 "button", name="准备评价确认", exact=True
@@ -938,12 +1001,11 @@ def run_real_model_browser_flow(
             page.get_by_role(
                 "button", name="打开 CDAS Agent 独立会话", exact=True
             ).click()
-            page.get_by_role(
-                "heading", name="教师工作台与活动设计", exact=True
-            ).wait_for()
-            page.locator(
+            assistant_prompt = page.locator(
                 '#activity-assistant-prompt[data-hydrated="true"]'
-            ).fill(
+            )
+            assistant_prompt.wait_for()
+            assistant_prompt.fill(
                 f"先列出我的发布，再读《{read_title}》这次发布的过程诊断，"
                 "告诉我学生卡在哪个阶段、量规哪一维最弱。不要建立或改写任何草稿。"
             )
@@ -959,9 +1021,7 @@ def run_real_model_browser_flow(
             for expected in ("对象 1", "已评价 1 份"):
                 if expected not in insights_text:
                     raise E2eFailure("REAL_MODEL_INSIGHTS_COUNT_MISMATCH")
-            page.get_by_role("button", name="停止", exact=True).wait_for(
-                state="detached", timeout=120_000
-            )
+            settle_assistant_stream(page)
             insights.scroll_into_view_if_needed()
             screenshot(page, artifacts, "08-real-model-process-insights")
 
@@ -992,9 +1052,7 @@ def run_real_model_browser_flow(
                 raise E2eFailure("REAL_MODEL_ROSTER_LEAKED_STUDENT_NAME")
             if page.get_by_role("link", name=re.compile("阶段|整项提交")).count() == 0:
                 raise E2eFailure("REAL_MODEL_ROSTER_REVIEW_LINK_MISSING")
-            page.get_by_role("button", name="停止", exact=True).wait_for(
-                state="detached", timeout=120_000
-            )
+            settle_assistant_stream(page)
             roster.scroll_into_view_if_needed()
             screenshot(page, artifacts, "09-real-model-release-roster")
 
@@ -1049,6 +1107,13 @@ def main() -> int:
             "E2E_CLERK_TICKET_SECRET": broker_secret,
         }
     )
+    if real_model_smoke:
+        runtime_environment.update(
+            {
+                "ATTACHMENT_STORAGE_ENABLED": "1",
+                "ATTACHMENT_STORAGE_DIR": str(artifacts / "attachments"),
+            }
+        )
     if not real_model_smoke:
         runtime_environment.update(
             {

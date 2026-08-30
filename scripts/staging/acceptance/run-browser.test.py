@@ -125,7 +125,10 @@ class BrowserContractTests(unittest.TestCase):
         self.assertIn("AI_DISABLED_MANUAL_PATH", source)
         self.assertEqual(source.count('#classroom-roster-manager[data-hydrated="true"]'), 2)
         self.assertIn('("基本设置", "背景设定", "三维目标", "总体任务", "任务链", "评价标准")', source)
-        self.assertIn('("任务设置", "背景设定", "学习目标", "总体任务", "任务链", "评价标准")', source)
+        self.assertIn('("总体任务", "任务链", "评价标准")', source)
+        self.assertIn('section[aria-label="活动背景"]', source)
+        self.assertIn("STAGING_ACCEPTANCE_STUDENT_BACKGROUND_MISSING", source)
+        self.assertIn('locator("summary").filter(has_text="查看完整任务书")', source)
         self.assertNotIn("#activity-learningObjectives", source)
         self.assertIn("TEACHER_STUDENT_RESOURCE_HIDDEN", source)
         self.assertIn("OTHER_STUDENT", source)
@@ -163,7 +166,10 @@ class BrowserContractTests(unittest.TestCase):
         self.assertIn("STAGING_ACCEPTANCE_REVIEW_ROSTER_TEXT_LEAK", source)
         self.assertIn('get_by_role("link", name="导出评阅名册", exact=True)', source)
         self.assertIn("DASHBOARD_ATTENTION_VISIBLE", source)
-        self.assertIn('locator("article").filter(has_text=title)', source)
+        self.assertIn('teacher.locator(f\'a[href="{release_href}"]\')', source)
+        self.assertIn(".filter(has_text=classroom_name)", source)
+        self.assertIn('classroom_row.locator(\'a[href^="/teacher/classrooms/"]\')', source)
+        self.assertIn("STAGING_ACCEPTANCE_MEMBER_LINK_MISSING", source)
         self.assertIn('dashboard_release.get_by_text("待反馈 2", exact=False)', source)
         self.assertIn('dashboard_release.get_by_text("待评价 2", exact=False)', source)
         self.assertIn('dashboard_release.get_by_text("待重交 1", exact=False)', source)
@@ -188,6 +194,9 @@ class BrowserContractTests(unittest.TestCase):
         self.assertIn("STAGING_ACCEPTANCE_EVALUATION_CONFIRM_MISSING", source)
         self.assertIn("confirm_evaluation", source)
         self.assertIn("wait_evaluation_history", source)
+        self.assertIn("open_confirmed_records", source)
+        self.assertIn("STAGING_ACCEPTANCE_CONFIRMED_RECORDS_MISSING", source)
+        self.assertIn('locator("summary").filter(has_text="已确认记录")', source)
         self.assertIn("fail-teacher", source)
         self.assertIn("fail-student", source)
         self.assertIn("fail-other-student", source)
@@ -201,6 +210,24 @@ class BrowserContractTests(unittest.TestCase):
         self.assertIn("STAGING_ACCEPTANCE_ATTACHMENT_UPLOAD_TIMEOUT", source)
         self.assertIn("STAGING_ACCEPTANCE_ATTACHMENT_UPLOAD_FAILED", source)
         self.assertIn("TEACHER_FORMAL_ATTACHMENT_DOWNLOAD", source)
+        self.assertIn("assert_attachment_preview", source)
+        self.assertIn("STUDENT_PRIVATE_ATTACHMENT_PREVIEW", source)
+        self.assertIn("TEACHER_FORMAL_ATTACHMENT_PREVIEW", source)
+        self.assertIn('get_by_role("button", name="预览", exact=True)', source)
+        self.assertIn('get_by_role("link", name="下载原件", exact=True)', source)
+        self.assertIn("element => element.decode()", source)
+        self.assertIn("element => element.naturalWidth", source)
+        for suffix in (
+            "_PREVIEW_BUTTON_MISSING",
+            "_PREVIEW_TITLE_MISSING",
+            "_PREVIEW_IMAGE_MISSING",
+            "_PREVIEW_SOURCE_MISMATCH",
+            "_PREVIEW_IMAGE_NOT_DECODED",
+            "_PREVIEW_DOWNLOAD_MISSING",
+            "_PREVIEW_NOT_DISMISSED",
+            "_PREVIEW_NAVIGATED",
+        ):
+            self.assertIn(suffix, source)
         self.assertIn("STAGING_ACCEPTANCE_TEACHER_EVALUATION_SUMMARY_MISSING", source)
         self.assertIn("STAGING_ACCEPTANCE_REVIEW_COVERAGE_MISSING", source)
         self.assertIn("REVIEW_COVERAGE_VISIBLE", source)
