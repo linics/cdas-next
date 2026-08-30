@@ -424,6 +424,11 @@ def run_browser_flow(
                 raise E2eFailure("FOREIGN_TEACHER_DRAFT_NOT_HIDDEN")
 
             page.goto(f"{base_url}/teacher", wait_until="domcontentloaded")
+            # Drafting lives in the activity studio, not on the workspace home.
+            # Follow the sidebar entry by its destination: the label is free to
+            # move, the route is the contract.
+            page.locator('#workspace-navigation a[href="/teacher/activities"]').click()
+            page.wait_for_url(f"{base_url}/teacher/activities")
             page.get_by_role("link", name="新建学习活动", exact=True).click()
             page.wait_for_url(f"{base_url}/teacher/activities/new")
 
