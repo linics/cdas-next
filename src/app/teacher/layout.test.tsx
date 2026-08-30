@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
     clock: () => new Date("2026-08-28T04:00:00.000Z"),
   },
   database: { kind: "teacher-layout-database" },
+  connection: vi.fn(),
   createUiCommandContext: vi.fn(),
   getDatabaseClient: vi.fn(),
   getTeacherAssistantClassrooms: vi.fn(),
@@ -17,6 +18,9 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("server-only", () => ({}));
+vi.mock("next/server", () => ({
+  connection: mocks.connection,
+}));
 vi.mock("../../server/commands/create-ui-command-context", () => ({
   createUiCommandContext: mocks.createUiCommandContext,
 }));
@@ -70,6 +74,7 @@ async function renderLayout(): Promise<string> {
 describe("teacher global Agent layout gate", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.connection.mockResolvedValue(undefined);
     mocks.createUiCommandContext.mockResolvedValue(mocks.context);
     mocks.getDatabaseClient.mockReturnValue(mocks.database);
     mocks.isActivityAssistantEnabled.mockReturnValue(false);
@@ -79,6 +84,15 @@ describe("teacher global Agent layout gate", () => {
         name: "七年一班",
       },
     ]);
+  });
+
+  it("defers authenticated teacher work until an incoming request", async () => {
+    await renderLayout();
+
+    expect(mocks.connection).toHaveBeenCalledOnce();
+    expect(mocks.connection.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.createUiCommandContext.mock.invocationCallOrder[0]!,
+    );
   });
 
   it("keeps the teacher page unchanged and performs no assistant query when AI is disabled", async () => {
