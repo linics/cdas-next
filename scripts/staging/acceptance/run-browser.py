@@ -269,6 +269,19 @@ def wait_text(page: Page, text: str) -> None:
     page.get_by_text(text, exact=False).last.wait_for(state="visible", timeout=30_000)
 
 
+def open_confirmed_records(page: Page) -> None:
+    """
+    Confirmed feedback and evaluation sit in a fold that starts collapsed, so
+    the review workspace opens on the writing surface rather than on history.
+    Every save re-renders the page and closes it again, so open it by its state
+    rather than toggling it.
+    """
+    summary = page.locator("summary").filter(has_text="已确认记录")
+    wait_visible(summary, "STAGING_ACCEPTANCE_CONFIRMED_RECORDS_MISSING")
+    if not summary.evaluate("element => element.parentElement.open"):
+        summary.click()
+
+
 def wait_visible(locator: object, code: str) -> None:
     try:
         locator.wait_for(state="visible", timeout=30_000)
@@ -805,6 +818,7 @@ def run() -> None:
             assert_attachment_download(teacher, attachment_filename, attachment_sha256)
             checks.append({"code": "TEACHER_FORMAL_ATTACHMENT_DOWNLOAD", "status": "PASS"})
             feedback(teacher, feedback_text)
+            open_confirmed_records(teacher)
             teacher.locator('[aria-labelledby^="feedback-history-"]').last.get_by_text(
                 feedback_text,
                 exact=True,
@@ -818,6 +832,7 @@ def run() -> None:
                 exact=True,
             ).wait_for(state="visible")
             evaluation(teacher, evaluation_text, attachment_filename)
+            open_confirmed_records(teacher)
             wait_evaluation_history(teacher, evaluation_text)
             teacher.locator('[aria-labelledby^="evaluation-history-"]').last.get_by_text(
                 "证据不足",
