@@ -320,6 +320,37 @@ def attachment_download_href(page: Page, filename: str) -> str:
     return href
 
 
+def assert_attachment_preview(page: Page, filename: str, expected_href: str, code: str) -> None:
+    """
+    Preview is an overlay over the evidence, never a replacement for it.
+
+    So this proves three things and not merely that a button exists: the bytes
+    render in place from the same authorised route the download uses, the image
+    actually decoded rather than failing to load, and the original file is still
+    offered inside the overlay. Closing it must leave the page where it was.
+    """
+    row = page.locator("li").filter(has_text=filename).last
+    button = row.get_by_role("button", name="预览", exact=True)
+    wait_visible(button, code)
+    before = page.url
+    button.click()
+    dialog = page.locator("dialog[open]").filter(has_text=filename)
+    wait_visible(dialog.get_by_role("heading", name=filename, exact=True), code)
+    image = dialog.locator("img")
+    wait_visible(image, code)
+    if image.get_attribute("src") != expected_href:
+        raise AcceptanceFailure(code)
+    # A broken image is still a visible <img>; only the decoded size proves the
+    # per-actor stream actually served renderable bytes into this origin.
+    if not image.evaluate("element => element.complete && element.naturalWidth > 0"):
+        raise AcceptanceFailure(code)
+    wait_visible(dialog.get_by_role("link", name="下载原件", exact=True), code)
+    dialog.get_by_role("button", name="关闭", exact=True).click()
+    dialog.wait_for(state="hidden", timeout=30_000)
+    if page.url != before:
+        raise AcceptanceFailure(code)
+
+
 def assert_attachment_download(page: Page, filename: str, expected_sha256: str) -> None:
     link = page.locator("li").filter(has_text=filename).get_by_role("link").last
     with page.expect_download(timeout=30_000) as event:
@@ -781,6 +812,13 @@ def run() -> None:
             attachment_href = attachment_download_href(student, attachment_filename)
             assert_attachment_download(student, attachment_filename, attachment_sha256)
             checks.append({"code": "STUDENT_PRIVATE_ATTACHMENT_UPLOAD_AND_DOWNLOAD", "status": "PASS"})
+            assert_attachment_preview(
+                student,
+                attachment_filename,
+                attachment_href,
+                "STAGING_ACCEPTANCE_STUDENT_ATTACHMENT_PREVIEW_FAILED",
+            )
+            checks.append({"code": "STUDENT_PRIVATE_ATTACHMENT_PREVIEW", "status": "PASS"})
             student.get_by_role("button", name="正式提交", exact=True).click()
             confirm(student, "确认正式提交？", "确认正式提交")
             wait_text(student, "第 1 版已正式提交")
@@ -817,6 +855,15 @@ def run() -> None:
                 raise AcceptanceFailure("STAGING_ACCEPTANCE_ATTACHMENT_LINK_CHANGED")
             assert_attachment_download(teacher, attachment_filename, attachment_sha256)
             checks.append({"code": "TEACHER_FORMAL_ATTACHMENT_DOWNLOAD", "status": "PASS"})
+            # The point of the overlay is that the review workspace no longer
+            # has to be left to look at the evidence being reviewed.
+            assert_attachment_preview(
+                teacher,
+                attachment_filename,
+                attachment_href,
+                "STAGING_ACCEPTANCE_TEACHER_ATTACHMENT_PREVIEW_FAILED",
+            )
+            checks.append({"code": "TEACHER_FORMAL_ATTACHMENT_PREVIEW", "status": "PASS"})
             feedback(teacher, feedback_text)
             open_confirmed_records(teacher)
             teacher.locator('[aria-labelledby^="feedback-history-"]').last.get_by_text(
