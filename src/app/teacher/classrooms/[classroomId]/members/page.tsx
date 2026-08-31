@@ -41,9 +41,7 @@ export default async function TeacherClassroomMembersPage({
       <div className={styles.pageContent}>
         <header className={styles.pageHeader}>
           <div>
-            <p className={styles.eyebrow}>教师工作台 / 班级成员</p>
-            <h1>{roster.classroom.name}</h1>
-            <p>通过名单码管理班级学生；每次变更都需确认，历史记录会保留。</p>
+            <h1>{roster.classroom.name} · 班级成员</h1>
           </div>
           <Link className={styles.rowLink} href="/teacher">返回教师工作台</Link>
         </header>

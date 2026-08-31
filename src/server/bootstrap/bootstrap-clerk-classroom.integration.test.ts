@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
+import { legacySchoolId } from "../../domain/school/legacy-school";
 import { createDatabaseClient } from "../db/client";
 import {
   bootstrapClerkClassroom,
@@ -108,6 +109,8 @@ describeWithDatabase("Clerk classroom bootstrap", () => {
         authSubject: input.teacherAuthSubject,
         role: "STUDENT",
         displayName: input.teacherDisplayName,
+        schoolId: legacySchoolId,
+        legacyProfile: true,
       },
     });
 
@@ -142,6 +145,8 @@ describeWithDatabase("Clerk classroom bootstrap", () => {
         authSubject: input.teacherAuthSubject,
         role: "TEACHER",
         displayName: "Existing Teacher Name",
+        schoolId: legacySchoolId,
+        legacyProfile: true,
       },
     });
 
@@ -173,6 +178,8 @@ describeWithDatabase("Clerk classroom bootstrap", () => {
         authSubject: `user_manager${randomUUID().replaceAll("-", "")}`,
         role: "TEACHER",
         displayName: "Existing Manager",
+        schoolId: legacySchoolId,
+        legacyProfile: true,
       },
     });
     await database!.classroom.create({
@@ -180,6 +187,7 @@ describeWithDatabase("Clerk classroom bootstrap", () => {
         id: input.classroomId,
         name: input.classroomName,
         managerId: existingManager.id,
+        schoolId: legacySchoolId,
       },
     });
 
@@ -369,7 +377,13 @@ describeWithDatabase("Clerk classroom bootstrap", () => {
     const primary = await bootstrapClerkClassroom(database!, input, () => firstRunAt);
     const roleSubject = `user_otherrole${randomUUID().replaceAll("-", "")}`;
     await database!.appUser.create({
-      data: { authSubject: roleSubject, displayName: "Other", role: "TEACHER" },
+      data: {
+        authSubject: roleSubject,
+        displayName: "Other",
+        role: "TEACHER",
+        schoolId: legacySchoolId,
+        legacyProfile: true,
+      },
     });
     const base = {
       teacherAuthSubject: input.teacherAuthSubject,
@@ -385,11 +399,22 @@ describeWithDatabase("Clerk classroom bootstrap", () => {
     ).rejects.toEqual(new BootstrapClerkClassroomError("USER_ROLE_CONFLICT", "student"));
 
     const foreign = await database!.appUser.create({
-      data: { authSubject: `user_othermanager${randomUUID().replaceAll("-", "")}`, displayName: "Foreign", role: "TEACHER" },
+      data: {
+        authSubject: `user_othermanager${randomUUID().replaceAll("-", "")}`,
+        displayName: "Foreign",
+        role: "TEACHER",
+        schoolId: legacySchoolId,
+        legacyProfile: true,
+      },
     });
     const foreignClassroomId = randomUUID();
     await database!.classroom.create({
-      data: { id: foreignClassroomId, name: input.classroomName, managerId: foreign.id },
+      data: {
+        id: foreignClassroomId,
+        name: input.classroomName,
+        managerId: foreign.id,
+        schoolId: legacySchoolId,
+      },
     });
     await expect(
       bootstrapAdditionalClerkClassroomStudent(database!, {
@@ -401,7 +426,13 @@ describeWithDatabase("Clerk classroom bootstrap", () => {
 
     const futureSubject = `user_otherfuture${randomUUID().replaceAll("-", "")}`;
     const futureStudent = await database!.appUser.create({
-      data: { authSubject: futureSubject, displayName: "Future", role: "STUDENT" },
+      data: {
+        authSubject: futureSubject,
+        displayName: "Future",
+        role: "STUDENT",
+        schoolId: legacySchoolId,
+        legacyProfile: true,
+      },
     });
     await database!.classroomMembership.create({
       data: { classroomId: input.classroomId, studentId: futureStudent.id, joinedAt: new Date("2026-08-18T13:00:00.000Z") },

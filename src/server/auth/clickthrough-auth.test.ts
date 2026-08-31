@@ -10,6 +10,7 @@ const localIds = {
   NODE_ENV: "development",
   DEV_TEST_TEACHER_CLERK_ID: "user_teacher123",
   DEV_TEST_STUDENT_CLERK_ID: "user_student123",
+  DEV_TEST_ADMIN_CLERK_ID: "user_admin123",
 } satisfies NodeJS.ProcessEnv;
 
 describe("isClickthroughAuthEnabled", () => {
@@ -70,7 +71,7 @@ describe("isClickthroughAuthEnabled", () => {
 });
 
 describe("clickthrough audience mapping", () => {
-  it("maps teacher and student workspaces from the request path", () => {
+  it("maps teacher, student, and administrator workspaces from the request path", () => {
     expect(clickthroughAudienceFromPath("/teacher")).toBe("TEACHER");
     expect(clickthroughAudienceFromPath("/teacher/insights")).toBe("TEACHER");
     expect(clickthroughAudienceFromPath("/api/assistant/activity-draft")).toBe(
@@ -80,6 +81,7 @@ describe("clickthrough audience mapping", () => {
     expect(clickthroughAudienceFromPath("/student/releases/abc")).toBe(
       "STUDENT",
     );
+    expect(clickthroughAudienceFromPath("/admin/schools")).toBe("ADMIN");
     expect(clickthroughAudienceFromPath("/")).toBeUndefined();
   });
 

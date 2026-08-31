@@ -57,15 +57,15 @@
   --space-8: 32px;
 
   --text-display: 36px;
-  --text-title: 28px;
-  --text-card: 22px;
-  --text-section: 18px;
-  --text-subhead: 16px;
-  --text-body: 15px;
-  --text-ui: 14px;
-  --text-meta: 13px;
-  --text-label: 13px;
-  --text-kicker: 12px;
+  --text-title: 24px;
+  --text-card: 20px;
+  --text-section: 20px;
+  --text-subhead: 18px;
+  --text-body: 16px;
+  --text-ui: 15px;
+  --text-meta: 14px;
+  --text-label: 14px;
+  --text-kicker: 14px;
 
   --radius-sm: 6px;
   --radius-md: 10px;
@@ -89,8 +89,10 @@
   --z-nav: 20;
   --z-overlay: 100;
   --toolbar-height: 52px;
-  --sidebar-width: 232px;
-  --content-width: 1200px;
+  --sidebar-width: 248px;
+  --content-width: 1480px;
+  --content-form-width: 1080px;
+  --content-reading-width: 960px;
   /* Counts, versions and tables use stable lining/tabular figures. */
   --figure-ui: tabular-nums lining-nums;
 }
@@ -124,7 +126,7 @@ h2 { font-size: var(--text-title); }
 h3 { font-size: var(--text-card); }
 h4 { font-size: var(--text-section); }
 h5 { font-size: var(--text-subhead); }
-h6 { font-size: var(--text-meta); letter-spacing: .08em; text-transform: uppercase; }
+h6 { font-size: var(--text-meta); }
 p { margin: 0 0 var(--space-3); }
 a { color: var(--color-accent); text-decoration: none; text-underline-offset: 3px; }
 a:hover { color: var(--color-accent-700); }

@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
+import { legacySchoolId } from "../../domain/school/legacy-school";
 import { waterConservationTaskBook } from "../../fixtures/water-conservation";
 import {
   closePublishedActivity,
@@ -31,6 +32,7 @@ import { completeTeacherEvaluationSuggestion } from "./complete-teacher-evaluati
 const databaseUrl = process.env.TEST_DATABASE_URL;
 const describeWithDatabase = databaseUrl ? describe : describe.skip;
 const database = databaseUrl ? createDatabaseClient(databaseUrl) : null;
+const legacyUser = { schoolId: legacySchoolId, legacyProfile: true } as const;
 
 function commandContext(
   actorId: string,
@@ -93,23 +95,31 @@ async function createEvaluationFixture(options?: {
         authSubject: `evaluation_teacher_${teacherId}`,
         role: "TEACHER",
         displayName: "评价测试教师",
+        ...legacyUser,
       },
       {
         id: otherTeacherId,
         authSubject: `evaluation_other_teacher_${otherTeacherId}`,
         role: "TEACHER",
         displayName: "其他评价教师",
+        ...legacyUser,
       },
       {
         id: studentId,
         authSubject: `evaluation_student_${studentId}`,
         role: "STUDENT",
         displayName: "评价测试学生",
+        ...legacyUser,
       },
     ],
   });
   await database.classroom.create({
-    data: { id: classroomId, name: "评价测试班级", managerId: teacherId },
+    data: {
+      id: classroomId,
+      name: "评价测试班级",
+      managerId: teacherId,
+      schoolId: legacySchoolId,
+    },
   });
   await database.classroomMembership.create({
     data: {

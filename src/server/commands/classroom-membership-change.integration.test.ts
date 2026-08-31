@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
+import { legacySchoolId } from "../../domain/school/legacy-school";
 import { createDatabaseClient } from "../db/client";
 import {
   getTeacherClassroomRoster,
@@ -20,6 +21,7 @@ import {
 const databaseUrl = process.env.TEST_DATABASE_URL;
 const describeWithDatabase = databaseUrl ? describe : describe.skip;
 const database = databaseUrl ? createDatabaseClient(databaseUrl) : null;
+const legacyUser = { schoolId: legacySchoolId, legacyProfile: true } as const;
 
 function context(
   actorId: string,
@@ -45,14 +47,14 @@ async function fixture() {
   const candidateRosterKey = rosterKey();
   await database.appUser.createMany({
     data: [
-      { id: teacherId, authSubject: `teacher_${teacherId}`, role: "TEACHER", displayName: "班级教师" },
-      { id: otherTeacherId, authSubject: `teacher_${otherTeacherId}`, role: "TEACHER", displayName: "其他教师" },
-      { id: currentStudentId, authSubject: `student_${currentStudentId}`, role: "STUDENT", displayName: "当前学生", rosterKey: currentRosterKey },
-      { id: candidateStudentId, authSubject: `student_${candidateStudentId}`, role: "STUDENT", displayName: "待加入学生", rosterKey: candidateRosterKey },
+      { id: teacherId, authSubject: `teacher_${teacherId}`, role: "TEACHER", displayName: "班级教师", ...legacyUser },
+      { id: otherTeacherId, authSubject: `teacher_${otherTeacherId}`, role: "TEACHER", displayName: "其他教师", ...legacyUser },
+      { id: currentStudentId, authSubject: `student_${currentStudentId}`, role: "STUDENT", displayName: "当前学生", rosterKey: currentRosterKey, ...legacyUser },
+      { id: candidateStudentId, authSubject: `student_${candidateStudentId}`, role: "STUDENT", displayName: "待加入学生", rosterKey: candidateRosterKey, ...legacyUser },
     ],
   });
   await database.classroom.create({
-    data: { id: classroomId, name: "八年二班", managerId: teacherId },
+    data: { id: classroomId, name: "八年二班", managerId: teacherId, schoolId: legacySchoolId },
   });
   const currentMembership = await database.classroomMembership.create({
     data: {

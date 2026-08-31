@@ -124,11 +124,10 @@
 
 .dialogKicker {
   margin: 0 0 var(--space-2);
-  color: var(--color-accent-700);
+  color: var(--color-neutral-700);
   font-family: var(--font-ui);
-  font-size: var(--text-kicker);
-  letter-spacing: .1em;
-  text-transform: uppercase;
+  font-size: var(--text-meta);
+  font-weight: var(--font-heading-weight);
 }
 
 .dialogContent h2 {

@@ -82,7 +82,7 @@
 .card h2 {
   margin: 6px 0 0;
   font-size: var(--text-section);
-  font-weight: 400;
+  font-weight: var(--font-heading-weight);
   line-height: 1.3;
 }
 

@@ -70,7 +70,6 @@ export default async function TeacherReleaseSubmissionsPage({
       <div className={styles.pageContent}>
         <header className={styles.pageHeader}>
           <div>
-            <p className={styles.eyebrow}>发布 / 正式提交</p>
             <h1>{workspace.release.title}</h1>
             <p>
               {workspace.release.classroomName} · 发布{" "}
@@ -111,11 +110,6 @@ export default async function TeacherReleaseSubmissionsPage({
             <section className={styles.progressSection}>
               <header className={styles.sectionHeader}>
                 <div>
-                  <p className={styles.eyebrow}>
-                    {workspace.release.executionVersion === 1
-                      ? "顺序阶段"
-                      : "共享提交"}
-                  </p>
                   <h2>班级进度</h2>
                 </div>
                 <span>
@@ -198,7 +192,6 @@ export default async function TeacherReleaseSubmissionsPage({
           ) : null}
           <header className={styles.sectionHeader}>
             <div>
-              <p className={styles.eyebrow}>当前正式版本</p>
               <h2>正式提交记录</h2>
             </div>
             <span>

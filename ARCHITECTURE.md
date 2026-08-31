@@ -1,13 +1,14 @@
 # CDAS Next 实现架构
 
-状态：第一阶段 v0.1 已完成外部验收；D-025–D-041 已完成开发期远程验收；首版官方课程标准检索已合入主线
-日期：2026-08-27
+状态：第一阶段 v0.1 已完成外部验收；D-055 任务书 schema v3 与 D-056 学校级组织/管理员 MVP 已完成本地实现，待独立数据库与 Clerk development 验证
+日期：2026-08-30
 
 ## 运行时边界
 
 ```mermaid
 flowchart LR
-  UI[普通教师/学生 UI] --> Entry[Next.js Server Actions]
+  UI[教师/学生 UI] --> Entry[Next.js Server Actions]
+  AdminUI[管理员 UI] --> Entry
   Agent[AI SDK useChat UI] --> AgentRoute[Next.js Route Handler]
   Clerk[Clerk 身份会话] --> Entry
   Clerk --> AgentRoute
@@ -23,7 +24,7 @@ flowchart LR
   Prisma --> PG[(PostgreSQL)]
 ```
 
-普通 UI 和 Agent 的入口不同，但最终调用相同的领域命令。Agent 不拥有独立权限，也不能导入 Prisma 或直接执行存储操作。
+普通 UI 和 Agent 的入口不同，但最终调用相同的领域命令。管理员 UI 只调用学校与教师管理命令，不能查询教学领域；它不继承教师 layout，因此不会挂载 Agent。Agent 不拥有独立权限，也不能导入 Prisma 或直接执行存储操作。
 
 入口把表单或工具参数与可信 `CommandContext` 分开。业务输入不能包含 actor、调用来源、追踪号或当前时间；UI context 由 Clerk 会话、服务端 trace 和服务端时钟构造。测试只能通过不可序列化的 `clock()` 依赖固定时间，不能给生产表单增加 `now` 参数。
 
@@ -35,9 +36,19 @@ flowchart LR
 | `src/domain/` | Zod 合同、纯不变量、内容快照和可确定测试 | 框架会话、数据库连接、模型调用 |
 | `src/server/commands/` | 重新授权、乐观并发、事务、幂等和审计 | 将外部网络调用放进数据库事务 |
 | `src/server/knowledge/` | 官方课程标准静态索引、确定性词法检索与章节读取 | 写入业务表、embedding、任意 URL 或文件路径 |
+| `src/server/school/` | 平台管理员与教师学校边界授权 | 读取教学资源或绕过当前账号/学校状态 |
+| `src/server/identity/` | Clerk 用户创建、查找及密码重置的窄适配器 | 在数据库事务中调用外部服务、记录密码或密钥 |
 | `src/server/db/` | Prisma 连接生命周期 | 业务规则 |
 | `corpus/official-standards/` | 首版白名单 Markdown 与构建清单 | 把设计理论、教材或 AI 产物混入证据语料 |
 | `prisma/` | 模型、migration、数据库约束和数据库测试 | 依赖页面状态或 Prompt |
+
+## 学校边界与教师开通
+
+- `School` 是教师、学生和 `Classroom` 的唯一组织边界。`AppUser` 的 `ADMIN` 不属于学校，教师和学生必须属于一个 `ACTIVE` 学校；`getCurrentActor` 在每个业务入口统一检查账号与学校状态。
+- 兼容迁移先创建稳定的 `LEGACY01` 学校，再回填历史用户和班级。活动、发布、提交、反馈、评价、审计与快照不增加冗余 `schoolId`，因此其既有资源 ID 与 hash 不变。
+- PostgreSQL 约束和触发器锁定学校代码与既有用户学校归属，保证每个班级的管理员和成员均属于同一学校，并以部分唯一索引保证全平台只有一个 `ADMIN`。
+- 教师开通使用 `TeacherProvisioning`：数据库先持久化可恢复状态，随后在事务外调用 Clerk，再回到短事务绑定业务账号。密码、邀请码明文、Clerk 密钥与一次性重置密码不写入数据库、审计、日志或镜像层。
+- `/admin` 只查询学校、教师和汇总数量；教师创建班级时由服务端从当前教师推导 `schoolId`，不接受前端指定的学校。管理员端的停用、邀请重置和密码重置都要求第一方确认、幂等记录和追加审计。
 
 ## 发布事务
 
@@ -62,7 +73,7 @@ ActionIntent 的 action、payload、hash、目标、预期版本、创建者和�
 - `preparePublishActivityIntent` 只在教师拥有草稿、仍管理目标班级、版本精确且状态为 READY_FOR_PREVIEW 时创建十分钟 ActionIntent。它不封存草稿，也不创建 Release。
 - 第一方 `decideActionIntent` 确认后，既有 `publishActivityRelease` 才重新授权、消费意图、封存同一版本并创建同源快照。
 
-数据库在提交时要求草稿版本从 1 连续、head 内容等于当前不可变修订；只允许 READY 草稿在正文和版本不变时由发布事务变为 SEALED。每个 Release 还必须以唯一外键绑定已执行的发布 ActionIntent；ActionIntent、SEALED 草稿、Release 与精确快照由双向延迟约束要求在同一事务完整出现。快照 JSON 必须等于绑定版本的完整修订，摘要由 PostgreSQL 17 核心 SHA-256 按 schema 分支复算，不信任调用方传入的 64 位字符串。v1 快照继续用 canonicalize@4 对封闭七字段 UTF-8 字节计算 SHA-256，历史 v1 hash 不重写；v2 快照对完整任务书使用 v2 canonicalizer，并与 migration `20260824120000_structured_task_book_v2` 中 PostgreSQL jsonb 文本 SHA-256 对齐。新写入统一为完整 schema v2，v1 历史仍可原样读取。发布时冻结 `executionVersion`：历史发布与新的 `once` 为 0，新的 `phased`/`mixed` 为 1，发布后不可改写。
+数据库在提交时要求草稿版本从 1 连续、head 内容等于当前不可变修订；只允许 READY 草稿在正文和版本不变时由发布事务变为 SEALED。每个 Release 还必须以唯一外键绑定已执行的发布 ActionIntent；ActionIntent、SEALED 草稿、Release 与精确快照由双向延迟约束要求在同一事务完整出现。快照 JSON 必须等于绑定版本的完整修订，摘要由 PostgreSQL 17 核心 SHA-256 按 schema 分支复算，不信任调用方传入的 64 位字符串。v1 快照继续用 canonicalize@4 对封闭七字段 UTF-8 字节计算 SHA-256，历史 v1 hash 不重写；v2/v3 快照各自使用对应 canonicalizer 与 JSON 守卫，新 schema 不回填旧 hash。新结构化写入为完整 v2 或 v3，历史内容仍原样读取。发布时冻结 `executionVersion`：历史发布与新的 `once` 为 0，新的 `phased`/`mixed` 为 1，发布后不可改写。
 
 ## 学生提交流程
 
@@ -124,7 +135,7 @@ ActionIntent 的 action、payload、hash、目标、预期版本、创建者和�
 - “新建学习活动”是助手会话的唯一起点。`/teacher/activities` 共享客户端 layout 持有唯一官方 `useChat` session，使草稿工具返回后的客户端导航可以在精确预览页继续同一消息与签名 approval；直接进入或刷新预览页时 session 为空，页面不伪造恢复。消息、prompt、ticket 与 approval 签名不进入 URL、localStorage 或业务数据库，导航到 Release 后 layout 卸载。Server Component 仅在 `AI_PROVIDER_DISABLED=0` 且 DeepSeek API key、模型和审批签名配置全部有效时渲染助手；这个检查不构造 provider，也不创建 AgentRun。
 - Route Handler 先从 Clerk 会话解析应用教师，再严格校验消息数量、总字节、角色顺序、文本长度和 AI SDK 工具 part。学生、未配置账号和伪造历史不能进入 provider 或业务工具。
 - AI SDK 官方 `useChat + streamText` 负责消息流与工具 part，不维护第二套聊天协议。模型调用始终在数据库事务之外；请求正文、Prompt、工具正文和 provider 原始 chunk 不写日志或 tracing。
-- `create_activity_draft` 是 D-033 的 L1 工具。资料不足时每轮只提出一个会改变设计的必要问题，且不写入。资料充分后，签名 approval 展示理解摘要、教师已提供要求、明确假设、各融合学科贡献、知识/过程/情感三条目标—任务—证据—评价链、完整 schema v2 内容，以及（命中语文、数学、物理或信息科技时）至少两条不同官方来源的可点开引用；教师批准前不执行草稿写入。批准后仍以当前教师、`AGENT` 来源和 owned RUNNING AgentRun 调用共享 `saveActivityDraft`；拒绝确认不产生草稿。该理解确认不是发布确认，也不建立 ActionIntent。成功输出包含精确 draft ID 和站内路径；客户端只在两者一致时进入预览。
+- `create_activity_draft` 是 D-033/D-055 的 L1 工具。资料不足时每轮只提出一个会改变设计的必要问题，且不写入。资料充分后，签名 approval 展示理解摘要、教师已提供要求、明确假设、各融合学科贡献、目标—任务—证据—评价链、完整 schema v2/v3 内容，以及本轮实际读取的官方章节引用与采用理由；教师批准前不执行草稿写入。批准后仍以当前教师、`AGENT` 来源和 owned RUNNING AgentRun 调用共享 `saveActivityDraft`；拒绝确认不产生草稿。该理解确认不是发布确认，也不建立 ActionIntent。成功输出包含精确 draft ID 和站内路径；客户端只在两者一致时进入预览。
 - 首版官方依据检索是 L0 只读能力：`search_knowledge` 只对 `src/server/knowledge/generated/official-standards.json` 做确定性词法检索，`read_source_section` 只读取同一会话已命中章节。客户端回传的片段必须能由相同输入在当前语料中重算。`/teacher/knowledge` 复用同一检索，不经模型。检索失败或模型关闭都不阻塞手工设计闭环。
 - `publish_activity_release` 先由 AI SDK 签名 `toolApproval` 暂停交互；教师批准后仍依次调用发布 prepare、第一方 UI decide 与原有 publish command。ActionIntent 才是精确参数、资源版本、确认人和重新授权的业务信任边界。
 - 普通模型工具写入由 AI SDK `stopWhen` 在该工具 step 后结束。`saveActivityDraft` 与 `publishActivityRelease` 的 Agent 路径会在同一领域事务提交业务结果、成功审计、幂等结果与 AgentRun 的 `RUNNING → SUCCEEDED`；若运行已经失败或取消，事务整体回滚。签名审批续传会先执行已批准工具，成功后再由官方 `prepareStep` 给后续 provider adapter 一个已中止 signal；后续流或连接失败不能把已提交业务事实改写成失败。模型在工具前中断不会创建草稿、Release 或反馈。

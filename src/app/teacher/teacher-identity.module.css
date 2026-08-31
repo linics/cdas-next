@@ -1,0 +1,37 @@
+.pageContent { min-width: 0; }
+.pageHeader { max-width: var(--content-form-width); margin: 0 auto; padding: var(--space-8) var(--space-8) var(--space-6); }
+.eyebrow { margin: 0; color: var(--color-neutral-700); font-family: var(--font-ui); font-size: var(--text-meta); font-weight: var(--font-heading-weight); }
+.pageHeader h1 { margin: 0; font-size: var(--text-display); font-weight: var(--font-heading-weight); }
+.pageHeader > p:last-child { max-width: 52em; margin: 0; color: var(--color-neutral-700); }
+.panel { max-width: var(--content-form-width); margin: 0 auto; border: 1px solid var(--color-divider); border-radius: var(--radius-md); background: var(--color-surface); padding: var(--space-6); }
+.panel + .panel { margin-top: var(--space-4); }
+.panelHeader { border-bottom: 1px solid var(--color-divider); padding-bottom: var(--space-3); }
+.panelHeader h2 { margin: var(--space-1) 0 0; font-size: var(--text-section); }
+.panelHeader p { margin: 0; color: var(--color-neutral-700); font-size: var(--text-meta); }
+.form { display: grid; gap: var(--space-4); margin-top: var(--space-4); }
+.field { display: grid; gap: var(--space-1); min-width: 0; }
+.field label { color: var(--color-neutral-700); font-size: var(--text-label); }
+.field input, .field select { width: 100%; border: 1px solid var(--color-divider); border-radius: var(--radius-sm); background: var(--color-surface); padding: var(--space-2) var(--space-3); color: var(--color-text); }
+.field select[multiple] { min-height: 160px; }
+.field input:focus, .field select:focus { border-color: var(--color-accent); }
+.fieldHint { margin: 0; color: var(--color-neutral-700); font-size: var(--text-meta); }
+.twoColumn { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+.primaryButton, .secondaryButton { display: inline-flex; align-items: center; justify-content: center; width: fit-content; border: 1px solid var(--color-divider); border-radius: var(--radius-md); background: transparent; padding: calc(var(--space-2) * .8) calc(var(--space-3) * 1.2); font-family: var(--font-ui); font-size: var(--text-ui); font-weight: var(--font-heading-weight); color: var(--color-text); }
+.primaryButton { border-color: var(--color-accent); color: var(--color-accent-700); }
+.primaryButton:hover:not(:disabled) { background: var(--primary-tint); }
+.secondaryButton:hover:not(:disabled) { background: var(--ink-tint); }
+.primaryButton:disabled, .secondaryButton:disabled { cursor: wait; opacity: .5; }
+.result { margin-top: var(--space-4); }
+.note { margin: var(--space-4) 0 0; color: var(--color-neutral-700); font-size: var(--text-meta); }
+.summary { display: grid; gap: var(--space-2); margin: var(--space-4) 0 0; border-left: 2px solid var(--color-accent); padding-left: var(--space-3); }
+.summary strong { font-size: var(--text-subhead); }
+.classroomList { display: grid; gap: var(--space-2); margin-top: var(--space-4); }
+.classroomRow { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); border-bottom: 1px solid var(--color-divider); padding: var(--space-3) 0; }
+.classroomRow strong { font-size: var(--text-subhead); }
+.classroomRow span { color: var(--color-neutral-700); font-size: var(--text-meta); font-variant-numeric: var(--figure-ui); }
+.loginShell { display: grid; min-height: 100svh; place-items: center; padding: var(--space-6); }
+.loginPanel { width: min(520px, 100%); border: 1px solid var(--color-divider); border-radius: var(--radius-lg); background: var(--color-surface); box-shadow: var(--shadow-md); padding: var(--space-6); }
+.loginPanel h1 { margin: var(--space-2) 0; font-size: var(--text-title); }
+.loginPanel > p:last-of-type { color: var(--color-neutral-700); }
+.loginLinks { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-4); font-size: var(--text-meta); }
+@media (max-width: 680px) { .pageHeader { padding-right: var(--space-4); padding-left: var(--space-4); } .panel { margin-right: var(--space-4); margin-left: var(--space-4); padding: var(--space-4); } .twoColumn { grid-template-columns: 1fr; } }

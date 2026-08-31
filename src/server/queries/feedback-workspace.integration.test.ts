@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { legacySchoolId } from "../../domain/school/legacy-school";
 import { createPublishedActivity } from "../../test/fixtures/published-activity";
 import type { CommandSource } from "../commands/command-context";
 import type { CommandContext } from "../commands/command-context";
@@ -20,6 +21,7 @@ import {
 const databaseUrl = process.env.TEST_DATABASE_URL;
 const describeWithDatabase = databaseUrl ? describe : describe.skip;
 const database = databaseUrl ? createDatabaseClient(databaseUrl) : null;
+const legacyUser = { schoolId: legacySchoolId, legacyProfile: true } as const;
 
 function commandContext(
   actorId: string,
@@ -114,24 +116,28 @@ async function createFeedbackWorkspaceFixture() {
         authSubject: `feedback_query_teacher_${teacherId}`,
         role: "TEACHER",
         displayName: "反馈工作台教师",
+        ...legacyUser,
       },
       {
         id: otherTeacherId,
         authSubject: `feedback_query_other_teacher_${otherTeacherId}`,
         role: "TEACHER",
         displayName: "其他教师",
+        ...legacyUser,
       },
       {
         id: studentId,
         authSubject: `feedback_query_student_${studentId}`,
         role: "STUDENT",
         displayName: "反馈工作台学生",
+        ...legacyUser,
       },
       {
         id: otherStudentId,
         authSubject: `feedback_query_other_student_${otherStudentId}`,
         role: "STUDENT",
         displayName: "其他学生",
+        ...legacyUser,
       },
     ],
   });
@@ -140,6 +146,7 @@ async function createFeedbackWorkspaceFixture() {
       id: classroomId,
       name: "反馈工作台班级",
       managerId: teacherId,
+      schoolId: legacySchoolId,
     },
   });
   await database.classroomMembership.create({

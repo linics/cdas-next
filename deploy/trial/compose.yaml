@@ -6,7 +6,7 @@ x-application: &application
     dockerfile: deploy/trial/Dockerfile
   image: cdas-next-v3-trial:${CDAS_DEPLOYMENT_ID:-local}
   env_file:
-    - ../../../runtime.env
+    - ${TRIAL_RUNTIME_ENV_FILE:?TRIAL_RUNTIME_ENV_FILE is required}
   environment:
     NODE_ENV: production
     NEXT_TELEMETRY_DISABLED: "1"

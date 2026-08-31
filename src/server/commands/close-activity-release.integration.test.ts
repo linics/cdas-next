@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
+import { legacySchoolId } from "../../domain/school/legacy-school";
 import { createPublishedActivity } from "../../test/fixtures/published-activity";
 import {
   createCloseReleasePayload,
@@ -21,6 +22,7 @@ import {
 const databaseUrl = process.env.TEST_DATABASE_URL;
 const describeWithDatabase = databaseUrl ? describe : describe.skip;
 const database = databaseUrl ? createDatabaseClient(databaseUrl) : null;
+const legacyUser = { schoolId: legacySchoolId, legacyProfile: true } as const;
 
 function commandContext(
   actorId: string,
@@ -50,23 +52,31 @@ async function createCloseFixture() {
         authSubject: `teacher_${teacherId}`,
         role: "TEACHER",
         displayName: "发布教师",
+        ...legacyUser,
       },
       {
         id: otherTeacherId,
         authSubject: `teacher_${otherTeacherId}`,
         role: "TEACHER",
         displayName: "其他教师",
+        ...legacyUser,
       },
       {
         id: studentId,
         authSubject: `student_${studentId}`,
         role: "STUDENT",
         displayName: "测试学生",
+        ...legacyUser,
       },
     ],
   });
   await database.classroom.create({
-    data: { id: classroomId, name: "八年二班", managerId: teacherId },
+    data: {
+      id: classroomId,
+      name: "八年二班",
+      managerId: teacherId,
+      schoolId: legacySchoolId,
+    },
   });
   const release = await createPublishedActivity(database, {
     teacherId,

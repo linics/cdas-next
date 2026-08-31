@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import { afterAll, describe, expect, it } from "vitest";
 
+import { legacySchoolId } from "../../src/domain/school/legacy-school";
 import {
   bootstrapClerkClassroom,
   bootstrapAdditionalClerkClassroomStudent,
@@ -125,8 +126,23 @@ describeWithDatabase("staging synthetic acceptance bootstrap", () => {
 
   it("fails closed on a derived namespace collision without reassigning it", async () => {
     const { input } = fixture();
-    const foreign = await database!.appUser.create({ data: { authSubject: `user_stagingforeign${randomUUID().replaceAll("-", "")}`, displayName: "Foreign staging manager", role: "TEACHER" } });
-    await database!.classroom.create({ data: { id: input.classroomId, name: input.classroomName, managerId: foreign.id } });
+    const foreign = await database!.appUser.create({
+      data: {
+        authSubject: `user_stagingforeign${randomUUID().replaceAll("-", "")}`,
+        displayName: "Foreign staging manager",
+        role: "TEACHER",
+        schoolId: legacySchoolId,
+        legacyProfile: true,
+      },
+    });
+    await database!.classroom.create({
+      data: {
+        id: input.classroomId,
+        name: input.classroomName,
+        managerId: foreign.id,
+        schoolId: legacySchoolId,
+      },
+    });
     await expect(bootstrapClerkClassroom(database!, primaryInput(input))).rejects.toEqual(new BootstrapClerkClassroomError("CLASSROOM_MANAGER_CONFLICT", "classroom"));
     await expect(database!.classroom.findUniqueOrThrow({ where: { id: input.classroomId }, select: { managerId: true } })).resolves.toEqual({ managerId: foreign.id });
   });

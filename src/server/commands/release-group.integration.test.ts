@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
+import { legacySchoolId } from "../../domain/school/legacy-school";
 import { Prisma } from "../../generated/prisma/client";
 import { createPublishedActivity } from "../../test/fixtures/published-activity";
 import {
@@ -25,6 +26,7 @@ import {
 const databaseUrl = process.env.TEST_DATABASE_URL;
 const describeWithDatabase = databaseUrl ? describe : describe.skip;
 const database = databaseUrl ? createDatabaseClient(databaseUrl) : null;
+const legacyUser = { schoolId: legacySchoolId, legacyProfile: true } as const;
 
 function context(actorId: string, now: Date): CommandContext {
   return { actorId, source: "UI", traceId: randomUUID(), clock: () => now };
@@ -39,12 +41,12 @@ async function fixture() {
   const studentC = randomUUID();
   const classroomId = randomUUID();
   await database.appUser.createMany({ data: [
-    { id: teacherId, authSubject: `teacher_${teacherId}`, role: "TEACHER", displayName: "分组教师" },
-    { id: studentA, authSubject: `student_${studentA}`, role: "STUDENT", displayName: "甲" },
-    { id: studentB, authSubject: `student_${studentB}`, role: "STUDENT", displayName: "乙" },
-    { id: studentC, authSubject: `student_${studentC}`, role: "STUDENT", displayName: "丙" },
+    { id: teacherId, authSubject: `teacher_${teacherId}`, role: "TEACHER", displayName: "分组教师", ...legacyUser },
+    { id: studentA, authSubject: `student_${studentA}`, role: "STUDENT", displayName: "甲", ...legacyUser },
+    { id: studentB, authSubject: `student_${studentB}`, role: "STUDENT", displayName: "乙", ...legacyUser },
+    { id: studentC, authSubject: `student_${studentC}`, role: "STUDENT", displayName: "丙", ...legacyUser },
   ] });
-  await database.classroom.create({ data: { id: classroomId, name: "分组班", managerId: teacherId } });
+  await database.classroom.create({ data: { id: classroomId, name: "分组班", managerId: teacherId, schoolId: legacySchoolId } });
   await database.classroomMembership.createMany({ data: [studentA, studentB, studentC].map((studentId) => ({ classroomId, studentId, joinedAt: new Date(now.getTime() - 60_000) })) });
   const published = await createPublishedActivity(database, { teacherId, classroomId, publishedAt: now });
   return { now, teacherId, studentA, studentB, studentC, releaseId: published.releaseId };

@@ -37,23 +37,17 @@ type ReleaseGroupKey = "resubmit" | "active" | "closed";
 // 是照着提交状态机切的，读的人得先懂状态机。
 const groupDetails = {
   resubmit: {
-    number: "01",
     title: "待重交",
-    detail: "教师已要求修改，请按反馈调整后重新提交。",
   },
   active: {
-    number: "02",
     title: "进行中",
-    detail: "尚未开始、已提交待反馈或已收到反馈的活动都在这里。",
   },
   closed: {
-    number: "03",
     title: "已关闭",
-    detail: "仅可查看，不能再保存或提交。",
   },
 } satisfies Record<
   ReleaseGroupKey,
-  { number: string; title: string; detail: string }
+  { title: string }
 >;
 
 function groupRelease(release: StudentRelease): ReleaseGroupKey {
@@ -200,10 +194,8 @@ function ReleaseGroup({
   return (
     <section className={styles.releaseGroup} aria-labelledby={`${groupKey}-title`}>
       <header className={styles.groupHeading}>
-        <span>{detail.number}</span>
         <div>
           <h2 id={`${groupKey}-title`}>{detail.title}</h2>
-          <p>{detail.detail}</p>
         </div>
         <strong>{releases.length} 项</strong>
       </header>
@@ -270,9 +262,7 @@ export default async function StudentDashboardPage() {
       <div className={styles.dashboardMain}>
         <header className={styles.dashboardHeader}>
           <div>
-            <p className={styles.eyebrow}>学生工作台 / 学习活动</p>
             <h1>我的学习活动</h1>
-            <p>这里汇总所有对你开放的学习活动。</p>
           </div>
           {/* 计数跟着分组走，同一套口径，不再另立五个状态。 */}
           <dl className={styles.summaryLine}>

@@ -2,7 +2,7 @@
 
 面向 K12 教师与学生的跨学科学习活动工作台。第一阶段只完成一条可追溯闭环：教师设计并确认发布，学生提交学习证据，教师确认反馈、学生查看反馈，并由发布教师兼当前班级管理员明确确认关闭发布。
 
-当前源码已覆盖手工完整闭环：教师以原版 CTS/CDAS 为能力下限设计 schema v2 跨学科任务书，保存不可变草稿修订并冻结发布；学生读取同一份基本设置、三维目标、真实情境、3–4 阶段行动—支架—证据链和四档评价标准，再完成文字与附件证据、正式修订、教师反馈、量规评价、反馈/评价读取及明确关闭。v2 发布若采用 `phased` 或 `mixed`，学生按冻结快照的阶段顺序、检查点，以及（若已配置）ReleaseGroup 共享提交继续执行；`once` 与历史发布仍使用整项提交。新的教师反馈修订会把 `CONTINUE|REVISE` 与 `FOUNDATION|STANDARD|CHALLENGE` 连同正文一并冻结。v2 快照上的量规评价按冻结维度覆盖全部档位或标记证据不足，并引用本版证据；v1 快照不开放评价。既有 schema v1 草稿和发布原样可读，新写入统一使用完整 v2；关闭会阻止学生后续写入，但保留活动、提交、反馈和评价历史，并允许有权教师继续反馈或评价。活动助手使用 AI SDK 直连 DeepSeek 官方 API 创建同一 v2 可编辑草稿，并在教师核对精确参数后复用同一发布命令；生成前可通过只读工具检索教育部课程方案及语文、数学、物理、信息科技 2022 年课程标准的已圈定章节，并在提案中展示可点开引用。教师也可在 `/teacher/knowledge` 不经模型检索同一白名单。模型关闭时全部手工路径与该检索页仍可运行。发布、关闭、提交、反馈与评价命令共用资源级授权、可信服务端上下文、乐观并发、幂等、不可变历史和审计。本地真实浏览器门禁已使用 Clerk development 双账号会话和专用 PostgreSQL 重放完整任务书、两版草稿、发布、两次提交、逐版反馈、历史成员只读、关闭只读、同角色越权、陈旧确认与幂等重放，范围仍是后文所述的两版文本闭环，不把 `phaseIndex`、ReleaseGroup、反馈下一步字段或量规评价算进该门禁的成功条件；阶段、小组、结构化反馈与量规评价由 staging 合成验收覆盖。受保护 Preview 的四身份手工闭环和固定合成数据 DeepSeek Agent schema v2 闭环均已有脱敏远程 PASS 证据。
+当前源码覆盖 v1/v2/v3 跨学科任务书、发布、阶段提交、反馈、评价与不可变历史闭环。运行时认证已改为中国服务器 PostgreSQL 内的本地账户：平台共享管理员使用用户名与密码；教师使用学校代码、工号与密码；学生使用学校代码、至少六位数字学号与密码。密码只保存 Argon2id 哈希，随机会话令牌只经 HttpOnly Cookie 传递且数据库仅保存其哈希。教师通过学校邀请码开通，随后可在本人班级导入固定“学号、姓名”两列的 Excel 名单创建学生账号；原始名单不会保存，学生初始密码为学号后六位。Clerk 相关的旧验收脚本只保留作历史开发参考，不参与正式运行、浏览器登录或试运行部署。
 
 ## 快速开始
 
@@ -16,7 +16,7 @@ pnpm db:deploy
 pnpm dev
 ```
 
-打开 [http://localhost:3000](http://localhost:3000)。本地运行 `next dev` 且没有 Clerk 密钥时，会使用 Clerk 官方临时测试登录；正式构建仍要求真实密钥。登录后还必须由初始化命令把 Clerk 用户绑定为教师或学生，未绑定账号不会读取业务数据或显示写入入口。模型默认关闭，普通教师与学生流程不依赖 AI。
+打开 [http://localhost:3000](http://localhost:3000)。本地运行不需要 Clerk 密钥；先执行迁移，再用 `pnpm admin:bootstrap -- --confirm-database <数据库名>` 在终端交互式建立唯一共享管理员账号。管理员建校后可发放教师邀请码，教师开通并创建班级，随后通过 Excel 导入学生。模型默认关闭，普通教师与学生流程不依赖 AI。
 
 国内小机器自托管（替换该主机上的旧服务、本机 PostgreSQL + nginx，不改 Vercel 开发门禁）见 [SELF-HOST.md](SELF-HOST.md)，一键脚本为 `pnpm self-host:deploy`。
 
@@ -60,6 +60,7 @@ python3 -m playwright install chromium
 ```dotenv
 DEV_TEST_TEACHER_CLERK_ID=user_teacherFromClerk
 DEV_TEST_STUDENT_CLERK_ID=user_studentFromClerk
+DEV_TEST_ADMIN_CLERK_ID=user_adminFromClerk
 E2E_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5434/cdas_next_e2e
 ```
 
@@ -135,6 +136,7 @@ pnpm development:agent-acceptance \
 | `CLERK_SECRET_KEY` | Clerk 服务端密钥 | 空 |
 | `DEV_TEST_TEACHER_CLERK_ID` | 浏览器门禁的既有 Clerk development 教师用户 ID | 空 |
 | `DEV_TEST_STUDENT_CLERK_ID` | 浏览器门禁的既有 Clerk development 学生用户 ID | 空 |
+| `DEV_TEST_ADMIN_CLERK_ID` | 本地 `/admin` 点击式门禁的既有 Clerk development 管理员用户 ID；须先 bootstrap | 空 |
 | `AI_PROVIDER_DISABLED` | 关闭模型调用并验证业务降级 | `1` |
 | `DEEPSEEK_API_KEY` | DeepSeek 官方 API 的服务端密钥；关闭模型时不需要 | 空 |
 | `AI_MODEL` | DeepSeek 模型 ID | `deepseek-v4-flash` |
@@ -169,6 +171,20 @@ pnpm --silent bootstrap:clerk -- \
 
 运行映射时保留示例中的 `--silent`，避免 pnpm 自己在执行前回显带 Clerk user ID 的完整命令行。该命令运行在 Next.js 进程之外，因此显式复用官方 `@next/env` 加载项目根目录的 `.env*`，顺序与 Next.js 一致；已经由 shell 注入的环境变量仍具有最高优先级。初始化程序只使用 `DATABASE_URL` 作为写入目标，并拒绝与 `TEST_DATABASE_URL` 相同的目标。成功输出只包含不带用户名、密码和查询参数的数据库目标，以及应用内部资源 ID 和 `CREATED` / `EXISTING` 状态；不会回显 Clerk user ID、连接字符串、密码或请求指纹。若任何既有映射冲突，整个事务失败且不修改数据。
 
+### 平台管理员与学校教师
+
+旧的 `bootstrap:clerk` 只用于兼容的本地演示班级。学校管理 MVP 使用独立流程：先在同一个 Clerk development instance 创建平台管理员，再只把其已存在的 `user_...` 绑定为唯一 `ADMIN`。该命令不创建或记录密码，且拒绝覆盖教师/学生映射或第二名管理员。
+
+```bash
+pnpm --silent admin:bootstrap -- \
+  --subject user_adminFromClerk \
+  --confirm-database cdas_next
+```
+
+管理员登录 `/admin` 后在“学校管理”中建校。页面仅在本次结果中显示学校代码与教师邀请码；请立即在受控渠道保存，刷新、再次访问或幂等重放都不会重新显示旧邀请码。教师在 `/teacher/register` 输入学校代码和邀请码，验证通过后才会看到学校名称，并填写工号、姓名、主/兼教学科与密码；登录入口是 `/teacher/login`，使用“学校代码 + 工号 + 密码”，内部 Clerk username 不会显示给教师。
+
+管理员只能查看学校、教师和汇总数量，不能读取任务书、学生作品、反馈或评价；`/admin` 也没有右下角 AI Agent。教师开通、一次性密码重置和学校邀请码重置均不把密码或邀请码明文写入数据库、日志、审计或 Git。学生自注册、学校级学生目录、Excel 导入、学生密码重置和管理员编辑学生资料不属于此首期切片。
+
 ## 可选活动助手
 
 助手默认关闭。只有 `AI_PROVIDER_DISABLED=0` 且 DeepSeek API 密钥、模型 ID 和审批签名密钥全部有效时，“新建学习活动”页才会渲染助手；服务端 Route Handler 仍会再次认证教师、验证消息与配置。审批密钥可用 `openssl rand -base64 32` 生成，不得使用示例值进入生产。
@@ -193,4 +209,4 @@ pnpm --silent bootstrap:clerk -- \
 
 ## 当前边界
 
-受保护 Preview、Clerk development、隔离 Neon、教师名单码成员管理、附件和合成教学闭环已经建立；当前附件能力仍只面向开发期合成数据，真实学生文件进入前还要完成保留、删除和恶意文件处理决策。schema v2 任务书、顺序阶段执行与快照检查点、按 Release 配置的作业小组、设计助手结构化提案确认、首版官方课程标准检索、结构化形成性反馈字段，以及证据绑定量规评价、列表评价状态、发布页反馈/评价覆盖计数、待重交跟进标记、教师工作台待反馈/待重交计数与待评价计数，均已进入当前主线。开放式多来源或教师私有资料 RAG、产品运行时多 Agent、自动评分、互评、自评、旧 `/api/v2` 兼容和旧数据库迁移仍不在本阶段范围。班级/项目长期小组、跨作业固定分组和实时协同也不在当前合同内；通用流程引擎、条件分支、任意依赖图、回溯，以及教师批准才解锁阶段同样未交付。原版 CTS/CDAS 的功能与中文描述是产品能力下限；新版复用其场景、目录、样例和设计思想，但不复制旧认证、API、数据库或页面实现。
+受保护 Preview、Clerk development、隔离 Neon、教师名单码成员管理、附件和合成教学闭环已经建立；当前附件能力仍只面向开发期合成数据，真实学生文件进入前还要完成保留、删除和恶意文件处理决策。schema v2/v3 任务书、顺序阶段执行与快照检查点、按 Release 配置的作业小组、设计助手结构化提案确认、14 门官方课程标准检索、结构化形成性反馈字段，以及证据绑定量规评价、列表评价状态、发布页反馈/评价覆盖计数、待重交跟进标记、教师工作台待反馈/待重交计数与待评价计数，均已进入当前主线。D-056 的本地实现还增加了学校边界、单一平台管理员、教师受邀开通、学校/教师启停和本校建班；其独立 PostgreSQL migration、Clerk development 自定义登录流与真实浏览器回归尚未执行，不能据此作出部署结论。开放式多来源或教师私有资料 RAG、产品运行时多 Agent、自动评分、互评、自评、旧 `/api/v2` 兼容和破坏性历史重写仍不在本阶段范围。学生自注册、学校级学生目录、Excel 导入、学生密码重置、多管理员层级、跨校共享和复杂学校运营后台也不在当前合同内。原版 CTS/CDAS 的功能与中文描述是产品能力下限；新版复用其场景、目录、样例和设计思想，但不复制旧认证、API、数据库或页面实现。

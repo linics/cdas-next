@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { type FormEvent, useMemo, useState, useSyncExternalStore } from "react";
+import type { StudentRosterEntry } from "../../../../../domain/classroom/student-roster-xlsx";
 import { LocalizedDateTime } from "../../../../_components/localized-date-time";
 import { ConfirmDialog, InlineAlert } from "../../../../_components/ui";
 import type { TeacherClassroomRoster } from "../../../../../server/queries/teacher-classroom-roster";
@@ -10,12 +11,17 @@ import {
   decideRosterChangeAction,
   prepareEndMembershipAction,
   prepareRosterImportAction,
+  prepareStudentImportAction,
+  previewStudentImportAction,
+  decideStudentImportAction,
   previewRosterImportAction,
   type RosterPrepareActionResult,
   type RosterPreviewActionResult,
+  type StudentImportPrepareActionResult,
 } from "./actions";
 
 type Prepared = Extract<RosterPrepareActionResult, { ok: true }>;
+type StudentImportPrepared = Extract<StudentImportPrepareActionResult, { ok: true }>;
 
 const subscribeToHydration = () => () => {};
 const hydratedSnapshot = () => true;
@@ -33,6 +39,8 @@ export function RosterManager({
   const [rosterText, setRosterText] = useState("");
   const [previewResult, setPreviewResult] = useState<RosterPreviewActionResult | null>(null);
   const [prepared, setPrepared] = useState<Prepared | null>(null);
+  const [studentEntries, setStudentEntries] = useState<StudentRosterEntry[] | null>(null);
+  const [studentPrepared, setStudentPrepared] = useState<StudentImportPrepared | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const currentMemberships = roster.memberships.filter((membership) => membership.status === "CURRENT");
@@ -105,6 +113,36 @@ export function RosterManager({
     setBusy(false);
   }
 
+  async function previewStudentFile(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setBusy(true);
+    setMessage(null);
+    setStudentPrepared(null);
+    const result = await previewStudentImportAction(new FormData(event.currentTarget));
+    if (result.ok) setStudentEntries(result.entries);
+    else { setStudentEntries(null); setMessage(result.message); }
+    setBusy(false);
+  }
+
+  async function prepareStudentImport() {
+    if (!studentEntries) return;
+    setBusy(true);
+    setMessage(null);
+    const result = await prepareStudentImportAction({ classroomId: roster.classroom.id, entries: studentEntries, idempotencyKey: `prepare_student_import_${crypto.randomUUID()}` });
+    if (result.ok) setStudentPrepared(result); else setMessage(result.message);
+    setBusy(false);
+  }
+
+  async function decideStudentImport(decision: "CONFIRM" | "REJECT") {
+    if (!studentPrepared) return;
+    setBusy(true);
+    const result = await decideStudentImportAction({ actionIntentId: studentPrepared.confirmation.actionIntentId, decision, idempotencyKey: studentPrepared.applyIdempotencyKey });
+    setStudentPrepared(null);
+    setMessage(result.message);
+    if (result.ok && result.status === "APPLIED") { setStudentEntries(null); router.refresh(); }
+    setBusy(false);
+  }
+
   const confirmation = prepared?.confirmation;
   const confirmationStudents = confirmation?.operation === "ADD"
     ? confirmation.students.map((student) => student.displayName).join("、")
@@ -149,6 +187,36 @@ export function RosterManager({
       </section>
 
       <section className={styles.rosterImportPanel} aria-labelledby="roster-import-title">
+        <p className={styles.eyebrow}>学生账号导入</p>
+        <h2 id="student-import-title">从 Excel 创建学生账号</h2>
+        <p>仅解析首个工作表，首行必须是“学号、姓名”。学号需为至少六位数字；系统不保存原始 Excel 文件，初始密码为学号后六位。</p>
+        <a className={styles.secondaryButton} href="/api/teacher/student-import-template">下载 Excel 模板</a>
+        <form className={styles.form} onSubmit={previewStudentFile}>
+          <input accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" aria-label="学生名单 Excel 文件" disabled={busy} name="file" required type="file" />
+          <button className={styles.secondaryButton} disabled={busy} type="submit">{busy ? "正在解析…" : "解析并预览"}</button>
+        </form>
+        {studentEntries ? (
+          <div className={styles.rosterPreview}>
+            <h3>账号导入预览</h3>
+            <p>已解析 {studentEntries.length} 名学生。确认后才会创建账号并加入本班。</p>
+            <ul>{studentEntries.map((entry) => <li key={entry.studentNo}><strong>{entry.studentNo}</strong><span>{entry.displayName}</span></li>)}</ul>
+            <button className={styles.primaryButton} disabled={busy} onClick={prepareStudentImport} type="button">确认预览，准备导入 {studentEntries.length} 名</button>
+          </div>
+        ) : null}
+
+        <ConfirmDialog
+          detail={studentPrepared ? <div className={styles.dialogDetail}><p>班级：{studentPrepared.confirmation.classroomName}</p><p>本次将处理 {studentPrepared.confirmation.entries.length} 名学生，其中新建账号 {studentPrepared.confirmation.entries.filter((entry) => entry.status === "CREATE").length} 名、复用同校账号 {studentPrepared.confirmation.entries.filter((entry) => entry.status === "REUSE").length} 名。</p><p>已在本班的账号不会重复加入；若账号当前属于其他班级，系统会拒绝导入并保持零写入。</p><p>确认有效至 <LocalizedDateTime dateTime={studentPrepared.confirmation.expiresAt} includeSeconds />。</p><p>参数摘要：<code>{studentPrepared.confirmation.payloadHash}</code></p></div> : null}
+          disabled={busy}
+          confirmLabel="确认创建账号并加入班级"
+          onCancel={() => decideStudentImport("REJECT")}
+          onConfirm={() => decideStudentImport("CONFIRM")}
+          open={Boolean(studentPrepared)}
+          pending={busy}
+          title="确认学生账号导入"
+          tone="primary"
+        />
+
+        <hr />
         <p className={styles.eyebrow}>受控批量加入</p>
         <h2 id="roster-import-title">粘贴学生名单码</h2>
         <p>每行一个或用逗号分隔，最多 50 个；仅匹配已由管理员配置的学生账号。</p>

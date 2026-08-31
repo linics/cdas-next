@@ -62,7 +62,7 @@ describe("teacher official knowledge page", () => {
     mocks.getTeacherIdentity.mockResolvedValue({ displayName: "林老师" });
   });
 
-  it("lists the approved official standards and supports model-independent search", async () => {
+  it("lists the approved official standards and supports direct search", async () => {
     const initial = renderToStaticMarkup(
       await TeacherKnowledgePage({ searchParams: Promise.resolve({}) }),
     );
@@ -77,8 +77,8 @@ describe("teacher official knowledge page", () => {
     expect(initial).toContain("义务教育信息科技课程标准（2022年版）");
     expect(initial).toContain("义务教育化学课程标准（2022年版）");
     expect(initial).not.toContain("UbD");
-    expect(searched).toContain("检索结果");
-    expect(searched).toContain("不依赖 AI");
+    expect(searched).toContain("初中跨学科实践 数据分析 评价”的结果");
+    expect(searched).not.toContain("不依赖 AI");
     expect(searched).toContain('href="/teacher/knowledge?source=');
   });
 

@@ -98,18 +98,23 @@ async function requireManagedClassroom(
   const [actor, classroom] = await Promise.all([
     database.appUser.findUnique({
       where: { id: actorId },
-      select: { role: true, displayName: true },
+      select: { role: true, displayName: true, schoolId: true },
     }),
     database.classroom.findUnique({
       where: { id: classroomId },
-      select: { id: true, name: true, version: true, managerId: true },
+      select: { id: true, name: true, version: true, managerId: true, schoolId: true },
     }),
   ]);
   if (!actor) throw new TeacherClassroomRosterQueryError("NOT_FOUND");
   if (actor.role !== "TEACHER") {
     throw new TeacherClassroomRosterQueryError("FORBIDDEN");
   }
-  if (!classroom || classroom.managerId !== actorId) {
+  if (
+    !classroom ||
+    classroom.managerId !== actorId ||
+    !actor.schoolId ||
+    classroom.schoolId !== actor.schoolId
+  ) {
     throw new TeacherClassroomRosterQueryError("NOT_FOUND");
   }
   return { actor, classroom };
@@ -175,7 +180,11 @@ export async function previewTeacherRosterImport(
   );
   const keys = [...new Set(input.rosterKeys)];
   const students = await database.appUser.findMany({
-    where: { role: "STUDENT", rosterKey: { in: keys } },
+    where: {
+      role: "STUDENT",
+      schoolId: classroom.schoolId,
+      rosterKey: { in: keys },
+    },
     select: {
       id: true,
       displayName: true,

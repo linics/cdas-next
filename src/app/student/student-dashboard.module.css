@@ -1,16 +1,15 @@
 .dashboardMain {
-  width: min(100%, 1040px);
+  width: min(100%, var(--content-width));
   margin: 0 auto;
   padding: var(--space-8) var(--space-8) calc(var(--space-8) * 1.5);
 }
 
 .eyebrow {
   margin: 0;
-  color: var(--color-accent-700);
+  color: var(--color-neutral-700);
   font-family: var(--font-ui);
-  font-size: var(--text-kicker);
-  letter-spacing: .1em;
-  text-transform: uppercase;
+  font-size: var(--text-meta);
+  font-weight: var(--font-heading-weight);
 }
 
 .dashboardHeader {
@@ -22,9 +21,9 @@
 }
 
 .dashboardHeader h1 {
-  margin: var(--space-2) 0 var(--space-2);
+  margin: 0;
   font-size: var(--text-display);
-  font-weight: 400;
+  font-weight: var(--font-heading-weight);
   letter-spacing: -.015em;
   line-height: 1.12;
 }
@@ -35,8 +34,7 @@
   color: var(--color-neutral-800);
   font-size: var(--text-body);
   line-height: 1.7;
-  text-align: justify;
-  text-justify: inter-character;
+  text-align: left;
 }
 
 /* 计数跟在标题旁边，不做成一条大色带：数字自己就是版面重音。 */
@@ -66,7 +64,7 @@
 
 .groupHeading {
   display: grid;
-  grid-template-columns: 30px minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: baseline;
   gap: var(--space-3);
   border-bottom: 1px solid var(--color-divider);
@@ -74,7 +72,7 @@
 }
 
 .groupHeading > span {
-  color: var(--color-accent-700);
+  color: var(--color-neutral-700);
   font-family: var(--font-ui);
   font-size: var(--text-section);
   font-variant-numeric: var(--figure-ui);
@@ -104,7 +102,7 @@
   margin: 0 0 var(--space-1);
   font-family: var(--font-heading);
   font-size: var(--text-section);
-  font-weight: 400;
+  font-weight: var(--font-heading-weight);
   line-height: 1.2;
 }
 .releaseCopy p { margin: 0 0 var(--space-1); color: var(--color-neutral-800); font-size: var(--text-meta); line-height: 1.6; }
@@ -157,5 +155,5 @@
   .releaseRow { display: block; padding: var(--space-3) 0; }
   .releaseDates { display: grid; margin-top: var(--space-4); }
   .releaseAction { display: flex; justify-content: space-between; margin-top: var(--space-4); }
-  .groupHeading { grid-template-columns: 28px minmax(0, 1fr) auto; }
+  .groupHeading { grid-template-columns: minmax(0, 1fr) auto; }
 }

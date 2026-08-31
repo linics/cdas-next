@@ -2,6 +2,8 @@ import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
+vi.mock("server-only", () => ({}));
+
 vi.mock("@clerk/nextjs", () => ({
   SignOutButton: ({ children }: { children: ReactNode }) => (
     <span data-clerk-sign-out="true">{children}</span>
@@ -50,9 +52,25 @@ describe("workspace shell", () => {
     expect(markup).toContain('href="/teacher/knowledge"');
     expect(markup).toContain('aria-current="page"');
     expect(markup).toContain("当前账号：林老师 · 教师");
-    expect(markup).toContain('data-clerk-sign-out="true"');
+    expect(markup).toContain("退出登录");
     expect(markup).not.toContain("学生端预览");
     expect(markup).not.toContain("评阅名册");
+  });
+
+  it("keeps root workspaces free of repeated breadcrumbs and implementation notes", () => {
+    const markup = renderToStaticMarkup(
+      <WorkspaceShell
+        actorName="林老师"
+        audience="教师"
+        navigation={[{ href: "/teacher", label: "工作台" }]}
+      >
+        <p>教师内容</p>
+      </WorkspaceShell>,
+    );
+
+    expect(markup).not.toContain('aria-label="面包屑"');
+    expect(markup).not.toContain("AI 仅辅助准备内容");
+    expect(markup).toContain("当前账号：林老师 · 教师");
   });
 
   it("locks the shell to the remaining viewport when fillViewport is set", () => {

@@ -4,6 +4,11 @@ import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { parseRosterKeyList, rosterKeySchema } from "../../../../../domain/classroom/roster-key";
+import {
+  parseStudentRosterXlsx,
+  StudentRosterXlsxError,
+  type StudentRosterEntry,
+} from "../../../../../domain/classroom/student-roster-xlsx";
 import { AuthenticationError } from "../../../../../server/auth/current-actor";
 import {
   applyClassroomMembershipChange,
@@ -19,6 +24,12 @@ import {
   PrepareClassroomMembershipChangeError,
   type PrepareClassroomMembershipChangeResult,
 } from "../../../../../server/commands/prepare-classroom-membership-change";
+import {
+  executeStudentImport,
+  prepareStudentImport,
+  StudentImportError,
+  type PrepareStudentImportResult,
+} from "../../../../../server/commands/student-import";
 import { getDatabaseClient } from "../../../../../server/db/client";
 import {
   previewTeacherRosterImport,
@@ -77,14 +88,29 @@ export type RosterDecisionActionResult =
       message: string;
     }>
   | RosterActionFailure;
+export type StudentImportPreviewActionResult =
+  | Readonly<{ ok: true; entries: StudentRosterEntry[] }>
+  | RosterActionFailure;
+export type StudentImportPrepareActionResult =
+  | Readonly<{ ok: true; confirmation: PrepareStudentImportResult; applyIdempotencyKey: string }>
+  | RosterActionFailure;
 
 function failure(error: unknown): RosterActionFailure {
   if (error instanceof z.ZodError || (error instanceof Error && error.message === "ROSTER_KEY_COUNT_INVALID")) {
     return { ok: false, code: "VALIDATION", message: "名单码格式不正确；每次请输入 1–50 个名单码。" };
   }
+  if (error instanceof StudentRosterXlsxError) {
+    const message = error.code === "INVALID_HEADER"
+      ? "首个工作表第一行必须且只能是“学号、姓名”两列。"
+      : error.code === "TOO_MANY_ROWS"
+        ? "一次最多导入 100 名学生。"
+        : "Excel 文件或其中的学号、姓名不符合模板要求。";
+    return { ok: false, code: "VALIDATION", message };
+  }
   if (
     error instanceof AuthenticationError ||
     error instanceof TeacherClassroomRosterQueryError ||
+    (error instanceof StudentImportError && ["FORBIDDEN", "NOT_FOUND"].includes(error.code)) ||
     (error instanceof PrepareClassroomMembershipChangeError && ["FORBIDDEN", "NOT_FOUND"].includes(error.code)) ||
     (error instanceof ApplyClassroomMembershipChangeError && ["FORBIDDEN", "NOT_FOUND"].includes(error.code)) ||
     (error instanceof DecideActionIntentError && ["FORBIDDEN", "NOT_FOUND"].includes(error.code))
@@ -93,6 +119,7 @@ function failure(error: unknown): RosterActionFailure {
   }
   if (
     error instanceof PrepareClassroomMembershipChangeError ||
+    error instanceof StudentImportError ||
     error instanceof ApplyClassroomMembershipChangeError ||
     error instanceof DecideActionIntentError
   ) {
@@ -102,6 +129,40 @@ function failure(error: unknown): RosterActionFailure {
     errorName: error instanceof Error ? error.name : "UnknownError",
   });
   return { ok: false, code: "ERROR", message: "服务器暂时无法完成名单操作，现有成员关系没有被假设为已改变。" };
+}
+
+export async function previewStudentImportAction(formData: FormData): Promise<StudentImportPreviewActionResult> {
+  try {
+    const file = formData.get("file");
+    if (!(file instanceof File) || !file.name.toLowerCase().endsWith(".xlsx") || file.size === 0 || file.size > 2 * 1024 * 1024) {
+      throw new StudentRosterXlsxError("INVALID_WORKBOOK");
+    }
+    return { ok: true, entries: parseStudentRosterXlsx(await file.arrayBuffer()) };
+  } catch (error) { return failure(error); }
+}
+
+export async function prepareStudentImportAction(rawInput: { classroomId: string; entries: StudentRosterEntry[]; idempotencyKey: string }): Promise<StudentImportPrepareActionResult> {
+  try {
+    const confirmation = await prepareStudentImport(getDatabaseClient(), await createUiCommandContext(), rawInput);
+    return { ok: true, confirmation, applyIdempotencyKey: `apply_student_import_${randomUUID()}` };
+  } catch (error) { return failure(error); }
+}
+
+export async function decideStudentImportAction(rawInput: { actionIntentId: string; decision: "CONFIRM" | "REJECT"; idempotencyKey: string }): Promise<RosterDecisionActionResult> {
+  try {
+    const input = decisionSchema.parse(rawInput);
+    const database = getDatabaseClient();
+    const context = await createUiCommandContext();
+    try { await decideActionIntent(database, context, { actionIntentId: input.actionIntentId, decision: input.decision }); }
+    catch (error) {
+      if (input.decision !== "CONFIRM" || !(error instanceof DecideActionIntentError) || error.code !== "ALREADY_DECIDED") throw error;
+    }
+    if (input.decision === "REJECT") return { ok: true, status: "REJECTED", message: "已取消本次学生账号导入，未创建任何账号或成员关系。" };
+    const result = await executeStudentImport(database, context, { actionIntentId: input.actionIntentId, idempotencyKey: input.idempotencyKey });
+    revalidatePath("/teacher");
+    revalidatePath("/student");
+    return { ok: true, status: "APPLIED", message: `已完成导入：新建 ${result.createdStudents} 名账号，加入班级 ${result.joinedStudents} 名；已在本班的 ${result.skippedCurrentMembers} 名保持不变。` };
+  } catch (error) { return failure(error); }
 }
 
 export async function previewRosterImportAction(

@@ -6,6 +6,7 @@ import { waterConservationTaskBook } from "../../src/fixtures/water-conservation
 import type { TeacherEvaluationOutcome } from "../../src/domain/evaluation/teacher-evaluation-intent";
 import type { PrismaClient } from "../../src/generated/prisma/client";
 import { createDatabaseClient } from "../../src/server/db/client";
+import { hashLocalPassword, localStudentIdentifier, localTeacherIdentifier } from "../../src/server/auth/local-auth";
 import { bootstrapClerkClassroom } from "../../src/server/bootstrap/bootstrap-clerk-classroom";
 import {
   resolveBootstrapDatabaseTarget,
@@ -629,9 +630,9 @@ async function main(): Promise<void> {
 
   try {
     const bootstrapped = await bootstrapClerkClassroom(database, {
-      teacherAuthSubject: requireEnv("DEV_TEST_TEACHER_CLERK_ID"),
+      teacherAuthSubject: "user_trial_demo_teacher",
       teacherDisplayName: DEMO_TEACHER_NAME,
-      studentAuthSubject: requireEnv("DEV_TEST_STUDENT_CLERK_ID"),
+      studentAuthSubject: "user_trial_demo_student",
       studentDisplayName: DEMO_LOGIN_STUDENT_NAME,
       studentRosterKey: "DEMOSTU01",
       classroomId: DEMO_CLASSROOM_ID,
@@ -649,6 +650,34 @@ async function main(): Promise<void> {
       id: bootstrapped.classroom.id,
       name: DEMO_CLASSROOM_NAME,
     };
+
+    // The legacy demo builder only creates business users. Attach local
+    // credentials so this isolated trial never calls an external provider.
+    const demoTeacherPassword = requireEnv("TRIAL_DEMO_TEACHER_PASSWORD");
+    const [teacherPasswordHash, studentPasswordHash] = await Promise.all([
+      hashLocalPassword(demoTeacherPassword),
+      hashLocalPassword("260001"),
+    ]);
+    await database.$transaction([
+      database.appUser.update({
+        where: { id: teacher.id },
+        data: { staffNo: "DEMO001", primaryDisciplineCode: "math", secondaryDisciplineCodes: [], legacyProfile: false },
+      }),
+      database.appUser.update({
+        where: { id: loginStudent.id },
+        data: { studentNo: "20260001", legacyProfile: false },
+      }),
+      database.localCredential.upsert({
+        where: { userId: teacher.id },
+        create: { userId: teacher.id, identifier: localTeacherIdentifier("LEGACY01", "DEMO001"), passwordHash: teacherPasswordHash, mustChangePassword: true, passwordChangedAt: new Date() },
+        update: {},
+      }),
+      database.localCredential.upsert({
+        where: { userId: loginStudent.id },
+        create: { userId: loginStudent.id, identifier: localStudentIdentifier("LEGACY01", "20260001"), passwordHash: studentPasswordHash, mustChangePassword: false, passwordChangedAt: new Date() },
+        update: {},
+      }),
+    ]);
 
     let existingComplete = await findDraftRelease(
       database,

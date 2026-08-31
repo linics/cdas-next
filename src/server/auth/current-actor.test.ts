@@ -1,90 +1,38 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
-
-const auth = vi.fn();
-const headerStore = new Map<string, string>();
-
-vi.mock("@clerk/nextjs/server", () => ({
-  auth: (...args: unknown[]) => auth(...args),
+const { cookieStore, findLocalSessionActor } = vi.hoisted(() => ({
+  cookieStore: { get: vi.fn(() => ({ value: "local-session-token" })) },
+  findLocalSessionActor: vi.fn(),
 }));
-
-vi.mock("next/headers", () => ({
-  headers: async () => ({
-    get: (name: string) => headerStore.get(name) ?? null,
-  }),
-}));
+vi.mock("next/headers", () => ({ cookies: async () => cookieStore }));
+vi.mock("./local-auth", () => ({ LOCAL_SESSION_COOKIE: "cdas_session", findLocalSessionActor }));
 
 import { AuthenticationError, getCurrentActor } from "./current-actor";
 
-const teacher = {
-  id: "teacher-row",
-  authSubject: "user_teacher123",
-  role: "TEACHER" as const,
-  displayName: "林老师",
-};
-const student = {
-  id: "student-row",
-  authSubject: "user_student123",
-  role: "STUDENT" as const,
-  displayName: "陈同学",
-};
+const teacher = { id: "00000000-0000-4000-8000-000000000001", authSubject: "local:teacher", role: "TEACHER" as const, displayName: "林老师", accountStatus: "ACTIVE" as const, school: { id: "00000000-0000-4000-8000-000000000010", status: "ACTIVE" as const } };
+const database = (mustChangePassword = false) => ({ localCredential: { findUnique: vi.fn(async () => ({ mustChangePassword })) } });
 
-function databaseDouble(users = [teacher, student]) {
-  return {
-    appUser: {
-      findUnique: vi.fn(async ({ where }: { where: { authSubject: string } }) =>
-        users.find((user) => user.authSubject === where.authSubject) ?? null,
-      ),
-    },
-  };
-}
-
-describe("getCurrentActor clickthrough", () => {
-  beforeEach(() => {
-    headerStore.clear();
-    vi.stubEnv("NODE_ENV", "development");
-    vi.stubEnv("DEV_TEST_TEACHER_CLERK_ID", teacher.authSubject);
-    vi.stubEnv("DEV_TEST_STUDENT_CLERK_ID", student.authSubject);
-    vi.stubEnv("VERCEL_ENV", "");
+describe("getCurrentActor local sessions", () => {
+  it("returns an active teacher backed by an opaque local session", async () => {
+    findLocalSessionActor.mockResolvedValueOnce(teacher);
+    await expect(getCurrentActor(database() as never)).resolves.toMatchObject(teacher);
+    expect(cookieStore.get).toHaveBeenCalledWith("cdas_session");
   });
 
-  afterEach(() => {
-    vi.unstubAllEnvs();
-    vi.clearAllMocks();
+  it("rejects absent, disabled, disabled-school and password-change-required actors", async () => {
+    findLocalSessionActor.mockResolvedValueOnce(null);
+    await expect(getCurrentActor(database() as never)).rejects.toEqual(new AuthenticationError("UNAUTHENTICATED"));
+    findLocalSessionActor.mockResolvedValueOnce({ ...teacher, accountStatus: "DISABLED" });
+    await expect(getCurrentActor(database() as never)).rejects.toEqual(new AuthenticationError("ACCOUNT_DISABLED"));
+    findLocalSessionActor.mockResolvedValueOnce({ ...teacher, school: { ...teacher.school, status: "DISABLED" } });
+    await expect(getCurrentActor(database() as never)).rejects.toEqual(new AuthenticationError("SCHOOL_DISABLED"));
+    findLocalSessionActor.mockResolvedValueOnce(teacher);
+    await expect(getCurrentActor(database(true) as never)).rejects.toEqual(new AuthenticationError("PASSWORD_CHANGE_REQUIRED"));
   });
 
-  it("enters teacher and student workspaces without Clerk by default", async () => {
-    headerStore.set("x-cdas-pathname", "/teacher");
-    await expect(
-      getCurrentActor(databaseDouble() as never),
-    ).resolves.toMatchObject(teacher);
-
-    headerStore.set("x-cdas-pathname", "/student");
-    await expect(
-      getCurrentActor(databaseDouble() as never),
-    ).resolves.toMatchObject(student);
-    expect(auth).not.toHaveBeenCalled();
-  });
-
-  it("uses Clerk when clickthrough is explicitly turned off", async () => {
-    vi.stubEnv("DEV_CLICKTHROUGH_AUTH", "0");
-    vi.stubEnv("NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY", "pk_test_example");
-    vi.stubEnv("CLERK_SECRET_KEY", "sk_test_example");
-    headerStore.set("x-cdas-pathname", "/teacher");
-    auth.mockResolvedValue({ userId: teacher.authSubject });
-
-    await expect(
-      getCurrentActor(databaseDouble() as never),
-    ).resolves.toMatchObject(teacher);
-    expect(auth).toHaveBeenCalled();
-  });
-
-  it("rejects unknown paths instead of inventing an actor", async () => {
-    headerStore.set("x-cdas-pathname", "/");
-    await expect(getCurrentActor(databaseDouble() as never)).rejects.toMatchObject(
-      { code: "UNAUTHENTICATED" } satisfies Pick<AuthenticationError, "code">,
-    );
-    expect(auth).not.toHaveBeenCalled();
+  it("allows the one active platform administrator without a school", async () => {
+    findLocalSessionActor.mockResolvedValueOnce({ ...teacher, role: "ADMIN", school: null });
+    await expect(getCurrentActor(database() as never)).resolves.toMatchObject({ role: "ADMIN" });
   });
 });

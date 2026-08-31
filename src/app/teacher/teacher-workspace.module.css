@@ -2,11 +2,10 @@
 .pageContent { min-width: 0; }
 .eyebrow {
   margin: 0;
-  color: var(--color-accent-700);
+  color: var(--color-neutral-700);
   font-family: var(--font-ui);
-  font-size: var(--text-kicker);
-  letter-spacing: .1em;
-  text-transform: uppercase;
+  font-size: var(--text-meta);
+  font-weight: var(--font-heading-weight);
 }
 .pageHeader {
   display: flex;
@@ -25,9 +24,9 @@
 }
 .pageHeader h1 {
   max-width: 760px;
-  margin: var(--space-2) 0 var(--space-2);
+  margin: 0;
   font-size: var(--text-display);
-  font-weight: 400;
+  font-weight: var(--font-heading-weight);
   letter-spacing: -.015em;
   line-height: 1.12;
 }
@@ -37,8 +36,7 @@
   color: var(--color-neutral-800);
   font-size: var(--text-body);
   line-height: 1.7;
-  text-align: justify;
-  text-justify: inter-character;
+  text-align: left;
 }
 /* Classical 的按钮永远是描边，不是填色。 */
 .primaryButton,
@@ -579,11 +577,10 @@
 .phaseCard legend,
 .rubricCard legend {
   padding: 0 var(--space-2);
-  color: var(--color-accent-700);
+  color: var(--color-neutral-700);
   font-family: var(--font-ui);
-  font-size: var(--text-kicker);
-  letter-spacing: .1em;
-  text-transform: uppercase;
+  font-size: var(--text-meta);
+  font-weight: var(--font-heading-weight);
 }
 /* 多选走标签（chip），选中态是实底而不是描边：在这块底色上描边几乎看不见。
    未选中态补一圈透明描边，选中时只换颜色不改盒子尺寸。 */
@@ -626,7 +623,7 @@
   border-bottom: 1px solid var(--color-divider);
 }
 .snapshotSheet > header { padding: var(--space-6) 0 var(--space-6); }
-.snapshotSheet > header h2 { margin: var(--space-2) 0 var(--space-3); font-size: var(--text-title); font-weight: 400; line-height: 1.12; }
+.snapshotSheet > header h2 { margin: var(--space-2) 0 var(--space-3); font-size: var(--text-title); font-weight: var(--font-heading-weight); line-height: 1.12; }
 .snapshotSheet > header p:last-child,
 .snapshotSheet section p,
 .snapshotSheet li {

@@ -10,7 +10,7 @@
 .paneHeading h1 {
   margin: var(--space-1) 0 var(--space-2);
   font-size: var(--text-title);
-  font-weight: 400;
+  font-weight: var(--font-heading-weight);
   line-height: 1.12;
 }
 
@@ -27,11 +27,10 @@
 
 .eyebrow {
   margin: 0;
-  color: var(--color-accent-700);
+  color: var(--color-neutral-700);
   font-family: var(--font-ui);
-  font-size: var(--text-kicker);
-  letter-spacing: .1em;
-  text-transform: uppercase;
+  font-size: var(--text-meta);
+  font-weight: var(--font-heading-weight);
 }
 
 .workspaceStatus,

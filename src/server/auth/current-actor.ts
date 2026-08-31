@@ -1,22 +1,22 @@
 import "server-only";
 
-import { auth } from "@clerk/nextjs/server";
-import { headers } from "next/headers";
-import type { AppUser, PrismaClient } from "../../generated/prisma/client";
+import { cookies } from "next/headers";
+import type {
+  AppUser,
+  PrismaClient,
+} from "../../generated/prisma/client";
 import { getDatabaseClient } from "../db/client";
-import {
-  clickthroughAuthSubject,
-  isClickthroughAuthEnabled,
-  resolveClickthroughAudience,
-} from "./clickthrough-auth";
-import { isClerkAuthenticationAvailable } from "./clerk-availability";
+import { findLocalSessionActor, LOCAL_SESSION_COOKIE } from "./local-auth";
 
 export class AuthenticationError extends Error {
   constructor(
     public readonly code:
       | "AUTH_NOT_CONFIGURED"
       | "UNAUTHENTICATED"
-      | "USER_NOT_PROVISIONED",
+      | "USER_NOT_PROVISIONED"
+      | "ACCOUNT_DISABLED"
+      | "SCHOOL_DISABLED"
+      | "PASSWORD_CHANGE_REQUIRED",
   ) {
     super(code);
     this.name = "AuthenticationError";
@@ -28,50 +28,35 @@ export async function getCurrentActor(
 ): Promise<AppUser> {
   const db = database ?? getDatabaseClient();
 
-  if (isClickthroughAuthEnabled()) {
-    return loadClickthroughActor(db);
-  }
-
-  if (!isClerkAuthenticationAvailable()) {
-    throw new AuthenticationError("AUTH_NOT_CONFIGURED");
-  }
-
-  const session = await auth();
-  if (!session.userId) {
+  const cookieStore = await cookies();
+  const actor = await findLocalSessionActor(
+    db,
+    cookieStore.get(LOCAL_SESSION_COOKIE)?.value,
+  );
+  if (!actor) {
     throw new AuthenticationError("UNAUTHENTICATED");
   }
-
-  const actor = await db.appUser.findUnique({
-    where: { authSubject: session.userId },
-  });
-  if (!actor) {
-    throw new AuthenticationError("USER_NOT_PROVISIONED");
+  const enabledActor = requireEnabledActor(actor);
+  if (enabledActor.role === "TEACHER") {
+    const credential = await db.localCredential.findUnique({ where: { userId: enabledActor.id }, select: { mustChangePassword: true } });
+    if (credential?.mustChangePassword) throw new AuthenticationError("PASSWORD_CHANGE_REQUIRED");
   }
-
-  return actor;
+  return enabledActor;
 }
 
-async function loadClickthroughActor(database: PrismaClient): Promise<AppUser> {
-  const headerList = await headers();
-  const audience = resolveClickthroughAudience({
-    pathname: headerList.get("x-cdas-pathname"),
-    referer: headerList.get("referer"),
-  });
-  if (!audience) {
-    throw new AuthenticationError("UNAUTHENTICATED");
-  }
+type ActorWithSchool = AppUser & {
+  school: { id: string; status: "ACTIVE" | "DISABLED" } | null;
+};
 
-  const authSubject = clickthroughAuthSubject(audience);
-  if (!authSubject) {
-    throw new AuthenticationError("AUTH_NOT_CONFIGURED");
+function requireEnabledActor(actor: ActorWithSchool): AppUser {
+  if (actor.accountStatus !== "ACTIVE") {
+    throw new AuthenticationError("ACCOUNT_DISABLED");
   }
-
-  const actor = await database.appUser.findUnique({
-    where: { authSubject },
-  });
-  if (!actor || actor.role !== audience) {
-    throw new AuthenticationError("USER_NOT_PROVISIONED");
+  if (
+    actor.role !== "ADMIN" &&
+    (!actor.school || actor.school.status !== "ACTIVE")
+  ) {
+    throw new AuthenticationError("SCHOOL_DISABLED");
   }
-
   return actor;
 }

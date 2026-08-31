@@ -132,7 +132,7 @@ async function runTransaction(
       const [actor, intent] = await Promise.all([
         transaction.appUser.findUnique({
           where: { id: context.actorId },
-          select: { role: true },
+          select: { role: true, schoolId: true },
         }),
         transaction.actionIntent.findUnique({
           where: { id: input.actionIntentId },
@@ -178,9 +178,20 @@ async function runTransaction(
 
       const classroom = await transaction.classroom.findUnique({
         where: { id: payload.classroomId },
-        select: { id: true, name: true, managerId: true, version: true },
+        select: {
+          id: true,
+          name: true,
+          managerId: true,
+          schoolId: true,
+          version: true,
+        },
       });
-      if (!classroom || classroom.managerId !== context.actorId) {
+      if (
+        !classroom ||
+        classroom.managerId !== context.actorId ||
+        !actor.schoolId ||
+        classroom.schoolId !== actor.schoolId
+      ) {
         throw new ApplyClassroomMembershipChangeError("NOT_FOUND");
       }
       if (
@@ -194,8 +205,17 @@ async function runTransaction(
       const changedStudentIds: string[] = [];
       if (payload.operation === "ADD") {
         const students = await transaction.appUser.findMany({
-          where: { id: { in: payload.students.map((student) => student.studentId) } },
-          select: { id: true, role: true, displayName: true, rosterKey: true },
+          where: {
+            id: { in: payload.students.map((student) => student.studentId) },
+            schoolId: classroom.schoolId,
+          },
+          select: {
+            id: true,
+            role: true,
+            displayName: true,
+            rosterKey: true,
+            schoolId: true,
+          },
         });
         const currentById = new Map(students.map((student) => [student.id, student]));
         if (
@@ -206,7 +226,8 @@ async function runTransaction(
               !student ||
               student.role !== "STUDENT" ||
               student.displayName !== snapshot.displayName ||
-              student.rosterKey !== snapshot.rosterKey
+              student.rosterKey !== snapshot.rosterKey ||
+              student.schoolId !== classroom.schoolId
             );
           })
         ) {
@@ -244,7 +265,7 @@ async function runTransaction(
             studentId: true,
             joinedAt: true,
             endedAt: true,
-            student: { select: { role: true, displayName: true } },
+            student: { select: { role: true, displayName: true, schoolId: true } },
           },
         });
         if (
@@ -253,6 +274,7 @@ async function runTransaction(
           membership.studentId !== payload.student.studentId ||
           membership.student.role !== "STUDENT" ||
           membership.student.displayName !== payload.student.displayName ||
+          membership.student.schoolId !== classroom.schoolId ||
           membership.joinedAt > context.now ||
           membership.endedAt !== null
         ) {

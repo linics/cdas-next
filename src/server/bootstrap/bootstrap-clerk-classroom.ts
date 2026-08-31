@@ -4,6 +4,7 @@ import {
   type PrismaClient,
 } from "../../generated/prisma/client";
 import { rosterKeySchema } from "../../domain/classroom/roster-key";
+import { legacySchoolId } from "../../domain/school/legacy-school";
 
 const clerkSubjectSchema = z
   .string()
@@ -246,10 +247,16 @@ async function ensureUser(
     rosterKey?: string;
   },
   now: Date,
-): Promise<{ id: string; status: BootstrapStatus }> {
+): Promise<{ id: string; status: BootstrapStatus; schoolId: string }> {
   const existing = await transaction.appUser.findUnique({
     where: { authSubject: input.authSubject },
-    select: { id: true, role: true, displayName: true, rosterKey: true },
+    select: {
+      id: true,
+      role: true,
+      displayName: true,
+      rosterKey: true,
+      schoolId: true,
+    },
   });
 
   if (existing) {
@@ -277,7 +284,17 @@ async function ensureUser(
         data: { rosterKey: input.rosterKey, updatedAt: now },
       });
     }
-    return { id: existing.id, status: "EXISTING" };
+    if (!existing.schoolId) {
+      throw new BootstrapClerkClassroomError(
+        "USER_PROFILE_CONFLICT",
+        input.resource,
+      );
+    }
+    return {
+      id: existing.id,
+      schoolId: existing.schoolId,
+      status: "EXISTING",
+    };
   }
 
   const created = await transaction.appUser.create({
@@ -286,12 +303,18 @@ async function ensureUser(
       displayName: input.displayName,
       role: input.role,
       rosterKey: input.rosterKey,
+      schoolId: legacySchoolId,
+      legacyProfile: true,
       createdAt: now,
       updatedAt: now,
     },
-    select: { id: true },
+    select: { id: true, schoolId: true },
   });
-  return { id: created.id, status: "CREATED" };
+  return {
+    id: created.id,
+    schoolId: created.schoolId ?? legacySchoolId,
+    status: "CREATED",
+  };
 }
 
 async function runBootstrapTransaction(
@@ -313,6 +336,12 @@ async function runBootstrapTransaction(
         },
         now,
       );
+      if (teacher.schoolId !== legacySchoolId) {
+        throw new BootstrapClerkClassroomError(
+          "USER_PROFILE_CONFLICT",
+          "teacher",
+        );
+      }
       const student = await ensureUser(
         transaction,
         {
@@ -324,14 +353,26 @@ async function runBootstrapTransaction(
         },
         now,
       );
+      if (student.schoolId !== teacher.schoolId) {
+        throw new BootstrapClerkClassroomError(
+          "USER_PROFILE_CONFLICT",
+          "student",
+        );
+      }
 
       const existingClassroom = await transaction.classroom.findUnique({
         where: { id: input.classroomId },
-        select: { id: true, managerId: true, name: true },
+        select: { id: true, managerId: true, name: true, schoolId: true },
       });
       let classroomStatus: BootstrapStatus;
       if (existingClassroom) {
         if (existingClassroom.managerId !== teacher.id) {
+          throw new BootstrapClerkClassroomError(
+            "CLASSROOM_MANAGER_CONFLICT",
+            "classroom",
+          );
+        }
+        if (existingClassroom.schoolId !== teacher.schoolId) {
           throw new BootstrapClerkClassroomError(
             "CLASSROOM_MANAGER_CONFLICT",
             "classroom",
@@ -350,6 +391,7 @@ async function runBootstrapTransaction(
             id: input.classroomId,
             name: input.classroomName,
             managerId: teacher.id,
+            schoolId: teacher.schoolId,
             createdAt: now,
             updatedAt: now,
           },
@@ -409,7 +451,7 @@ async function runAdditionalStudentTransaction(
     ]);
     const teacher = await transaction.appUser.findUnique({
       where: { authSubject: input.teacherAuthSubject },
-      select: { id: true, role: true },
+      select: { id: true, role: true, schoolId: true },
     });
     if (!teacher) {
       throw new BootstrapClerkClassroomError("TEACHER_NOT_FOUND", "teacher");
@@ -417,14 +459,23 @@ async function runAdditionalStudentTransaction(
     if (teacher.role !== "TEACHER") {
       throw new BootstrapClerkClassroomError("USER_ROLE_CONFLICT", "teacher");
     }
+    if (teacher.schoolId !== legacySchoolId) {
+      throw new BootstrapClerkClassroomError("USER_PROFILE_CONFLICT", "teacher");
+    }
     const classroom = await transaction.classroom.findUnique({
       where: { id: input.classroomId },
-      select: { managerId: true, name: true },
+      select: { managerId: true, name: true, schoolId: true },
     });
     if (!classroom) {
       throw new BootstrapClerkClassroomError("CLASSROOM_NOT_FOUND", "classroom");
     }
     if (classroom.managerId !== teacher.id) {
+      throw new BootstrapClerkClassroomError(
+        "CLASSROOM_MANAGER_CONFLICT",
+        "classroom",
+      );
+    }
+    if (classroom.schoolId !== teacher.schoolId) {
       throw new BootstrapClerkClassroomError(
         "CLASSROOM_MANAGER_CONFLICT",
         "classroom",
@@ -447,6 +498,12 @@ async function runAdditionalStudentTransaction(
       },
       now,
     );
+    if (additionalStudent.schoolId !== classroom.schoolId) {
+      throw new BootstrapClerkClassroomError(
+        "USER_PROFILE_CONFLICT",
+        "student",
+      );
+    }
     const membership = await ensureCurrentMembership(
       transaction,
       input.classroomId,

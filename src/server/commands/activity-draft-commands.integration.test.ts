@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
 import type { ActivityContentV2 } from "../../domain/activity/activity-content";
+import { legacySchoolId } from "../../domain/school/legacy-school";
 import {
   waterConservationActivity,
   waterConservationTaskBook,
@@ -20,6 +21,7 @@ import {
 const databaseUrl = process.env.TEST_DATABASE_URL;
 const describeWithDatabase = databaseUrl ? describe : describe.skip;
 const database = databaseUrl ? createDatabaseClient(databaseUrl) : null;
+const legacyUser = { schoolId: legacySchoolId, legacyProfile: true } as const;
 
 const now = new Date("2026-08-18T12:00:00.000Z");
 
@@ -73,18 +75,21 @@ async function createActors() {
         authSubject: `teacher_${teacherId}`,
         role: "TEACHER",
         displayName: "草稿测试教师",
+        ...legacyUser,
       },
       {
         id: otherTeacherId,
         authSubject: `teacher_${otherTeacherId}`,
         role: "TEACHER",
         displayName: "其他教师",
+        ...legacyUser,
       },
       {
         id: studentId,
         authSubject: `student_${studentId}`,
         role: "STUDENT",
         displayName: "测试学生",
+        ...legacyUser,
       },
     ],
   });
@@ -113,7 +118,11 @@ async function createClassroom(managerId: string) {
     throw new Error("TEST_DATABASE_URL is required");
   }
   return database.classroom.create({
-    data: { name: `草稿测试班级_${randomUUID()}`, managerId },
+    data: {
+      name: `草稿测试班级_${randomUUID()}`,
+      managerId,
+      schoolId: legacySchoolId,
+    },
   });
 }
 

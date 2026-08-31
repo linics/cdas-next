@@ -62,10 +62,9 @@ export default async function TeacherActivityPage({
       <div className={styles.pageContent}>
         <header className={styles.pageHeader}>
           <div>
-            <p className={styles.eyebrow}>跨学科任务 / 草稿版本 {draft.version}</p>
             <h1>{content.title}</h1>
             <p>
-              当前内容创建于{" "}
+              草稿版本 {draft.version} · 创建于{" "}
               <LocalizedDateTime dateTime={draft.revision.createdAt} />
               ；每次保存都会生成新版本，历史版本保留。
             </p>
@@ -74,8 +73,7 @@ export default async function TeacherActivityPage({
         {content.schemaVersion === 1 ? (
           <article className={styles.legacyReadPanel}>
             <header>
-              <p className={styles.eyebrow}>旧版内容 · 只读</p>
-              <h2>升级前先核对原跨学科任务内容</h2>
+              <h2>旧版内容</h2>
               <p>
                 以下为原跨学科任务内容，仅供参考。请据此补齐新版任务书；保存后原内容仍会保留。
               </p>

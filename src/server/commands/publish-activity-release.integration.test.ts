@@ -5,6 +5,7 @@ import {
   publishRequestSchema,
 } from "../../domain/activity/prepare-publish-intent";
 import { waterConservationActivity } from "../../fixtures/water-conservation";
+import { legacySchoolId } from "../../domain/school/legacy-school";
 import { closePublishedActivity } from "../../test/fixtures/published-activity";
 import { createDatabaseClient } from "../db/client";
 import {
@@ -16,6 +17,7 @@ import type { CommandContext, CommandSource } from "./command-context";
 const databaseUrl = process.env.TEST_DATABASE_URL;
 const describeWithDatabase = databaseUrl ? describe : describe.skip;
 const database = databaseUrl ? createDatabaseClient(databaseUrl) : null;
+const legacyUser = { schoolId: legacySchoolId, legacyProfile: true } as const;
 
 function commandContext(
   actorId: string,
@@ -51,17 +53,24 @@ async function createPublishFixture(
         authSubject: `teacher_${teacherId}`,
         role: "TEACHER",
         displayName: "测试教师",
+        ...legacyUser,
       },
       {
         id: otherTeacherId,
         authSubject: `teacher_${otherTeacherId}`,
         role: "TEACHER",
         displayName: "其他教师",
+        ...legacyUser,
       },
     ],
   });
   await database.classroom.create({
-    data: { id: classroomId, name: "七年一班", managerId: teacherId },
+    data: {
+      id: classroomId,
+      name: "七年一班",
+      managerId: teacherId,
+      schoolId: legacySchoolId,
+    },
   });
   const agentRun = options.withAgentRun
     ? await database.agentRun.create({

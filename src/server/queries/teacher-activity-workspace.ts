@@ -40,6 +40,11 @@ export const teacherIdentitySchema = z
   })
   .strict();
 
+type TeacherAccess = {
+  identity: TeacherIdentity;
+  schoolId: string;
+};
+
 const classroomSummarySchema = z
   .object({
     id: z.uuid(),
@@ -272,10 +277,16 @@ async function requireTeacher(
   database: PrismaClient,
   actorId: string,
   wrongRoleCode: "NOT_FOUND" | "WRONG_ROLE" = "NOT_FOUND",
-): Promise<TeacherIdentity> {
+): Promise<TeacherAccess> {
   const actor = await database.appUser.findUnique({
     where: { id: actorId },
-    select: { role: true, displayName: true },
+    select: {
+      role: true,
+      displayName: true,
+      accountStatus: true,
+      schoolId: true,
+      school: { select: { status: true } },
+    },
   });
   if (!actor) {
     throw new TeacherActivityQueryError("NOT_FOUND");
@@ -286,7 +297,17 @@ async function requireTeacher(
       wrongRoleCode === "WRONG_ROLE" ? actor.displayName : undefined,
     );
   }
-  return teacherIdentitySchema.parse({ displayName: actor.displayName });
+  if (
+    actor.accountStatus !== "ACTIVE" ||
+    !actor.schoolId ||
+    actor.school?.status !== "ACTIVE"
+  ) {
+    throw new TeacherActivityQueryError("NOT_FOUND");
+  }
+  return {
+    identity: teacherIdentitySchema.parse({ displayName: actor.displayName }),
+    schoolId: actor.schoolId,
+  };
 }
 
 export async function getTeacherIdentity(
@@ -296,7 +317,7 @@ export async function getTeacherIdentity(
 ): Promise<TeacherIdentity> {
   emptyInputSchema.parse(rawInput);
   const context = resolveCommandContext(commandContext, ["UI"]);
-  return requireTeacher(database, context.actorId);
+  return (await requireTeacher(database, context.actorId)).identity;
 }
 
 export async function getTeacherActivityDashboard(
@@ -306,7 +327,7 @@ export async function getTeacherActivityDashboard(
 ): Promise<TeacherActivityDashboard> {
   emptyInputSchema.parse(rawInput);
   const context = resolveCommandContext(commandContext, ["UI", "AGENT"]);
-  const actor = await requireTeacher(
+  const teacher = await requireTeacher(
     database,
     context.actorId,
     "WRONG_ROLE",
@@ -327,7 +348,10 @@ export async function getTeacherActivityDashboard(
       },
     }),
     database.activityRelease.findMany({
-      where: { publisherId: context.actorId },
+      where: {
+        publisherId: context.actorId,
+        classroom: { schoolId: teacher.schoolId },
+      },
       orderBy: [{ publishedAt: "desc" }, { id: "asc" }],
       select: {
         id: true,
@@ -371,7 +395,7 @@ export async function getTeacherActivityDashboard(
       },
     }),
     database.classroom.findMany({
-      where: { managerId: context.actorId },
+      where: { managerId: context.actorId, schoolId: teacher.schoolId },
       orderBy: [{ name: "asc" }, { id: "asc" }],
       select: {
         id: true,
@@ -382,7 +406,7 @@ export async function getTeacherActivityDashboard(
   ]);
 
   return teacherDashboardSchema.parse({
-    actor,
+    actor: teacher.identity,
     drafts: drafts.map((draft) => ({
       id: draft.id,
       title: draft.title,
@@ -455,7 +479,7 @@ export async function getTeacherActivityDraft(
 ): Promise<{ actor: TeacherIdentity; draft: TeacherActivityDraft }> {
   const input = draftInputSchema.parse(rawInput);
   const context = resolveCommandContext(commandContext, ["UI", "AGENT"]);
-  const [actor, draft] = await Promise.all([
+  const [teacher, draft] = await Promise.all([
     requireTeacher(database, context.actorId),
     database.activityDraft.findUnique({
       where: { id: input.draftId },
@@ -499,7 +523,7 @@ export async function getTeacherActivityDraft(
 
   const content = contentFromColumns(revision);
   return {
-    actor,
+    actor: teacher.identity,
     draft: teacherDraftSchema.parse({
       id: draft.id,
       status: draft.status,
@@ -525,10 +549,11 @@ export async function getTeacherActivityPreview(
 ): Promise<TeacherActivityPreview> {
   const input = draftInputSchema.parse(rawInput);
   const context = resolveCommandContext(commandContext, ["UI"]);
+  const teacher = await requireTeacher(database, context.actorId);
   const [{ actor, draft }, classrooms] = await Promise.all([
     getTeacherActivityDraft(database, commandContext, input),
     database.classroom.findMany({
-      where: { managerId: context.actorId },
+      where: { managerId: context.actorId, schoolId: teacher.schoolId },
       orderBy: [{ name: "asc" }, { id: "asc" }],
       select: {
         id: true,
@@ -558,7 +583,7 @@ export async function getTeacherPublishConfirmation(
 ): Promise<TeacherPublishConfirmation> {
   const input = intentInputSchema.parse(rawInput);
   const context = resolveCommandContext(commandContext, ["UI"]);
-  const [actor, intent] = await Promise.all([
+  const [teacher, intent] = await Promise.all([
     requireTeacher(database, context.actorId),
     database.actionIntent.findUnique({
       where: { id: input.actionIntentId },
@@ -576,7 +601,7 @@ export async function getTeacherPublishConfirmation(
       },
     }),
   ]);
-  void actor;
+  void teacher;
 
   if (!intent || intent.actorId !== context.actorId) {
     throw new TeacherActivityQueryError("NOT_FOUND");
@@ -619,7 +644,7 @@ export async function getTeacherPublishConfirmation(
     }),
     database.classroom.findUnique({
       where: { id: payload.data.classroomId },
-      select: { id: true, name: true, managerId: true },
+      select: { id: true, name: true, managerId: true, schoolId: true },
     }),
   ]);
 
@@ -628,7 +653,8 @@ export async function getTeacherPublishConfirmation(
     draft.ownerId !== context.actorId ||
     !revision ||
     !classroom ||
-    classroom.managerId !== context.actorId
+    classroom.managerId !== context.actorId ||
+    classroom.schoolId !== teacher.schoolId
   ) {
     throw new TeacherActivityQueryError("NOT_FOUND");
   }

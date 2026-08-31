@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { ActivityContent } from "../../domain/activity/activity-content";
 import { waterConservationTaskBook } from "../../fixtures/water-conservation";
+import { legacySchoolId } from "../../domain/school/legacy-school";
 import type { CommandContext, CommandSource } from "../commands/command-context";
 import { decideActionIntent } from "../commands/decide-action-intent";
 import { preparePublishActivityIntent } from "../commands/prepare-publish-activity-intent";
@@ -20,6 +21,7 @@ import {
 const databaseUrl = process.env.TEST_DATABASE_URL;
 const describeWithDatabase = databaseUrl ? describe : describe.skip;
 const database = databaseUrl ? createDatabaseClient(databaseUrl) : null;
+const legacyUser = { schoolId: legacySchoolId, legacyProfile: true } as const;
 const now = new Date("2026-08-18T12:00:00.000Z");
 
 function context(
@@ -62,28 +64,31 @@ async function createFixture() {
         authSubject: `teacher_${teacherId}`,
         role: "TEACHER",
         displayName: "林老师",
+        ...legacyUser,
       },
       {
         id: otherTeacherId,
         authSubject: `teacher_${otherTeacherId}`,
         role: "TEACHER",
         displayName: "其他老师",
+        ...legacyUser,
       },
       {
         id: studentId,
         authSubject: `student_${studentId}`,
         role: "STUDENT",
         displayName: "测试学生",
+        ...legacyUser,
       },
     ],
   });
 
   const [classroom, foreignClassroom] = await Promise.all([
     database.classroom.create({
-      data: { name: "七年一班", managerId: teacherId },
+      data: { name: "七年一班", managerId: teacherId, schoolId: legacySchoolId },
     }),
     database.classroom.create({
-      data: { name: "其他教师班级", managerId: otherTeacherId },
+      data: { name: "其他教师班级", managerId: otherTeacherId, schoolId: legacySchoolId },
     }),
   ]);
   await database.classroomMembership.create({

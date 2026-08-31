@@ -69,11 +69,7 @@ export default async function TeacherActivityStudioPage() {
       <div className={styles.pageContent}>
         <header className={styles.pageHeader}>
           <div>
-            <p className={styles.eyebrow}>跨学科任务 / 草稿</p>
-            <h1>未发布的跨学科任务草稿</h1>
-            <p>
-              这里管理编辑中与可预览的草稿；已发布的跨学科任务请在工作台按班级查看。
-            </p>
+            <h1>跨学科任务</h1>
           </div>
           <div className={styles.pageHeaderActions}>
             <Link className={styles.secondaryButton} href="/teacher/knowledge">
@@ -89,7 +85,6 @@ export default async function TeacherActivityStudioPage() {
           <section className={styles.dashboardSection}>
             <header className={styles.sectionHeader}>
               <div>
-                <p className={styles.eyebrow}>继续编辑</p>
                 <h2>我的草稿</h2>
               </div>
               <span>{openDrafts.length} 份</span>

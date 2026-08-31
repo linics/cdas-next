@@ -23,7 +23,8 @@ USER node
 RUN pnpm install --frozen-lockfile
 
 COPY --chown=node:node . .
-RUN chmod 0755 deploy/trial/entrypoint.sh
+RUN sed -i 's/\r$//' deploy/trial/entrypoint.sh \
+    && chmod 0755 deploy/trial/entrypoint.sh
 
 EXPOSE 3000
 

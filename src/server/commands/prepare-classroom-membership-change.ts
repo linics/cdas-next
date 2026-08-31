@@ -171,25 +171,40 @@ async function runTransaction(
       const [actor, classroom] = await Promise.all([
         transaction.appUser.findUnique({
           where: { id: context.actorId },
-          select: { role: true },
+          select: { role: true, schoolId: true },
         }),
         transaction.classroom.findUnique({
           where: { id: input.classroomId },
-          select: { id: true, name: true, managerId: true, version: true },
+          select: {
+            id: true,
+            name: true,
+            managerId: true,
+            schoolId: true,
+            version: true,
+          },
         }),
       ]);
       if (!actor) throw new PrepareClassroomMembershipChangeError("NOT_FOUND");
       if (actor.role !== "TEACHER") {
         throw new PrepareClassroomMembershipChangeError("FORBIDDEN");
       }
-      if (!classroom || classroom.managerId !== context.actorId) {
+      if (
+        !classroom ||
+        classroom.managerId !== context.actorId ||
+        !actor.schoolId ||
+        classroom.schoolId !== actor.schoolId
+      ) {
         throw new PrepareClassroomMembershipChangeError("NOT_FOUND");
       }
 
       let payload: ClassroomMembershipPayload;
       if (input.operation === "ADD") {
         const students = await transaction.appUser.findMany({
-          where: { role: "STUDENT", rosterKey: { in: input.rosterKeys } },
+          where: {
+            role: "STUDENT",
+            schoolId: classroom.schoolId,
+            rosterKey: { in: input.rosterKeys },
+          },
           orderBy: { rosterKey: "asc" },
           select: { id: true, displayName: true, rosterKey: true },
         });
@@ -230,11 +245,15 @@ async function runTransaction(
             joinedAt: true,
             endedAt: true,
             student: {
-              select: { id: true, role: true, displayName: true },
+              select: { id: true, role: true, displayName: true, schoolId: true },
             },
           },
         });
-        if (!membership || membership.classroomId !== classroom.id) {
+        if (
+          !membership ||
+          membership.classroomId !== classroom.id ||
+          membership.student.schoolId !== classroom.schoolId
+        ) {
           throw new PrepareClassroomMembershipChangeError("NOT_FOUND");
         }
         if (

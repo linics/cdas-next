@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
+import { legacySchoolId } from "../../domain/school/legacy-school";
 import { createPublishedActivity } from "../../test/fixtures/published-activity";
 import {
   getAuthorizedSubmissionAttachmentDownload,
@@ -29,6 +30,7 @@ import {
 const databaseUrl = process.env.TEST_DATABASE_URL;
 const describeWithDatabase = databaseUrl ? describe : describe.skip;
 const database = databaseUrl ? createDatabaseClient(databaseUrl) : null;
+const legacyUser = { schoolId: legacySchoolId, legacyProfile: true } as const;
 
 function commandContext(actorId: string, now: Date): CommandContext {
   return {
@@ -58,23 +60,31 @@ async function createSubmissionFixture(options?: { dueAt?: Date | null }) {
         authSubject: `teacher_${teacherId}`,
         role: "TEACHER",
         displayName: "提交测试教师",
+        ...legacyUser,
       },
       {
         id: studentId,
         authSubject: `student_${studentId}`,
         role: "STUDENT",
         displayName: "提交测试学生",
+        ...legacyUser,
       },
       {
         id: nonmemberId,
         authSubject: `student_${nonmemberId}`,
         role: "STUDENT",
         displayName: "非成员学生",
+        ...legacyUser,
       },
     ],
   });
   await database.classroom.create({
-    data: { id: classroomId, name: "提交测试班级", managerId: teacherId },
+    data: {
+      id: classroomId,
+      name: "提交测试班级",
+      managerId: teacherId,
+      schoolId: legacySchoolId,
+    },
   });
   await database.classroomMembership.create({
     data: {

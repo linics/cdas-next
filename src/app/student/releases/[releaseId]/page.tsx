@@ -90,7 +90,7 @@ function ActivityBackground({
   }
   return (
     <section className={styles.activityBackground} aria-label="任务背景">
-      <p className={styles.eyebrow}>任务背景</p>
+      <h2>任务背景</h2>
       <p>{content.backgroundSetting}</p>
     </section>
   );
@@ -123,7 +123,6 @@ function RevisionHistory({
     <section className={styles.historySection} aria-labelledby="history-title">
       <div className={styles.historyHeading}>
         <div>
-          <p className={styles.eyebrow}>提交历史</p>
           <h2 id="history-title">我的提交与反馈</h2>
         </div>
         <span>{revisions.length} 版</span>
@@ -631,7 +630,6 @@ export default async function StudentReleasePage({
         <Link className={styles.backLink} href="/student">← 返回我的跨学科任务</Link>
         <header className={styles.releaseHeader}>
           <div>
-            <p className={styles.eyebrow}>跨学科任务 / 阶段证据</p>
             <h1>{content.title}</h1>
             <p>{content.summary}</p>
           </div>

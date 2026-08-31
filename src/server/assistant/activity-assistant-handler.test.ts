@@ -1,6 +1,7 @@
 import { simulateReadableStream } from "ai";
 import { MockLanguageModelV4 } from "ai/test";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { legacySchoolId } from "../../domain/school/legacy-school";
 import { waterConservationTaskBookV3 } from "../../fixtures/water-conservation-v3";
 import type { AppUser, PrismaClient } from "../../generated/prisma/client";
 
@@ -120,6 +121,13 @@ const teacher: AppUser = {
   role: "TEACHER",
   displayName: "林老師",
   rosterKey: null,
+  schoolId: legacySchoolId,
+  staffNo: null,
+  studentNo: null,
+  primaryDisciplineCode: null,
+  secondaryDisciplineCodes: [],
+  accountStatus: "ACTIVE",
+  legacyProfile: true,
   createdAt: now,
   updatedAt: now,
 };

@@ -167,6 +167,9 @@ async function runTransaction(
       if (intent.expiresAt <= now) {
         throw new PublishActivityReleaseError("ACTION_EXPIRED");
       }
+      if (intent.actor.role !== "TEACHER") {
+        throw new PublishActivityReleaseError("FORBIDDEN");
+      }
 
       let payload: z.infer<typeof publishRequestSchema>;
       try {

@@ -1,11 +1,11 @@
-import { SignOutButton } from "@clerk/nextjs";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { isClickthroughAuthEnabled } from "../../server/auth/clickthrough-auth";
+import { logoutAction } from "../auth/local-login-actions";
 import { WorkspaceNavigation } from "./workspace-navigation";
 import styles from "./workspace-shell.module.css";
 
 export type WorkspaceNavigationItem = { href: string; label: string };
+export type WorkspaceAudience = "管理员" | "教师" | "学生";
 
 /** Ancestor crumbs may carry `href`; the last crumb is always the current page. */
 export type WorkspaceCrumb = {
@@ -62,21 +62,23 @@ export function WorkspaceShell({
   fillViewport = false,
   children,
 }: {
-  audience: "教师" | "学生";
+  audience: WorkspaceAudience;
   actorName?: string;
-  actorAudience?: "教师" | "学生";
+  actorAudience?: WorkspaceAudience;
   breadcrumb?: readonly WorkspaceCrumb[];
   navigation?: readonly WorkspaceNavigationItem[];
   toolbarAction?: ReactNode;
   fillViewport?: boolean;
   children: ReactNode;
 }) {
-  const workspaceHref = audience === "教师" ? "/teacher" : "/student";
+  const workspaceHref =
+    audience === "管理员"
+      ? "/admin"
+      : audience === "教师"
+        ? "/teacher"
+        : "/student";
   const showNavigation = navigation.length > 0;
-  const crumbs =
-    breadcrumb && breadcrumb.length > 0
-      ? breadcrumb
-      : [{ label: `${audience}工作台` }];
+  const crumbs = breadcrumb && breadcrumb.length > 1 ? breadcrumb : null;
 
   return (
     <div
@@ -96,9 +98,6 @@ export function WorkspaceShell({
             <span>跨学科学习活动</span>
           </Link>
           <WorkspaceNavigation audience={audience} items={navigation} />
-          <p className={styles.sidebarNote}>
-            AI 仅辅助准备内容，发布与评价均由教师确认。
-          </p>
         </aside>
       ) : null}
       <div className={styles.workspace}>
@@ -112,7 +111,7 @@ export function WorkspaceShell({
               CDAS
             </Link>
           ) : null}
-          <WorkspaceBreadcrumb items={crumbs} />
+          {crumbs ? <WorkspaceBreadcrumb items={crumbs} /> : null}
           <div className={styles.toolbarEnd}>
             <span className={styles.actorLabel}>
               {actorName
@@ -120,12 +119,10 @@ export function WorkspaceShell({
                 : `${audience}工作台`}
             </span>
             {toolbarAction}
-            {actorName && !isClickthroughAuthEnabled() ? (
-              <SignOutButton redirectUrl="/">
-                <button className={styles.signOutButton} type="button">
-                  退出登录
-                </button>
-              </SignOutButton>
+            {actorName ? (
+              <form action={logoutAction}>
+                <button className={styles.signOutButton} type="submit">退出登录</button>
+              </form>
             ) : null}
           </div>
         </header>

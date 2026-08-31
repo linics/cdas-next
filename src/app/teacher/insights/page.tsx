@@ -320,11 +320,7 @@ export default async function TeacherInsightsPage({
       <div className={workspaceStyles.pageContent}>
         <header className={workspaceStyles.pageHeader}>
           <div>
-            <p className={workspaceStyles.eyebrow}>教师工作台 / 过程诊断</p>
-            <h1>阶段进度、量规表现与重交改善</h1>
-            <p>
-              汇总你可查看的各次发布，统计基于正式提交与已确认的反馈、评价。
-            </p>
+            <h1>过程诊断</h1>
           </div>
           <Link className={workspaceStyles.secondaryButton} href="/teacher">
             返回工作台
@@ -354,7 +350,6 @@ export default async function TeacherInsightsPage({
                 </select>
                 <button type="submit">筛选</button>
               </div>
-              <small>各次发布的量规分别统计。</small>
             </form>
           ) : (
             <p className={workspaceStyles.emptyState}>
@@ -363,11 +358,7 @@ export default async function TeacherInsightsPage({
           )}
 
           <section className={styles.card}>
-            <p className={workspaceStyles.eyebrow}>量规诊断</p>
             <h2>量规薄弱项</h2>
-            <p className={styles.cardLead}>
-              统计各次发布最新一份已确认评价；「需改进」占比最高的维度标记为薄弱项。
-            </p>
             {hasReleases
               ? dashboard.rubric.map((card) => (
                   <RubricCard card={card} key={card.releaseId} />
@@ -376,11 +367,7 @@ export default async function TeacherInsightsPage({
           </section>
 
           <section className={styles.card}>
-            <p className={workspaceStyles.eyebrow}>阶段进度</p>
             <h2>阶段卡点</h2>
-            <p className={styles.cardLead}>
-              小组按组统计，未分组学生按人统计；要求重交不会使学生退回上一阶段。
-            </p>
             {hasReleases
               ? dashboard.stages.map((card) => (
                   <StageCard card={card} key={card.releaseId} />
@@ -389,11 +376,7 @@ export default async function TeacherInsightsPage({
           </section>
 
           <section className={styles.card}>
-            <p className={workspaceStyles.eyebrow}>重交与改善</p>
             <h2>反馈后改善</h2>
-            <p className={styles.cardLead}>
-              重交率统计被要求重交后完成重新提交的比例；评价变化仅比较重交前后均有量规评价的样本。
-            </p>
             <ImprovementCard
               hasReleases={hasReleases}
               improvement={dashboard.improvement}

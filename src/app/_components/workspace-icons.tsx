@@ -76,6 +76,9 @@ export function WorkspaceIcon({
 }
 
 const iconByHref: Record<string, WorkspaceIconName> = {
+  "/admin": "dashboard",
+  "/admin/schools": "roster",
+  "/admin/teachers": "student",
   "/teacher": "dashboard",
   "/teacher/activities": "design",
   "/teacher/insights": "insights",

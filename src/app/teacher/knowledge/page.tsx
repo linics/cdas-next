@@ -72,11 +72,7 @@ export default async function TeacherKnowledgePage({
       <div className={workspaceStyles.pageContent}>
         <header className={workspaceStyles.pageHeader}>
           <div>
-            <p className={workspaceStyles.eyebrow}>活动设计 / 官方依据</p>
             <h1>检索课程标准</h1>
-            <p>
-              收录教育部 2022 年版课程方案与 14 门学科课程标准，供设计跨学科任务时查证依据；检索结果不构成合规判定。
-            </p>
           </div>
           <Link
             className={workspaceStyles.secondaryButton}
@@ -99,7 +95,6 @@ export default async function TeacherKnowledgePage({
               />
               <button type="submit">检索官方标准</button>
             </div>
-            <small>检索基于官方文本原文，不依赖 AI。</small>
           </form>
 
           {sourceId && sectionId ? (
@@ -123,7 +118,6 @@ export default async function TeacherKnowledgePage({
             <section className={styles.results} aria-labelledby="search-results-title">
               <header>
                 <div>
-                  <p className={workspaceStyles.eyebrow}>检索结果</p>
                   <h2 id="search-results-title">“{query}”的结果</h2>
                 </div>
                 <span>{search.results.length} 条</span>
@@ -149,7 +143,6 @@ export default async function TeacherKnowledgePage({
             <section className={styles.results} aria-labelledby="corpus-sources-title">
               <header>
                 <div>
-                  <p className={workspaceStyles.eyebrow}>收录范围</p>
                   <h2 id="corpus-sources-title">已收录的官方来源</h2>
                 </div>
               </header>

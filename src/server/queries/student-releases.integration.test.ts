@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
 import type { ActivityContent } from "../../domain/activity/activity-content";
+import { legacySchoolId } from "../../domain/school/legacy-school";
 import {
   closePublishedActivity,
   createPublishedActivity,
@@ -20,6 +21,7 @@ import {
 const databaseUrl = process.env.TEST_DATABASE_URL;
 const describeWithDatabase = databaseUrl ? describe : describe.skip;
 const database = databaseUrl ? createDatabaseClient(databaseUrl) : null;
+const legacyUser = { schoolId: legacySchoolId, legacyProfile: true } as const;
 
 function commandContext(actorId: string, now: Date): CommandContext {
   return {
@@ -94,18 +96,21 @@ async function createReleaseListFixture() {
         authSubject: `release_list_teacher_${teacherId}`,
         role: "TEACHER",
         displayName: "发布列表教师",
+        ...legacyUser,
       },
       {
         id: studentId,
         authSubject: `release_list_student_${studentId}`,
         role: "STUDENT",
         displayName: "发布列表学生",
+        ...legacyUser,
       },
       {
         id: otherStudentId,
         authSubject: `release_list_other_${otherStudentId}`,
         role: "STUDENT",
         displayName: "无班级学生",
+        ...legacyUser,
       },
     ],
   });
@@ -115,16 +120,19 @@ async function createReleaseListFixture() {
         id: currentClassroomId,
         name: "当前成员班级",
         managerId: teacherId,
+        schoolId: legacySchoolId,
       },
       {
         id: historicalClassroomId,
         name: "历史成员班级",
         managerId: teacherId,
+        schoolId: legacySchoolId,
       },
       {
         id: unrelatedClassroomId,
         name: "无关班级",
         managerId: teacherId,
+        schoolId: legacySchoolId,
       },
     ],
   });

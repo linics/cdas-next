@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("server-only", () => ({}));
+vi.mock("next/server", () => ({ connection: async () => undefined }));
 vi.mock("../../server/commands/create-ui-command-context", () => ({
   createUiCommandContext: mocks.createUiCommandContext,
 }));

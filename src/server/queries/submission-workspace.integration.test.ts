@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
 import { createPublishedActivity } from "../../test/fixtures/published-activity";
+import { legacySchoolId } from "../../domain/school/legacy-school";
 import { createDatabaseClient } from "../db/client";
 import type { CommandContext } from "../commands/command-context";
 import { decideActionIntent } from "../commands/decide-action-intent";
@@ -19,6 +20,7 @@ import {
 const databaseUrl = process.env.TEST_DATABASE_URL;
 const describeWithDatabase = databaseUrl ? describe : describe.skip;
 const database = databaseUrl ? createDatabaseClient(databaseUrl) : null;
+const legacyUser = { schoolId: legacySchoolId, legacyProfile: true } as const;
 
 function commandContext(actorId: string, now: Date): CommandContext {
   return {
@@ -51,41 +53,47 @@ async function createWorkspaceFixture() {
         authSubject: `teacher_${teacherId}`,
         role: "TEACHER",
         displayName: "发布教师",
+        ...legacyUser,
       },
       {
         id: otherTeacherId,
         authSubject: `teacher_${otherTeacherId}`,
         role: "TEACHER",
         displayName: "其他教师",
+        ...legacyUser,
       },
       {
         id: studentId,
         authSubject: `student_${studentId}`,
         role: "STUDENT",
         displayName: "当前学生",
+        ...legacyUser,
       },
       {
         id: peerId,
         authSubject: `student_${peerId}`,
         role: "STUDENT",
         displayName: "同班学生",
+        ...legacyUser,
       },
       {
         id: historicalStudentId,
         authSubject: `student_${historicalStudentId}`,
         role: "STUDENT",
         displayName: "历史成员",
+        ...legacyUser,
       },
       {
         id: outsiderId,
         authSubject: `student_${outsiderId}`,
         role: "STUDENT",
         displayName: "班级外学生",
+        ...legacyUser,
       },
     ],
   });
   await database.classroom.create({
-    data: { id: classroomId, name: "工作台测试班级", managerId: teacherId },
+    data: { id: classroomId, name: "工作台测试班级", managerId: teacherId, schoolId: legacySchoolId },
   });
   await database.classroomMembership.createMany({
     data: [
@@ -415,17 +423,19 @@ describeWithDatabase("submission workspace queries", () => {
           authSubject: `teacher_${teacherId}`,
           role: "TEACHER",
           displayName: "跟进教师",
+          ...legacyUser,
         },
         {
           id: studentId,
           authSubject: `student_${studentId}`,
           role: "STUDENT",
           displayName: "跟进学生",
+          ...legacyUser,
         },
       ],
     });
     await database.classroom.create({
-      data: { id: classroomId, name: "跟进测试班级", managerId: teacherId },
+      data: { id: classroomId, name: "跟进测试班级", managerId: teacherId, schoolId: legacySchoolId },
     });
     await database.classroomMembership.create({
       data: {

@@ -2,7 +2,7 @@ function isDisabled(value: string | undefined): boolean {
   return ["0", "false", "no", "off"].includes(value?.toLowerCase() ?? "");
 }
 
-export type ClickthroughAudience = "TEACHER" | "STUDENT";
+export type ClickthroughAudience = "ADMIN" | "TEACHER" | "STUDENT";
 
 export function isClickthroughAuthEnabled(
   environment: NodeJS.ProcessEnv = process.env,
@@ -43,6 +43,10 @@ export function clickthroughAudienceFromPath(
     return "TEACHER";
   }
 
+  if (pathname.startsWith("/admin")) {
+    return "ADMIN";
+  }
+
   if (pathname.startsWith("/student")) {
     return "STUDENT";
   }
@@ -76,6 +80,9 @@ export function clickthroughAuthSubject(
   audience: ClickthroughAudience,
   environment: NodeJS.ProcessEnv = process.env,
 ): string | undefined {
+  if (audience === "ADMIN") {
+    return environment.DEV_TEST_ADMIN_CLERK_ID;
+  }
   return audience === "TEACHER"
     ? environment.DEV_TEST_TEACHER_CLERK_ID
     : environment.DEV_TEST_STUDENT_CLERK_ID;

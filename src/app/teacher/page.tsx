@@ -142,11 +142,7 @@ export default async function TeacherDashboardPage() {
       <div className={styles.pageContent}>
         <header className={styles.pageHeader}>
           <div>
-            <p className={styles.eyebrow}>教师工作台 / 概览</p>
-            <h1>待处理的提交与班级</h1>
-            <p>
-              集中处理待评阅的学生提交；已发布活动按班级归类，未发布的草稿在「活动设计」中。
-            </p>
+            <h1>工作台</h1>
           </div>
         </header>
 
@@ -155,8 +151,7 @@ export default async function TeacherDashboardPage() {
             <section className={styles.dashboardSection}>
               <header className={styles.sectionHeader}>
                 <div>
-                  <p className={styles.eyebrow}>待处理</p>
-                  <h2>待办</h2>
+                  <h2>待处理</h2>
                 </div>
                 <span>{actionable.length} 项</span>
               </header>
@@ -208,7 +203,6 @@ export default async function TeacherDashboardPage() {
             <section className={styles.dashboardSection}>
               <header className={styles.sectionHeader}>
                 <div>
-                  <p className={styles.eyebrow}>任教班级</p>
                   <h2>班级</h2>
                 </div>
                 <span>{dashboard.classrooms.length} 个</span>
@@ -230,7 +224,6 @@ export default async function TeacherDashboardPage() {
                       >
                         <header className={styles.classroomCardHead}>
                           <div>
-                            <p className={styles.eyebrow}>班级</p>
                             <h3>{classroom.name}</h3>
                           </div>
                           <Link
@@ -279,9 +272,6 @@ export default async function TeacherDashboardPage() {
                   </article>
                 </div>
               ) : null}
-              <p className={styles.asideNote}>
-                仅班级管理教师可以发布活动和查看提交；管理权变更后，历史发布记录仍会保留，但不能查看其提交内容。
-              </p>
             </section>
           </div>
         </div>

@@ -10,7 +10,7 @@ export function WorkspaceNavigation({
   audience,
   items,
 }: {
-  audience: "教师" | "学生";
+  audience: "管理员" | "教师" | "学生";
   items: readonly { href: string; label: string }[];
 }) {
   const pathname = usePathname();
@@ -38,7 +38,8 @@ export function WorkspaceNavigation({
         {items.map((item) => {
           const active =
             pathname === item.href ||
-            (item.href !== "/teacher" &&
+            (item.href !== "/admin" &&
+              item.href !== "/teacher" &&
               item.href !== "/student" &&
               pathname.startsWith(`${item.href}/`));
           return (
