@@ -1,5 +1,10 @@
 import { z } from "zod";
 import {
+  isRetryableSerializationError,
+  serializableRetryAttempts,
+  waitBeforeSerializableRetry,
+} from "./serializable-retry";
+import {
   createTeacherFeedbackPayload,
   hashTeacherFeedbackPayload,
   TEACHER_FEEDBACK_INTENT_TTL_MS,
@@ -331,7 +336,7 @@ export async function prepareTeacherFeedbackIntent(
   });
   const requestHash = hashTeacherFeedbackPayload(payload);
 
-  for (let attempt = 1; attempt <= 3; attempt += 1) {
+  for (let attempt = 1; attempt <= serializableRetryAttempts; attempt += 1) {
     try {
       return await runTransaction(
         database,
@@ -341,11 +346,10 @@ export async function prepareTeacherFeedbackIntent(
         requestHash,
       );
     } catch (error) {
-      const retryable =
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        (error.code === "P2034" || error.code === "P2002");
+      const retryable = isRetryableSerializationError(error);
 
-      if (retryable && attempt < 3) {
+      if (retryable && attempt < serializableRetryAttempts) {
+        await waitBeforeSerializableRetry(attempt);
         continue;
       }
 

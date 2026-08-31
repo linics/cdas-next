@@ -2,6 +2,11 @@ import { createHash } from "node:crypto";
 import canonicalize from "canonicalize";
 import { z } from "zod";
 import {
+  isRetryableSerializationError,
+  serializableRetryAttempts,
+  waitBeforeSerializableRetry,
+} from "./serializable-retry";
+import {
   CloseReleaseIntentError,
   prepareCloseReleaseIntent,
 } from "../../domain/activity/close-release-intent";
@@ -251,14 +256,13 @@ export async function prepareCloseActivityIntent(
     expectedStatus: input.expectedStatus,
   });
 
-  for (let attempt = 1; attempt <= 3; attempt += 1) {
+  for (let attempt = 1; attempt <= serializableRetryAttempts; attempt += 1) {
     try {
       return await runTransaction(database, context, input, requestHash);
     } catch (error) {
-      const retryable =
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        (error.code === "P2034" || error.code === "P2002");
-      if (retryable && attempt < 3) {
+      const retryable = isRetryableSerializationError(error);
+      if (retryable && attempt < serializableRetryAttempts) {
+        await waitBeforeSerializableRetry(attempt);
         continue;
       }
 

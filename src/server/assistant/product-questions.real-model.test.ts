@@ -29,6 +29,8 @@ type Question = Readonly<{
   ask: string;
   /** Every one of these must appear: the referral is not optional. */
   mustMention: readonly string[];
+  /** At least one must appear, when several phrasings are equally right. */
+  mustMentionAny?: readonly string[];
   /** None of these may appear: a dead end dressed as an answer. */
   mustNotMention?: readonly string[];
 }>;
@@ -42,6 +44,17 @@ const questions: readonly Question[] = [
     mustMention: ["起草", "评阅"],
     // The teacher must not be told the product cannot do this at all.
     mustNotMention: ["无法评判", "不支持评价", "没有这个功能"],
+  },
+  {
+    // The first error-analysis sweep found this in 6 of 48 answers: the
+    // assistant reported its own boundary as the product's. D-054 keeps names
+    // out of the model; the teacher's roster page shows them. Telling a teacher
+    // to cross-reference a paper list is inventing a problem they do not have.
+    name: "名册为什么没有姓名",
+    ask: "名册里怎么都是「对象 1」「对象 2」，学生名字呢？",
+    mustMention: ["评阅"],
+    mustMentionAny: ["我这边", "我看不到", "不进模型", "我只", "对我"],
+    mustNotMention: ["线下"],
   },
   {
     name: "加学生进班级",
@@ -82,6 +95,11 @@ describe("the assistant answers what the product can do", () => {
 
         for (const expected of question.mustMention) {
           expect(answer).toContain(expected);
+        }
+        if (question.mustMentionAny) {
+          expect(
+            question.mustMentionAny.some((phrase) => answer.includes(phrase)),
+          ).toBe(true);
         }
         for (const forbidden of question.mustNotMention ?? []) {
           expect(answer).not.toContain(forbidden);

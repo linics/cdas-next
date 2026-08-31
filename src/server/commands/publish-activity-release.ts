@@ -18,6 +18,11 @@ import {
   resolveCommandContext,
 } from "./command-context";
 import { completeAgentRunBusinessWrite } from "./complete-agent-run-business-write";
+import {
+  isSerializationFailure,
+  serializableRetryAttempts,
+  waitBeforeSerializableRetry,
+} from "./serializable-retry";
 
 const commandInputSchema = z.object({
   actionIntentId: z.uuid(),
@@ -357,15 +362,14 @@ export async function publishActivityRelease(
     actionIntentId: input.actionIntentId,
   });
 
-  for (let attempt = 1; attempt <= 3; attempt += 1) {
+  for (let attempt = 1; attempt <= serializableRetryAttempts; attempt += 1) {
     try {
       return await runTransaction(database, context, input, requestHash);
     } catch (error) {
-      const retryable =
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === "P2034";
+      const retryable = isSerializationFailure(error);
 
-      if (retryable && attempt < 3) {
+      if (retryable && attempt < serializableRetryAttempts) {
+        await waitBeforeSerializableRetry(attempt);
         continue;
       }
 
