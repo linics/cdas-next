@@ -15,6 +15,7 @@ import {
   resolveCommandContext,
 } from "../commands/command-context";
 import { isSubmissionAudienceMemberWhere } from "../submissions/submission-audience";
+import { isActiveSchoolMember } from "../school/teacher-authorization";
 
 const queryInputSchema = z
   .object({
@@ -548,6 +549,10 @@ export async function getTeacherFeedbackWorkspace(
   const input = queryInputSchema.parse(rawInput);
   const context = resolveCommandContext(commandContext, ["UI", "AGENT"]);
 
+  if (!(await isActiveSchoolMember(database, context.actorId))) {
+    throw new FeedbackWorkspaceQueryError("NOT_FOUND");
+  }
+
   const [actor, submission] = await Promise.all([
     database.appUser.findFirst({
       where: { id: context.actorId, role: "TEACHER" },
@@ -608,6 +613,10 @@ export async function getStudentFeedbackWorkspace(
 ): Promise<StudentFeedbackWorkspace> {
   const input = queryInputSchema.parse(rawInput);
   const context = resolveCommandContext(commandContext, ["UI", "AGENT"]);
+
+  if (!(await isActiveSchoolMember(database, context.actorId))) {
+    throw new FeedbackWorkspaceQueryError("NOT_FOUND");
+  }
 
   const [actor, submission] = await Promise.all([
     database.appUser.findFirst({

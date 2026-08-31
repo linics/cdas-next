@@ -66,7 +66,14 @@ export function TeacherAccessGate({
           detail:
             "系统当前无法验证教师身份，不会读取任何草稿、班级或发布记录。完成登录服务配置后即可使用。",
         }
-      : code === "USER_NOT_PROVISIONED"
+      : code === "ACCOUNT_DISABLED" || code === "SCHOOL_DISABLED"
+        ? {
+            eyebrow: "账号或学校已停用",
+            title: "教师工作台当前不能进入",
+            detail:
+              "停用后不会读取草稿、班级或发布记录。请联系平台管理员恢复后再登录。",
+          }
+        : code === "USER_NOT_PROVISIONED"
         ? {
             eyebrow: "教师账号尚未创建",
             title: "找不到对应的工作台身份",

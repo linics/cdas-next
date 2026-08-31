@@ -8,6 +8,7 @@ import {
   type CommandContext,
   resolveCommandContext,
 } from "./command-context";
+import { isActiveSchoolMember } from "../school/teacher-authorization";
 
 const commandInputSchema = z
   .object({
@@ -74,6 +75,9 @@ export async function completeTeacherFeedbackSuggestion(
   try {
     return await database.$transaction(
       async (transaction) => {
+        if (!(await isActiveSchoolMember(transaction, context.actorId))) {
+          throw new CompleteTeacherFeedbackSuggestionError("NOT_FOUND");
+        }
         const submission = await transaction.submission.findFirst({
           where: {
             id: input.submissionId,

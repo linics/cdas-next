@@ -45,7 +45,7 @@
 - **提示 / callout**：透明底 + 分割线 + **左侧 2px accent**。禁止大色块 Alert。
 - **对象卡**：只给可点击的独立对象。普通分区用标题、列表、分割线。
 - **附件预览（2026-08-29）**：预览是**叠加**，不是替代——下载入口任何时候都必须留着。用原生 `dialog`（与 `ConfirmDialog` 同一套机制，不自建 modal、不自建 focus trap），不做行内自动展开：评阅工作台不得被一份全尺寸文档拉成一条长带。预览面板比确认框宽（`min(960px, 100vw - 32px)`），因为它存在的目的就是被看清。只有浏览器能原生渲染的格式给预览按钮，Word 不给——一个点开却触发下载的按钮是在骗人。
-- **面包屑**：顶栏 `nav[aria-label="面包屑"]`。祖先是文字链（`--color-accent-700`，hover `--primary-tint`），当前页无链、`aria-current="page"`。分隔符 `›`。条目必须对应真实可返回页面：教师工作台 `/teacher`，活动设计 `/teacher/activities`，班级 `/teacher/classrooms/{id}/members`，发布评阅 `/teacher/releases/{id}/submissions`，学生活动列表 `/student`。禁止把「评阅名册」「班级与名单」「学生端」写成不存在的中间层。
+- **面包屑**：顶栏 `nav[aria-label="面包屑"]`。祖先是文字链（`--color-accent-700`，hover `--primary-tint`），当前页无链、`aria-current="page"`。分隔符 `›`。条目必须对应真实可返回页面：教师工作台 `/teacher`，活动设计 `/teacher/activities`，班级 `/teacher/classrooms/{id}/members`，发布评阅 `/teacher/releases/{id}/submissions`，学生活动列表 `/student`，管理员工作台 `/admin`，学校 `/admin/schools`，教师 `/admin/teachers`。禁止把「评阅名册」「班级与名单」「学生端」写成不存在的中间层。
 - **评阅工作台**：左列只读当前正式修订证据，右列撰写。桌面两栏共用工作区全宽、各自滚动，撰写栏略宽；整页锁在顶栏下的剩余视口，禁止整页与栏内双滚动。证据短时不把整页拉成一条长带。评阅栏可收成右侧窄条，证据列占满剩余宽度；折叠用栏内开关，不卸载撰写表单。窄屏改回单列文档流、不提供收起。已确认全文与更早修订用原生 `details`，默认收起。形成性反馈与量规评价仍分两段确认，不得把左右栏内容或两条确认链合并。撰写区只留标题、必填控件与一句确认后果；量规四档分行扫描。NFC / 换行归一化不进可见帮助。AI 入口保持固定说明「这是 AI 建议，未经你确认不会保存」。
 - **动效**：教学工作台保持克制。描边按钮 `:active` 用 `scale(0.97)`（160ms），不在 hover 上平移。`ConfirmDialog` 居中 `scale(0.96)` 淡入；Agent 面板从右下 FAB 长出（`transform-origin: 100% 100%`），进出同一条路径。侧栏导航、评阅栏收起、列表行不动画。`prefers-reduced-motion` 走全局把时长压到近零。
 - **公共首页特例（2026-08-29）**：仅 `/` 的开本式入口保留一次 `rise` 入场和入口箭头 hover 位移；入场必须放在 `prefers-reduced-motion: no-preference` 内，不得造成布局位移，也不得复用到教师工作台、学生工作台、确认框或 Agent 面板。

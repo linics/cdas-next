@@ -97,7 +97,12 @@ export async function listStudentReleases(
 
   const actor = await database.appUser.findUnique({
     where: { id: context.actorId },
-    select: { role: true, displayName: true },
+    select: {
+      role: true,
+      displayName: true,
+      accountStatus: true,
+      school: { select: { status: true } },
+    },
   });
   if (!actor) {
     throw new StudentReleaseListQueryError("NOT_FOUND");
@@ -107,6 +112,9 @@ export async function listStudentReleases(
       "WRONG_ROLE",
       actor.displayName,
     );
+  }
+  if (actor.accountStatus !== "ACTIVE" || actor.school?.status !== "ACTIVE") {
+    throw new StudentReleaseListQueryError("NOT_FOUND");
   }
 
   const candidates = await database.activityRelease.findMany({

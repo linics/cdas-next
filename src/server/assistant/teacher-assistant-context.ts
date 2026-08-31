@@ -6,6 +6,7 @@ import {
   type CommandContext,
   resolveCommandContext,
 } from "../commands/command-context";
+import { isActiveSchoolMember } from "../school/teacher-authorization";
 
 const classroomSchema = z.object({
   id: z.uuid(),
@@ -26,6 +27,9 @@ export async function getTeacherAssistantClassrooms(
   commandContext: CommandContext,
 ): Promise<AssistantClassroom[]> {
   const context = resolveCommandContext(commandContext, ["UI"]);
+  if (!(await isActiveSchoolMember(database, context.actorId))) {
+    throw new TeacherAssistantContextError("NOT_FOUND");
+  }
   const actor = await database.appUser.findUnique({
     where: { id: context.actorId },
     select: { role: true },

@@ -10,6 +10,7 @@ const localIds = {
   NODE_ENV: "development",
   DEV_TEST_TEACHER_CLERK_ID: "user_teacher123",
   DEV_TEST_STUDENT_CLERK_ID: "user_student123",
+  DEV_TEST_ADMIN_CLERK_ID: "user_admin123",
 } satisfies NodeJS.ProcessEnv;
 
 describe("isClickthroughAuthEnabled", () => {
@@ -59,11 +60,12 @@ describe("isClickthroughAuthEnabled", () => {
     ).toBe(false);
   });
 
-  it("stays off without both demo identities", () => {
+  it("stays off unless teacher, student, and admin identities all exist", () => {
     expect(
       isClickthroughAuthEnabled({
         NODE_ENV: "development",
         DEV_TEST_TEACHER_CLERK_ID: "user_teacher123",
+        DEV_TEST_STUDENT_CLERK_ID: "user_student123",
       }),
     ).toBe(false);
   });
@@ -80,6 +82,8 @@ describe("clickthrough audience mapping", () => {
     expect(clickthroughAudienceFromPath("/student/releases/abc")).toBe(
       "STUDENT",
     );
+    expect(clickthroughAudienceFromPath("/admin")).toBe("ADMIN");
+    expect(clickthroughAudienceFromPath("/admin/schools")).toBe("ADMIN");
     expect(clickthroughAudienceFromPath("/")).toBeUndefined();
   });
 

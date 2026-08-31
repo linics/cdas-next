@@ -27,10 +27,10 @@ BEGIN
 END
 $test$;
 
-INSERT INTO app_users (id, auth_subject, role, display_name, updated_at)
+INSERT INTO app_users (id, auth_subject, role, display_name, school_id, legacy_profile, updated_at)
 VALUES
-  ('00000000-0000-4000-8000-000000000001', 'teacher_fixture', 'TEACHER', '测试教师', now()),
-  ('00000000-0000-4000-8000-000000000002', 'student_fixture', 'STUDENT', '测试学生', now());
+  ('00000000-0000-4000-8000-000000000001', 'teacher_fixture', 'TEACHER', '测试教师', 'c0de0000-0000-4000-8000-00000000c0de', true, now()),
+  ('00000000-0000-4000-8000-000000000002', 'student_fixture', 'STUDENT', '测试学生', 'c0de0000-0000-4000-8000-00000000c0de', true, now());
 
 DO $test$
 DECLARE
@@ -198,11 +198,12 @@ BEGIN
 END
 $test$;
 
-INSERT INTO classrooms (id, name, manager_id, updated_at)
+INSERT INTO classrooms (id, name, manager_id, school_id, updated_at)
 VALUES (
   '00000000-0000-4000-8000-000000000010',
   '七年一班',
   '00000000-0000-4000-8000-000000000001',
+  'c0de0000-0000-4000-8000-00000000c0de',
   now()
 );
 
@@ -2618,6 +2619,199 @@ BEGIN
     WHERE id = '00000000-0000-4000-8000-000000000060';
     RAISE EXCEPTION 'audit deletion was accepted';
   EXCEPTION WHEN SQLSTATE '55000' THEN
+    NULL;
+  END;
+END
+$test$;
+
+INSERT INTO schools (
+  id,
+  name,
+  code,
+  teacher_invite_code_hash,
+  status,
+  updated_at
+)
+VALUES
+  (
+    '00000000-0000-4000-8000-000000000901',
+    '学校 A',
+    'SCH2ABCD',
+    repeat('a', 64),
+    'ACTIVE',
+    now()
+  ),
+  (
+    '00000000-0000-4000-8000-000000000902',
+    '学校 B',
+    'SCH3EFGH',
+    repeat('b', 64),
+    'ACTIVE',
+    now()
+  );
+
+INSERT INTO app_users (
+  id,
+  auth_subject,
+  role,
+  display_name,
+  school_id,
+  staff_no,
+  student_no,
+  legacy_profile,
+  updated_at
+)
+VALUES
+  (
+    '00000000-0000-4000-8000-000000000911',
+    'school_a_teacher',
+    'TEACHER',
+    '学校 A 教师',
+    '00000000-0000-4000-8000-000000000901',
+    'T001',
+    NULL,
+    false,
+    now()
+  ),
+  (
+    '00000000-0000-4000-8000-000000000912',
+    'school_b_teacher',
+    'TEACHER',
+    '学校 B 教师',
+    '00000000-0000-4000-8000-000000000902',
+    'T001',
+    NULL,
+    false,
+    now()
+  ),
+  (
+    '00000000-0000-4000-8000-000000000913',
+    'school_b_student',
+    'STUDENT',
+    '学校 B 学生',
+    '00000000-0000-4000-8000-000000000902',
+    NULL,
+    'S001',
+    false,
+    now()
+  ),
+  (
+    '00000000-0000-4000-8000-000000000914',
+    'school_a_student',
+    'STUDENT',
+    '学校 A 学生',
+    '00000000-0000-4000-8000-000000000901',
+    NULL,
+    'S001',
+    false,
+    now()
+  );
+
+INSERT INTO classrooms (id, name, manager_id, school_id, updated_at)
+VALUES (
+  '00000000-0000-4000-8000-000000000921',
+  '学校 A 班级',
+  '00000000-0000-4000-8000-000000000911',
+  '00000000-0000-4000-8000-000000000901',
+  now()
+);
+
+DO $test$
+BEGIN
+  BEGIN
+    INSERT INTO classrooms (id, name, manager_id, school_id, updated_at)
+    VALUES (
+      '00000000-0000-4000-8000-000000000922',
+      '跨校班级',
+      '00000000-0000-4000-8000-000000000911',
+      '00000000-0000-4000-8000-000000000902',
+      now()
+    );
+    RAISE EXCEPTION 'cross-school classroom manager was accepted';
+  EXCEPTION WHEN check_violation THEN
+    NULL;
+  END;
+END
+$test$;
+
+INSERT INTO classroom_memberships (id, classroom_id, student_id)
+VALUES (
+  '00000000-0000-4000-8000-000000000924',
+  '00000000-0000-4000-8000-000000000921',
+  '00000000-0000-4000-8000-000000000914'
+);
+
+DO $test$
+BEGIN
+  BEGIN
+    UPDATE classrooms
+    SET
+      manager_id = '00000000-0000-4000-8000-000000000912',
+      school_id = '00000000-0000-4000-8000-000000000902'
+    WHERE id = '00000000-0000-4000-8000-000000000921';
+    RAISE EXCEPTION 'classroom school mutation was accepted';
+  EXCEPTION WHEN SQLSTATE '55000' THEN
+    NULL;
+  END;
+END
+$test$;
+
+DO $test$
+BEGIN
+  BEGIN
+    INSERT INTO classroom_memberships (id, classroom_id, student_id)
+    VALUES (
+      '00000000-0000-4000-8000-000000000923',
+      '00000000-0000-4000-8000-000000000921',
+      '00000000-0000-4000-8000-000000000913'
+    );
+    RAISE EXCEPTION 'cross-school membership was accepted';
+  EXCEPTION WHEN check_violation THEN
+    NULL;
+  END;
+END
+$test$;
+
+DO $test$
+BEGIN
+  BEGIN
+    UPDATE schools
+    SET code = 'SCHZZZZZ'
+    WHERE id = '00000000-0000-4000-8000-000000000901';
+    RAISE EXCEPTION 'school code mutation was accepted';
+  EXCEPTION WHEN SQLSTATE '55000' THEN
+    NULL;
+  END;
+END
+$test$;
+
+DO $test$
+BEGIN
+  BEGIN
+    INSERT INTO app_users (
+      id, auth_subject, role, display_name, legacy_profile, updated_at
+    )
+    VALUES (
+      '00000000-0000-4000-8000-000000000930',
+      'second_admin',
+      'ADMIN',
+      '第二管理员',
+      false,
+      now()
+    );
+    INSERT INTO app_users (
+      id, auth_subject, role, display_name, legacy_profile, updated_at
+    )
+    VALUES (
+      '00000000-0000-4000-8000-000000000931',
+      'third_admin',
+      'ADMIN',
+      '第三管理员',
+      false,
+      now()
+    );
+    RAISE EXCEPTION 'second admin was accepted';
+  EXCEPTION WHEN unique_violation THEN
     NULL;
   END;
 END

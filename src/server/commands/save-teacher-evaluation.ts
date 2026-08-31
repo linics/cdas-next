@@ -20,6 +20,7 @@ import {
   type ResolvedCommandContext,
   resolveCommandContext,
 } from "./command-context";
+import { isActiveSchoolMember } from "../school/teacher-authorization";
 
 const commandInputSchema = z
   .object({
@@ -155,6 +156,10 @@ async function runTransaction(
           throw new SaveTeacherEvaluationError("IDEMPOTENCY_MISMATCH");
         }
         return commandResponseSchema.parse(existing.response);
+      }
+
+      if (!(await isActiveSchoolMember(transaction, context.actorId))) {
+        throw new SaveTeacherEvaluationError("NOT_FOUND");
       }
 
       const intent = await transaction.actionIntent.findUnique({

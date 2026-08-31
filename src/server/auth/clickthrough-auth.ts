@@ -2,7 +2,7 @@ function isDisabled(value: string | undefined): boolean {
   return ["0", "false", "no", "off"].includes(value?.toLowerCase() ?? "");
 }
 
-export type ClickthroughAudience = "TEACHER" | "STUDENT";
+export type ClickthroughAudience = "TEACHER" | "STUDENT" | "ADMIN";
 
 export function isClickthroughAuthEnabled(
   environment: NodeJS.ProcessEnv = process.env,
@@ -25,7 +25,8 @@ export function isClickthroughAuthEnabled(
 
   return Boolean(
     environment.DEV_TEST_TEACHER_CLERK_ID &&
-      environment.DEV_TEST_STUDENT_CLERK_ID,
+      environment.DEV_TEST_STUDENT_CLERK_ID &&
+      environment.DEV_TEST_ADMIN_CLERK_ID,
   );
 }
 
@@ -41,6 +42,10 @@ export function clickthroughAudienceFromPath(
     pathname.startsWith("/api/assistant")
   ) {
     return "TEACHER";
+  }
+
+  if (pathname.startsWith("/admin")) {
+    return "ADMIN";
   }
 
   if (pathname.startsWith("/student")) {
@@ -76,7 +81,11 @@ export function clickthroughAuthSubject(
   audience: ClickthroughAudience,
   environment: NodeJS.ProcessEnv = process.env,
 ): string | undefined {
-  return audience === "TEACHER"
-    ? environment.DEV_TEST_TEACHER_CLERK_ID
-    : environment.DEV_TEST_STUDENT_CLERK_ID;
+  if (audience === "TEACHER") {
+    return environment.DEV_TEST_TEACHER_CLERK_ID;
+  }
+  if (audience === "STUDENT") {
+    return environment.DEV_TEST_STUDENT_CLERK_ID;
+  }
+  return environment.DEV_TEST_ADMIN_CLERK_ID;
 }

@@ -21,6 +21,7 @@ import {
   type ResolvedCommandContext,
   resolveCommandContext,
 } from "./command-context";
+import { isActiveSchoolMember } from "../school/teacher-authorization";
 
 const commandInputSchema = z
   .object({
@@ -126,6 +127,10 @@ async function runTransaction(
         return commandResponseSchema.parse(existing.response);
       }
 
+      if (!(await isActiveSchoolMember(transaction, context.actorId))) {
+        throw new CloseActivityReleaseError("NOT_FOUND");
+      }
+
       const [actor, intent] = await Promise.all([
         transaction.appUser.findUnique({
           where: { id: context.actorId },
@@ -196,7 +201,7 @@ async function runTransaction(
             expectedStatus: payload.expectedStatus,
           },
           {
-            actor: { id: context.actorId, role: actor.role },
+            actor: { id: context.actorId, role: "TEACHER" },
             release: {
               id: release.id,
               publisherId: release.publisherId,

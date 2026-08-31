@@ -17,6 +17,7 @@ import {
   type ResolvedCommandContext,
   resolveCommandContext,
 } from "./command-context";
+import { isActiveSchoolMember } from "../school/teacher-authorization";
 import { completeAgentRunBusinessWrite } from "./complete-agent-run-business-write";
 import {
   isSerializationFailure,
@@ -152,6 +153,10 @@ async function runTransaction(
         return commandResponseSchema.parse(existing.response);
       }
 
+      if (!(await isActiveSchoolMember(transaction, context.actorId))) {
+        throw new PublishActivityReleaseError("NOT_FOUND");
+      }
+
       const intent = await transaction.actionIntent.findUnique({
         where: { id: input.actionIntentId },
         include: { actor: true },
@@ -208,11 +213,14 @@ async function runTransaction(
       if (!draft || !classroom || !revision) {
         throw new PublishActivityReleaseError("NOT_FOUND");
       }
+      if (intent.actor.role !== "TEACHER") {
+        throw new PublishActivityReleaseError("NOT_FOUND");
+      }
 
       let prepared;
       try {
         prepared = preparePublishIntent(payload, {
-          actor: { id: intent.actor.id, role: intent.actor.role },
+          actor: { id: intent.actor.id, role: "TEACHER" },
           draft: {
             id: draft.id,
             ownerId: draft.ownerId,

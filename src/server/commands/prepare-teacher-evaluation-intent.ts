@@ -16,6 +16,7 @@ import {
   type ResolvedCommandContext,
   resolveCommandContext,
 } from "./command-context";
+import { isActiveSchoolMember } from "../school/teacher-authorization";
 import { teacherEvaluationSuggestionActionName } from "./complete-teacher-evaluation-suggestion";
 import {
   isRetryableSerializationError,
@@ -130,6 +131,10 @@ async function runTransaction(
 
   return database.$transaction(
     async (transaction) => {
+      if (!(await isActiveSchoolMember(transaction, context.actorId))) {
+        throw new PrepareTeacherEvaluationIntentError("NOT_FOUND");
+      }
+
       const actor = await transaction.appUser.findUnique({
         where: { id: context.actorId },
         select: { role: true },

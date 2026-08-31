@@ -25,6 +25,8 @@ function databaseDouble(options?: { role?: "STUDENT" | "TEACHER" }) {
     role: options?.role ?? "STUDENT",
     displayName:
       options?.role === "TEACHER" ? "错误角色教师" : "测试学生",
+    accountStatus: "ACTIVE",
+    school: { status: "ACTIVE" },
   });
   const releaseFindMany = vi.fn().mockResolvedValue([]);
   const database = {

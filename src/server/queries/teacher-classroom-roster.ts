@@ -7,6 +7,7 @@ import {
   type CommandContext,
   resolveCommandContext,
 } from "../commands/command-context";
+import { assertActiveBusinessActor } from "../school/teacher-authorization";
 
 const classroomInputSchema = z.object({ classroomId: z.uuid() }).strict();
 const previewInputSchema = classroomInputSchema
@@ -98,18 +99,39 @@ async function requireManagedClassroom(
   const [actor, classroom] = await Promise.all([
     database.appUser.findUnique({
       where: { id: actorId },
-      select: { role: true, displayName: true },
+      select: {
+        role: true,
+        displayName: true,
+        accountStatus: true,
+        schoolId: true,
+        school: { select: { status: true } },
+      },
     }),
     database.classroom.findUnique({
       where: { id: classroomId },
-      select: { id: true, name: true, version: true, managerId: true },
+      select: {
+        id: true,
+        name: true,
+        version: true,
+        managerId: true,
+        schoolId: true,
+      },
     }),
   ]);
   if (!actor) throw new TeacherClassroomRosterQueryError("NOT_FOUND");
+  try {
+    assertActiveBusinessActor(actor);
+  } catch {
+    throw new TeacherClassroomRosterQueryError("NOT_FOUND");
+  }
   if (actor.role !== "TEACHER") {
     throw new TeacherClassroomRosterQueryError("FORBIDDEN");
   }
-  if (!classroom || classroom.managerId !== actorId) {
+  if (
+    !classroom ||
+    classroom.managerId !== actorId ||
+    classroom.schoolId !== actor.schoolId
+  ) {
     throw new TeacherClassroomRosterQueryError("NOT_FOUND");
   }
   return { actor, classroom };
@@ -175,7 +197,12 @@ export async function previewTeacherRosterImport(
   );
   const keys = [...new Set(input.rosterKeys)];
   const students = await database.appUser.findMany({
-    where: { role: "STUDENT", rosterKey: { in: keys } },
+    where: {
+      role: "STUDENT",
+      accountStatus: "ACTIVE",
+      schoolId: classroom.schoolId,
+      rosterKey: { in: keys },
+    },
     select: {
       id: true,
       displayName: true,

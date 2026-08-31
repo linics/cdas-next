@@ -21,6 +21,7 @@ import {
   type ResolvedCommandContext,
   resolveCommandContext,
 } from "./command-context";
+import { isActiveSchoolMember } from "../school/teacher-authorization";
 
 const commandInputSchema = z
   .object({
@@ -174,6 +175,10 @@ async function runTransaction(
           throw new SaveActivityDraftError("INVALID_AGENT_RUN");
         }
         return response;
+      }
+
+      if (!(await isActiveSchoolMember(transaction, context.actorId))) {
+        throw new SaveActivityDraftError("NOT_FOUND");
       }
 
       const actor = await transaction.appUser.findUnique({
