@@ -579,8 +579,7 @@ function ActivityDraftProposalCard({
           </ul>
         ) : (
           <p>
-            语料中未找到依据。首版语料只收教育部课程方案与语文、数学、物理、信息科技
-            四科课程标准；本次设计未引用任何官方来源，请在确认前自行核对。
+            语料中未找到依据。当前语料只收教育部课程方案与 14 门 2022 年课程标准；综合实践活动暂无独立课标。本次设计未引用任何官方来源，请在确认前自行核对。
           </p>
         )}
         <p className={styles.referenceCaveat}>
@@ -1086,7 +1085,7 @@ export function ActivityAssistant({
                       if (part.output.status === "NO_MATCH") {
                         return (
                           <p className={styles.toolProgress} key={part.toolCallId}>
-                            语料中未找到依据（首版只收课程方案与语文、数学、物理、信息科技）。
+                            语料中未找到依据（当前只收课程方案与 14 门 2022 年课程标准；不含综合实践活动独立课标）。
                           </p>
                         );
                       }
