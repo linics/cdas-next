@@ -13,14 +13,6 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("server-only", () => ({}));
-vi.mock("@clerk/nextjs", () => ({
-  SignInButton: ({ children }: { children: ReactNode }) => (
-    <span data-clerk-sign-in="true">{children}</span>
-  ),
-  SignOutButton: ({ children }: { children: ReactNode }) => (
-    <span data-clerk-sign-out="true">{children}</span>
-  ),
-}));
 vi.mock("next/link", () => ({
   default: ({
     children,
@@ -174,8 +166,8 @@ describe("teacher release submissions page boundary", () => {
 
     const markup = await renderPage();
 
-    expect(markup).toContain('data-clerk-sign-out="true"');
-    expect(markup).toContain("退出当前账号");
+    expect(markup).toContain('href="/teacher/login"');
+    expect(markup).toContain("切换教师账号");
     expect(markup).not.toContain("准备关闭活动");
     expect(markup).not.toContain("确认并关闭活动");
     expect(markup).not.toContain("导出评阅名册");

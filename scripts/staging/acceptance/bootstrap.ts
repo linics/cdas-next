@@ -5,10 +5,8 @@ import { createDatabaseClient } from "../../../src/server/db/client";
 import {
   acceptanceNamespace,
   acceptanceOtherStudentDisplayName,
-  acceptanceOtherStudentRosterKey,
   acceptanceOtherTeacherDisplayName,
   acceptanceStudentDisplayName,
-  acceptanceStudentRosterKey,
   acceptanceTeacherDisplayName,
   evaluateAcceptanceReadiness,
   stableAcceptanceErrorCode,

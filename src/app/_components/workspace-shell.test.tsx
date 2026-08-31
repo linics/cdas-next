@@ -2,10 +2,8 @@ import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("@clerk/nextjs", () => ({
-  SignOutButton: ({ children }: { children: ReactNode }) => (
-    <span data-clerk-sign-out="true">{children}</span>
-  ),
+vi.mock("../auth/local-login-actions", () => ({
+  logoutAction: vi.fn(),
 }));
 
 vi.mock("next/link", () => ({
@@ -50,7 +48,8 @@ describe("workspace shell", () => {
     expect(markup).toContain('href="/teacher/knowledge"');
     expect(markup).toContain('aria-current="page"');
     expect(markup).toContain("当前账号：林老师 · 教师");
-    expect(markup).toContain('data-clerk-sign-out="true"');
+    expect(markup).toContain("退出登录");
+    expect(markup).toContain("<form");
     expect(markup).not.toContain("学生端预览");
     expect(markup).not.toContain("评阅名册");
   });
