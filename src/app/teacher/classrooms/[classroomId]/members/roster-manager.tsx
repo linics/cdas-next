@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { type FormEvent, useMemo, useState, useSyncExternalStore } from "react";
+import { type ChangeEvent, useMemo, useState, useSyncExternalStore } from "react";
 import type { StudentRosterEntry } from "../../../../../domain/classroom/student-roster-xlsx";
 import { LocalizedDateTime } from "../../../../_components/localized-date-time";
 import { ConfirmDialog, InlineAlert } from "../../../../_components/ui";
@@ -22,6 +22,10 @@ import {
 
 type Prepared = Extract<RosterPrepareActionResult, { ok: true }>;
 type StudentImportPrepared = Extract<StudentImportPrepareActionResult, { ok: true }>;
+type Feedback = Readonly<{
+  text: string;
+  tone: "info" | "warning" | "danger" | "success";
+}>;
 
 const subscribeToHydration = () => () => {};
 const hydratedSnapshot = () => true;
@@ -41,7 +45,8 @@ export function RosterManager({
   const [prepared, setPrepared] = useState<Prepared | null>(null);
   const [studentEntries, setStudentEntries] = useState<StudentRosterEntry[] | null>(null);
   const [studentPrepared, setStudentPrepared] = useState<StudentImportPrepared | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<Feedback | null>(null);
+  const [studentFileName, setStudentFileName] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const currentMemberships = roster.memberships.filter((membership) => membership.status === "CURRENT");
   const historicalMemberships = roster.memberships.filter((membership) => membership.status !== "CURRENT");
@@ -57,90 +62,158 @@ export function RosterManager({
       readyKeys.length === previewResult.preview.entries.length,
   );
 
+  function unexpectedFailure(): Feedback {
+    return {
+      tone: "danger",
+      text: "连接服务器时未能完成操作，现有班级成员没有被假设为已改变。请刷新页面后重试。",
+    };
+  }
+
   async function preview() {
     setBusy(true);
     setMessage(null);
-    const result = await previewRosterImportAction({
-      classroomId: roster.classroom.id,
-      rosterText,
-    });
-    setPreviewResult(result);
-    if (!result.ok) setMessage(result.message);
-    setBusy(false);
+    try {
+      const result = await previewRosterImportAction({
+        classroomId: roster.classroom.id,
+        rosterText,
+      });
+      setPreviewResult(result);
+      if (!result.ok) setMessage({ tone: "warning", text: result.message });
+    } catch {
+      setPreviewResult(null);
+      setMessage(unexpectedFailure());
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function prepareAdd() {
     setBusy(true);
     setMessage(null);
-    const result = await prepareRosterImportAction({
-      classroomId: roster.classroom.id,
-      rosterKeys: readyKeys,
-      idempotencyKey: `prepare_roster_${crypto.randomUUID()}`,
-    });
-    if (result.ok) setPrepared(result);
-    else setMessage(result.message);
-    setBusy(false);
+    try {
+      const result = await prepareRosterImportAction({
+        classroomId: roster.classroom.id,
+        rosterKeys: readyKeys,
+        idempotencyKey: `prepare_roster_${crypto.randomUUID()}`,
+      });
+      if (result.ok) setPrepared(result);
+      else setMessage({ tone: "warning", text: result.message });
+    } catch {
+      setMessage(unexpectedFailure());
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function prepareEnd(membershipId: string) {
     setBusy(true);
     setMessage(null);
-    const result = await prepareEndMembershipAction({
-      classroomId: roster.classroom.id,
-      membershipId,
-      idempotencyKey: `prepare_roster_${crypto.randomUUID()}`,
-    });
-    if (result.ok) setPrepared(result);
-    else setMessage(result.message);
-    setBusy(false);
+    try {
+      const result = await prepareEndMembershipAction({
+        classroomId: roster.classroom.id,
+        membershipId,
+        idempotencyKey: `prepare_roster_${crypto.randomUUID()}`,
+      });
+      if (result.ok) setPrepared(result);
+      else setMessage({ tone: "warning", text: result.message });
+    } catch {
+      setMessage(unexpectedFailure());
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function decide(decision: "CONFIRM" | "REJECT") {
     if (!prepared) return;
     setBusy(true);
-    const result = await decideRosterChangeAction({
-      actionIntentId: prepared.confirmation.actionIntentId,
-      decision,
-      idempotencyKey: prepared.applyIdempotencyKey,
-    });
-    setPrepared(null);
-    setMessage(result.message);
-    if (result.ok && result.status === "APPLIED") {
-      setRosterText("");
-      setPreviewResult(null);
-      router.refresh();
+    try {
+      const result = await decideRosterChangeAction({
+        actionIntentId: prepared.confirmation.actionIntentId,
+        decision,
+        idempotencyKey: prepared.applyIdempotencyKey,
+      });
+      setPrepared(null);
+      setMessage({
+        tone: result.ok && result.status === "APPLIED" ? "success" : result.ok ? "info" : "warning",
+        text: result.message,
+      });
+      if (result.ok && result.status === "APPLIED") {
+        setRosterText("");
+        setPreviewResult(null);
+        router.refresh();
+      }
+    } catch {
+      setMessage(unexpectedFailure());
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
   }
 
-  async function previewStudentFile(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function previewStudentFile(file: File) {
     setBusy(true);
     setMessage(null);
     setStudentPrepared(null);
-    const result = await previewStudentImportAction(new FormData(event.currentTarget));
-    if (result.ok) setStudentEntries(result.entries);
-    else { setStudentEntries(null); setMessage(result.message); }
-    setBusy(false);
+    setStudentEntries(null);
+    const formData = new FormData();
+    formData.set("file", file);
+    try {
+      const result = await previewStudentImportAction(formData);
+      if (result.ok) {
+        setStudentEntries(result.entries);
+        setMessage({ tone: "info", text: `已解析 ${result.entries.length} 名学生，请在左侧核对后继续。` });
+      } else {
+        setMessage({ tone: "warning", text: result.message });
+      }
+    } catch {
+      setMessage(unexpectedFailure());
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function selectStudentFile(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.currentTarget.files?.item(0);
+    if (!file) return;
+    event.currentTarget.value = "";
+    setStudentFileName(file.name);
+    void previewStudentFile(file);
   }
 
   async function prepareStudentImport() {
     if (!studentEntries) return;
     setBusy(true);
     setMessage(null);
-    const result = await prepareStudentImportAction({ classroomId: roster.classroom.id, entries: studentEntries, idempotencyKey: `prepare_student_import_${crypto.randomUUID()}` });
-    if (result.ok) setStudentPrepared(result); else setMessage(result.message);
-    setBusy(false);
+    try {
+      const result = await prepareStudentImportAction({ classroomId: roster.classroom.id, entries: studentEntries, idempotencyKey: `prepare_student_import_${crypto.randomUUID()}` });
+      if (result.ok) setStudentPrepared(result);
+      else setMessage({ tone: "warning", text: result.message });
+    } catch {
+      setMessage(unexpectedFailure());
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function decideStudentImport(decision: "CONFIRM" | "REJECT") {
     if (!studentPrepared) return;
     setBusy(true);
-    const result = await decideStudentImportAction({ actionIntentId: studentPrepared.confirmation.actionIntentId, decision, idempotencyKey: studentPrepared.applyIdempotencyKey });
-    setStudentPrepared(null);
-    setMessage(result.message);
-    if (result.ok && result.status === "APPLIED") { setStudentEntries(null); router.refresh(); }
-    setBusy(false);
+    try {
+      const result = await decideStudentImportAction({ actionIntentId: studentPrepared.confirmation.actionIntentId, decision, idempotencyKey: studentPrepared.applyIdempotencyKey });
+      setStudentPrepared(null);
+      setMessage({
+        tone: result.ok && result.status === "APPLIED" ? "success" : result.ok ? "info" : "warning",
+        text: result.message,
+      });
+      if (result.ok && result.status === "APPLIED") {
+        setStudentEntries(null);
+        setStudentFileName(null);
+        router.refresh();
+      }
+    } catch {
+      setMessage(unexpectedFailure());
+    } finally {
+      setBusy(false);
+    }
   }
 
   const confirmation = prepared?.confirmation;
@@ -163,7 +236,7 @@ export function RosterManager({
           <span>{currentMemberships.length} 名</span>
         </header>
         {currentMemberships.length === 0 ? (
-          <p className={styles.emptyState}>当前没有有效成员，可通过右侧名单码导入。</p>
+          <p className={styles.emptyState}>当前没有有效成员，可在右侧从 Excel 导入学生账号，或粘贴名单码。</p>
         ) : (
           <div className={styles.rosterList}>
             {currentMemberships.map((membership) => (
@@ -184,25 +257,34 @@ export function RosterManager({
             ))}
           </div>
         )}
+        {message ? <InlineAlert tone={message.tone}>{message.text}</InlineAlert> : null}
+        {studentEntries ? (
+          <section className={styles.studentImportPreview} aria-labelledby="student-import-preview-title">
+            <header className={styles.sectionHeader}>
+              <div>
+                <p className={styles.eyebrow}>Excel 导入预览</p>
+                <h3 id="student-import-preview-title">待导入学生</h3>
+              </div>
+              <span>{studentEntries.length} 名</span>
+            </header>
+            <p>确认后才会创建账号并加入本班；请先核对学号和姓名。</p>
+            <ul>{studentEntries.map((entry) => <li key={entry.studentNo}><strong>{entry.studentNo}</strong><span>{entry.displayName}</span></li>)}</ul>
+            <button className={styles.primaryButton} disabled={busy} onClick={prepareStudentImport} type="button">确认预览，准备导入 {studentEntries.length} 名</button>
+          </section>
+        ) : null}
       </section>
 
-      <section className={styles.rosterImportPanel} aria-labelledby="roster-import-title">
+      <section className={styles.rosterImportPanel} aria-labelledby="student-import-title">
         <p className={styles.eyebrow}>学生账号导入</p>
         <h2 id="student-import-title">从 Excel 创建学生账号</h2>
         <p>仅解析首个工作表，首行必须是“学号、姓名”。学号需为至少六位数字；系统不保存原始 Excel 文件，初始密码为学号后六位。</p>
         <a className={styles.secondaryButton} href="/api/teacher/student-import-template">下载 Excel 模板</a>
-        <form className={styles.form} onSubmit={previewStudentFile}>
-          <input accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" aria-label="学生名单 Excel 文件" disabled={busy} name="file" required type="file" />
-          <button className={styles.secondaryButton} disabled={busy} type="submit">{busy ? "正在解析…" : "解析并预览"}</button>
-        </form>
-        {studentEntries ? (
-          <div className={styles.rosterPreview}>
-            <h3>账号导入预览</h3>
-            <p>已解析 {studentEntries.length} 名学生。确认后才会创建账号并加入本班。</p>
-            <ul>{studentEntries.map((entry) => <li key={entry.studentNo}><strong>{entry.studentNo}</strong><span>{entry.displayName}</span></li>)}</ul>
-            <button className={styles.primaryButton} disabled={busy} onClick={prepareStudentImport} type="button">确认预览，准备导入 {studentEntries.length} 名</button>
-          </div>
-        ) : null}
+        <div className={styles.filePickerGroup}>
+          <input accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" className={styles.visuallyHidden} disabled={busy} id="student-roster-file" name="file" onChange={selectStudentFile} type="file" />
+          <label aria-disabled={busy} className={`${styles.secondaryButton} ${styles.filePickerButton}`} htmlFor="student-roster-file">{busy ? "正在解析…" : "选择 Excel 文件"}</label>
+          {studentFileName ? <p className={styles.fileName}>已选择：{studentFileName}</p> : null}
+        </div>
+        <p className={styles.filePickerHint}>选择后将自动解析，并在左侧成员区预览。</p>
 
         <ConfirmDialog
           detail={studentPrepared ? <div className={styles.dialogDetail}><p>班级：{studentPrepared.confirmation.classroomName}</p><p>本次将处理 {studentPrepared.confirmation.entries.length} 名学生，其中新建账号 {studentPrepared.confirmation.entries.filter((entry) => entry.status === "CREATE").length} 名、复用同校账号 {studentPrepared.confirmation.entries.filter((entry) => entry.status === "REUSE").length} 名。</p><p>已在本班的账号不会重复加入；若账号当前属于其他班级，系统会拒绝导入并保持零写入。</p><p>确认有效至 <LocalizedDateTime dateTime={studentPrepared.confirmation.expiresAt} includeSeconds />。</p><p>参数摘要：<code>{studentPrepared.confirmation.payloadHash}</code></p></div> : null}
@@ -263,7 +345,6 @@ export function RosterManager({
             {!previewIsFullyReady ? <p>请先修正无法匹配、重复或已在班的项目，再重新预览。</p> : null}
           </div>
         ) : null}
-        {message ? <InlineAlert tone={message.includes("已") ? "info" : "warning"}>{message}</InlineAlert> : null}
       </section>
 
       {historicalMemberships.length > 0 ? (

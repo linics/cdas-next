@@ -34,4 +34,74 @@
 .loginPanel h1 { margin: var(--space-2) 0; font-size: var(--text-title); }
 .loginPanel > p:last-of-type { color: var(--color-neutral-700); }
 .loginLinks { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-4); font-size: var(--text-meta); }
-@media (max-width: 680px) { .pageHeader { padding-right: var(--space-4); padding-left: var(--space-4); } .panel { margin-right: var(--space-4); margin-left: var(--space-4); padding: var(--space-4); } .twoColumn { grid-template-columns: 1fr; } }
+.loginLinks a { color: var(--color-accent-700); text-underline-offset: 3px; }
+
+.teacherLoginShell {
+  width: min(1280px, 100%);
+  grid-template-columns: minmax(0, 1.1fr) minmax(420px, .9fr);
+  align-items: stretch;
+  justify-items: stretch;
+  gap: clamp(var(--space-6), 5vw, calc(var(--space-8) * 2));
+  margin: 0 auto;
+  padding: clamp(var(--space-6), 5vw, calc(var(--space-8) * 2));
+}
+.loginVisual {
+  position: relative;
+  min-height: 650px;
+  overflow: hidden;
+  border: 1px solid var(--color-divider);
+  border-radius: calc(var(--radius-lg) * 1.5);
+  background: var(--color-neutral-200);
+  box-shadow: var(--shadow-lg);
+}
+.loginVisualImage { object-fit: cover; object-position: center; }
+.loginVisualCopy {
+  position: absolute;
+  top: clamp(var(--space-4), 4vw, var(--space-8));
+  left: clamp(var(--space-4), 4vw, var(--space-8));
+  display: grid;
+  max-width: min(32rem, calc(100% - var(--space-8)));
+  gap: var(--space-1);
+  border: 1px solid color-mix(in srgb, var(--color-surface) 68%, transparent);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--color-surface) 88%, transparent);
+  padding: var(--space-4);
+  color: var(--color-text);
+  box-shadow: var(--shadow-sm);
+}
+.loginVisualCopy strong { color: var(--color-accent-700); font-family: var(--font-heading); font-size: var(--text-title); letter-spacing: .04em; }
+.loginVisualCopy span { color: var(--color-neutral-700); font-size: var(--text-ui); }
+.loginVisualCopy p { margin: var(--space-2) 0 0; color: var(--color-neutral-800); font-size: var(--text-meta); line-height: 1.7; }
+.teacherLoginPanel {
+  align-self: center;
+  width: min(100%, 560px);
+  justify-self: center;
+  padding: clamp(var(--space-8), 4vw, calc(var(--space-8) * 1.75));
+}
+.loginEyebrow { margin: 0; color: var(--color-accent-700); font-family: var(--font-ui); font-size: var(--text-meta); font-weight: var(--font-heading-weight); letter-spacing: .08em; }
+.teacherLoginPanel h1 { margin: var(--space-3) 0 var(--space-2); font-size: clamp(var(--text-title), 2.2vw, 30px); }
+.teacherLoginPanel > p:last-of-type { margin: 0; line-height: 1.75; }
+.teacherLoginPanel .form { gap: var(--space-6); margin-top: calc(var(--space-8) * 1.15); }
+.teacherLoginPanel .field { gap: var(--space-2); }
+.teacherLoginPanel .field label { font-size: var(--text-ui); }
+.teacherLoginPanel .field input { min-height: 50px; border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); font-size: var(--text-body); }
+.teacherLoginPanel .primaryButton { width: 100%; min-height: 52px; border-color: var(--color-accent-700); background: var(--color-accent-700); color: var(--color-surface); }
+.teacherLoginPanel .primaryButton:hover:not(:disabled) { border-color: var(--color-accent-800); background: var(--color-accent-800); }
+.teacherLoginPanel .loginLinks { justify-content: space-between; gap: var(--space-4); margin-top: var(--space-6); }
+
+@media (max-width: 860px) {
+  .teacherLoginShell { grid-template-columns: 1fr; max-width: 720px; padding: var(--space-6); }
+  .loginVisual { min-height: 280px; }
+  .teacherLoginPanel { width: min(100%, 560px); }
+}
+@media (max-width: 680px) {
+  .pageHeader { padding-right: var(--space-4); padding-left: var(--space-4); }
+  .panel { margin-right: var(--space-4); margin-left: var(--space-4); padding: var(--space-4); }
+  .twoColumn { grid-template-columns: 1fr; }
+  .loginShell { padding: var(--space-4); }
+  .teacherLoginShell { gap: var(--space-4); padding: var(--space-4); }
+  .loginVisual { min-height: 230px; border-radius: var(--radius-lg); }
+  .loginVisualCopy { max-width: calc(100% - var(--space-8)); padding: var(--space-3); }
+  .teacherLoginPanel { padding: var(--space-6); }
+  .teacherLoginPanel .loginLinks { align-items: flex-start; flex-direction: column; }
+}

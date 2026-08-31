@@ -117,9 +117,25 @@ function failure(error: unknown): RosterActionFailure {
   ) {
     return { ok: false, code: "UNAUTHORIZED", message: "当前账号不能管理这个班级的成员。" };
   }
+  if (error instanceof StudentImportError) {
+    const message = error.code === "ACTION_EXPIRED"
+      ? "本次导入确认已过期，请重新选择 Excel 文件并预览。"
+      : error.code === "CLASSROOM_CHANGED"
+        ? "班级成员已更新，请重新选择 Excel 文件并预览后再导入。"
+        : error.code === "STUDENT_IN_OTHER_CLASSROOM"
+          ? "名单中有学生已经属于其他班级；系统未写入任何本次导入内容，请调整名单后重试。"
+          : error.code === "STUDENT_CONFLICT"
+            ? "名单中的学号与学校内非学生账号冲突；系统未写入任何本次导入内容。"
+            : error.code === "CONCURRENT_WRITE"
+              ? "名单正在被其他操作更新，请刷新后重新预览。"
+              : "导入确认状态已经变化，请重新选择 Excel 文件并预览。";
+    return { ok: false, code: "CONFLICT", message };
+  }
+  if (error instanceof DecideActionIntentError && error.code === "ACTION_EXPIRED") {
+    return { ok: false, code: "CONFLICT", message: "本次导入确认已过期，请重新选择 Excel 文件并预览。" };
+  }
   if (
     error instanceof PrepareClassroomMembershipChangeError ||
-    error instanceof StudentImportError ||
     error instanceof ApplyClassroomMembershipChangeError ||
     error instanceof DecideActionIntentError
   ) {

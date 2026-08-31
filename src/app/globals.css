@@ -1,48 +1,48 @@
 @import "tailwindcss";
 
-/* Education SaaS — quiet blue surfaces, clear hierarchy, and system sans
-   fonts. Components consume these roles rather than importing a visual theme. */
+/* Education SaaS — warm paper surfaces, botanical green actions, and system
+   sans fonts. Components consume these roles rather than importing a theme. */
 :root {
   color-scheme: light;
 
-  --color-bg: #f5f7fb;
-  --color-surface: #ffffff;
-  --color-text: #1e293b;
-  --color-accent: #2563eb;
-  --color-accent-2: #0f766e;
-  --color-divider: color-mix(in srgb, #334155 16%, transparent);
+  --color-bg: #f5f0e4;
+  --color-surface: #fffdf7;
+  --color-text: #23372b;
+  --color-accent: #5d8b5c;
+  --color-accent-2: #778e61;
+  --color-divider: color-mix(in srgb, #314438 18%, transparent);
 
   /* Tonal ramps — generated in OKLCH on one shared lightness scale, so the
      same step of any role matches the others in visual value. */
-  --color-neutral-100: #f8fafc;
-  --color-neutral-200: #eef2f7;
-  --color-neutral-300: #dbe3ee;
-  --color-neutral-400: #c0ccdc;
-  --color-neutral-500: #94a3b8;
-  --color-neutral-600: #64748b;
-  --color-neutral-700: #475569;
-  --color-neutral-800: #334155;
-  --color-neutral-900: #1e293b;
+  --color-neutral-100: #fbf8f0;
+  --color-neutral-200: #f3eddf;
+  --color-neutral-300: #e3dac8;
+  --color-neutral-400: #c8c0ad;
+  --color-neutral-500: #9b9a86;
+  --color-neutral-600: #747967;
+  --color-neutral-700: #596555;
+  --color-neutral-800: #3e4e42;
+  --color-neutral-900: #23372b;
 
-  --color-accent-100: #eff6ff;
-  --color-accent-200: #dbeafe;
-  --color-accent-300: #bfdbfe;
-  --color-accent-400: #93c5fd;
-  --color-accent-500: #3b82f6;
-  --color-accent-600: #2563eb;
-  --color-accent-700: #1d4ed8;
-  --color-accent-800: #1e40af;
-  --color-accent-900: #1e3a8a;
+  --color-accent-100: #f0f6eb;
+  --color-accent-200: #dbeacb;
+  --color-accent-300: #bdd5aa;
+  --color-accent-400: #99bb82;
+  --color-accent-500: #769f68;
+  --color-accent-600: #5d8b5c;
+  --color-accent-700: #456f45;
+  --color-accent-800: #355a38;
+  --color-accent-900: #29482f;
 
-  --color-accent-2-100: #f0fdfa;
-  --color-accent-2-200: #ccfbf1;
-  --color-accent-2-300: #99f6e4;
-  --color-accent-2-400: #5eead4;
-  --color-accent-2-500: #14b8a6;
-  --color-accent-2-600: #0d9488;
-  --color-accent-2-700: #0f766e;
-  --color-accent-2-800: #115e59;
-  --color-accent-2-900: #134e4a;
+  --color-accent-2-100: #f6f5e8;
+  --color-accent-2-200: #e8e4c8;
+  --color-accent-2-300: #d3cfa3;
+  --color-accent-2-400: #bbb97c;
+  --color-accent-2-500: #969b61;
+  --color-accent-2-600: #778e61;
+  --color-accent-2-700: #61764f;
+  --color-accent-2-800: #4d6041;
+  --color-accent-2-900: #3d4d34;
 
   --font-heading: var(--font-cjk-loaded), "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
   --font-heading-weight: 700;

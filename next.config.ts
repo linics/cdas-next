@@ -8,6 +8,13 @@ try { sourceFingerprint = createSourceFingerprint(); } catch { sourceFingerprint
 const nextConfig: NextConfig = {
   // Self-host on a small VPS: ship only the traced server + static assets.
   output: "standalone",
+  experimental: {
+    // The action itself permits at most 2 MB. Leave room for multipart form
+    // encoding at the framework boundary; files are parsed in memory only.
+    serverActions: {
+      bodySizeLimit: "3mb",
+    },
+  },
   // Next replaces values declared here at build time; runtime env cannot alter
   // the deployment identity that health proof reports.
   env: {

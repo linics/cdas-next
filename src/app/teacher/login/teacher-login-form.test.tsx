@@ -23,7 +23,7 @@ vi.mock("../../_components/ui", () => ({
 import { TeacherLoginForm } from "./teacher-login-form";
 
 describe("teacher custom login page", () => {
-  it("collects the school login triplet without external authentication copy", () => {
+  it("collects the school login triplet in the spacious split login layout", () => {
     const markup = renderToStaticMarkup(<TeacherLoginForm />);
 
     expect(markup).toContain("学校代码 · 工号 · 密码");
@@ -33,5 +33,7 @@ describe("teacher custom login page", () => {
     expect(markup).toContain("使用学校代码、工号和密码登录。");
     expect(markup).not.toContain("Clerk");
     expect(markup).toContain('href="/teacher/register"');
+    expect(markup).toContain('data-login-layout="teacher-split"');
+    expect(markup).toContain('alt="跨学科学习场景插图"');
   });
 });

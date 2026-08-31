@@ -14,6 +14,7 @@ export function TeacherLoginForm() {
       ]}
       footer={<Link href="/teacher/register">没有教师账号？使用邀请码开通</Link>}
       title="学校代码 · 工号 · 密码"
+      variant="teacher"
     />
   );
 }

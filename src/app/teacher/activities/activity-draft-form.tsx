@@ -222,7 +222,13 @@ function ActivityDraftV3Form({ initialState }: { initialState: ActivityDraftActi
       <input type="hidden" name="expectedVersion" value={state.expectedVersion ?? ""} />
       <input type="hidden" name="idempotencyKey" value={state.nextIdempotencyKey} />
       <input type="hidden" name="content" value={JSON.stringify(normalized)} />
-      <nav aria-label="任务书区块"><a href="#basic">基本信息</a> · <a href="#goals">学习目标与跨学科设计</a> · <a href="#phases">阶段任务</a> · <a href="#evidence">学习证据</a> · <a href="#rubric">评价量规</a></nav>
+      <nav className={styles.taskSectionNav} aria-label="任务书区块">
+        <a href="#basic"><span aria-hidden="true">01</span>基本信息</a>
+        <a href="#goals"><span aria-hidden="true">02</span>学习目标与跨学科设计</a>
+        <a href="#phases"><span aria-hidden="true">03</span>阶段任务</a>
+        <a href="#evidence"><span aria-hidden="true">04</span>学习证据</a>
+        <a href="#rubric"><span aria-hidden="true">05</span>评价量规</a>
+      </nav>
 
       <section id="basic" className={styles.formSection}><span className={styles.formIndex}>01</span><div className={styles.formField}>
         <label>基本信息</label><small>v3 任务书使用目标关联与真实支持的证据能力；截止时间仍在发布时设置。</small>
