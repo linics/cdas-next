@@ -29,8 +29,6 @@ async function main(): Promise<void> {
     deploymentId: process.env.CDAS_DEPLOYMENT_ID,
     databaseUrl: process.env.DATABASE_URL,
     sourceFingerprint,
-    clerkPublishableKey: process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
-    clerkSecretKey: process.env.CLERK_SECRET_KEY,
     aiProviderDisabled: process.env.AI_PROVIDER_DISABLED,
     deepseekApiKey: process.env.DEEPSEEK_API_KEY,
     aiModel: process.env.AI_MODEL,

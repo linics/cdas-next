@@ -21,7 +21,7 @@ export type AcceptanceReadiness = Readonly<{
 
 export const acceptanceAttestations = [
   "STAGING_ACCEPTANCE_WRITES_ATTESTED",
-  "STAGING_ACCEPTANCE_CLERK_TOKENS_ATTESTED",
+  "STAGING_ACCEPTANCE_LOCAL_AUTH_ATTESTED",
   "STAGING_ACCEPTANCE_RETENTION_ATTESTED",
 ] as const;
 
@@ -125,13 +125,14 @@ export function evaluateAcceptanceReadiness(
     check("STAGING_ACCEPTANCE_BASE_URL", isAllowedVercelPreviewBaseUrl(baseUrl, projectName), Boolean(baseUrl)),
     check("STAGING_ACCEPTANCE_DEPLOYMENT_PROTECTION_REQUIRED", deploymentProtectionMode === "1", Boolean(deploymentProtectionMode)),
     check("STAGING_ACCEPTANCE_AI_DISABLED", value(environment, "AI_PROVIDER_DISABLED") === "1"),
-    check("STAGING_ACCEPTANCE_TEST_CLERK_INSTANCE", /^pk_test_[A-Za-z0-9_-]{10,}$/u.test(value(environment, "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY")), Boolean(value(environment, "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY"))),
-    check("STAGING_ACCEPTANCE_TEST_CLERK_SECRET", /^sk_test_[A-Za-z0-9_-]{10,}$/u.test(value(environment, "CLERK_SECRET_KEY")), Boolean(value(environment, "CLERK_SECRET_KEY"))),
-    check("STAGING_ACCEPTANCE_TEACHER_SUBJECT", /^user_[A-Za-z0-9]+$/u.test(value(environment, "STAGING_TEST_TEACHER_CLERK_ID")), Boolean(value(environment, "STAGING_TEST_TEACHER_CLERK_ID"))),
-    check("STAGING_ACCEPTANCE_STUDENT_SUBJECT", /^user_[A-Za-z0-9]+$/u.test(value(environment, "STAGING_TEST_STUDENT_CLERK_ID")), Boolean(value(environment, "STAGING_TEST_STUDENT_CLERK_ID"))),
-    check("STAGING_ACCEPTANCE_OTHER_STUDENT_SUBJECT", /^user_[A-Za-z0-9]+$/u.test(value(environment, "STAGING_TEST_OTHER_STUDENT_CLERK_ID")), Boolean(value(environment, "STAGING_TEST_OTHER_STUDENT_CLERK_ID"))),
-    check("STAGING_ACCEPTANCE_OTHER_TEACHER_SUBJECT", /^user_[A-Za-z0-9]+$/u.test(value(environment, "STAGING_TEST_OTHER_TEACHER_CLERK_ID")), Boolean(value(environment, "STAGING_TEST_OTHER_TEACHER_CLERK_ID"))),
-    check("STAGING_ACCEPTANCE_SUBJECTS_DISTINCT", new Set([value(environment, "STAGING_TEST_TEACHER_CLERK_ID"), value(environment, "STAGING_TEST_STUDENT_CLERK_ID"), value(environment, "STAGING_TEST_OTHER_STUDENT_CLERK_ID"), value(environment, "STAGING_TEST_OTHER_TEACHER_CLERK_ID")]).size === 4 && value(environment, "STAGING_TEST_TEACHER_CLERK_ID") !== "" && value(environment, "STAGING_TEST_STUDENT_CLERK_ID") !== "" && value(environment, "STAGING_TEST_OTHER_STUDENT_CLERK_ID") !== "" && value(environment, "STAGING_TEST_OTHER_TEACHER_CLERK_ID") !== ""),
+    check("STAGING_ACCEPTANCE_LOCAL_AUTH_MODE", value(environment, "STAGING_AUTH_MODE") === "postgres-local-v1"),
+    check("STAGING_ACCEPTANCE_PRIMARY_SCHOOL_CODE", /^SCH[A-HJ-NP-Z2-9]{5}$/u.test(value(environment, "STAGING_TEST_PRIMARY_SCHOOL_CODE")), Boolean(value(environment, "STAGING_TEST_PRIMARY_SCHOOL_CODE"))),
+    check("STAGING_ACCEPTANCE_SECONDARY_SCHOOL_CODE", /^SCH[A-HJ-NP-Z2-9]{5}$/u.test(value(environment, "STAGING_TEST_SECONDARY_SCHOOL_CODE")), Boolean(value(environment, "STAGING_TEST_SECONDARY_SCHOOL_CODE"))),
+    check("STAGING_ACCEPTANCE_TEACHER_STAFF_NO", /^[A-Z0-9][A-Z0-9-]{0,31}$/u.test(value(environment, "STAGING_TEST_TEACHER_STAFF_NO")), Boolean(value(environment, "STAGING_TEST_TEACHER_STAFF_NO"))),
+    check("STAGING_ACCEPTANCE_STUDENT_NO", /^\d{6,32}$/u.test(value(environment, "STAGING_TEST_STUDENT_NO")), Boolean(value(environment, "STAGING_TEST_STUDENT_NO"))),
+    check("STAGING_ACCEPTANCE_OTHER_STUDENT_NO", /^\d{6,32}$/u.test(value(environment, "STAGING_TEST_OTHER_STUDENT_NO")), Boolean(value(environment, "STAGING_TEST_OTHER_STUDENT_NO"))),
+    check("STAGING_ACCEPTANCE_OTHER_TEACHER_STAFF_NO", /^[A-Z0-9][A-Z0-9-]{0,31}$/u.test(value(environment, "STAGING_TEST_OTHER_TEACHER_STAFF_NO")), Boolean(value(environment, "STAGING_TEST_OTHER_TEACHER_STAFF_NO"))),
+    check("STAGING_ACCEPTANCE_IDENTITY_FIELDS_DISTINCT", new Set([value(environment, "STAGING_TEST_TEACHER_STAFF_NO"), value(environment, "STAGING_TEST_STUDENT_NO"), value(environment, "STAGING_TEST_OTHER_STUDENT_NO"), value(environment, "STAGING_TEST_OTHER_TEACHER_STAFF_NO")]).size === 4),
     check("STAGING_ACCEPTANCE_TEACHER_NAME", value(environment, "STAGING_ACCEPTANCE_TEST_TEACHER_NAME") === acceptanceTeacherDisplayName, Boolean(value(environment, "STAGING_ACCEPTANCE_TEST_TEACHER_NAME"))),
     check("STAGING_ACCEPTANCE_STUDENT_NAME", value(environment, "STAGING_ACCEPTANCE_TEST_STUDENT_NAME") === acceptanceStudentDisplayName, Boolean(value(environment, "STAGING_ACCEPTANCE_TEST_STUDENT_NAME"))),
     check("STAGING_ACCEPTANCE_OTHER_STUDENT_NAME", value(environment, "STAGING_ACCEPTANCE_TEST_OTHER_STUDENT_NAME") === acceptanceOtherStudentDisplayName, Boolean(value(environment, "STAGING_ACCEPTANCE_TEST_OTHER_STUDENT_NAME"))),
@@ -155,7 +156,7 @@ export function stableAcceptanceErrorCode(error: unknown): string {
 export function redactAcceptanceText(value: string): string {
   return value
     .replace(/postgres(?:ql)?:\/\/[^\s"']+/giu, "[REDACTED_DATABASE_URL]")
-    .replace(/\b(?:pk|sk)_(?:test|live)_[A-Za-z0-9_-]+\b/gu, "[REDACTED_CLERK_KEY]")
+    .replace(/\b(?:pk|sk)_(?:test|live)_[A-Za-z0-9_-]+\b/gu, "[REDACTED_PROVIDER_KEY]")
     .replace(/\b(?:Bearer|Cookie)\s+[^\s"']+/giu, "$1 [REDACTED]")
     .replace(/\b(?:ticket|token)=?[A-Za-z0-9._-]+/giu, "$1=[REDACTED]")
     .replace(/\b(STAGING_VERCEL_AUTOMATION_BYPASS_SECRET|x-vercel-protection-bypass)(?:\s*[:=]\s*|\s+)[^\s"']+/giu, "$1=[REDACTED]")

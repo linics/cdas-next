@@ -1,15 +1,12 @@
 import { createDatabaseClient } from "../../src/server/db/client";
-import { bootstrapClerkClassroom } from "../../src/server/bootstrap/bootstrap-clerk-classroom";
+import { bootstrapLocalClassroom } from "../../src/server/bootstrap/bootstrap-local-classroom";
 import type { PrismaClient } from "../../src/generated/prisma/client";
 import {
   resolveBootstrapDatabaseTarget,
-  serializeBootstrapClerkCliError,
-  serializeBootstrapClerkCliSuccess,
-} from "../../src/server/bootstrap/bootstrap-clerk-cli";
+} from "../../src/server/bootstrap/bootstrap-database-cli";
 import {
   e2eDatabaseName,
   loadE2eEnvironment,
-  requireNonProductionClerkForE2e,
   resolveE2eDatabaseUrl,
 } from "./environment";
 import {
@@ -38,7 +35,7 @@ async function seedForeignOwnedDraft(database: PrismaClient): Promise<void> {
       await transaction.appUser.create({
         data: {
           id: foreignTeacherId,
-          authSubject: "user_E2EForeignTeacherFixture",
+          authSubject: `local:${foreignTeacherId}`,
           role: "TEACHER",
           displayName: "E2E 其他教师",
         },
@@ -102,7 +99,6 @@ async function seedForeignOwnedDraft(database: PrismaClient): Promise<void> {
 
 async function main(): Promise<void> {
   loadE2eEnvironment();
-  requireNonProductionClerkForE2e();
   const connectionString = resolveE2eDatabaseUrl();
   const target = resolveBootstrapDatabaseTarget(
     { databaseUrl: connectionString },
@@ -111,21 +107,19 @@ async function main(): Promise<void> {
   const database = createDatabaseClient(connectionString);
 
   try {
-    const result = await bootstrapClerkClassroom(database, {
-      teacherAuthSubject: requireEnvironmentValue(
-        "DEV_TEST_TEACHER_CLERK_ID",
-      ),
+    const result = await bootstrapLocalClassroom(database, {
+      teacherStaffNo: requireEnvironmentValue("E2E_TEACHER_STAFF_NO"),
+      teacherPassword: requireEnvironmentValue("E2E_TEACHER_PASSWORD"),
+      studentNo: requireEnvironmentValue("E2E_STUDENT_NO"),
+      studentPassword: requireEnvironmentValue("E2E_STUDENT_PASSWORD"),
       teacherDisplayName: "E2E 验收教师",
-      studentAuthSubject: requireEnvironmentValue(
-        "DEV_TEST_STUDENT_CLERK_ID",
-      ),
       studentDisplayName: "E2E 验收学生",
       classroomId,
       classroomName: "E2E 验收班级",
     });
     await seedForeignOwnedDraft(database);
     process.stdout.write(
-      `${serializeBootstrapClerkCliSuccess(target, result)}\n`,
+      `${JSON.stringify({ database: target.redactedTarget, ...result })}\n`,
     );
   } finally {
     await database.$disconnect();
@@ -133,6 +127,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((error: unknown) => {
-  process.stderr.write(`${serializeBootstrapClerkCliError(error)}\n`);
+  process.stderr.write(`${error instanceof Error ? error.message : "E2E_BOOTSTRAP_FAILED"}\n`);
   process.exitCode = 1;
 });

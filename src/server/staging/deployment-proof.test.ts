@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   createDeploymentConfigurationProof,
+  deploymentConfiguration,
   isPublicHostname,
 } from "./deployment-proof";
 
@@ -9,8 +10,6 @@ const input = {
   deploymentId: "a".repeat(40),
   databaseUrl: "postgresql://runtime:secret@project-pooler.example.com/cdas_next_staging?sslmode=require",
   sourceFingerprint: "f".repeat(64),
-  clerkPublishableKey: "pk_test_abcdefghijklmnopqrstuv",
-  clerkSecretKey: "sk_test_abcdefghijklmnopqrstuv",
   aiProviderDisabled: "1",
   secret: "h".repeat(32),
   challenge: "b".repeat(32),
@@ -27,9 +26,12 @@ describe("deployment proof", () => {
     expect(createDeploymentConfigurationProof({ ...input, deploymentId: "c".repeat(40) })).not.toBe(proof);
     expect(createDeploymentConfigurationProof({ ...input, sourceFingerprint: "e".repeat(64) })).not.toBe(proof);
     expect(createDeploymentConfigurationProof({ ...input, challenge: "d".repeat(32) })).not.toBe(proof);
-    expect(createDeploymentConfigurationProof({ ...input, clerkSecretKey: "sk_test_differentinstance12345" })).not.toBe(proof);
     expect(createDeploymentConfigurationProof({ ...input, databaseUrl: input.databaseUrl.replace("runtime:secret", "other:credentials") })).not.toBe(proof);
     expect(createDeploymentConfigurationProof({ ...input, databaseUrl: "postgresql://runtime:secret@project.example.com/cdas_next_staging?sslmode=require" })).toBeUndefined();
+  });
+
+  it("binds the local authentication mode into the deployment configuration", () => {
+    expect(deploymentConfiguration(input)?.authMode).toBe("postgres-local-v1");
   });
 
   it("accepts disabled mode without AI fields but binds every valid enabled field", () => {
@@ -97,13 +99,10 @@ describe("deployment proof", () => {
     ).toBeUndefined();
   });
 
-  it("never exposes the Clerk secret or its hash in the proof", () => {
+  it("never exposes secrets or the database URL in the proof", () => {
     const proof = createDeploymentConfigurationProof(input);
 
-    expect(proof).not.toContain(input.clerkSecretKey);
-    expect(JSON.stringify({ configurationProof: proof })).not.toContain(
-      input.clerkSecretKey,
-    );
+    expect(proof).not.toContain("secret");
     expect(JSON.stringify({ configurationProof: proof })).not.toContain(
       input.databaseUrl,
     );

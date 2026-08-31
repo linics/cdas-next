@@ -14,18 +14,17 @@ function exactObject(value: unknown, keys: readonly string[]): value is Record<s
 
 export function isPassingIdentityEvidence(value: unknown): boolean {
   const codes = [
-    "TEACHER_IDENTITY_EXISTS",
-    "STUDENT_IDENTITY_EXISTS",
-    "OTHER_STUDENT_IDENTITY_EXISTS",
-    "OTHER_TEACHER_IDENTITY_EXISTS",
-    "TEACHER_TICKET_CAPABILITY",
-    "STUDENT_TICKET_CAPABILITY",
-    "OTHER_STUDENT_TICKET_CAPABILITY",
-    "OTHER_TEACHER_TICKET_CAPABILITY",
+    "TEACHER_LOCAL_AUTHENTICATES",
+    "STUDENT_LOCAL_AUTHENTICATES",
+    "OTHER_STUDENT_LOCAL_AUTHENTICATES",
+    "OTHER_TEACHER_LOCAL_AUTHENTICATES",
+    "WRONG_SCHOOL_INVALID_CREDENTIALS",
+    "DISABLED_ACCOUNT_ACCOUNT_DISABLED",
+    "DISABLED_SCHOOL_SCHOOL_DISABLED",
   ];
-  if (!exactObject(value, ["schema", "status", "checks", "ticketsRevoked", "realStudentDataAllowed", "productionDecision"]) ||
+  if (!exactObject(value, ["schema", "status", "checks", "sessionsRevoked", "realStudentDataAllowed", "productionDecision"]) ||
     value.schema !== "staging-synthetic-acceptance-identity.v1" || value.status !== "PASS" ||
-    value.ticketsRevoked !== true || value.realStudentDataAllowed !== false ||
+    value.sessionsRevoked !== true || value.realStudentDataAllowed !== false ||
     value.productionDecision !== "NO_GO" || !Array.isArray(value.checks)) {
     return false;
   }
