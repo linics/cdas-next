@@ -74,6 +74,19 @@ export async function registerTeacherWithInvite(
     if (existing) {
       const provisioning = existing.teacherProvisioning;
       if (
+        existing.localCredential &&
+        provisioning?.status === "COMPLETED" &&
+        existing.authSubject === `local:${existing.id}`
+      ) {
+        // A retried browser submission must not append another audit entry or
+        // replace the credential that the first committed request created.
+        return {
+          teacherId: existing.id,
+          provisioningId: provisioning.id,
+          status: "CLAIMED" as const,
+        };
+      }
+      if (
         existing.localCredential ||
         provisioning?.status !== "PENDING" ||
         existing.authSubject !== `pending:${provisioning?.id}`

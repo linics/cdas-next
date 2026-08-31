@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import type { PrismaClient } from "../../generated/prisma/client";
 import {
   createSessionToken,
+  hashPassword,
   hashSessionToken,
   verifyPassword,
 } from "./local-auth-primitives";
@@ -35,6 +36,49 @@ export async function createAuthSession(
 
 export async function revokeUserSessions(database: PrismaClient, userId: string, now = new Date()): Promise<void> {
   await database.authSession.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: now } });
+}
+
+export async function changeLocalPassword(
+  database: PrismaClient,
+  userId: string,
+  password: string,
+  now = new Date(),
+): Promise<{ token: string; expiresAt: Date }> {
+  // Argon2 is intentionally outside the transaction so password work cannot
+  // extend the database lock window.
+  const passwordHash = await hashPassword(password);
+  const token = createSessionToken();
+  const expiresAt = new Date(now.getTime() + SESSION_TTL_MS);
+  await database.$transaction(async (transaction) => {
+    await transaction.localCredential.update({
+      where: { userId },
+      data: {
+        passwordHash,
+        mustChangePassword: false,
+        passwordChangedAt: now,
+        failedLoginCount: 0,
+        lockedUntil: null,
+      },
+    });
+    await transaction.authSession.updateMany({
+      where: { userId, revokedAt: null },
+      data: { revokedAt: now },
+    });
+    await transaction.teacherProvisioning.updateMany({
+      where: { appUserId: userId, status: "PENDING" },
+      data: { status: "COMPLETED", completedAt: now },
+    });
+    await transaction.authSession.create({
+      data: {
+        id: randomUUID(),
+        userId,
+        tokenHash: hashSessionToken(token),
+        expiresAt,
+        createdAt: now,
+      },
+    });
+  });
+  return { token, expiresAt };
 }
 
 export async function getSession(database: PrismaClient, token: string, now = new Date()) {
