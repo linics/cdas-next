@@ -3,6 +3,11 @@ import canonicalize from "canonicalize";
 import { z } from "zod";
 import { Prisma, type PrismaClient } from "../../generated/prisma/client";
 import {
+  isSerializationFailure,
+  serializableRetryAttempts,
+  waitBeforeSerializableRetry,
+} from "./serializable-retry";
+import {
   type CommandContext,
   type ResolvedCommandContext,
   resolveCommandContext,
@@ -122,11 +127,14 @@ export async function saveReleaseGroup(database: PrismaClient, commandContext: C
   const input = saveInputSchema.parse(rawInput);
   const context = resolveCommandContext(commandContext, ["UI"]);
   const requestHash = hashValue({ releaseId: input.releaseId, groupId: input.groupId, name: input.name, members: input.members });
-  for (let attempt = 1; attempt <= 3; attempt += 1) {
+  for (let attempt = 1; attempt <= serializableRetryAttempts; attempt += 1) {
     try { return await saveGroupTransaction(database, context, input, requestHash); }
     catch (error) {
-      const retryable = error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2034";
-      if (retryable && attempt < 3) continue;
+      const retryable = isSerializationFailure(error);
+      if (retryable && attempt < serializableRetryAttempts) {
+        await waitBeforeSerializableRetry(attempt);
+        continue;
+      }
       if (retryable) throw new ManageReleaseGroupError("CONCURRENT_WRITE");
       throw error;
     }

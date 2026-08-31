@@ -2,6 +2,11 @@ import { createHash, randomUUID } from "node:crypto";
 import canonicalize from "canonicalize";
 import { z } from "zod";
 import {
+  isSerializationFailure,
+  serializableRetryAttempts,
+  waitBeforeSerializableRetry,
+} from "./serializable-retry";
+import {
   attachmentReservationSchema,
   MAX_SUBMISSION_ATTACHMENTS,
 } from "../../domain/submission/attachment-policy";
@@ -134,14 +139,13 @@ function currentMembershipWhere(
 }
 
 async function retrySerializable<T>(operation: () => Promise<T>): Promise<T> {
-  for (let attempt = 1; attempt <= 3; attempt += 1) {
+  for (let attempt = 1; attempt <= serializableRetryAttempts; attempt += 1) {
     try {
       return await operation();
     } catch (error) {
-      const retryable =
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === "P2034";
-      if (retryable && attempt < 3) {
+      const retryable = isSerializationFailure(error);
+      if (retryable && attempt < serializableRetryAttempts) {
+        await waitBeforeSerializableRetry(attempt);
         continue;
       }
       if (retryable) {

@@ -2,6 +2,11 @@ import { createHash } from "node:crypto";
 import canonicalize from "canonicalize";
 import { z } from "zod";
 import {
+  isSerializationFailure,
+  serializableRetryAttempts,
+  waitBeforeSerializableRetry,
+} from "./serializable-retry";
+import {
   phaseIndexSchema,
   resolveSubmissionExecutionScope,
   SubmissionExecutionError,
@@ -364,15 +369,14 @@ export async function startSubmissionResubmission(
     expectedLatestRevisionNumber: input.expectedLatestRevisionNumber,
   });
 
-  for (let attempt = 1; attempt <= 3; attempt += 1) {
+  for (let attempt = 1; attempt <= serializableRetryAttempts; attempt += 1) {
     try {
       return await runTransaction(database, context, input, requestHash);
     } catch (error) {
-      const retryable =
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === "P2034";
+      const retryable = isSerializationFailure(error);
 
-      if (retryable && attempt < 3) {
+      if (retryable && attempt < serializableRetryAttempts) {
+        await waitBeforeSerializableRetry(attempt);
         continue;
       }
 

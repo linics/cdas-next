@@ -17,6 +17,11 @@ import {
   resolveCommandContext,
 } from "./command-context";
 import { teacherEvaluationSuggestionActionName } from "./complete-teacher-evaluation-suggestion";
+import {
+  isRetryableSerializationError,
+  serializableRetryAttempts,
+  waitBeforeSerializableRetry,
+} from "./serializable-retry";
 
 const commandInputSchema = z
   .object({
@@ -66,7 +71,6 @@ export class PrepareTeacherEvaluationIntentError extends Error {
 }
 
 const commandName = "prepare_teacher_evaluation_intent";
-const retryablePrismaCodes = new Set(["P2002", "P2034"]);
 
 function isZodError(error: unknown): boolean {
   return (
@@ -395,18 +399,17 @@ export async function prepareTeacherEvaluationIntent(
     suggestionAgentRunId: input.suggestionAgentRunId,
   });
 
-  for (let attempt = 1; attempt <= 3; attempt += 1) {
+  for (let attempt = 1; attempt <= serializableRetryAttempts; attempt += 1) {
     try {
       return await runTransaction(database, context, input);
     } catch (error) {
-      const retryable =
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        retryablePrismaCodes.has(error.code);
+      const retryable = isRetryableSerializationError(error);
       const timedOut =
         error instanceof Prisma.PrismaClientKnownRequestError &&
         (error.code === "P2024" || error.code === "P2028");
 
-      if (retryable && attempt < 3) {
+      if (retryable && attempt < serializableRetryAttempts) {
+        await waitBeforeSerializableRetry(attempt);
         continue;
       }
 

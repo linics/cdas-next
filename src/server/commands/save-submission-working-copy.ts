@@ -3,6 +3,11 @@ import canonicalize from "canonicalize";
 import { z } from "zod";
 import { workingTextEvidenceSchema } from "../../domain/submission/text-evidence";
 import {
+  isSerializationFailure,
+  serializableRetryAttempts,
+  waitBeforeSerializableRetry,
+} from "./serializable-retry";
+import {
   completedEvidenceIndexesSchema,
   phaseIndexSchema,
   resolveSubmissionExecutionScope,
@@ -431,15 +436,14 @@ export async function saveSubmissionWorkingCopy(
     completedEvidenceIndexes: input.completedEvidenceIndexes,
   });
 
-  for (let attempt = 1; attempt <= 3; attempt += 1) {
+  for (let attempt = 1; attempt <= serializableRetryAttempts; attempt += 1) {
     try {
       return await runTransaction(database, context, input, requestHash);
     } catch (error) {
-      const retryable =
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === "P2034";
+      const retryable = isSerializationFailure(error);
 
-      if (retryable && attempt < 3) {
+      if (retryable && attempt < serializableRetryAttempts) {
+        await waitBeforeSerializableRetry(attempt);
         continue;
       }
 

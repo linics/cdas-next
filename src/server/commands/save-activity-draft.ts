@@ -12,6 +12,11 @@ import {
 import { hasValidAgentRunProvenance } from "./agent-run-provenance";
 import { completeAgentRunBusinessWrite } from "./complete-agent-run-business-write";
 import {
+  isRetryableSerializationError,
+  serializableRetryAttempts,
+  waitBeforeSerializableRetry,
+} from "./serializable-retry";
+import {
   type CommandContext,
   type ResolvedCommandContext,
   resolveCommandContext,
@@ -359,7 +364,7 @@ export async function saveActivityDraft(
     agentRunId: input.agentRunId,
   });
 
-  for (let attempt = 1; attempt <= 3; attempt += 1) {
+  for (let attempt = 1; attempt <= serializableRetryAttempts; attempt += 1) {
     try {
       return await runTransaction(
         database,
@@ -369,11 +374,10 @@ export async function saveActivityDraft(
         requestHash,
       );
     } catch (error) {
-      const retryable =
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        (error.code === "P2034" || error.code === "P2002");
+      const retryable = isRetryableSerializationError(error);
 
-      if (retryable && attempt < 3) {
+      if (retryable && attempt < serializableRetryAttempts) {
+        await waitBeforeSerializableRetry(attempt);
         continue;
       }
 
