@@ -4,6 +4,7 @@ import {
   type PrismaClient,
 } from "../../generated/prisma/client";
 import { rosterKeySchema } from "../../domain/classroom/roster-key";
+import { legacySchoolId, legacySchoolUserFields } from "../../domain/school/legacy-school";
 
 const clerkSubjectSchema = z
   .string()
@@ -280,12 +281,13 @@ async function ensureUser(
     return { id: existing.id, status: "EXISTING" };
   }
 
-  const created = await transaction.appUser.create({
+      const created = await transaction.appUser.create({
     data: {
       authSubject: input.authSubject,
       displayName: input.displayName,
       role: input.role,
       rosterKey: input.rosterKey,
+      ...legacySchoolUserFields(),
       createdAt: now,
       updatedAt: now,
     },
@@ -350,6 +352,7 @@ async function runBootstrapTransaction(
             id: input.classroomId,
             name: input.classroomName,
             managerId: teacher.id,
+            schoolId: legacySchoolId,
             createdAt: now,
             updatedAt: now,
           },

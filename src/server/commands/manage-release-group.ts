@@ -12,6 +12,7 @@ import {
   type ResolvedCommandContext,
   resolveCommandContext,
 } from "./command-context";
+import { isActiveSchoolMember } from "../school/teacher-authorization";
 
 const memberSchema = z.strictObject({
   studentId: z.uuid(),
@@ -101,6 +102,9 @@ async function saveGroupTransaction(database: PrismaClient, context: ResolvedCom
       if (existing.requestHash !== requestHash) throw new ManageReleaseGroupError("IDEMPOTENCY_MISMATCH");
       return groupResponseSchema.parse(existing.response);
     }
+    if (!(await isActiveSchoolMember(transaction, context.actorId))) {
+      throw new ManageReleaseGroupError("NOT_FOUND");
+    }
     await assertManager(transaction, input.releaseId, context.actorId);
     await assertMembersCanJoin(transaction, input.releaseId, input.members.map((member) => member.studentId), context.now);
     let groupId: string;
@@ -150,6 +154,9 @@ export async function deleteReleaseGroup(database: PrismaClient, commandContext:
     const commandName = "delete_release_group";
     const existing = await transaction.idempotencyRecord.findUnique({ where: { actorId_commandName_idempotencyKey: { actorId: context.actorId, commandName, idempotencyKey: input.idempotencyKey } } });
     if (existing) { if (existing.requestHash !== requestHash) throw new ManageReleaseGroupError("IDEMPOTENCY_MISMATCH"); return deleteResponseSchema.parse(existing.response); }
+    if (!(await isActiveSchoolMember(transaction, context.actorId))) {
+      throw new ManageReleaseGroupError("NOT_FOUND");
+    }
     await assertManager(transaction, input.releaseId, context.actorId);
     const group = await transaction.releaseGroup.findFirst({ where: { id: input.groupId, releaseId: input.releaseId }, select: { id: true, submissions: { select: { id: true }, take: 1 } } });
     if (!group) throw new ManageReleaseGroupError("NOT_FOUND");

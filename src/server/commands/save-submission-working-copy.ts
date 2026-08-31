@@ -22,6 +22,7 @@ import {
   type ResolvedCommandContext,
   resolveCommandContext,
 } from "./command-context";
+import { isActiveSchoolMember } from "../school/teacher-authorization";
 import {
   resolveSubmissionAudience,
   submissionAudienceData,
@@ -158,6 +159,10 @@ async function runTransaction(
           );
         }
         return commandResponseSchema.parse(existing.response);
+      }
+
+      if (!(await isActiveSchoolMember(transaction, context.actorId))) {
+        throw new SaveSubmissionWorkingCopyError("NOT_FOUND");
       }
 
       const [actor, release] = await Promise.all([

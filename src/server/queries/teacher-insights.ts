@@ -138,13 +138,21 @@ async function requireTeacher(
 ): Promise<TeacherIdentity> {
   const actor = await database.appUser.findUnique({
     where: { id: actorId },
-    select: { role: true, displayName: true },
+    select: {
+      role: true,
+      displayName: true,
+      accountStatus: true,
+      school: { select: { status: true } },
+    },
   });
   if (!actor) {
     throw new TeacherActivityQueryError("NOT_FOUND");
   }
   if (actor.role !== "TEACHER") {
     throw new TeacherActivityQueryError("WRONG_ROLE", actor.displayName);
+  }
+  if (actor.accountStatus !== "ACTIVE" || actor.school?.status !== "ACTIVE") {
+    throw new TeacherActivityQueryError("NOT_FOUND");
   }
   return teacherIdentitySchema.parse({ displayName: actor.displayName });
 }

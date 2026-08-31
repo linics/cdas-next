@@ -62,16 +62,17 @@ export function WorkspaceShell({
   fillViewport = false,
   children,
 }: {
-  audience: "教师" | "学生";
+  audience: "教师" | "学生" | "管理员";
   actorName?: string;
-  actorAudience?: "教师" | "学生";
+  actorAudience?: "教师" | "学生" | "管理员";
   breadcrumb?: readonly WorkspaceCrumb[];
   navigation?: readonly WorkspaceNavigationItem[];
   toolbarAction?: ReactNode;
   fillViewport?: boolean;
   children: ReactNode;
 }) {
-  const workspaceHref = audience === "教师" ? "/teacher" : "/student";
+  const workspaceHref =
+    audience === "教师" ? "/teacher" : audience === "学生" ? "/student" : "/admin";
   const showNavigation = navigation.length > 0;
   const crumbs =
     breadcrumb && breadcrumb.length > 0
@@ -143,11 +144,15 @@ export function WorkspaceRoleGate({
   requestedAudience,
 }: {
   actorName: string;
-  currentAudience: "教师" | "学生";
-  requestedAudience: "教师" | "学生";
+  currentAudience: "教师" | "学生" | "管理员";
+  requestedAudience: "教师" | "学生" | "管理员";
 }) {
   const currentWorkspaceHref =
-    currentAudience === "教师" ? "/teacher" : "/student";
+    currentAudience === "教师"
+      ? "/teacher"
+      : currentAudience === "学生"
+        ? "/student"
+        : "/admin";
 
   return (
     <WorkspaceShell

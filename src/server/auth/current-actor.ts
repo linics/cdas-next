@@ -10,13 +10,19 @@ import {
   resolveClickthroughAudience,
 } from "./clickthrough-auth";
 import { isClerkAuthenticationAvailable } from "./clerk-availability";
+import {
+  SchoolMemberAuthorizationError,
+  assertActiveBusinessActor,
+} from "../school/teacher-authorization";
 
 export class AuthenticationError extends Error {
   constructor(
     public readonly code:
       | "AUTH_NOT_CONFIGURED"
       | "UNAUTHENTICATED"
-      | "USER_NOT_PROVISIONED",
+      | "USER_NOT_PROVISIONED"
+      | "ACCOUNT_DISABLED"
+      | "SCHOOL_DISABLED",
   ) {
     super(code);
     this.name = "AuthenticationError";
@@ -43,12 +49,13 @@ export async function getCurrentActor(
 
   const actor = await db.appUser.findUnique({
     where: { authSubject: session.userId },
+    include: { school: { select: { status: true } } },
   });
   if (!actor) {
     throw new AuthenticationError("USER_NOT_PROVISIONED");
   }
 
-  return actor;
+  return gateActiveActor(actor);
 }
 
 async function loadClickthroughActor(database: PrismaClient): Promise<AppUser> {
@@ -68,10 +75,30 @@ async function loadClickthroughActor(database: PrismaClient): Promise<AppUser> {
 
   const actor = await database.appUser.findUnique({
     where: { authSubject },
+    include: { school: { select: { status: true } } },
   });
   if (!actor || actor.role !== audience) {
     throw new AuthenticationError("USER_NOT_PROVISIONED");
   }
 
+  return gateActiveActor(actor);
+}
+
+function gateActiveActor(
+  actor: AppUser & { school: { status: "ACTIVE" | "DISABLED" } | null },
+): AppUser {
+  try {
+    assertActiveBusinessActor(actor);
+  } catch (error) {
+    if (error instanceof SchoolMemberAuthorizationError) {
+      if (error.code === "ACCOUNT_DISABLED") {
+        throw new AuthenticationError("ACCOUNT_DISABLED");
+      }
+      if (error.code === "SCHOOL_DISABLED") {
+        throw new AuthenticationError("SCHOOL_DISABLED");
+      }
+    }
+    throw new AuthenticationError("USER_NOT_PROVISIONED");
+  }
   return actor;
 }

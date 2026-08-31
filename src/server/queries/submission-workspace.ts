@@ -13,6 +13,7 @@ import {
 } from "./release-membership-visibility";
 import { reviewFollowUp } from "../../domain/feedback/review-follow-up";
 import { isSubmissionAudienceMemberWhere } from "../submissions/submission-audience";
+import { isActiveSchoolMember } from "../school/teacher-authorization";
 
 const queryInputSchema = z
   .object({
@@ -234,6 +235,10 @@ export async function getStudentReleaseWorkspace(
 ): Promise<StudentReleaseWorkspace> {
   const input = queryInputSchema.parse(rawInput);
   const context = resolveCommandContext(commandContext, ["UI", "AGENT"]);
+
+  if (!(await isActiveSchoolMember(database, context.actorId))) {
+    throw new SubmissionWorkspaceQueryError("NOT_FOUND");
+  }
 
   const [actor, release] = await Promise.all([
     database.appUser.findUnique({
@@ -472,6 +477,10 @@ export async function getTeacherReleaseSubmissions(
 ): Promise<TeacherReleaseSubmissions> {
   const input = queryInputSchema.parse(rawInput);
   const context = resolveCommandContext(commandContext, ["UI", "AGENT"]);
+
+  if (!(await isActiveSchoolMember(database, context.actorId))) {
+    throw new SubmissionWorkspaceQueryError("NOT_FOUND");
+  }
 
   const release = await database.activityRelease.findUnique({
     where: { id: input.releaseId },

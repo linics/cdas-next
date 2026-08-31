@@ -9,6 +9,7 @@
   "scripts": {
     "postinstall": "prisma generate",
     "bootstrap:clerk": "node --import tsx scripts/bootstrap-clerk-classroom.ts",
+    "bootstrap:admin": "node --import tsx scripts/bootstrap-admin.ts",
     "demo:seed": "node --import ./scripts/demo/register-server-only.mjs --import tsx scripts/demo/seed.ts",
     "development:infra": "node --import tsx scripts/development-infrastructure/index.ts",
     "development:agent-acceptance": "node --import tsx scripts/development-agent-acceptance/index.ts",

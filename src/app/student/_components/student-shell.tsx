@@ -20,7 +20,13 @@ export function StudentAccessGate({
           detail:
             "系统当前无法验证学生身份，不会读取任何班级活动、提交记录或教师反馈。完成登录服务配置后即可使用。",
         }
-      : code === "USER_NOT_PROVISIONED"
+      : code === "ACCOUNT_DISABLED" || code === "SCHOOL_DISABLED"
+        ? {
+            eyebrow: "账号或学校已停用",
+            title: "学生工作台当前不能进入",
+            detail: "停用后不会读取班级活动、提交或教师反馈。",
+          }
+        : code === "USER_NOT_PROVISIONED"
         ? {
             eyebrow: "学生账号尚未创建",
             title: "找不到对应的学生身份",

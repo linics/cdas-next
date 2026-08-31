@@ -135,6 +135,7 @@ pnpm development:agent-acceptance \
 | `CLERK_SECRET_KEY` | Clerk 服务端密钥 | 空 |
 | `DEV_TEST_TEACHER_CLERK_ID` | 浏览器门禁的既有 Clerk development 教师用户 ID | 空 |
 | `DEV_TEST_STUDENT_CLERK_ID` | 浏览器门禁的既有 Clerk development 学生用户 ID | 空 |
+| `DEV_TEST_ADMIN_CLERK_ID` | 浏览器门禁的既有 Clerk development 管理员用户 ID | 空 |
 | `AI_PROVIDER_DISABLED` | 关闭模型调用并验证业务降级 | `1` |
 | `DEEPSEEK_API_KEY` | DeepSeek 官方 API 的服务端密钥；关闭模型时不需要 | 空 |
 | `AI_MODEL` | DeepSeek 模型 ID | `deepseek-v4-flash` |
@@ -168,6 +169,20 @@ pnpm --silent bootstrap:clerk -- \
 ```
 
 运行映射时保留示例中的 `--silent`，避免 pnpm 自己在执行前回显带 Clerk user ID 的完整命令行。该命令运行在 Next.js 进程之外，因此显式复用官方 `@next/env` 加载项目根目录的 `.env*`，顺序与 Next.js 一致；已经由 shell 注入的环境变量仍具有最高优先级。初始化程序只使用 `DATABASE_URL` 作为写入目标，并拒绝与 `TEST_DATABASE_URL` 相同的目标。成功输出只包含不带用户名、密码和查询参数的数据库目标，以及应用内部资源 ID 和 `CREATED` / `EXISTING` 状态；不会回显 Clerk user ID、连接字符串、密码或请求指纹。若任何既有映射冲突，整个事务失败且不修改数据。
+
+管理员端需要第三个既有 Clerk development 用户。把它的 `user_...` ID 写入
+`DEV_TEST_ADMIN_CLERK_ID`，再执行一次受数据库名确认保护的幂等绑定：
+
+```bash
+pnpm --silent bootstrap:admin -- \
+  --admin-subject user_adminFromClerk \
+  --admin-name "平台管理员" \
+  --confirm-database cdas_next
+```
+
+本地 clickthrough 只会在教师、学生和管理员三个 `DEV_TEST_*_CLERK_ID`
+都已配置时启用，避免 `/admin` 落入没有对应身份的半启用状态。该命令不创建
+Clerk 用户、不保存密码，也不会把已有教师或学生改成管理员。
 
 ## 可选活动助手
 

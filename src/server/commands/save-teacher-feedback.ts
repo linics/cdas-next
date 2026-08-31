@@ -20,6 +20,7 @@ import {
   type ResolvedCommandContext,
   resolveCommandContext,
 } from "./command-context";
+import { isActiveSchoolMember } from "../school/teacher-authorization";
 import {
   teacherFeedbackSuggestionActionName,
 } from "./complete-teacher-feedback-suggestion";
@@ -156,6 +157,10 @@ async function runTransaction(
           throw new SaveTeacherFeedbackError("IDEMPOTENCY_MISMATCH");
         }
         return commandResponseSchema.parse(existing.response);
+      }
+
+      if (!(await isActiveSchoolMember(transaction, context.actorId))) {
+        throw new SaveTeacherFeedbackError("NOT_FOUND");
       }
 
       const intent = await transaction.actionIntent.findUnique({

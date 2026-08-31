@@ -81,6 +81,9 @@ const iconByHref: Record<string, WorkspaceIconName> = {
   "/teacher/insights": "insights",
   "/teacher/knowledge": "knowledge",
   "/student": "student",
+  "/admin": "dashboard",
+  "/admin/schools": "knowledge",
+  "/admin/teachers": "roster",
 };
 
 export function iconForNavigationHref(href: string): WorkspaceIconName {

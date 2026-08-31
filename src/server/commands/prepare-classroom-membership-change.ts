@@ -20,6 +20,7 @@ import {
   type ResolvedCommandContext,
   resolveCommandContext,
 } from "./command-context";
+import { assertActiveBusinessActor } from "../school/teacher-authorization";
 
 const baseInput = z.object({
   classroomId: z.uuid(),
@@ -176,25 +177,50 @@ async function runTransaction(
       const [actor, classroom] = await Promise.all([
         transaction.appUser.findUnique({
           where: { id: context.actorId },
-          select: { role: true },
+          select: {
+            role: true,
+            accountStatus: true,
+            schoolId: true,
+            school: { select: { status: true } },
+          },
         }),
         transaction.classroom.findUnique({
           where: { id: input.classroomId },
-          select: { id: true, name: true, managerId: true, version: true },
+          select: {
+            id: true,
+            name: true,
+            managerId: true,
+            version: true,
+            schoolId: true,
+          },
         }),
       ]);
       if (!actor) throw new PrepareClassroomMembershipChangeError("NOT_FOUND");
+      try {
+        assertActiveBusinessActor(actor);
+      } catch {
+        throw new PrepareClassroomMembershipChangeError("NOT_FOUND");
+      }
       if (actor.role !== "TEACHER") {
         throw new PrepareClassroomMembershipChangeError("FORBIDDEN");
       }
-      if (!classroom || classroom.managerId !== context.actorId) {
+      if (
+        !classroom ||
+        classroom.managerId !== context.actorId ||
+        classroom.schoolId !== actor.schoolId
+      ) {
         throw new PrepareClassroomMembershipChangeError("NOT_FOUND");
       }
 
       let payload: ClassroomMembershipPayload;
       if (input.operation === "ADD") {
         const students = await transaction.appUser.findMany({
-          where: { role: "STUDENT", rosterKey: { in: input.rosterKeys } },
+          where: {
+            role: "STUDENT",
+            accountStatus: "ACTIVE",
+            schoolId: classroom.schoolId,
+            rosterKey: { in: input.rosterKeys },
+          },
           orderBy: { rosterKey: "asc" },
           select: { id: true, displayName: true, rosterKey: true },
         });

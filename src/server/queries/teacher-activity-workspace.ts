@@ -275,7 +275,13 @@ async function requireTeacher(
 ): Promise<TeacherIdentity> {
   const actor = await database.appUser.findUnique({
     where: { id: actorId },
-    select: { role: true, displayName: true },
+    select: {
+      role: true,
+      displayName: true,
+      accountStatus: true,
+      schoolId: true,
+      school: { select: { status: true } },
+    },
   });
   if (!actor) {
     throw new TeacherActivityQueryError("NOT_FOUND");
@@ -285,6 +291,9 @@ async function requireTeacher(
       wrongRoleCode,
       wrongRoleCode === "WRONG_ROLE" ? actor.displayName : undefined,
     );
+  }
+  if (actor.accountStatus !== "ACTIVE" || actor.school?.status !== "ACTIVE") {
+    throw new TeacherActivityQueryError("NOT_FOUND");
   }
   return teacherIdentitySchema.parse({ displayName: actor.displayName });
 }

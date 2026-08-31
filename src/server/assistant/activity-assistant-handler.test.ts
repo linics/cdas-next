@@ -138,6 +138,11 @@ const teacher: AppUser = {
   role: "TEACHER",
   displayName: "林老師",
   rosterKey: null,
+  schoolId: "c0de0000-0000-4000-8000-00000000c0de",
+  staffNo: null,
+  studentNo: null,
+  accountStatus: "ACTIVE",
+  legacyProfile: true,
   createdAt: now,
   updatedAt: now,
 };

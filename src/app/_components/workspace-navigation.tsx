@@ -10,7 +10,7 @@ export function WorkspaceNavigation({
   audience,
   items,
 }: {
-  audience: "教师" | "学生";
+  audience: "教师" | "学生" | "管理员";
   items: readonly { href: string; label: string }[];
 }) {
   const pathname = usePathname();
@@ -40,6 +40,7 @@ export function WorkspaceNavigation({
             pathname === item.href ||
             (item.href !== "/teacher" &&
               item.href !== "/student" &&
+              item.href !== "/admin" &&
               pathname.startsWith(`${item.href}/`));
           return (
             <Link

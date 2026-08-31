@@ -18,6 +18,7 @@ import {
   type CommandContext,
   resolveCommandContext,
 } from "./command-context";
+import { isActiveSchoolMember } from "../school/teacher-authorization";
 import {
   resolveSubmissionAudience,
   submissionAudienceWhere,
@@ -202,6 +203,10 @@ export async function reserveSubmissionAttachment(
           return reserveResponseSchema.parse(existing.response);
         }
 
+        if (!(await isActiveSchoolMember(transaction, context.actorId))) {
+          throw new SubmissionAttachmentCommandError("NOT_FOUND");
+        }
+
         const [actor, release] = await Promise.all([
           transaction.appUser.findUnique({
             where: { id: context.actorId },
@@ -379,6 +384,9 @@ async function ownedWritableAttachment(
   now: Date,
   attachmentId: string,
 ) {
+  if (!(await isActiveSchoolMember(database, actorId))) {
+    throw new SubmissionAttachmentCommandError("NOT_FOUND");
+  }
   const actor = await database.appUser.findUnique({
     where: { id: actorId },
     select: { role: true },
@@ -581,6 +589,10 @@ export async function removeSubmissionAttachment(
             );
           }
           return removeResponseSchema.parse(existing.response);
+        }
+
+        if (!(await isActiveSchoolMember(transaction, context.actorId))) {
+          throw new SubmissionAttachmentCommandError("NOT_FOUND");
         }
 
         const [actor, release] = await Promise.all([

@@ -22,6 +22,7 @@ import {
   type ResolvedCommandContext,
   resolveCommandContext,
 } from "./command-context";
+import { isActiveSchoolMember } from "../school/teacher-authorization";
 import {
   teacherFeedbackSuggestionActionName,
 } from "./complete-teacher-feedback-suggestion";
@@ -136,6 +137,10 @@ async function runTransaction(
           );
         }
         return commandResponseSchema.parse(existing.response);
+      }
+
+      if (!(await isActiveSchoolMember(transaction, context.actorId))) {
+        throw new PrepareTeacherFeedbackIntentError("NOT_FOUND");
       }
 
       const [actor, submission] = await Promise.all([

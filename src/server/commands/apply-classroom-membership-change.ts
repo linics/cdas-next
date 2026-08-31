@@ -19,6 +19,7 @@ import {
   type ResolvedCommandContext,
   resolveCommandContext,
 } from "./command-context";
+import { assertActiveBusinessActor } from "../school/teacher-authorization";
 
 const commandInputSchema = z
   .object({
@@ -137,13 +138,23 @@ async function runTransaction(
       const [actor, intent] = await Promise.all([
         transaction.appUser.findUnique({
           where: { id: context.actorId },
-          select: { role: true },
+          select: {
+            role: true,
+            accountStatus: true,
+            schoolId: true,
+            school: { select: { status: true } },
+          },
         }),
         transaction.actionIntent.findUnique({
           where: { id: input.actionIntentId },
         }),
       ]);
       if (!actor || !intent) {
+        throw new ApplyClassroomMembershipChangeError("NOT_FOUND");
+      }
+      try {
+        assertActiveBusinessActor(actor);
+      } catch {
         throw new ApplyClassroomMembershipChangeError("NOT_FOUND");
       }
       if (actor.role !== "TEACHER") {
@@ -183,9 +194,19 @@ async function runTransaction(
 
       const classroom = await transaction.classroom.findUnique({
         where: { id: payload.classroomId },
-        select: { id: true, name: true, managerId: true, version: true },
+        select: {
+          id: true,
+          name: true,
+          managerId: true,
+          version: true,
+          schoolId: true,
+        },
       });
-      if (!classroom || classroom.managerId !== context.actorId) {
+      if (
+        !classroom ||
+        classroom.managerId !== context.actorId ||
+        classroom.schoolId !== actor.schoolId
+      ) {
         throw new ApplyClassroomMembershipChangeError("NOT_FOUND");
       }
       if (
@@ -199,7 +220,11 @@ async function runTransaction(
       const changedStudentIds: string[] = [];
       if (payload.operation === "ADD") {
         const students = await transaction.appUser.findMany({
-          where: { id: { in: payload.students.map((student) => student.studentId) } },
+          where: {
+            id: { in: payload.students.map((student) => student.studentId) },
+            accountStatus: "ACTIVE",
+            schoolId: classroom.schoolId,
+          },
           select: { id: true, role: true, displayName: true, rosterKey: true },
         });
         const currentById = new Map(students.map((student) => [student.id, student]));
