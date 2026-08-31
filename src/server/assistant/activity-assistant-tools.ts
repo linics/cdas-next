@@ -6,7 +6,6 @@ import { z } from "zod";
 import {
   activityContentV2Schema,
   disciplineCodeSchema,
-  type DisciplineCode,
 } from "../../domain/activity/activity-content";
 import type { TeacherAgentPageContext } from "../../domain/assistant/teacher-agent-page-context";
 import { teacherProductSurfaces } from "../../domain/assistant/teacher-product-surfaces";
@@ -48,6 +47,7 @@ import {
 } from "./teacher-release-roster";
 import {
   getOfficialKnowledgeReference,
+  officialKnowledgeCoversDiscipline,
   officialKnowledgeSectionKey,
   type OfficialKnowledgeSectionIdentity,
   officialKnowledgeReadInputSchema,
@@ -68,12 +68,6 @@ export const publishActivityToolInputSchema = z
   .strict();
 
 const proposalText = z.string().trim().min(1).max(600);
-const firstCorpusDisciplineCodes = new Set<DisciplineCode>([
-  "chinese",
-  "math",
-  "physics",
-  "infoTech",
-]);
 
 const taskUnderstandingSummarySchema = z
   .object({
@@ -239,11 +233,11 @@ export const activityDraftProposalSchema = z.preprocess(
       proposal.content.mainDisciplineCode,
       ...proposal.content.integratedDisciplineCodes,
     ]);
-    const coveredByFirstCorpus = [...activityDisciplines].some((code) =>
-      firstCorpusDisciplineCodes.has(code),
+    const coveredByOfficialCorpus = [...activityDisciplines].some((code) =>
+      officialKnowledgeCoversDiscipline(code),
     );
     if (
-      coveredByFirstCorpus &&
+      coveredByOfficialCorpus &&
       (proposal.sourceReferences.length < 2 ||
         new Set(proposal.sourceReferences.map((reference) => reference.sourceId))
           .size < 2)

@@ -46,6 +46,7 @@
     "staging:agent:verify": "node --import tsx scripts/staging/agent-acceptance/verify.ts",
     "staging:agent:assert-final": "node --import tsx scripts/staging/agent-acceptance/assert-final.ts",
     "test:agent-acceptance-python": "PYTHONDONTWRITEBYTECODE=1 python3 -B scripts/staging/agent-acceptance/run-browser.test.py",
+    "knowledge:extract": "node --import tsx scripts/knowledge/extract-official-docx.ts",
     "knowledge:build": "node --import tsx scripts/knowledge/build-official-corpus.ts",
     "knowledge:check": "node --import tsx scripts/knowledge/build-official-corpus.ts --check",
     "dev": "next dev",

@@ -1,0 +1,12865 @@
+> **义** **务** **教** **育**
+>
+> **英语课程标准**
+>
+> (2022年版)
+>
+> 中华人民共和国教育部制定
+>
+> <img src="media/image1.jpeg" style="width:0.35411in;height:0.36113in" />**北京师范大学出版集团**
+>
+> **BELJNG NORMAL UNIVERSITY PUBLSHNG GROUP**
+>
+> 北京师范大学出版社
+>
+> **前** **言**
+>
+> 习近平总书记多次强调，课程教材要发挥培根铸魂、启智增慧的
+> 作用，必须坚持马克思主义的指导地位，体现马克思主义中国化最新
+> 成果，体现中国和中华民族风格，体现党和国家对教育的基本要求，
+> 体现国家和民族基本价值观，体现人类文化知识积累和创新成果。
+
+义务教育课程规定了教育目标、教育内容和教学基本要求，体现
+国家意志，在立德树人中发挥着关键作用。2001年颁布的《义务教
+育课程设置实验方案》和2011年颁布的义务教育各课程标准，坚持
+了正确的改革方向，体现了先进的教育理念，为基础教育质量提高作
+出了积极贡献。随着义务教育全面普及，教育需求从“有学上”转向
+“上好学”,必须进一步明确“培养什么人、怎样培养人、为谁培养
+人”,优化学校育人蓝图。当今世界科技进步日新月异，网络新媒体
+迅速普及，人们生活、学习、工作方式不断改变，儿童青少年成长环
+境深刻变化，人才培养面临新挑战。义务教育课程必须与时俱进，进
+行修订完善。
+
+> **一、指导思想**
+>
+> 以习近平新时代中国特色社会主义思想为指导，全面贯彻党的教
+> 育方针，遵循教育教学规律，落实立德树人根本任务，发展素质教
+> 育。以人民为中心，扎根中国大地办教育。坚持德育为先，提升智育
+>
+> **义务教育** 英语课程标准(2022年版)
+>
+> 水平，加强体育美育，落实劳动教育。反映时代特征，努力构建具有
+> 中国特色、世界水准的义务教育课程体系。聚焦中国学生发展核心素
+> 养，培养学生适应未来发展的正确价值观、必备品格和关键能力，引
+> 导学生明确人生发展方向，成长为德智体美劳全面发展的社会主义建
+> 设者和接班人。
+>
+> **二、修订原则**
+>
+> **(一)坚持目标导向**
+>
+> 认真学习领会习近平总书记关于教育的重要论述，全面落实有理
+> 想、有本领、有担当的时代新人培养要求，确立课程修订的根本遵
+> 循。准确理解和把握党中央、国务院关于教育改革的各项要求，全面
+> 落实习近平新时代中国特色社会主义思想，将社会主义先进文化、革
+> 命文化、中华优秀传统文化、国家安全、生命安全与健康等重大主题
+> 教育有机融入课程，增强课程思想性。
+>
+> **(二)坚持问题导向**
+>
+> 全面梳理课程改革的困难与问题，明确修订重点和任务，注重对
+> 实际问题的有效回应。遵循学生身心发展规律，加强一体化设置，促
+> 进学段衔接，提升课程科学性和系统性。进一步精选对学生终身发展
+> 有价值的课程内容，减负提质。细化育人目标，明确实施要求，增强
+> 课程指导性和可操作性。
+>
+> **(三)坚持创新导向**
+>
+> 既注重继承我国课程建设的成功经验，也充分借鉴国际先进教育
+> 理念，进一步深化课程改革。强化课程综合性和实践性，推动育人方
+> 式变革，着力发展学生核心素养。凸显学生主体地位，关注学生个性
+>
+> **前** **言**
+>
+> 化、多样化的学习和发展需求，增强课程适宜性。坚持与时俱进，反
+> 映经济社会发展新变化、科学技术进步新成果，更新课程内容，体现
+> 课程时代性。
+>
+> **三、主要变化**
+>
+> **(一)关于课程方案**
+>
+> 一是完善了培养目标。全面落实习近平总书记关于培养担当民族
+> 复兴大任时代新人的要求，结合义务教育性质及课程定位，从有理
+> 想、有本领、有担当三个方面，明确义务教育阶段时代新人培养的具 体要求。
+
+二是优化了课程设置。落实党中央、国务院“双减”政策要求，
+在保持义务教育阶段九年9522总课时数不变的基础上，调整优化课
+程设置。将小学原品德与生活、品德与社会和初中原思想品德整合为
+“道德与法治”,进行一体化设计。改革艺术课程设置， 一至七年级以
+音乐、美术为主线，融入舞蹈、戏剧、影视等内容，八至九年级分项
+选择开设。将劳动、信息科技从综合实践活动课程中独立出来。科
+学、综合实践活动起始年级提前至一年级。
+
+> 三是细化了实施要求。增加课程标准编制与教材编写基本要求；
+> 明确省级教育行政部门和学校课程实施职责、制度规范，以及教学改
+> 革方向和评价改革重点，对培训、教科研提出具体要求；健全实施机
+> 制，强化监测与督导要求。
+>
+> **(二)关于课程标准**
+>
+> 一是强化了课程育人导向。各课程标准基于义务教育培养目标，
+> 将党的教育方针具体化细化为本课程应着力培养的核心素养，体现正
+> 确价值观、必备品格和关键能力的培养要求。
+
+<img src="media/image2.jpeg" style="width:0.13195in;height:0.13194in" />**义务教育**
+英语课程标准(2022年版)
+
+> 二是优化了课程内容结构。以习近平新时代中国特色社会主义思
+> 想为统领，基于核心素养发展要求，遴选重要观念、主题内容和基础
+> 知识，设计课程内容，增强内容与育人目标的联系，优化内容组织形
+> 式。设立跨学科主题学习活动，加强学科间相互关联，带动课程综合
+> 化实施，强化实践性要求。
+>
+> 三是研制了学业质量标准。各课程标准根据核心素养发展水平，
+> 结合课程内容，整体刻画不同学段学生学业成就的具体表现特征，形
+> 成学业质量标准，引导和帮助教师把握教学深度与广度，为教材编
+> 写、教学实施和考试评价等提供依据。
+>
+> 四是增强了指导性。各课程标准针对“内容要求”提出“学业要
+> 求”“教学提示”,细化了评价与考试命题建议，注重实现“教—学一
+> 评”一致性，增加了教学、评价案例，不仅明确了“为什么教”“教
+> 什么”“教到什么程度”,而且强化了“怎么教”的具体指导，做到好 用、管用。
+>
+> 五是加强了学段衔接。注重幼小衔接，基于对学生在健康、语
+> 言、社会、科学、艺术领域发展水平的评估，合理设计小学一至二年
+> 级课程，注重活动化、游戏化、生活化的学习设计。依据学生从小学
+> 到初中在认知、情感、社会性等方面的发展，合理安排不同学段内
+> 容，体现学习目标的连续性和进阶性。了解高中阶段学生特点和学科
+> 特点，为学生进一步学习做好准备。
+>
+> 在向着第二个百年奋斗目标迈进之际，实施新修订的义务教育课
+> 程方案和课程标准，对推动义务教育高质量发展、全面建设社会主义
+> 现代化强国具有重要意义。希望广大教育工作者勤勉认真、行而不
+> 辍，不断创新实践，把育人蓝图变为现实，培育一代又一代有理想、
+> 有本领、有担当的时代新人，为实现中华民族伟大复兴作出新的更大 贡献!
+>
+> **目** **录**
+>
+> [**一** **、课程性质** **1**](#bookmark2)
+>
+> [**二、课程理念** **2**](#bookmark3)
+>
+> [**三、课程目标** 4](#bookmark4)
+>
+> [( 一 )核心素养内涵 4](#bookmark5)
+>
+> [(二)总目标 5](#bookmark6)
+>
+> [(三)学段目标 6](#bookmark26)
+>
+> [**四、课程内容** 12](#bookmark7)
+>
+> [( 一 ) 内容要求 13](#bookmark8)
+>
+> [(二)教学提示 34](#bookmark9)
+>
+> [**五、学业质量** 42](#bookmark10)
+>
+> [( 一 )学业质量内涵 42](#bookmark11)
+>
+> [(二)学业质量描述 42](#bookmark12)
+>
+> [**六、课程实施** 47](#bookmark13)
+>
+> [( 一 )教学建议 47](#bookmark14)
+>
+> [(二)评价建议 52](#bookmark15)
+>
+> [(三)教材编写建议 69](#bookmark16)
+>
+> [(四)课程资源开发与利用 72](#bookmark17)
+>
+> [(五)教学研究与教师培训 74](#bookmark18)
+>
+> **义务教育** **英语** **课程标准(2022年版)**
+>
+> [**附** **录** **80**](#bookmark36)
+>
+> [**附录1** **核心素养学段特征** **80**](#bookmark20)
+>
+> [**附录2** **语音项目表** **85**](#bookmark21)
+>
+> [**附录3** **词汇表** **87**](#bookmark22)
+>
+> [**附录4** **语法项目表** **138**](#bookmark23)
+>
+> [**附录5** **教学案例** **143**](#bookmark24)
+>
+> <span id="bookmark2" class="anchor"></span>**一** **、课程性质**
+>
+> 英语属于印欧语系，是当今世界经济、政治、科技、文化等活动
+> 中广泛使用的语言，是国际交流与合作的重要沟通工具，也是传播人
+> 类文明成果的载体之一，对中国走向世界、世界了解中国、构建人类
+> 命运共同体具有重要作用。
+>
+> 义务教育英语课程体现工具性和人文性的统一，具有基础性、实
+> 践性和综合性特征。学习和运用英语有助于学生了解不同文化，比较
+> 文化异同，汲取文化精华，逐步形成跨文化沟通与交流的意识和能
+> 力，学会客观、理性看待世界，树立国际视野，涵养家国情怀，坚定
+> 文化自信，形成正确的世界观、人生观和价值观，为学生终身学习、
+> 适应未来社会发展奠定基础。
+>
+> <span id="bookmark3" class="anchor"></span>**、课程理念**
+>
+> **1.发挥核心素养的统领作用**
+>
+> 英语课程以习近平新时代中国特色社会主义思想为指导，全面贯
+> 彻党的教育方针，落实立德树人根本任务，以培养有理想、有本领、
+> 有担当的时代新人为出发点和落脚点。围绕核心素养确定课程目标，
+> 选择课程内容，创新教学方式，改进考试评价，指导教材建设，开展
+> 教师培训。
+>
+> **2.** **构建基于分级体系的课程结构**
+>
+> 遵循外语学习规律，借鉴国际经验，立足我国义务教育阶段英语
+> 教育实际，充分考虑学习条件、学习时限和学生学习经验等方面的差
+> 异，按照英语能力发展进阶，建立循序渐进、可持续发展的九年义务
+> 教育英语分级体系，由低到高明确学习内容与要求。课程以分级体系
+> 为依据，因地制宜，因材施教，确定起始年级和学习内容要求，灵活
+> 安排教学进度。
+>
+> **3.** **以主题为引领选择和组织课程内容**
+>
+> 英语课程内容的选取遵循培根铸魂、启智增慧的原则，紧密联系
+> 现实生活，体现时代特征，反映社会新发展、科技新成果，聚焦人与
+> 自我、人与社会和人与自然等三大主题范畴。内容的组织以主题为引
+>
+> **二、课程理念**
+
+领，以不同类型的语篇为依托，融入语言知识、文化知识、语言技能
+和学习策略等学习要求，以单元的形式呈现。
+
+> **4.** **践行学思结合、用创为本的英语学习活动观**
+
+秉持在体验中学习、在实践中运用、在迁移中创新的学习理念，
+倡导学生围绕真实情境和真实问题，激活已知，参与到指向主题意义
+探究的学习理解、应用实践和迁移创新等一系列相互关联、循环递进
+的语言学习和运用活动中。坚持学思结合，引导学生在学习理解类活
+动中获取、梳理语言和文化知识，建立知识间的关联；坚持学用结
+合，引导学生在应用实践类活动中内化所学语言和文化知识，加深理
+解并初步应用；坚持学创结合，引导学生在迁移创新类活动中联系个
+人实际，运用所学解决现实生活中的问题，形成正确的态度和价值 判 断 。
+
+> **5.** **注重“教一学一评”一体化设计**
+
+坚持以评促学、以评促教，将评价贯穿英语课程教与学的全过
+程。注重发挥学生的主观能动性，引导学生成为各类评价活动的设计
+者、参与者和合作者，自觉运用评价结果改进学习。注重引导教师科
+学运用评价手段与结果，针对学生学习表现及时提供反馈与帮助，反
+思教学行为和效果，教学相长。坚持形成性评价与终结性评价相结
+合，逐步建立主体多元、方式多样、素养导向的英语课程评价体系。
+
+> **6.** **推进信息技术与英语教学的深度融合**
+
+重视教育信息化背景下英语课程教与学方式的变革。充分发挥现
+代信息技术对英语课程教与学的支持与服务功能，鼓励教师合理利
+用、创新使用数字技术和在线教学平台，开展线上线下融合教学，为
+满足学生个性化学习需要提供支撑，促进义务教育均衡发展。
+
+> <span id="bookmark4" class="anchor"></span>**三、课程目标**
+
+英语课程围绕核心素养，体现课程性质，反映课程理念，确立课 程目标。
+
+> <span id="bookmark5" class="anchor"></span>**(一)核心素养内涵**
+
+核心素养是课程育人价值的集中体现，是学生通过课程学习逐步
+形成的适应个人终身发展和社会发展需要的正确价值观、必备品格和
+关键能力。英语课程要培养的学生核心素养包括语言能力、文化意
+识、思维品质和学习能力等方面。语言能力是核心素养的基础要素，
+文化意识体现核心素养的价值取向，思维品质反映核心素养的心智特
+征，学习能力是核心素养发展的关键要素。核心素养的四个方面相互
+渗透，融合互动，协同发展。
+
+> **1.** **语言能力**
+
+语言能力指运用语言和非语言知识以及各种策略，参与特定情境
+下相关主题的语言活动时表现出来的语言理解和表达能力。英语语言
+能力的提高有助于学生提升文化意识、思维品质和学习能力，发展跨
+文化沟通与交流的能力。
+
+> **三、课程目标**
+>
+> **2.** **文化意识**
+>
+> 文化意识指对中外文化的理解和对优秀文化的鉴赏，是学生在新
+> 时代表现出的跨文化认知、态度和行为选择。文化意识的培育有助于
+> 学生增强家国情怀和人类命运共同体意识，涵养品格，提升文明素养
+> 和社会责任感。
+>
+> **3.** **思维品质**
+>
+> 思维品质指人的思维个性特征，反映学生在理解、分析、比较、
+> 推断、批判、评价、创造等方面的层次和水平。思维品质的提升有助于
+> 学生学会发现问题、分析问题和解决问题，对事物作出正确的价值判断。
+>
+> **4.** **学习能力**
+>
+> 学习能力指积极运用和主动调适英语学习策略、拓展英语学习渠
+> 道、努力提升英语学习效率的意识和能力。学习能力的发展有助于学
+> 生掌握科学的学习方法，养成良好的终身学习习惯。
+>
+> 核心素养学段特征见附录1。
+>
+> <span id="bookmark6" class="anchor"></span>**(二)总目标**
+>
+> 学生应通过本课程的学习，达到如下目标。
+>
+> (1)发展语言能力。能够在感知、体验、积累和运用等语言实践
+> 活动中，认识英语与汉语的异同，逐步形成语言意识，积累语言经
+> 验，进行有意义的沟通与交流。
+>
+> (2)培育文化意识。能够了解不同国家的优秀文明成果，比较中
+> 外文化的异同，发展跨文化沟通与交流的能力，形成健康向上的审美
+> 情趣和正确的价值观；加深对中华文化的理解和认同，树立国际视
+> 野，坚定文化自信。
+>
+> **义务教育** 英语课程标准(2022年版)
+>
+> (3)提升思维品质。能够在语言学习中发展思维，在思维发展中
+> 推进语言学习；初步从多角度观察和认识世界、看待事物，有理有
+> 据、有条理地表达观点；逐步发展逻辑思维、辩证思维和创新思维，
+> 使思维体现一定的敏捷性、灵活性、创造性、批判性和深刻性。
+>
+> (4)提高学习能力。能够树立正确的英语学习目标，保持学习兴
+> 趣，主动参与语言实践活动；在学习中注意倾听、乐于交流、大胆尝
+> 试；学会自主探究，合作互助；学会反思和评价学习进展，调整学习
+> 方式；学会自我管理，提高学习效率，做到乐学善学。
+>
+> <span id="bookmark26" class="anchor"></span>**(三)学段目标**
+>
+> 学段目标是对本学段结束时学生学习本课程应达到的学业成就的
+> 预设或期待，是总目标在各学段的具体化。义务教育英语课程分为三
+> 个学段，各学段目标设有相应的级别，即一级建议为3～4年级学段应
+> 达到的目标，二级建议为5～6年级学段应达到的目标，三级建议为
+> 7～9年级学段应达到的目标。各学段目标之间具有连续性、顺序性和进
+> 阶性。基于核心素养四个方面的英语课程学段目标如表1至表4所示。
+>
+> **表** **1** **语言能力学段目标**
+
+<table style="width:100%;">
+<colgroup>
+<col style="width: 7%" />
+<col style="width: 28%" />
+<col style="width: 28%" />
+<col style="width: 35%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>表现</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>3～4年级/一级</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>5～6年级/二级</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>7～9年级/三级</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p><strong>感</strong> <strong>知</strong> <strong>与</strong>
+<strong>积</strong> <strong>累</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>能感知单词、短语及</strong></p>
+<p><strong>简单句的重音和升降</strong></p>
+<p><strong>调等；能有意识地通</strong></p>
+<p><strong>过模仿学习发音；能</strong></p>
+<p><strong>大声跟读音视频材</strong></p>
+<p><strong>料；能感知语言信</strong> <strong>息，积累表达个人喜</strong>
+<strong>好和个人基本信息的</strong>
+<strong>简单句式；能理解基</strong></p>
+</blockquote></td>
+<td style="text-align: left;"><blockquote>
+<p><strong>能领悟基本语调表达</strong>
+<strong>的意义；能理解常见</strong> <strong>词语的意思，理解基</strong>
+<strong>本句式和常用时态表</strong>
+<strong>达的意义；能通过</strong></p>
+<p><strong>听，理解询问个人信</strong>
+<strong>息的基本表达方式；</strong></p>
+<p><strong>能听懂日常学习和生</strong>
+<strong>活中简单的指令、对</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>能识别不同语调与节奏等</strong>
+<strong>语音特征所表达的意义；</strong></p>
+<p><strong>能听懂发音清晰、语速较</strong>
+<strong>慢的简短口头表达，获取</strong></p>
+<p><strong>关键信息；积累日常生活</strong>
+<strong>中常用的习惯用语和交流</strong></p>
+<p><strong>信息的基本表达方式；积</strong>
+<strong>累常用的词语搭配；了解</strong></p>
+<p><strong>句子的结构特征，如句子</strong></p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+**三、课程目标**<img src="media/image3.jpeg" />
+
+> **续表**
+
+<table style="width:100%;">
+<colgroup>
+<col style="width: 7%" />
+<col style="width: 28%" />
+<col style="width: 28%" />
+<col style="width: 34%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>表现</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>3～4年级/一级</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>5～6年级/二级</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>7～9年级/三级</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>感 知 与 积 累</p>
+</blockquote></td>
+<td><blockquote>
+<p>本的日常问候、感谢</p>
+<p>和请求用语，听懂日</p>
+<p>常指令等；能借助图</p>
+<p>片读懂语言简单的小</p>
+<p>故事，理解基本信</p>
+<p>息；能正确书写字 母、单词和句子。</p>
+</blockquote></td>
+<td><blockquote>
+<p>话、独白和小故事 等；能理解日常生活 中用所学语言直接传
+递的交际意图；能读 懂语言简单、主题相 关的简短语篇，获取
+具体信息，理解主要 内容。</p>
+</blockquote></td>
+<td style="text-align: left;"><blockquote>
+<p>种类、成分、语序及主谓 一致；在收听、观看主题 相关、语速较慢的广播影
+视节目时，能识别其主题， 归纳主要信息；能读懂语 言简单、主题相关的简短
+语篇，提取并归纳关键信 息，理解隐含意义。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>习 得 与 建 构</p>
+</blockquote></td>
+<td style="text-align: right;"><p>在听或看发音清晰、</p>
+<blockquote>
+<p>语速较慢、用词简单</p>
+<p>的音视频材料时，能</p>
+<p>识别有关个人、家</p>
+<p>庭，以及熟悉事物的</p>
+</blockquote>
+<p>图片或实物、单词、</p>
+<blockquote>
+<p>短语；能根据简单指</p>
+<p>令作出反应；体会英</p>
+<p>语发音与汉语发音的</p>
+</blockquote>
+<p>不同；能借助语音、</p>
+<blockquote>
+<p>语调、手势、表情等</p>
+<p>判断说话者的情绪和</p>
+<p>态度；能在语境中理</p>
+</blockquote>
+<p>解简单句的表意功能。</p></td>
+<td style="text-align: right;"><p>在听或看发音清晰、</p>
+<blockquote>
+<p>语速适中、句式简单</p>
+<p>的音视频材料时，能</p>
+<p>获取有关人物、时</p>
+<p>间、地点、事件等基</p>
+<p>本信息；能识别常见</p>
+</blockquote>
+<p>语篇类型及其结构；</p>
+<blockquote>
+<p>能理解交流个人喜</p>
+<p>好、情感的表达方</p>
+<p>式；能根据图片，口</p>
+<p>头描述其中的人或事</p>
+<p>物；能关注生活中或</p>
+<p>媒体上的语言使用。</p>
+</blockquote></td>
+<td style="text-align: left;"><blockquote>
+<p>能在听、读、看的过程中， 围绕语篇内容记录重点信
+息，整体理解和简要概括 主要内容；能根据听到或 读到的关键词对人物、地
+点、事件等进行推断；能 根据读音规则和音标拼读 单词；能归纳学过的语法
+规则；能辨识和分析常见 句式的结构特征；能分析 和梳理常见书面语篇的基
+本结构特征；能用简单的 连接词建立语义联系。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>表 达 与 交 流</p>
+</blockquote></td>
+<td style="text-align: left;"><blockquote>
+<p>能围绕相关主题，运 用所学语言，进行简 单的交流，介绍自己
+和身边熟悉的人或事 物，表达情感和喜好 等，语言达意；在书
+面表达中，能根据图 片或语境，仿写简单 的句子。</p>
+</blockquote></td>
+<td style="text-align: left;"><blockquote>
+<p>能围绕相关主题，运 用所学语言，与他人 进行简单的交流，表
+演小故事或短剧，语 音、语调基本正确； 在书面表达中，能围
+绕图片内容或模仿范 文，写出几句意思连 贯的话。</p>
+</blockquote></td>
+<td><blockquote>
+<p>能围绕相关主题，运用所 学语言，与他人进行日常 交流，语音、语调、用词
+基本正确，表达比较连贯； 在书面表达中，能选用不 同句式结构和时态，描述
+和介绍身边的人、事物或 事件，表达情感、态度、 观点和意图等。</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+> **义务教育** 英语课程标准(2022年版)
+>
+> **表** **2** **文化意识学段目标**
+
+<table style="width:100%;">
+<colgroup>
+<col style="width: 7%" />
+<col style="width: 28%" />
+<col style="width: 28%" />
+<col style="width: 34%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>表现</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>3～4年级/一级</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>5～6年级/二级</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>7～9年级/三级</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>比 较 与 判 断</p>
+</blockquote></td>
+<td><blockquote>
+<p>有主动了解中外文化 的愿望；能在教师指 导下，通过图片、配
+图故事、歌曲、韵文 等获取简单的中外文 化信息；观察、辨识
+中外典型文化标志 物、饮食及重大节 日；能用简单的单 词、短语和句子描述
+与中外文化有关的图 片和熟悉的具体事 物；初步具有观察、
+识别、比较中外文化 的意识。</p>
+</blockquote></td>
+<td><blockquote>
+<p>对学习、探索中外文 化有兴趣；能在教师 引导下，通过故事、
+介绍、对话、动画等 获取中外文化的简单 信息；感知与体验文
+化多样性，能在理解 的基础上进行初步的 比较；能用简短的句
+子描述所学的与中外 文化有关的具体事 物；初步具有观察、
+识别、比较中外文化 异同的能力。</p>
+</blockquote></td>
+<td><blockquote>
+<p>能初步理解人类命运共同 体和全人类共同价值的概
+念；能通过简短语篇获取、 归纳中外文化信息，认识 不同文化，尊重文化的多
+样性和差异性，并在理解 和比较的基础上作出自己 的判断；能用所学语言描
+述文化现象与文化差异， 表达自己的价值取向，认 同中华文化；树立国际视
+野，具有比较、判断文化 异同的基本能力。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>调 适 与 沟 通</p>
+</blockquote></td>
+<td style="text-align: left;"><blockquote>
+<p>有与人交流沟通的愿 望；能大方地与人接 触，主动问候；能在
+教师指导下，学习和 感知人际交往中英语 独特的表达方式；能
+理解基本的问候、感 谢用语，并作出简单 回应。</p>
+</blockquote></td>
+<td style="text-align: left;"><blockquote>
+<p>对开展跨文化沟通与 交流有兴趣；能与他 人友好相处；能在教
+师引导下，了解不同 文化背景下人们待人 接物的礼仪；能注意
+到跨文化沟通与交流 中彼此的文化差异； 能在人际交往中，尝
+试理解对方的感受， 知道应当规避的谈话 内容，适当调整表达
+方式，体现出礼貌、 得体与友善。</p>
+</blockquote></td>
+<td><blockquote>
+<p>能认识到有效开展跨文化 沟通与交流的重要性；对 具有文化多样性的活动和
+事物持开放心态；了解不 同国家人们待人接物的基
+本礼仪、礼貌和交际方式；</p>
+<p>能初步了解英语的语用特 征，选择恰当的交际策略；
+能意识到错误并进行适当 的纠正；在人际交往中， 学会处理面对陌生文化可
+能产生的焦虑情绪，增强 跨文化沟通与交流的自信 心；初步具备用所学英语
+进行跨文化沟通与交流的 能力。</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+**三、课程目标**<img src="media/image4.jpeg" />
+
+> **续表**
+
+<table style="width:100%;">
+<colgroup>
+<col style="width: 7%" />
+<col style="width: 28%" />
+<col style="width: 28%" />
+<col style="width: 35%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>表现</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>3～4年级/一级</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>5～6年级/二级</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>7～9年级/三级</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p><strong>感</strong> <strong>悟</strong> <strong>与</strong>
+<strong>内</strong> <strong>化</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>有观察、感知真善美</strong></p>
+<p><strong>的愿望；明白自己的</strong></p>
+<p><strong>身份，热爱自己的国</strong></p>
+<p><strong>家和文化；能在教师</strong></p>
+<p><strong>指导下，感知英语歌</strong></p>
+<p><strong>曲、韵文的音韵节</strong></p>
+<p><strong>奏；能识别图片、短</strong></p>
+<p><strong>文中体现中外文化和</strong></p>
+<p><strong>正确价值观的具体现</strong></p>
+<p><strong>象与事物；具有国家</strong></p>
+<p><strong>认同感，对中华优秀</strong></p>
+<p><strong>传统文化感到骄傲。</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>对了解中外文化有兴</strong></p>
+<p><strong>趣；能在教师引导</strong></p>
+<p><strong>下，尝试欣赏英语歌</strong></p>
+<p><strong>曲、韵文的音韵节</strong></p>
+<p><strong>奏；能理解与中外优</strong></p>
+</blockquote>
+<p><strong>秀文化有关的图片、</strong></p>
+<blockquote>
+<p><strong>短文，发现和感悟其</strong></p>
+</blockquote>
+<p><strong>中蕴含的人生哲理；</strong></p>
+<blockquote>
+<p><strong>有将语言学习与做</strong></p>
+<p><strong>人、做事相结合的意</strong></p>
+<p><strong>识和行动；体现爱国</strong></p>
+</blockquote>
+<p><strong>主义情怀和文化自信。</strong></p></td>
+<td style="text-align: left;"><blockquote>
+<p><strong>能理解与感悟中外优秀文</strong>
+<strong>化的内涵；领会所学简短</strong>
+<strong>语篇蕴含的人文精神、科</strong>
+<strong>学精神和劳动价值，感悟</strong>
+<strong>诚实、友善等中外社会生</strong>
+<strong>活中的传统美德；能自尊</strong>
+<strong>自爱，正确认识自我，关</strong>
+<strong>爱他人，尊重他人，有社</strong>
+<strong>会责任感；能欣赏、鉴别</strong>
+<strong>美好事物，形成健康的审</strong>
+<strong>美情趣；具有国家认同感</strong>
+<strong>和文化自信，有正确的价</strong>
+<strong>值观和积极向上的情感态</strong>
+<strong>度；有自信自强的良好品</strong>
+<strong>格，做到内化于心、外化</strong> <strong>于行。</strong></p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+> **表** **3** **思维品质学段目标**
+
+<table style="width:100%;">
+<colgroup>
+<col style="width: 7%" />
+<col style="width: 28%" />
+<col style="width: 28%" />
+<col style="width: 35%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>表现</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>3～4年级/一级</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>5～6年级/二级</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>7～9年级/三级</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td></td>
+<td><blockquote>
+<p><strong>能通过对图片、具体</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>能对获取的语篇信息</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>能发现语篇中事件的发展</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td></td>
+<td><blockquote>
+<p><strong>现象和事物的观察获</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>进行简单的分类和对</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>和变化，辨识信息之间的</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p><strong>观</strong> <strong>察</strong> <strong>与</strong>
+<strong>辨</strong> <strong>析</strong></p>
+</blockquote></td>
+<td style="text-align: left;"><blockquote>
+<p><strong>取信息，了解不同事</strong>
+<strong>物的特点，辅助对语</strong> <strong>篇意义的理解；能注</strong>
+<strong>意到不同的人看待问</strong> <strong>题是有差异的；能从</strong>
+<strong>不同角度观察周围的</strong> <strong>人与事。</strong></p>
+</blockquote></td>
+<td style="text-align: left;"><blockquote>
+<p><strong>比，加深对语篇意义</strong>
+<strong>的理解；能比较语篇</strong> <strong>中的人物、行为、事</strong>
+<strong>物或观点间的相似性</strong> <strong>和差异性，并作出正</strong>
+<strong>确的价值判断；能从</strong> <strong>不同角度辩证地看待</strong>
+<strong>事物，学会换位思考。</strong></p>
+</blockquote></td>
+<td style="text-align: left;"><blockquote>
+<p><strong>相关性，把握语篇的整体</strong>
+<strong>意义；能辨识语篇中的衔</strong>
+<strong>接手段，判断句子之间、</strong>
+<strong>段落之间的逻辑关系；能</strong>
+<strong>发现同类型语篇的相似之</strong>
+<strong>处和不同类型语篇的结构</strong>
+<strong>特征；能多角度、辩证地</strong>
+<strong>看待事物和分析问题。</strong></p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+> **续表**
+
+<table style="width:100%;">
+<colgroup>
+<col style="width: 7%" />
+<col style="width: 28%" />
+<col style="width: 28%" />
+<col style="width: 35%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>表现</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>3～4年级/一级</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>5～6年级/二级</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>7～9年级/三级</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>归 纳 与 推 断</p>
+</blockquote></td>
+<td><blockquote>
+<p>能根据图片或关键 词，归纳语篇的重要 信息；能就语篇信息
+或观点初步形成自己 的想法和意见；能根 据标题、图片、语篇
+信息或个人经验等进 行预测。</p>
+</blockquote></td>
+<td style="text-align: left;"><blockquote>
+<p>能识别、提炼、概括 语篇的关键信息、主 要内容、主题意义和
+观点；能就语篇的主 题意义和观点作出正 确的理解和判断；能
+根据语篇推断作者的 态度和观点。</p>
+</blockquote></td>
+<td><blockquote>
+<p>能提取、整理、概括稍长</p>
+<p>语篇的关键信息、主要内</p>
+<p>容、思想和观点，判断各</p>
+<p>种信息的异同和关联；能</p>
+</blockquote>
+<p>根据语篇推断人物的心理、</p>
+<blockquote>
+<p>行为动机等，推断信息之</p>
+<p>间简单的逻辑关系；能从</p>
+<p>不同角度解读语篇，推断 语篇的深层含义，作出正 确的价值判断。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>批 判 与 创 新</p>
+</blockquote></td>
+<td style="text-align: left;"><blockquote>
+<p>能根据个人经历对语 篇内容、人物或事件 等表达自己的喜恶；
+初步具有问题意识， 知晓一问可有多解。</p>
+</blockquote></td>
+<td style="text-align: left;"><blockquote>
+<p>能就作者的观点或意 图发表看法，说明理 由，交流感受；能对
+语篇内容进行简单的 续编或改编等；具有 问题意识，能初步进
+行独立思考。</p>
+</blockquote></td>
+<td style="text-align: left;"><blockquote>
+<p>能针对语篇的内容或观点 进行合理质疑；能依据不 同信息进行独立思考，评
+价语篇的内容和作者的观 点，说明理由；能根据语 篇内容或所给条件进行改
+编或创编。</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+> **表4** **学习能力学段目标**
+
+<table style="width:100%;">
+<colgroup>
+<col style="width: 7%" />
+<col style="width: 28%" />
+<col style="width: 28%" />
+<col style="width: 35%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>表现</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>3～4年级/一级</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>5～6年级/二级</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>7～9年级/三级</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td></td>
+<td style="text-align: right;"><strong>对英语学习感兴趣、</strong></td>
+<td><blockquote>
+<p><strong>对英语学习有较浓厚</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>对英语学习有持续的兴趣</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td></td>
+<td><blockquote>
+<p><strong>有积极性；喜欢和别</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>的兴趣和自信心；能</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>和较为明确的学习需求与</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td rowspan="3"><blockquote>
+<p><strong>乐</strong> <strong>学</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>人用英语交流；乐于</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>积极参与课堂活动，</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>目标；有积极主动的学习</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p><strong>学习和模仿；注意倾</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>注意倾听，大胆尝试</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>态度和较强的自信心；能</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p><strong>听，敢于表达，不怕</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>用英语进行交流；乐</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>主动参与课内外各种英语</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p><strong>与</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>出错；乐于参与课堂</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>于参与英语实践活</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>实践活动，注意倾听，积</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p><strong>善</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>活动，遇到困难能大</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>动，遇到问题积极请</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>极使用英语进行交流，遇</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p><strong>学</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>胆求助。</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>教，不畏困难。</strong></p>
+</blockquote></td>
+<td style="text-align: left;"><blockquote>
+<p><strong>到问题主动请教，勇于克</strong>
+<strong>服困难；主动学习并积极</strong>
+<strong>使用现代信息技术，具备</strong>
+<strong>初步的信息素养。</strong></p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+**三、课程目标**<img src="media/image5.jpeg" />
+
+> **续表**
+
+<table style="width:100%;">
+<colgroup>
+<col style="width: 7%" />
+<col style="width: 28%" />
+<col style="width: 28%" />
+<col style="width: 34%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>表现</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>3～4年级/一级</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>5～6年级/二级</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>7～9年级/三级</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>选 择 与 调 整</p>
+</blockquote></td>
+<td style="text-align: left;"><blockquote>
+<p>能在教师帮助和指导 下，制订简单的英语 学习计划；能意识到
+自己英语学习中的进 步与不足，并作出适 当调整；能尝试借助
+多种渠道学习英语。</p>
+</blockquote></td>
+<td style="text-align: left;"><blockquote>
+<p>能在教师指导下，制 订并完成简单的英语 学习计划，及时预习
+和复习所学内容；能 了解自己英语学习中 的进步与不足；能在
+教师指导下，初步找 到适合自己的英语学 习方法；尝试根据学
+习进展调整学习计划 和策略；能借助多种 渠 道 或 资 源 学 习 英语。</p>
+</blockquote></td>
+<td><blockquote>
+<p>能制订明确的英语学习目 标和计划，合理安排学习 任务，主动预习和复习；
+能整理、归纳所学内容， 把握重点和难点；能主动 反思自己英语学习中的进
+步与不足，根据问题查找 原因并加以解决；能找到 适合自己的英语学习方法；
+能根据学习目标和进展合 理调整学习计划和策略； 能借助不同的数字资源或
+平台学习英语。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>合 作 与 探 究</p>
+</blockquote></td>
+<td style="text-align: left;"><blockquote>
+<p>能在学习活动中尝试 与他人合作，共同完 成学习任务；能在学
+习过程中积极思考， 发现并尝试解决语言 学习中的问题。</p>
+</blockquote></td>
+<td style="text-align: left;"><blockquote>
+<p>能在学习活动中与他 人合作，共同完成学 习任务；能在学习过
+程中认真思考，主动 探究，尝试通过多种 方式发现并解决语言
+学习中的问题。</p>
+</blockquote></td>
+<td style="text-align: left;"><blockquote>
+<p>能在学习活动中积极与他 人合作，共同完成学习任 务；能在学习过程中积极
+思考，主动探究，发现并 尝试使用多种策略解决语 言学习中的问题，积极进
+行拓展性运用。</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+> “五四”学制3～5年级目标主要参照“六三”学制5～6年级目
+> 标确定，适当降低要求。“五四”学制6～7年级目标在“六三”学制
+> 5～6年级目标基础上合理提高要求，并结合“六三”学制7～9年级
+> 目标确定，使“五四”学制6～9年级目标进阶更加科学。
+>
+> <span id="bookmark7" class="anchor"></span>**四、课程内容**
+>
+> 英语课程内容由主题、语篇、语言知识、文化知识、语言技能和
+> 学习策略等要素构成。围绕这些要素，通过学习理解、应用实践、迁
+> 移创新等活动，推动学生核心素养在义务教育全程中持续发展 (见图1)。
+
+![](media/image6.jpeg)
+
+> 图 1 义务教育英语课程内容结构示意图
+>
+> 课程内容的六个要素是一个相互关联的有机整体，共同构成核心
+> 素养发展的内容基础。其中，主题具有联结和统领其他内容要素的作
+> 用，为语言学习和课程育人提供语境范畴；语篇承载表达主题的语言
+> 知识和文化知识，为学生提供多样化的文体素材；语言知识为语篇的
+> 构成和意义的表达提供语言要素；文化知识为学生奠定人文底蕴、培
+> 养科学精神、形成良好品格和正确价值观提供内容资源；语言技能为
+>
+> **四、课程内容**
+>
+> 学生获取信息、建构知识、表达思想、交流情感提供途径；学习策略
+> 为学生提高学习效率、提升学习效果提供具体方式方法。
+>
+> 义务教育英语课程内容分三级呈现，建议3～4年级学习一级内
+> 容，5～6年级学习二级内容，7～9年级学习三级内容；兼顾小学英
+> 语开设起始年级区域差异，设置预备级和三个“级别+”(见图2)。
+> 预备级主要满足1～2年级教学需要，以视听说为主。“级别+”为学
+> 有余力的学生提供选择。对各“级别+”的内容要求用“+”标识。
+
+![](media/image7.jpeg)
+
+> 1～2年级 3～4年级 5～6年级 7～9年级
+>
+> **图** **2** **义务教育英语课程内容分级示意图**
+>
+> 根据“五四”学制不同学段目标要求，“五四”学制3～5年级课
+> 程内容应覆盖“六三”学制3～6年级大部分课程内容，其余课程内
+> 容在“五四”学制6～9年级中安排，做到分布合理。教学内容的选
+> 择根据学生的实际水平，按照英语课程的级别要求进行必要的调整。
+>
+> <span id="bookmark8" class="anchor"></span>**(一)内容要求**
+>
+> 以下对课程内容六个要素的学习范围和学习要求按照三个基本级 别进行描述。
+>
+> **义务教育** 英语课程标准(2022年版)
+>
+> **1.** **主题**
+>
+> 主题包括人与自我、人与社会、人与自然三大范畴。其中，“人
+> 与自我”以“我”为视角，设置“生活与学习”和“做人与做事”等
+> 主题群；“人与社会”以“社会”为视角，设置“社会服务与人际沟
+> 通”“文学、艺术与体育”“历史、社会与文化”和“科学与技术”等
+> 主题群；“人与自然”以“自然”为视角，设置“自然生态”“环境保
+> 护”“灾害防范”和“宇宙探索”等主题群。各主题群下设若干子主
+> 题。具体内容要求见表5至表7。
+>
+> **表5** **主题内容要求(一级)**
+
+<table style="width:100%;">
+<colgroup>
+<col style="width: 7%" />
+<col style="width: 25%" />
+<col style="width: 66%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>范畴</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>主题群</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>子主题内容</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>人 与 自 我</p>
+</blockquote></td>
+<td><blockquote>
+<p>生活与学习</p>
+<p>做人与做事</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.身边的事物与环境；</p>
+<p>2. 时间管理；</p>
+<p>3.生活自理与卫生习惯；</p>
+<p>4.个人喜好与情感表达；</p>
+<p>5.家庭与家庭生活；</p>
+<p>6.学校、课程，学校生活与个人感受；</p>
+<p>7.饮食与健康。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>人 与 社 会</p>
+</blockquote></td>
+<td><blockquote>
+<p>社会服务与人际 沟通</p>
+<p>文学、艺术与体育</p>
+<p>历史、社会与文化</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.班级与学校规则，规则意识；</p>
+<p>2.团队活动与集体生活，参与意识与集体精神；</p>
+<p>3.校园、社区环境与设施，爱护公共设施；</p>
+<p>4.同伴交往，相互尊重，友好互助；</p>
+<p>5.尊长爱幼，懂得感恩；</p>
+<p>6.常见的体育运动项目，运动与健康；</p>
+<p>7.交通法规，安全意识；</p>
+<p>8.常见职业与人们的生活；</p>
+<p>9.常见节假日，文化体验。</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+**四、课程内容**
+
+> **续表**
+
+<table style="width:100%;">
+<colgroup>
+<col style="width: 7%" />
+<col style="width: 25%" />
+<col style="width: 66%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>范畴</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>主题群</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>子主题内容</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p><strong>人</strong> <strong>与</strong> <strong>自</strong>
+<strong>然</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>自然生态</strong></p>
+<p><strong>环境保护</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>1.天气与日常生活；</strong></p>
+<p><strong>2.季节的特征与变化，季节与生活；</strong></p>
+<p><strong>3.身边的自然现象与生态环境；</strong></p>
+<p><strong>4.常见的动物，动物的特征与生活环境。</strong></p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+> **表** **6** **主题内容要求(二级)**
+
+<table style="width:100%;">
+<colgroup>
+<col style="width: 8%" />
+<col style="width: 25%" />
+<col style="width: 65%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>范畴</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>主题群</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>子主题内容</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>人 与 自 我</p>
+</blockquote></td>
+<td><blockquote>
+<p>生活与学习</p>
+<p>做人与做事</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.学习与生活的自我管理；</p>
+<p>2.乐学善学，勤于反思，学会学习；</p>
+<p>3.健康、文明的行为习惯与生活方式；</p>
+<p>4.运动与游戏，安全与防护；</p>
+<p>5. 自信乐观，悦纳自我，有同理心；</p>
+<p>6.情绪与情感，情绪与行为的调节与管理；</p>
+<p>7.生活与学习中的困难、问题和解决方式；</p>
+<p>8.零用钱的使用，合理消费，节约意识；</p>
+<p>9.劳动习惯与技能，热爱劳动。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>人 与 社 会</p>
+</blockquote></td>
+<td><blockquote>
+<p>社会服务与人际 沟通</p>
+<p>文学、艺术与体育</p>
+<p>历史、社会与文化</p>
+<p>科学与技术</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.校园与社区环境保护，公益劳动与公共服务；</p>
+<p>2. 自尊自律，文明礼貌，诚实守信，孝亲敬长；</p>
+</blockquote>
+<p>3.个人感受与见解，倾听、体谅他人，包容与宽容；</p>
+<blockquote>
+<p>4.运动、文艺等社团活动，潜能发掘；</p>
+<p>5.对社会有突出贡献的人物及其事迹；</p>
+<p>6.中外名胜古迹的相关知识和游览体验；</p>
+<p>7.世界主要国家的传统节日，文化体验；</p>
+<p>8.科学技术改变生活。</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+> **续表**
+
+<table style="width:100%;">
+<colgroup>
+<col style="width: 8%" />
+<col style="width: 25%" />
+<col style="width: 65%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>范畴</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>主题群</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>子主题内容</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p><strong>人</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>自然生态</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>1.中国主要城市及家乡的地理位置与自然环境；</strong></p>
+<p><strong>2.世界主要国家的名称、地理位置与自然景观；</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p><strong>与</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>环境保护</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>3.人与自然相互依存，绿色生活的理念和行为；</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p><strong>自</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>灾害防范</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>4.种植与养殖，热爱并善待生命；</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p><strong>然</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>宇宙探索</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>5.</strong>
+<strong>自然灾害与人身安全，灾害防范基本常识；</strong></p>
+<p><strong>6.地球与宇宙探索。</strong></p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+> **表** **7** **主题内容要求(三级)**
+
+<table style="width:99%;">
+<colgroup>
+<col style="width: 8%" />
+<col style="width: 25%" />
+<col style="width: 64%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>范畴</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>主题群</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>子主题内容</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>人 与 自 我</p>
+</blockquote></td>
+<td><blockquote>
+<p>生活与学习</p>
+<p>做人与做事</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.丰富、充实、积极向上的生活；</p>
+<p>2.多彩、安全、有意义的学校生活；</p>
+<p>3.身心健康，抗挫能力，珍爱生命的意识；</p>
+<p>4.积极的学习体验，恰当的学习方法与策略，勤学 善 思 ；</p>
+<p>5. 自我认识，自我管理，自我提升；</p>
+<p>6.职业启蒙，职业精神；</p>
+<p>7.劳动实践，劳动品质与工匠精神；</p>
+<p>8.货币常识，理财意识，理性消费，信用维护；</p>
+<p>9.勤于动手，乐于实践，敢于创新。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>人 与 社 会</p>
+</blockquote></td>
+<td><blockquote>
+<p>社会服务与人际 沟通</p>
+<p>文学、艺术与体育</p>
+</blockquote></td>
+<td><blockquote>
+<p>1. 良好的人际关系与人际交往；</p>
+<p>2.和谐家庭与社区生活；</p>
+<p>3.志愿服务与公共服务；</p>
+<p>4.交流与合作，团队精神；</p>
+<p>5.家乡和社会的变迁，历史的发展，对未来的 畅 想 ；</p>
+<p>6.跨文化沟通与交流，语言与文化；</p>
+<p>7.中外影视、戏剧、音乐、舞蹈、绘画、建筑等艺
+术形式中的文化价值和作品赏析，优秀的艺术家 及其艺术成就；</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+**四、课程内容**Ⅱ
+
+> **续表**
+
+<table style="width:100%;">
+<colgroup>
+<col style="width: 8%" />
+<col style="width: 25%" />
+<col style="width: 65%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>范畴</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>主题群</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>子主题内容</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>人 与 社 会</p>
+</blockquote></td>
+<td><blockquote>
+<p>历史、社会与文化</p>
+<p>科学与技术</p>
+</blockquote></td>
+<td><blockquote>
+<p>8. 日常体育活动，重大体育赛事，体育精神；</p>
+<p>9.中外文学史上有代表性的作家和作品；</p>
+<p>10.世界主要国家的文化习俗与文化景观、节假日 与庆祝活动；</p>
+<p>11.对世界、国家、人民和社会进步有突出贡献的 人 物 ；</p>
+<p>12.公共秩序与法律法规，个人信息安全与国家安 全意识 ；</p>
+<p>13.身份认同与文化自信；</p>
+<p>14.社会热点与国际事务；</p>
+<p>15.科学技术与工程，人类发明与创新。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>人 与 自 然</p>
+</blockquote></td>
+<td><blockquote>
+<p>自然生态</p>
+<p>环境保护</p>
+<p>灾害防范</p>
+<p>宇宙探索</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.世界主要国家的地理位置，不同地区的生态特征 与自然景观；</p>
+<p>2.热爱与敬畏自然，与自然和谐共生；</p>
+<p>3.环境污染及原因，环保意识和行为；</p>
+<p>4. 自然灾害与防范措施，人身安全与自我保护；</p>
+<p>5.地球与宇宙探秘，航天事业发展。</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+> **2.** **语篇**
+>
+> 语篇分不同的类型。语篇类型既包括连续性文本，如对话、访
+> 谈、记叙文、说明文、应用文、议论文、歌曲、歌谣、韵文等，也包
+> 括非连续性文本，如图表、图示、网页、广告等。语篇类型也可分为
+> 口语与书面语等形式，还可分为文字、音频、视频、数码等模态。语
+> 篇类型体现基础性、通用性和适宜性。具体内容要求见表8。
+>
+> **表8** **语篇类型内容要求**
+
+<table style="width:99%;">
+<colgroup>
+<col style="width: 11%" />
+<col style="width: 88%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>级别</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>内容要求</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>一级</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.歌谣、歌曲、韵文；</p>
+<p>2. 日常简短对话、独白；</p>
+<p>3.配图故事、叙事性日记等；</p>
+<p>4.人物介绍、物品介绍、地点介绍等；</p>
+<p>5.书信、活动通知、操作指令、生日及新年贺卡、邀请卡等；</p>
+<p>6.其他语篇类型，如提示牌、告示牌、菜单、购物单、简单图表、图
+片、视频等。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>二级</p>
+</blockquote></td>
+<td><blockquote>
+<p>1. 日常简单对话、独白；</p>
+<p>2.记叙文，如配图故事、叙事性日记、人物故事、寓言、幽默故事、 童话等
+；</p>
+</blockquote>
+<p>3.说明文，如介绍类短文、科普类短文、简短书面指令、操作程序等；</p>
+<blockquote>
+<p>4.应用文，如贺卡、邀请卡、书信、活动通知、启事、活动安排与计
+划、宣传海报、规则、问卷等；</p>
+<p>5.新媒体语篇，如简单社交媒体信息、网页、电子邮件等；</p>
+</blockquote>
+<p>6.其他语篇类型，如歌曲、韵文、剧本、图表、图示、图片、视频等。</p></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>三级</p>
+</blockquote></td>
+<td><blockquote>
+<p>1. 日常对话、独白；</p>
+<p>2.记叙文，如故事、简版小说、人物传记、童话等；</p>
+<p>3.说明文，如介绍类短文、程序或现象说明、事理阐释、书面指令、
+操作指南、使用手册等；</p>
+<p>4.应用文，如日记、私人信件、宣传海报、宣传册、通知、活动安排
+与计划、规则、问卷等；</p>
+<p>5.新闻报道，如简讯、专题报道等；</p>
+<p>6.工具书，如词典、语法书等；</p>
+</blockquote>
+<p>7.新媒体语篇，如常见网络媒体语篇、电子邮件、社交媒体信息等；</p>
+<blockquote>
+<p>8.其他语篇类型，如歌曲、诗歌、剧本、广告、图片、表格(图表)
+与图示、天气预报，以及广播、电视、网络节目等。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>三级+</p>
+</blockquote></td>
+<td><blockquote>
+<p>简单的说理类文章。</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+> **四、课程内容**
+>
+> **3.** **语言知识**
+>
+> 语言知识包括语音、词汇、语法、语篇和语用知识，是发展语言
+> 技能的重要基础。以下针对语言知识所包含的各要素，列出学生应学
+> 习的内容和要求。
+>
+> (1)语音知识
+>
+> 语音和语义密不可分，语言依靠语音实现其社会交际功能。英语
+> 的语音包括元音、辅音、重音、意群、语调与节奏等(见附录2)。
+> 说话者通过语音的变化表达意义和观点，反映态度、意图、情感等。
+> 具体内容要求见表9。
+>
+> **表9** **语音知识内容要求**
+
+<table style="width:99%;">
+<colgroup>
+<col style="width: 11%" />
+<col style="width: 87%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>级别</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>内容要求</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>一级</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.识别并读出26个大、小写字母；</p>
+<p>2.感知字母在单词中的发音；</p>
+<p>3.感知简单的拼读规则，尝试借助拼读规则拼读单词；</p>
+<p>4.感知并模仿说英语，体会单词的重音和句子的升调与降调。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>二级</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.借助拼读规则拼读单词；</p>
+<p>2.使用正确的语音、语调朗读学过的对话和短文；</p>
+<p>3.借助句子中单词的重读表达自己的态度与情感；</p>
+<p>4.感知并模仿说英语，体会意群、语调与节奏；</p>
+<p>5.在口头表达中做到语音基本正确，语调自然、流畅。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>三级</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.了解语音在语言学习中的意义和在语境中的表意功能；</p>
+<p>2.辨识口语表达中的意群，并在口头交流中按照意群表达；</p>
+<p>3.根据重音、意群、语调与节奏等语音方面的变化，感知和理解说话
+人表达的意义、意图和态度；</p>
+<p>4.借助重音、意群、语调、节奏等方面的变化，表达不同的意义、意
+图和态度；</p>
+<p>5.根据读音规则和音标拼读单词；</p>
+<p>6.查词典时，运用音标知识学习单词的发音。</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+> (2)词汇知识
+
+词汇指语言中所有单词和固定短语的总和。词汇中的任何词语都
+是通过一定的句法关系和语义关系与其他词语建立起联系的，并在语
+境中传递信息。词汇学习不只是记忆单词的音、形、义，还包括了解
+一定的构词法知识，更重要的是在语篇中通过听、说、读、看、写等
+活动，理解和表达与各种主题相关的信息和观点。具体内容要求见 表10。
+
+> **表10** **词汇知识内容要求**
+
+<table>
+<colgroup>
+<col style="width: 11%" />
+<col style="width: 88%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>级别</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>内容要求</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>一级</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.知道单词由字母构成；</p>
+<p>2.借助图片、实物理解词汇的意思；</p>
+<p>3.根据视觉或听觉提示，如图片、动作、动画、声音等，说出单词和 短 语
+；</p>
+<p>4.根据单词的音、形、义学习词汇，体会词汇在语境中表达的意思。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>二级</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.在语境中理解词汇的含义，在运用中逐步积累词汇；</p>
+<p>2.在特定语境中，运用词汇描述事物、行为、过程和特征，表达与主
+题相关的主要信息和观点；</p>
+<p>3.能初步运用500个左右单词(见附录3),就规定的主题进行交流与</p>
+<p>表达，另外可以根据实际情况接触并学习三级词汇和相关主题范围
+内100～300个单词，以及一定数量的习惯用语或固定搭配。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>三级</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.了解英语词汇包括单词、短语、习惯用语和固定搭配等形式；</p>
+<p>2.理解和领悟词汇的基本含义，以及在特定语境和语篇中的意义、词
+性和功能；</p>
+</blockquote>
+<p>3.通过识别词根、词缀理解生词，辨识单词中的前缀、后缀及其意义；</p>
+<blockquote>
+<p>4.在特定语境中，根据不同主题，运用词汇给事物命名，描述事物、
+行为、过程和特征，说明概念，表达与主题相关的主要信息和观点；</p>
+<p>5.围绕相关主题学习并使用约1600个单词进行交流与表达(见附录3),
+另外可以根据实际情况接触并学习相关主题范围内100～300个单</p>
+<p>词，以及一定数量的习惯用语或固定搭配。</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+**四、课程内容**
+
+> **续表**
+
+<table style="width:99%;">
+<colgroup>
+<col style="width: 11%" />
+<col style="width: 87%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>级别</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>内容要求</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p><strong>三级+</strong></p>
+</blockquote></td>
+<td style="text-align: left;"><blockquote>
+<p><strong>围绕相关主题接触并使用约1800个单词进行交流与表达，另外可以根</strong>
+<strong>据实际情况接触并学习相关主题范围内约200个单词，以及一定数量的</strong>
+<strong>习惯用语或固定搭配。</strong></p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+> (3)语法知识
+
+英语语法知识包括词法知识和句法知识(见附录4)。词法关注
+
+> 词的形态变化，如名词的数、格，动词的时、态(体)等；句法关注
+> 句子结构，如句子的种类、成分、语序等。词法和句法之间的关系非
+> 常紧密。在语言使用中，语法知识是“形式一意义一使用”的统一
+> 体，与语音、词汇、语篇和语用知识紧密相连，直接影响语言理解与
+> 表达的准确性和得体性。具体内容要求见表11。
+>
+> **表11** **语法知识内容要求**
+
+<table style="width:99%;">
+<colgroup>
+<col style="width: 11%" />
+<col style="width: 87%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>级别</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>内容要求</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>一级</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.在语境中感知、体会常用简单句的表意功能；</p>
+<p>2.在语境中理解一般现在时和现在进行时的形式、意义、用法；</p>
+<p>3.围绕相关主题，在语境中运用所学语法知识描述人和物，进行简单
+交流。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>二级</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.在语篇中理解常用简单句的基本结构和表意功能；</p>
+<p>2.在语境中理解一般过去时和一般将来时的形式、意义、用法；</p>
+<p>3.在语境中运用所学语法知识描述、比较人和物，描述具体事件的发
+生、发展和结局，描述时间、地点和方位等。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>三级</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.初步意识到语言使用中的语法知识是“形式一意义一使用”的统一
+体，明确学习语法的目的是在语境中运用语法知识理解和表达意义；</p>
+<p>2.了解句子的结构特征，如句子的种类、成分、语序及主谓一致；</p>
+<p>3.在口语和书面语篇中理解、体会所学语法的形式和表意功能；</p>
+<p>4.在语境中运用所学语法知识进行描述、叙述和说明等。</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+> (4)语篇知识
+>
+> 语篇是表达意义的语言单位，是人们运用语言的常见形式。在使
+> 用语言的过程中，人们需要运用语篇知识将语言组织为意义连贯的篇
+> 章。语篇知识是有关语篇如何构成、如何表达意义，以及人们如何使
+> 用语篇达到交际目的的知识。语篇中各要素之间存在复杂的关系，如
+> 句与句、段与段、标题与正文、文字与图表之间的关系。语篇知识在
+> 语言理解与表达过程中具有重要作用，有助于语言使用者理解听到、
+> 看到或读到的语篇，以及在口头和书面表达过程中根据交流的需要选
+> 择恰当的语篇类型、设计合理的语篇结构、规划语篇的组成部分、保
+> 持语篇的衔接和连贯。具体内容要求见表12。
+>
+> **表12** **语篇知识内容要求**
+
+<table style="width:99%;">
+<colgroup>
+<col style="width: 11%" />
+<col style="width: 88%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>级别</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>内容要求</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>一级</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.识别对话中的话轮转换；</p>
+<p>2.知道语篇有不同类型，如对话、配图故事；</p>
+<p>3.体会语篇中图片与文字之间的关系。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>二级</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.判断故事类语篇的开头、中间和结尾，辨识时间、地点、人物，以
+及事件的发生、发展和结局等；</p>
+<p>2.发现语篇中段落主题句与段落内容之间的关系；</p>
+<p>3.利用语篇的标题、图片等信息辅助语篇理解。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>三级</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.理解记叙文语篇的主要写作目的、结构特征、基本语言特点和信息
+组织方式，并用以描述自己和他人的经历；</p>
+<p>2.理解说明文语篇的主要写作目的、结构特征、基本语言特点和信息
+组织方式，并用以说明事物和阐释事理；</p>
+<p>3.理解常见应用文语篇和其他常见语篇类型的主要写作目的、结构特
+征、基本语言特点和信息组织方式，并用以传递信息；</p>
+<p>4.在语篇中辨识并尝试运用衔接和连贯手段，以提升理解的准确性和
+表达的逻辑性。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>三级+</p>
+</blockquote></td>
+<td><blockquote>
+<p>理解说理类语篇的主要写作目的、结构特征、论证方法、基本语言特点
+和信息组织方式。</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+**四、课程内容** II
+
+> (5)语用知识
+>
+> 语用知识指在特定语境中准确理解他人和得体表达自己的知识。
+> 学习和掌握一定的语用知识有助于学生根据交际目的、交际场合的正
+> 式程度、参与人的身份和角色，选择正式或非正式、直接或委婉、口
+> 语或书面语等语言形式，得体且恰当地与他人沟通和交流，提升有效
+> 运用英语的能力和灵活应变的能力。具体内容要求见表13。
+>
+> **表13** **语用知识内容要求**
+
+<table style="width:99%;">
+<colgroup>
+<col style="width: 8%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>级别</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>内容要求</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>一级</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.使用简单的称谓语、问候语和告别语与他人进行得体的交流；</p>
+<p>2.在语境中使用基本的礼貌用语与他人交流；</p>
+<p>3.对他人的赞扬、道歉、致谢等作出恰当的回应。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>二级</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.根据具体语境的需求，初步运用所学语言，得体表达自己的情感、态
+度和观点；</p>
+</blockquote>
+<p>2.在具体语境中，如购物、就医、打电话、问路等，与他人进行得体的交流；</p>
+<blockquote>
+<p>3.对他人的邀请、祝愿、请求与帮助等作出恰当的回应。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>三级</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.在社会情境中，使用得体的语言和非语言形式进行日常生活交流，如
+请求和提供帮助等；</p>
+<p>2.具有一定的语用意识，尝试选择正式或非正式、直接或委婉的语言，
+进行社会交往，表达情感、态度等，保持良好的人际关系；</p>
+<p>3.在交际情境中，正确理解他人的情感、态度和观点，运用恰当的语言
+形式表达自己的情感、态度和观点。</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+> **4.** **文化知识**
+>
+> 文化知识既包括饮食、服饰、建筑、交通，以及相关发明与创造
+> 等物质文化的知识，也包括哲学、科学、历史、语言、文学、艺术、
+> 教育，以及价值观、道德修养、审美情趣、劳动意识、社会规约和风
+> 俗习惯等非物质文化的知识。文化知识的学习不限于了解和记忆具体
+> 的知识点，更重要的是发现、判断其背后的态度和价值观。具体内容
+> 要求见表14。
+>
+> **表14** **文化知识内容要求**
+
+<table style="width:99%;">
+<colgroup>
+<col style="width: 11%" />
+<col style="width: 88%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>级别</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>内容要求</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>一级</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.人际交往中英语与汉语在表达方式上的异同，如姓名、称谓、问 候 等
+；</p>
+</blockquote>
+<p>2.不同国家或文化背景下的学校生活、家庭生活、饮食习惯等的异同；</p>
+<blockquote>
+<p>3.中外典型文化标志物和传统节日的简单信息。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>二级</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.不同文化背景下，人们的行为举止、生活习俗、饮食习惯、待人接
+物的礼仪，应当规避的谈话内容；</p>
+<p>2.中外重大节日的名称、时间、庆祝方式及其意涵；</p>
+<p>3.简单的英语优秀文学作品(童话、寓言、人物故事等)及其蕴含的
+人生哲理或价值观；</p>
+<p>4.为人类社会进步作出重大贡献的中外代表人物及其成长经历；</p>
+</blockquote>
+<p>5.中外主要体育运动项目、赛事，优秀运动员及其成就和体育精神；</p>
+<blockquote>
+<p>6.中外艺术领域有造诣的人物及其作品；</p>
+<p>7.世界主要国家的基本信息(如首都、国旗和语言等)、旅游文化(重
+要文化标志物等)和风土人情等，对文化多样性的感知与体验。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>三级</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.世界主要国家待人接物的基本礼仪和方式，体现文化的传承和人与
+人之间的相互尊重；</p>
+<p>2.具有优秀品格的中外代表人物及其行为事迹；</p>
+<p>3.中外优秀艺术家及其代表作品，以及作品中的寓意；</p>
+<p>4.中外优秀科学家，其主要贡献及具有的人文精神和科学精神；</p>
+<p>5.中外主要节日的名称、庆典习俗、典型活动、历史渊源；</p>
+<p>6.中外餐桌礼仪，典型饮食及其文化寓意；</p>
+<p>7.世界主要国家的名称、基本信息(如首都、地理位置、主要语言、
+气候特征等)、社会发展，以及重要标志物的地点、特征和象征 意 义 ；</p>
+<p>8.中外名人的生平事迹和名言，以及其中蕴含的人生哲理；</p>
+<p>9.不同文化背景下，人们关于生命安全与健康的态度和观念；</p>
+<p>10.不同文化背景下，人们的理财观念和方式及其带来的影响；</p>
+<p>11.中外大型体育赛事的项目名称、事实信息、历史发展、优秀人物及
+其传递的体育精神；</p>
+<p>12.不同文化背景下，人们的劳动实践和劳动精神；</p>
+<p>13.不同国家青少年的学习和生活方式。</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+**四、课程内容** II
+
+> **5.** **语言技能**
+>
+> 语言技能分理解性技能和表达性技能，具体包括听、说、读、
+> 看、写等方面的技能及其综合运用。听、读、看是理解性技能，说、
+> 写是表达性技能。语言技能中的“看”通常指利用多模态语篇中的图
+> 形、表格、动画、符号，以及视频等理解意义的技能。理解多模态语
+> 篇，除了需要使用传统的阅读技能之外，还需要观察图表中的信息，
+> 理解符号和动画的意义。理解性技能和表达性技能在语言学习过程中
+> 相辅相成、相互促进。具体内容要求见表15至表19。
+>
+> **表15** **语言技能内容要求(一级、一级+)**
+
+<table style="width:99%;">
+<colgroup>
+<col style="width: 11%" />
+<col style="width: 87%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>语言</strong></p>
+<p><strong>技能</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>内容要求</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>理 解 性 技 能</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.理解课堂中的简单指令并作出反应；</p>
+<p>2.根据图片和标题，推测语篇的主题、语境及主要信息；</p>
+<p>3.在听、读、看的过程中有目的地提取、梳理所需信息；</p>
+<p>4.推断多模态语篇(如动画、图书及其他印刷品的封面和封底、邀请
+卡及贺卡)中的画面、图像、声音、色彩等传达的意义；</p>
+<p>5.借助语气、语调、手势和表情等推断说话者的情绪、情感、态度和 意 图
+；</p>
+<p>6.课外视听活动每周不少于30分钟；</p>
+<p>7.课外阅读量累计达到1500～2000词。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>表 达 性 技 能</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.在语境中与他人互致简单的问候或道别；</p>
+<p>2.演唱所学的简单英语歌曲；</p>
+<p>3.大声跟读音视频材料，正确朗读学过的对话、故事和文段；</p>
+<p>4.交流简单的个人和家庭信息，如姓名、家庭情况等；</p>
+<p>5.表达简单的情感和喜好，如喜欢或不喜欢、想要或不想要；</p>
+<p>6.简单介绍自己的日常起居和生活，如作息时间、一日三餐、体育活
+动、兴趣爱好等；</p>
+<p>7.简单介绍自己的学校和学校生活，如学校设施、课程、活动，以及
+同学、老师等；</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+> **续表**
+
+<table style="width:99%;">
+<colgroup>
+<col style="width: 11%" />
+<col style="width: 87%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>语言</strong></p>
+<p><strong>技能</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>内容要求</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td rowspan="2"><blockquote>
+<p>表 达 性 技 能</p>
+</blockquote></td>
+<td><blockquote>
+<p>8.简单介绍自己喜欢的动物，如外形特征和生活环境等；</p>
+<p>9.用简单的语句描述图片或事物；</p>
+<p>10.在教师指导下进行简单的角色扮演；</p>
+<p>11.正确书写字母、单词和句子；</p>
+<p>12.根据图片或语境，仿写简单的句子。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>+1.在画面的提示下，为所学对话、故事或动画片段配音； +2.
+口头描述事件或讲述小故事。</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+> **表16** **语言技能内容要求(二级、二级+)**
+
+<table style="width:99%;">
+<colgroup>
+<col style="width: 11%" />
+<col style="width: 87%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>语言</strong></p>
+<p><strong>技能</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>内容要求</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td rowspan="2"><blockquote>
+<p>理 解 性 技 能</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.理解日常学习和生活中的简单指令，完成任务；</p>
+<p>2.借助图片、图像等，理解常见主题的语篇，提取、梳理、归纳主要 信 息
+；</p>
+<p>3.在听和读的过程中，根据上下文线索和非文字信息猜测语篇中词汇
+的意思，推测未知信息；</p>
+<p>4.归纳故事类语篇中主要情节的发生、发展与结局；</p>
+<p>5.对语篇中的信息进行分类；</p>
+<p>6.比较语篇中人物、事物或观点间的相似性和差异性，尝试从不同视
+角观察、认识世界；</p>
+<p>7.概括语篇的主要内容，体会主要信息之间的关联；</p>
+<p>8.理解多模态语篇(如动画、海报、图书及其他印刷品的封面和封底
+等)传达的意义，提取关键信息；</p>
+<p>9.课外视听活动每周不少于30分钟；</p>
+<p>10.课外阅读量累计达到4000～5000词。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>+阅读有配图的简单章节书，理解大意，对所读内容进行简单的口头概
+括与描述。</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+**四、课程内容**Ⅱ
+
+> **续表**
+
+<table style="width:99%;">
+<colgroup>
+<col style="width: 11%" />
+<col style="width: 87%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>语言</strong></p>
+<p><strong>技能</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>内容要求</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td rowspan="2"><blockquote>
+<p>表 达 性 技 能</p>
+</blockquote></td>
+<td
+style="text-align: right;"><p>1.运用所学的日常用语与他人进行简单的交流，如询问个人基本信息；</p>
+<blockquote>
+<p>2.完整、连贯地朗读所学语篇，在教师指导下或借助语言支架，简单
+复述语篇大意；</p>
+<p>3.围绕相关主题和所读内容进行简短叙述或简单交流，表达个人的情
+感、态度和观点；</p>
+<p>4.在教师帮助下表演小故事或短剧；</p>
+<p>5.简单描述事件或讲述简单的小故事；</p>
+<p>6.围绕图片内容，写出几句意思连贯的描述；</p>
+<p>7.模仿范文的结构和内容写几句意思连贯的话，并尝试使用描述性词
+语添加细节，使内容丰富、生动；</p>
+<p>8.正确使用大小写字母和常见标点符号，单词拼写基本正确；</p>
+</blockquote>
+<p>9.根据需要，运用图表、海报、自制绘本等方式创造性地表达意义。</p></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>+1.结合相关主题进行简短的主题演讲，做到观点基本明确、逻辑比较
+清楚、语音正确、语调自然；</p>
+</blockquote>
+<p>+2.结合主题图或连环画，口头创编故事，有一定的情节，语言基本准确。</p></td>
+</tr>
+</tbody>
+</table>
+
+> **表17** **语言技能内容要求(三级——7年级)**
+
+<table style="width:99%;">
+<colgroup>
+<col style="width: 11%" />
+<col style="width: 87%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>语言</strong></p>
+<p><strong>技能</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>内容要求</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p><strong>理</strong> <strong>解</strong> <strong>性</strong>
+<strong>技</strong> <strong>能</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>1.根据连续指令和问题，作出适当反应，给予恰当回应；</strong></p>
+<p><strong>2.识别口语语篇(如故事、介绍、描述、通知等)的主题、大意和</strong>
+<strong>要</strong> <strong>点</strong> <strong>；</strong></p>
+<p><strong>3.识别口语语篇的情境，判定说话者的身份；</strong></p>
+<p><strong>4.识别口语语篇中说话者的语调变化，判断意义的变化；</strong></p>
+<p><strong>5.借助图片、影像等视觉信息理解收听和观看的内容；</strong></p>
+<p><strong>6.理解书面语篇的整体意义和主要内容；</strong></p>
+</blockquote>
+<p><strong>7.根据标题或图片预测书面语篇的大概内容、故事的情节发展或结局；</strong></p>
+<blockquote>
+<p><strong>8.提取、梳理、分析和整合书面语篇的主要或关键信息；</strong></p>
+<p><strong>9.识别和判断书面语篇中句子之间的逻辑关系；</strong></p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+> **续表**
+
+<table style="width:99%;">
+<colgroup>
+<col style="width: 11%" />
+<col style="width: 87%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>语言</strong></p>
+<p><strong>技能</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>内容要求</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>理</p>
+</blockquote></td>
+<td><blockquote>
+<p>10.根据书面语篇的上下文推断生词意义；</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>解 性</p>
+</blockquote></td>
+<td><blockquote>
+<p>11.阅读故事，整体理解主要内容，对所读内容进行简要的概括、描述 与评价
+；</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>技 能</p>
+</blockquote></td>
+<td><blockquote>
+<p>12.课外视听活动每周不少于30分钟；</p>
+<p>13.课外阅读量累计达到4万词以上。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>表 达 性 技 能</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.演唱英语歌曲，诵读英语诗歌；</p>
+<p>2.完整、连贯地朗读短文，简单复述短文大意；</p>
+<p>3.在教师指导下进行简单的角色扮演；</p>
+</blockquote>
+<p>4.围绕相关主题，用简短的表达方式进行口头交流，完成交际任务；</p>
+<p>5.在口头表达中使用较为准确的词语和表达法，语音、语调基本正确；</p>
+<blockquote>
+<p>6. 自选主题，围绕特定语境，独立写出几个意义连贯、表意清楚的 语 句
+；</p>
+<p>7.利用所给提示(如图片、图表、海报、实物、文字等),写出简单文
+段传达信息，编写情节较为完整的小故事，语言基本准确；</p>
+<p>8.用简单的书面语篇介绍个人情况和个人经历；</p>
+<p>9.写出或者回复简单的问候和邀请；</p>
+<p>10.在书面表达中正确使用常用标点符号，用词基本准确，表达基本
+通顺。</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+> **表18** **语言技能内容要求(三级——8年级)**
+
+<table style="width:99%;">
+<colgroup>
+<col style="width: 11%" />
+<col style="width: 87%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>语言</strong></p>
+<p><strong>技能</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>内容要求</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p><strong>理</strong> <strong>解</strong> <strong>性</strong>
+<strong>技</strong> <strong>能</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>1.获取和梳理口语语篇的主旨要义和关键细节；</strong></p>
+<p><strong>2.识别说话者的措辞、语气等，推断对话者之间的关系；</strong></p>
+<p><strong>3.根据说话者语音、语调的变化，判断其情感和态度的变化；</strong></p>
+<p><strong>4.识别用语较正式的简短对话中谈话内容的递进和转换；</strong></p>
+<p><strong>5.在收听或观看主题相关、语速较慢的广播、电视、网络节目时，识</strong>
+<strong>别主题，理解大意，获取主要信息；</strong></p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+**四、课程内容**Ⅱ
+
+> **续表**
+
+<table style="width:100%;">
+<colgroup>
+<col style="width: 11%" />
+<col style="width: 87%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>语言</strong></p>
+<p><strong>技能</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>内容要求</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>理 解 性 技 能</p>
+</blockquote></td>
+<td><blockquote>
+<p>6.梳理书面语篇的脉络、梗概和发展变化，提取关键信息，归纳内容 要 点
+；</p>
+<p>7.区分书面语篇中的事实性信息和非事实性信息(观点和意图);</p>
+<p>8.理解并解释书面语篇中图表提供的信息；</p>
+<p>9.识别和判断书面语篇中上下文之间的逻辑关系；</p>
+<p>10.理解和推测书面语篇中隐含的信息和意义；</p>
+<p>11.阅读短篇小说和简单的报刊文章，整体理解主要内容，对所读内容
+进行简要的概括、描述与评价；</p>
+<p>12.课外视听活动每周不少于30分钟；</p>
+<p>13.课外阅读量累计达到10万词以上。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>表 达 性 技 能</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.正确、流利地朗读短文，有逻辑地讲述短文主要内容；</p>
+<p>2.独立或者小组合作完成角色扮演等活动；</p>
+<p>3.在特定的情境中引出主题，并用所学语言与他人进行口头交流，有
+效询问，恰当表达，完成交际任务；</p>
+<p>4.在口头表达中结合主题使用正确的词汇、句式和语法，表意准确、 得 体
+；</p>
+<p>5.以口语或书面的形式简单转述语篇的主要内容和观点；</p>
+<p>6.用简单的书面语篇描写他人的经历或熟悉的事物等；</p>
+<p>7.结合相关主题进行主题演讲，观点基本明确，逻辑比较清楚；</p>
+<p>8.在教师指导下起草和修改作文；</p>
+<p>9.在书面表达中正确使用标点符号，用词准确，表达通顺，格式较为
+规范。</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+> **表19** **语言技能内容要求(三级——9年级、三级+)**
+
+<table style="width:99%;">
+<colgroup>
+<col style="width: 11%" />
+<col style="width: 87%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>语言</strong></p>
+<p><strong>技能</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>内容要求</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td rowspan="2"><blockquote>
+<p>理 解 性 技 能</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.理解和推断日常生活中说话者的意图，如请求、计划、建议、邀请、
+道歉、拒绝、询问、告知等；</p>
+<p>2.借助语境克服生词障碍，理解口语语篇的信息和意义；</p>
+<p>3.获取和梳理口语语篇中一系列事件的主题和因果关系，预测故事情
+节的发展和可能的结局；</p>
+<p>4.分析和梳理常见书面语篇的基本结构特征和内容的主次关系；</p>
+<p>5.从书面语篇中判断和归纳作者的观点及语篇的主旨要义；</p>
+<p>6.辨别语篇中的衔接手段，判断语篇中句子之间、段落之间的逻辑 关 系
+；</p>
+<p>7.根据上下文和构词法推断书面语篇中生词的含义；</p>
+</blockquote>
+<p>8.在听、读、看的过程中，针对语篇的内容有选择地记录信息和要点；</p>
+<blockquote>
+<p>9.根据不同目的，运用各种阅读策略有效获取语篇信息；</p>
+<p>10.阅读名人传记和报刊文章时，整体理解和简要概括所读内容；</p>
+<p>11.建立语篇与语篇、语篇与个人、语篇与世界的关联，探究和发现语
+篇的现实意义；</p>
+<p>12.课外视听活动每周不少于30分钟；</p>
+<p>13.课外阅读量累计达到15万词以上。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>+1.理解语篇中显性或隐性的逻辑关系；</p>
+<p>+2.根据话语中的重复、解释、停顿等现象，理解话语的意义；
++3.理解多模态语篇中非文字资源传达的意义。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>表 达 性 技 能</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.沟通信息，参与讨论，恰当运用一般社交场合的礼貌用语；</p>
+<p>2. 口头概括所读故事或短文的大意，转述他人简单的谈话；</p>
+<p>3.围绕相关主题口头表达个人的观点和态度，并说明理由；</p>
+<p>4.就口语或书面语篇的内容、观点和态度作出简单的口头评价，并说 明理由
+；</p>
+<p>5.借助语调和重音突出需要强调的意义；</p>
+</blockquote>
+<p>6.根据所读语篇内容和所给条件，进行简单的口头或书面改编、创编；</p>
+<blockquote>
+<p>7.根据写作要求，收集、准备素材，独立起草、修改和完成语篇；</p>
+<p>8.为所给图表或自己创作的图片写出简单的说明；</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+**四、课程内容**
+
+> **续表**
+
+<table style="width:99%;">
+<colgroup>
+<col style="width: 11%" />
+<col style="width: 87%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>语言</strong></p>
+<p><strong>技能</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>内容要求</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td rowspan="2"><blockquote>
+<p>表 达 性 技 能</p>
+</blockquote></td>
+<td><blockquote>
+<p>9.围绕相关主题，用所学语言，以书面语篇的形式描述和介绍身边的
+人和事物，表达情感、态度和观点；</p>
+<p>10.在口头和书面表达中使用常见的连接词表示顺序和逻辑关系，连接
+信息，做到意义连贯；</p>
+<p>11.在口头和书面表达中进行适当的自我修正，用语得当，沟通与交流
+得体、有效。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>+1.根据交际需要发起谈话并维持交谈；</p>
+<p>+2.使用文字和非文字手段描述个人经历、事件和事物特征；
++3.恰当质疑语篇的内容、观点，解释不合理之处。</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+> **6.** **学习策略**
+>
+> 学习策略主要包括元认知策略、认知策略、交际策略、情感管理
+> 策略等。其中，元认知策略有助于学生计划、监控、评价、反思和调
+> 整学习过程，提升自主学习能力；认知策略有助于学生采用适宜的学
+> 习方式、方法和技术加工语言信息，提高学习效率；交际策略有助于
+> 学生发起、维持交际，提高交际效果；情感管理策略有助于学生调控
+> 学习情绪，保持积极的学习态度。具体内容要求见表20。
+>
+> **表20** **学习策略内容要求**
+
+<table style="width:100%;">
+<colgroup>
+<col style="width: 8%" />
+<col style="width: 14%" />
+<col style="width: 76%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>级别</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>学习策略</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>内容要求</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p><strong>一级</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>元认知</strong> <strong>策略</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>1.在学习时集中注意力；</strong></p>
+<p><strong>2.在交流中注意倾听、积极思考；</strong></p>
+<p><strong>3.尝试运用多种途径学习英语，遇到问题主动向老师或同学</strong>
+<strong>请</strong> <strong>教</strong> <strong>；</strong></p>
+<p><strong>4.在教师指导下制订简单的学习计划，并付诸行动；</strong></p>
+</blockquote>
+<p><strong>5.能意识到自己英语学习中的进步与不足，并作出适当调整。</strong></p></td>
+</tr>
+</tbody>
+</table>
+
+> **续表**
+
+<table style="width:99%;">
+<colgroup>
+<col style="width: 8%" />
+<col style="width: 14%" />
+<col style="width: 76%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>级别</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>学习策略</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>内容要求</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td rowspan="3"><blockquote>
+<p>一级</p>
+</blockquote></td>
+<td><blockquote>
+<p>认知 策略</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.在词语与相应事物之间建立联系；</p>
+<p>2.在新旧语言知识之间建立联系；</p>
+<p>3.在语境中学习词汇和语法；</p>
+<p>4.通过分类等方法加深对词汇的理解和记忆；</p>
+<p>5.积极运用所学英语进行表达和交流；</p>
+<p>6.注意观察生活和媒体中使用的简单英语。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>交际</p>
+<p>策略</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.没听懂对方说的英语时，会请对方说慢一些或再说一遍；</p>
+</blockquote>
+<p>2.在表达遇到困难时，用简单的手势、指示代词等手段辅助表达。</p></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>情感管理</p>
+<p>策略</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.对英语学习有兴趣，乐于参与学习活动；</p>
+<p>2.敢于开口，表达中不怕出错；</p>
+<p>3.有与同伴合作学习的愿望，乐于与他人共同完成学习任务。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td rowspan="4"><blockquote>
+<p>二级</p>
+</blockquote></td>
+<td><blockquote>
+<p>元认知 策略</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.根据需要进行预习，对所学内容主动复习和归纳；</p>
+<p>2.在教师指导下制订简单的学习计划，合理安排学习时间；</p>
+<p>3.主动利用图书馆和相关资源进行拓展学习；</p>
+<p>4.初步借助词典等简单的工具书学习英语；</p>
+<p>5.主动了解英语学习方法，探索适合自己的学习方法；</p>
+<p>6.对学习过程和效果进行自我评价和反思，根据需要调整计
+划，遇到问题主动请教。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>认知 策略</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.运用已有语言积累和生活经验完成新的学习任务；</p>
+<p>2.借助图表、思维导图等工具归纳、整理所学内容；</p>
+<p>3.借助拼读规则拼读生词；</p>
+<p>4.在学习内容与个人经历之间建立有意义的联系；</p>
+<p>5.养成按意群阅读的习惯。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>交际</p>
+<p>策略</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.借助非语言信息线索理解他人表达的信息；</p>
+<p>2.能在口头表达中借助目光、表情、手势、动作等非语言手 段表达意思。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>情感管理</p>
+<p>策略</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.保持对英语学习的积极态度和自信心，主动参与各种学习
+和运用语言的实践活动；</p>
+<p>2.主动与同学开展合作学习，乐于与他人分享学习资源和策 略方法 ；</p>
+<p>3.遇到困难或取得进步时能有效调整自己的情绪。</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+**四、课程内容**Ⅱ
+
+> **续表**
+
+<table style="width:99%;">
+<colgroup>
+<col style="width: 8%" />
+<col style="width: 14%" />
+<col style="width: 76%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>级别</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>学习策略</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>内容要求</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td rowspan="2"><blockquote>
+<p>三级</p>
+</blockquote></td>
+<td><blockquote>
+<p>元认知 策略</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.制订明确的英语学习目标和计划，并进行监控、反思和 调 整 ；</p>
+<p>2.定期反思和评价自己学习中的收获、进步与不足；</p>
+<p>3.积极探索适合自己的学习方法；</p>
+<p>4.根据需要主动进行预习和复习；</p>
+<p>5.在学习中有意识地加强自己的专注力；</p>
+<p>6.合理规划、分配、利用和管理时间，提升学习效率和自 控 力 ；</p>
+<p>7.搜索并利用线上线下资源丰富自己的英语学习内容；</p>
+<p>8.使用工具书查找信息，了解和学习英语；</p>
+<p>9.经常和同学组成小组，合作学习英语；</p>
+<p>10.善于抓住课内外用英语沟通与交流的机会开展学习和 交流。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>认知 策略</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.在学习中激活并关联已知；</p>
+<p>2.在学习中利用不同感官增强理解和记忆；</p>
+<p>3.在学习中善于抓要点、记笔记；</p>
+<p>4.整理、归纳所学内容，把握重点和难点；</p>
+<p>5.在学习中善于利用信息结构图等理解主题；</p>
+<p>6.运用多种方法、借助多种资源学习和记忆词语，如拼读、
+联想、搭配、分类，以及构词法等；</p>
+<p>7.从形式、意义和使用三个角度关注和学习语法，善于发现
+语言规律，并能运用规律举一反三；</p>
+<p>8.了解和运用各种阅读技巧和策略，如预测、略读、猜测词
+义、推断、理解篇章(或语篇)结构和指示代词的指代意
+义等，提升阅读的兴趣与能力；</p>
+<p>9.了解和运用基本的写作技巧和策略，如审题、选材、列提
+纲、修改习作和积累词句等，提升写作能力；</p>
+<p>10.在学习和使用英语时，意识到错误并进行自我纠正；</p>
+<p>11.有效地借助母语知识理解英语。</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+> **续表**
+
+<table style="width:100%;">
+<colgroup>
+<col style="width: 8%" />
+<col style="width: 14%" />
+<col style="width: 76%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>级别</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>学习策略</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>内容要求</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td rowspan="2"><blockquote>
+<p>三级</p>
+</blockquote></td>
+<td><blockquote>
+<p>交际</p>
+<p>策略</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.在沟通与交流中，借助手势、表情等体态语表达意义；</p>
+</blockquote>
+<p>2.沟通与交流遇到困难时，主动提问，请求澄清或寻求帮助；</p>
+<blockquote>
+<p>3.在沟通与交流中，注意并尊重中外文化习俗的差异。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>情感管理</p>
+<p>策略</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.对英语学习保持主动性和积极性，激发动机，端正态度，
+降低焦虑，保持自信；</p>
+</blockquote>
+<p>2.乐于参与课内外英语实践活动，积极沟通表达，不怕犯错；</p>
+<blockquote>
+<p>3.在学习和运用英语的过程中调控自己的情绪，取得成绩不
+盲目骄傲，遇到问题不轻言放弃，有一定的抗挫折能力。</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+> <span id="bookmark9" class="anchor"></span>**(二)教学提示**
+>
+> **1.** **预备级(1～2年级)**
+>
+> 第一，低年级学生刚开始接触英语，语言学习以视、听、说为
+> 主。课堂上要创设良好的学习氛围，提供自然、地道的视听语言输
+> 入，引导学生注意倾听、乐于模仿、大胆表达，帮助学生在理解意义
+> 的前提下，初步积累听说词汇，积极开展简单的日常交流，培养良好
+> 的学习习惯。
+>
+> 第二，注重学生的体验、感知和实践，激发低年级学生的英语学
+> 习兴趣，保持他们学习的注意力。选取贴近学生日常生活的主题，如
+> 家庭生活、学校生活、动植物等，通过直观、形象、生动、有趣的教
+> 学方式，调动学生多感官参与学习；利用视频、图片、实物等，带领
+> 学生声情并茂地朗读故事、演唱歌曲、说唱歌谣；通过游戏激发学生
+> 的好奇心和求知欲，引导他们积极投入语言学习和实践。
+>
+> 第三，采用以激励为主的评价方式，鼓励学生大胆开口、乐于参
+> 与学习活动。重点关注学生的课堂表现和参与程度，通过口头表扬、
+
+**四、课程内容**II
+
+> 发放英语点赞卡等方式，调动学生学习英语的积极性，帮助学生增强
+> 自信心，获得成就感。
+>
+> 预备级的学习活动和学习要求参考表21。
+>
+> **表21** **预备级的学习活动和学习要求**
+
+<table style="width:99%;">
+<colgroup>
+<col style="width: 14%" />
+<col style="width: 84%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>学习活动</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>学习要求</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>听做</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.听懂课堂简短的指令，并作出适当的反应；</p>
+<p>2.根据听到的词语或指令做事情，如指认图片或实物、涂颜色、画
+图、做动作等；</p>
+</blockquote>
+<p>3.在图片和动作的提示下，听懂简单的小故事，并作出适当的反应。</p></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>说唱</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.根据录音模仿说英语；</p>
+<p>2.相互致以简单的问候；</p>
+<p>3.相互交流简单的个人信息，如姓名、年龄等；</p>
+<p>4.根据表演猜测意思，说出词语；</p>
+<p>5.独立或合作演唱学过的歌曲和歌谣；</p>
+<p>6.根据图片说出单词或短句；</p>
+<p>7.表达简单的情感，如喜欢和不喜欢。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>玩演</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.在教师指导下用英语做游戏，并在游戏中进行简单的交流；</p>
+<p>2.在教师指导下进行简单的角色扮演。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>视听</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.观看语言简单的英语动画片或英语教学节目，理解大意，并模仿
+其中简单的话语；</p>
+<p>2.课堂视听时间每周不少于20分钟。</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+> **2.** **一级(3～4年级)**
+>
+> 第一，营造积极的课堂生态，构建互尊互爱的师生关系。创设宽
+> 松、平等、和谐、向上的课堂氛围，在交流中引导学生注意倾听、敢
+> 于开口、不怕出错、大胆表达自己的观点或转述他人的观点等。
+>
+> 第二，突出听说，重视模仿，培养学生良好的学习习惯。设计多
+> 途径的听说活动，借助图片、视频、简笔画、手势等帮助学生理解所
+> 听、所看语言材料，引导学生在感知、理解、模仿和运用中习得语
+>
+> 义务教育英语课程标准(2022年版)
+>
+> 言，学会表达。通过让学生听说韵文、韵句，听唱歌曲，听读课文录
+> 音等，模仿语音、语调和情绪表达，初步形成语感，奠定良好的语音
+> 基础。此外，在起始年段的英语教学中，帮助学生制订简单的学习 计 划 。
+>
+> 第三，创设丰富的语境，在理解和表达活动中帮助学生习得词汇
+> 和语法知识。针对词汇教学，采用“音”“形”“义”和“用”相结合
+> 的方法，在语境中引导学生感知单词的发音；借助图片、实物等教
+> 具，以及表情、手势和动作等帮助学生认读并理解词汇含义。在语境
+> 中反复再现词汇，帮助学生有意识地使用词汇表达意义，避免脱离语
+> 境的机械记忆与操练。针对语法教学，应遵循形式、意义和使用统一
+> 的原则，让学生感知和体验形式与意义的联系，在语境中运用所学语
+> 法进行交流和表达。
+>
+> 第四，围绕语篇主题意义设计逻辑关联的语言实践活动。在教学
+> 中，围绕主题，依托语篇，设计体验、模仿、理解、应用等体现逻辑
+> 关联的语言实践活动，帮助学生建构基于主题的结构化知识；借助课
+> 堂任务单和板书，采用问答、描述和表演等活动内化所学语言和文化
+> 知识；通过小组讨论、制作展板或海报、创编故事，以及表演等活
+> 动，用英语交流和表达新的认知，体现对主题的理解。
+>
+> **3.** **二级(5～6年级)**
+>
+> 第一，关注学生不同的学习需求，采用多种教学方式激发学生的
+> 学习兴趣，为学生创设体验成功的机会。因材施教，针对不同能力水
+> 平、不同学习风格的学生，设计不同难易程度的学习任务，布置体现
+> 差异化的作业，组织开展生动多样的活动，如对话交流、短剧展示、
+> 歌曲演唱、故事创编、海报设计等，引导学生做到“想表达”“能表
+> 达”和“会表达”,体验英语学习的乐趣与意义，获得成就感和自信
+> 心。要减少对教学的过度控制与统一要求，为学生提供多样化的选择
+> 和个性化的指导，如让学生选择自己感兴趣的内容开展学习，用自己
+>
+> **四** **、课程内容**
+>
+> 喜欢的方式完成学习任务，展示学习收获等。对学习有困难的学生，
+> 要给予更多帮助，充分肯定他们的努力与进步，鼓励他们主动向老师
+> 和同学请教，帮助他们找到有效的方式解决学习困惑，学会制订可实
+> 现的近期目标，并通过个人的努力逐步达成目标。
+>
+> 第二，基于有意义的学习素材，通过感知、体验、运用、实践等
+> 循序渐进的方式，发展学生的拼读能力和语音意识。在开展拼读教学
+> 时，要为学生提供有意义的学习素材，如语言简单、图文并茂、情节
+> 生动有趣、渗透拼读规则并配有录音的阅读材料。学生在阅读、理解
+> 语篇内容的基础上，通过反复倾听、认真观察，发现单词的拼读规
+> 则，继而进行巩固与内化。要给学生充分的观察、发现和总结拼读规
+> 则的时间，不宜用机械跟读和记忆代替学生的思考和实践。通过丰富
+> 的语言实践活动，如听录音模仿，朗读语篇，为故事配音，演唱歌
+> 曲、韵文等，引导学生感知、体会英语的重音、意群、语调与节奏
+> 等，为准确、得体地表达与交流奠定基础。
+>
+> 第三，重视对学生英语学习方法的指导，为他们学会学习奠定基
+> 础。教学过程中有机融入对学习方法的指导，帮助学生学会根据实际
+> 需求选择恰当的学习方法完成学习任务，解决学习问题，逐步形成适
+> 合自己的学习策略。具体而言，应在以下几个方面给予学生必要的指
+> 导：做好课前预习和课后复习，借助图表及时梳理和归纳所学内容，
+> 自主进行课外阅读和英语视听活动，运用拼读规则记忆单词，借助词
+> 典等工具书辅助学习等。鼓励学生主动寻找学习资源，遇到问题积极
+> 向他人请教，引导他们学会学习。
+>
+> 第四，通过开展英语综合实践活动，促进学生核心素养的全面发
+> 展。教师应基于一定的课程目标，以学生的兴趣和直接经验为基础，
+> 以与学生学习、生活密切相关的各类现实性和实践性问题为内容，本
+> 着“学用结合、课内外结合、学科融合”的原则，开展英语综合实践
+> 活动，把学生的学习从书本引向更广阔的现实世界。
+
+英语综合实践活动学习主题的确定要充分考虑学生的学习兴趣，
+
+> **义务教育** 英语课程标准(2022年版)
+>
+> 根据英语学习内容和现实生活确定任务及问题，引导学生通过实践与
+> 探究，综合运用英语和其他课程所学知识解决问题，拓展并加深学生
+> 对自我、社会和自然的认知与体验。英语综合实践活动的目标要体现
+> 整体性，强调学生的全面发展。学习进程中各个环节的设计与实施要
+> 有效促进实践活动目标的达成。实施英语综合实践活动评价时，要全
+> 面评价学生在学习过程中的实际获得，既要对知识技能进行评价，也
+> 要将同伴合作、问题解决、创造性思维等方面纳入评价范围。
+>
+> **4.** **三级(7～9年级)**
+>
+> 第一，做好初中和小学的教学衔接，帮助学生顺利适应初中阶段
+> 的英语学习。衔接要关注学生在知识、能力、习惯、方法等各方面的
+> 进阶。对学生在小学阶段的语言水平实际达成情况开展调研，通过问
+> 卷、访谈、测评等方式获取相关数据，分析并总结学生的学习基础和
+> 个体学习特征。明确初中各年级学生语言水平发展的侧重点和达成
+> 度，并以此为依据做好教学规划，结合学情指导学习。引导学生树立
+> 目标意识并做好远期、中期、近期的学习规划，激发学生的责任感和
+> 自主性，提升学生的自律意识和情绪管理能力，鼓励学生主动适应初
+> 中学习的特点和节奏。重视培养学生良好的学习习惯和策略，结合教
+> 学内容，分阶段为学生示范不同策略的使用方法，并引导学生在语言
+> 实践活动中模仿使用和组合运用多种学习策略，如查词典、记笔记、
+> 按规则拼读单词、梳理结构化知识、预习、复习等，坚持课内外的语
+> 言实践和积累，逐步形成适合自己的学习方法。指导学生采用适当的
+> 方式，如学习日志、档案袋等，在完成学习活动后适时总结学习的得
+> 失，反思学习的效果，改进、优化并持续推进自己的学习。
+>
+> 第二，依托语境开展教学，引导学生在真实、有意义的语言应用
+> 中整合性地学习语言知识。
+>
+> 就语音知识而言，要让学生学会根据重音、意群、语调与节奏等
+> 语音方面的变化，感知说话人表达的不同意义，准确地理解说话人的
+>
+> **四** **、课程内容**
+>
+> 意图和态度，体会重音、语调和节奏等具有表意功能，并进行模仿、
+> 练习和内化，学会运用语音知识更好地表达自己的意图和态度。音标
+> 是初中阶段需要学习的语音知识内容。要帮助学生学习和掌握音标，
+> 借助音标准确读出和记忆单词，为学生开展自主学习奠定基础。
+>
+> 就词汇知识而言，要让学生认识到词汇学习不是单纯的词汇记忆
+> 和机械的操练，而是要学会运用词语在特定情境中理解和表达意义。
+> 尽量以词块的形式呈现生词，引导学生关注词语的搭配和固定的表达
+> 方式，并在围绕主题意义建构结构化知识的过程中，提炼词语的搭配
+> 和固定表达方式，构建词汇语义网，积累词块，扩大词汇量。帮助学
+> 生在大量的语言实践活动中，规范语音，练习拼读，强化语感，加强
+> 运用，内化所学。结合主题，在课堂话语和学习活动中，有意识地通
+> 过对话、讨论等复现所学词语，引导学生围绕主题使用思维导图梳理
+> 词汇。指导学生借助构词法知识和词典、词表等工具学习词语，大胆
+> 使用新的词块自主表达意义、解决新问题。
+>
+> 就语法知识而言，要帮助学生建立以语言运用为导向的“形式一
+> 意义一使用”语法观，引导学生在理解主题意义的基础上，认识到语
+> 法形式的选择取决于具体语境。重视在语境中呈现新的语法知识，指
+> 导学生在语境中观察和归纳所学语法的使用场合、表达形式、基本意
+> 义、使用规则和语用功能。根据学生的实际需求，选择和设计既有层
+> 次又强调整合的不同类型的练习和活动，巩固所学语法知识，引导学
+> 生在语境中学会应用语法知识准确地理解他人和得体地表达自己。
+>
+> 就语篇知识而言，要为学生提供接触和体验各种语篇类型的机
+> 会，指导学生学习不同文体特有的语篇结构和语言特征，关注语篇的
+> 各个组成部分及所用的语言是如何表达意义的，建立文体图式、内容
+> 图式和语言图式，避免单纯讲授语篇知识。引导学生充分利用语篇知
+> 识有效获取和传递信息，表达观点和态度。如确需补充语篇，应注意
+> 选取长度适中、难易恰当的语篇，确保所选语篇具有正确的价值导
+> 向，并有利于促进学生的知识建构和思维发展。
+
+就语用知识而言，要帮助学生树立语境意识，在语言交际中关注
+时间、地点、场合、交际对象、人物关系、心情处境和交际目的等因
+素。在输出活动中，注意创设真实的、与问题解决紧密关联的语境，
+明确交际的目的和参与人的角色、身份、年龄及其之间的关系，引导
+学生根据正式或非正式场合，选择得体的方式进行沟通与交流。帮助
+学生了解世界主要国家人们待人接物的基本礼仪和交际方式，有效实
+现与他人的沟通与合作。
+
+第三，指导学生自主建构和内化新知，发展独立思考和合作解决
+问题的能力。注意在教学中放手，从关注教师教学行为的实际发生转
+到关注学生学习的过程和效果。以英语学习活动观为指导组织教学，
+引导学生在探究主题意义的活动中，利用多种工具和手段，如思维导
+图、信息结构图等，学会在零散的信息和新旧知识之间建立关联，自
+主建构基于语篇的结构化新知。重视内化环节的作用，利用个人自
+述、同伴互述和小组分享等活动形式巩固学生的结构化新知。设计和
+提出指向不同思维层次的问题，引导学生独立思考，促进他们的思维
+从低阶向高阶稳步发展，逐渐形成对问题的认识和态度。注意避免将
+教师对主题意义的理解告诉或强加给学生，以及以教师的逻辑限制学
+生的思考。充分利用课堂的交互性和社会性特点，为学生创造合作学
+习的机会，如阅读圈、读者剧场等，引领学生多角度分析、审视、赏
+析和评价语篇，比较文化异同，产生思维碰撞。通过语言、内容和思
+维融合的学习方式，引领学生在真实情境中，利用结构化新知完成真
+实任务，解决实际问题。
+
+第四，指导学生坚持开展课外阅读，注重培养和发展阅读素养。
+为学生提供课外阅读的环境、资源和方法，创设良好的课外阅读氛
+围，帮助学生在阅读中得到全方位的发展。 一方面，注意选择并补充
+符合初中阶段学生认知发展需求和语言发展水平、题材丰富、体裁多
+样、国内正式出版的英语(分级)读物，或指导学生选择适合自身语
+言水平和兴趣爱好的阅读材料，制订课外读书计划或阅读任务清单，
+
+> **四** **、课程内容**
+>
+> 参照课程内容遴选阅读主题范围，如青春期学生感兴趣的，与成长、
+> 家庭、校园、科普、社会问题等相关的主题，确保内容积极向上。另
+> 一方面，督促学生每天保证一定的阅读时间，坚持精读与泛读、课内
+> 阅读与课外阅读相结合，将课外阅读任务统整至课后作业中，并组织
+> 学生定期交流展示阅读成果。教师要遵循学习规律，满足差异化需
+> 求，辅导并支持学生开展如持续默读、阅读日志、故事会、戏剧表演
+> 和读书心得分享等活动；鼓励学生将阅读经验与现实生活相联系，引
+> 发情感共鸣和阅读期待；帮助学生进一步发展阅读技能和策略，提升
+> 阅读流畅性，扩大阅读量，保持持续的阅读兴趣，养成良好的阅读习
+> 惯，形成健康的阅读情趣。
+>
+> 第五，开展英语综合实践活动，提升学生运用所学语言和跨学科
+> 知识创造性解决问题的能力。引导学生结合个人生活经验和社会生活
+> 需要，围绕特定主题，由真实的问题或任务驱动，综合运用其他相关
+> 课程的知识自主开展项目学习，如与化学联合的“调查大气污染”,
+> 与道德与法治联合的“探析中华传统节日”,与历史、生物学等联合
+> 的“走进博物馆”,与地理联合的“家乡一日游”等。结合教材内容，
+> 遵循项目学习的路径，适当运用信息化手段，将语言学习和内容学习
+> 有机融合。在英语综合实践活动中，确立并引导学生围绕复杂的、来
+> 自真实情境的主题，自主、合作参与实践和探究，用英语完成设计、
+> 计划、问题解决、决策、作品创作和成果交流等一系列项目任务。在
+> 此过程中，学生运用所学语言进行有意义的思考、建构、交流和表
+> 达，呈现和展示最终的学习成果，实现学以致用、学用一体。
+>
+> <span id="bookmark10" class="anchor"></span>**五、学业质量**
+>
+> <span id="bookmark11" class="anchor"></span>**(一)学业质量内涵**
+
+学业质量是学生在完成课程阶段性学习后的学业成就表现，反映
+核心素养要求。学业质量标准是以核心素养为主要维度，结合课程内
+容，对学生学业成就具体表现特征的整体刻画。英语学业质量标准以
+学生在语言能力、文化意识、思维品质和学习能力等方面的核心素养
+及其学段目标为基础，结合英语课程的内容和学生英语学习的进阶情
+况，从学习结果的角度描述各学段学业成就的典型表现。
+
+> <span id="bookmark12" class="anchor"></span>**(二)学业质量描述**
+
+英语学业质量标准依据“六三”学制不同学段学业成就表现的关
+键特征，描述三个级别学习结果的具体表现。“五四”学制学段学业
+质量标准参照学段目标研制。英语学业质量水平各级别的具体要求 如 下 。
+
+> **1.** **一级(3～4年级)**
+
+学生能够在本学段要求的主题范围内，围绕相关主题群和子主
+题，根据规定的语言知识和文化知识等内容要求，初步运用听、说、
+
+**五、学业质量** II
+
+> 读、看、写等语言技能和学习策略，依托一级内容要求规定的语篇类
+> 型，感知不同的语言和文化现象，获取基本信息，与他人进行简短交
+> 流，具有初步的问题意识，尝试反思学习情况，抱有对英语的好奇
+> 心，积极参加课堂活动，愿意与同学合作、交流。 一级学业质量描述 见表22。
+>
+> **表22** **一级(3～4年级)学业质量标准**
+
+<table style="width:99%;">
+<colgroup>
+<col style="width: 11%" />
+<col style="width: 87%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>序号</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>学业质量描述</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>1-1</p>
+</blockquote></td>
+<td><blockquote>
+<p>能听懂日常生活中的问候并进行回应，用语基本得体。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>1-2</p>
+</blockquote></td>
+<td><blockquote>
+<p>能与他人互动交流，对赞扬、道歉、致谢等作出回应，用语礼貌。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>1-3</p>
+</blockquote></td>
+<td><blockquote>
+<p>能借助图片、手势等，听懂简单指令并作出反应。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>1-4</p>
+</blockquote></td>
+<td><blockquote>
+<p>能通过简单的动画、配图故事等语篇材料了解世界主要国家的风土 人情。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>1-5</p>
+</blockquote></td>
+<td><blockquote>
+<p>对英语有好奇心，在阅读配图故事、对话等简单语篇材料时，能积极思
+考，尝试就不懂之处提出疑问。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>1-6</p>
+</blockquote></td>
+<td><blockquote>
+<p>在跟读简短的音视频材料时，能模仿说话者的语音、语调。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>1-7</p>
+</blockquote></td>
+<td><blockquote>
+<p>能用简单的语言介绍自己的基本情况和熟悉的事物(如个人喜好、学校
+生活等)。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>1-8</p>
+</blockquote></td>
+<td><blockquote>
+<p>能通过读、看等方式，认读或说出典型的中外文化标志物。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>1-9</p>
+</blockquote></td>
+<td><blockquote>
+<p>能正确书写所学的单词和句子。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>1-10</p>
+</blockquote></td>
+<td><blockquote>
+<p>能参照范例，仿写简单句。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>1-11</p>
+</blockquote></td>
+<td><blockquote>
+<p>乐于观察生活中的语言和文化现象，尝试从不同角度看待事物。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>1-12</p>
+</blockquote></td>
+<td><blockquote>
+<p>愿意参与课堂活动，与同伴一起通过模仿、表演等方式学习英语。</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+> **2.** **二级(5～6年级)**
+>
+> 学生能够在本学段要求的主题范围内，围绕相关主题群和子主
+> 题，根据规定的语言知识和文化知识等内容要求，有效运用听、说、
+> 读、看、写等语言技能和学习策略，依托二级内容要求规定的语篇类
+>
+> **义务教育** 英语课程标准(2022年版)
+>
+> 型，了解不同的语言和文化现象，比较信息的异同，围绕相关主题进
+> 行口头或书面交流，具有问题意识，能反思学习情况，学习中遇到困
+> 难时主动与他人探讨，寻求帮助。二级学业质量描述见表23。
+>
+> **表23** **二级(5～6年级)学业质量标准**
+
+<table style="width:99%;">
+<colgroup>
+<col style="width: 11%" />
+<col style="width: 87%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>序号</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>学业质量描述</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>2-1</p>
+</blockquote></td>
+<td><blockquote>
+<p>能对他人的邀请、祝愿、请求等作出回应，用语得体。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>2-2</p>
+</blockquote></td>
+<td><blockquote>
+<p>能借助关键词语推测说话人的观点和态度。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>2-3</p>
+</blockquote></td>
+<td><blockquote>
+<p>在听或看简单的音视频材料时，能获取有关人物、时间、地点、事件等
+基本信息。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>2-4</p>
+</blockquote></td>
+<td><blockquote>
+<p>能通过简短语篇了解世界主要国家的生活习俗、饮食习惯、文化传统
+等，初步比较文化异同。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>2-5</p>
+</blockquote></td>
+<td><blockquote>
+<p>能借助图片、上下文线索尝试推测语篇中生词的含义。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>2-6</p>
+</blockquote></td>
+<td><blockquote>
+<p>在阅读相关主题的语篇材料时，能梳理人物、场景、情节等信息，独立
+思考，提出个人见解。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>2-7</p>
+</blockquote></td>
+<td><blockquote>
+<p>能流利地朗读课内所学语篇，发音清晰，语音、语调基本正确。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>2-8</p>
+</blockquote></td>
+<td><blockquote>
+<p>能围绕相关主题与他人交流，表达自己的情感、态度和观点，基本达到
+交际的目的。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>2-9</p>
+</blockquote></td>
+<td><blockquote>
+<p>能用简单的句子描述与中外文化有关的具体现象和事物，语句基本 通顺。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>2-10</p>
+</blockquote></td>
+<td><blockquote>
+<p>能运用所学词句讲述简单的小故事，表意基本清楚。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>2-11</p>
+</blockquote></td>
+<td
+style="text-align: right;">进行书面表达时，能正确使用大小写字母、标点符号，拼写基本正确。</td>
+</tr>
+<tr>
+<td><blockquote>
+<p>2-12</p>
+</blockquote></td>
+<td><blockquote>
+<p>能参照范例仿写简单的贺卡、邀请卡等，语言基本准确。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>2-13</p>
+</blockquote></td>
+<td><blockquote>
+<p>能用简单的语句描述图片内容，意义连贯，句子形式基本正确。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>2-14</p>
+</blockquote></td>
+<td><blockquote>
+<p>愿意通过阅读等方式了解不同的语言和文化现象，尝试从不同角度分析
+问题。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>2-15</p>
+</blockquote></td>
+<td><blockquote>
+<p>对英语学习有兴趣，主动参与课堂活动，与同伴一起围绕相关主题进行
+讨论，合作完成学习任务。</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+**五、学业质量**I
+
+> **3.** **三级(7～9年级)**
+>
+> 学生能够在本学段要求的主题范围内，围绕相关主题群和子主
+> 题，根据规定的语言知识和文化知识等内容要求，有效运用听、说、
+> 读、看、写等语言技能和学习策略，依托三级内容要求规定的语篇类
+> 型，归纳并分析不同的语言和文化现象，使用较为规范的语言进行口
+> 头和书面表达，定期反思学习情况，调整学习计划，学会自主探究，
+> 主动与他人合作，共同完成学习任务。三级学业质量描述见表24。
+>
+> **表24** **三级(7～9年级)学业质量标准**
+
+<table style="width:99%;">
+<colgroup>
+<col style="width: 11%" />
+<col style="width: 87%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>序号</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>学业质量描述</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>3-1</p>
+</blockquote></td>
+<td><blockquote>
+<p>能听懂相关主题的语篇，借助关键词句、图片等复述语篇内容。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>3-2</p>
+</blockquote></td>
+<td><blockquote>
+<p>能利用语篇所给提示预测内容的发展，判断说话者的身份和关系，推断
+说话者的情感、态度和观点。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>3-3</p>
+</blockquote></td>
+<td><blockquote>
+<p>能理解多模态语篇(如广播、电视节目等)的主要内容，获取关键 信息。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>3-4</p>
+</blockquote></td>
+<td><blockquote>
+<p>能通过图书、影视作品等材料获取与中外文化有关的基本信息，比较文
+化异同。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>3-5</p>
+</blockquote></td>
+<td
+style="text-align: right;">能借助基本的构词法知识推测语篇中生词的含义，辅助理解语篇内容。</td>
+</tr>
+<tr>
+<td><blockquote>
+<p>3-6</p>
+</blockquote></td>
+<td><blockquote>
+<p>能运用一定的阅读策略，借助表格、思维导图等工具梳理书面语篇的主
+要信息，理解大意。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>3-7</p>
+</blockquote></td>
+<td><blockquote>
+<p>在阅读稍长的语篇材料时，能理解主要内容，推断隐含信息，表达个人
+看法，提出合理疑问，分析和解决问题。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>3-8</p>
+</blockquote></td>
+<td
+style="text-align: right;">朗读相关主题的简短语篇时，连读、停顿自然，语音、语调基本正确。</td>
+</tr>
+<tr>
+<td><blockquote>
+<p>3-9</p>
+</blockquote></td>
+<td><blockquote>
+<p>能根据口头交际的具体情境，初步运用得体的语言形式，表达自己的情
+感、态度和观点。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>3-10</p>
+</blockquote></td>
+<td><blockquote>
+<p>能选用正确的词语、句式和时态，通过口语或书面语篇描述、介绍人和
+事物，表达个人看法，表意清晰，话语基本通顺。</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+> **续表**
+
+<table style="width:99%;">
+<colgroup>
+<col style="width: 11%" />
+<col style="width: 87%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>序号</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>学业质量描述</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>3-11</p>
+</blockquote></td>
+<td><blockquote>
+<p>能用所学英语，通过口语或书面语篇简单介绍中外主要文化现象(如风
+景名胜、历史故事、文化传统等),语义基本连贯。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>3-12</p>
+</blockquote></td>
+<td><blockquote>
+<p>能讲述具有代表性的中外杰出人物的故事，如科学家等为社会和世界作
+出贡献的人物，表达基本清楚。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>3-13</p>
+</blockquote></td>
+<td><blockquote>
+<p>进行书面表达时，能正确使用所学语言，格式较为规范。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>3-14</p>
+</blockquote></td>
+<td
+style="text-align: right;">能参照范例，仿写简短的文段(如回复信函等),语言准确，表意得体。</td>
+</tr>
+<tr>
+<td><blockquote>
+<p>3-15</p>
+</blockquote></td>
+<td><blockquote>
+<p>能结合图片、文字等提示信息，对语篇进行补充、续编或改编，语言基
+本准确。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>3-16</p>
+</blockquote></td>
+<td><blockquote>
+<p>善于通过多种渠道获取资料，尝试归纳学习素材中的语言和文化现象，
+从不同角度分析问题。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>3-17</p>
+</blockquote></td>
+<td><blockquote>
+<p>积极参与课堂活动，与同伴一起就相关主题进行讨论，合作完成学习
+任务。</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+> <span id="bookmark13" class="anchor"></span>**~~六~~、课程实施**
+>
+> <span id="bookmark14" class="anchor"></span>**(一)教学建议**
+>
+> **1.坚持育人为本**
+>
+> 教师要把落实立德树人作为英语教学的根本任务，准确理解核心
+> 素养内涵，全面把握英语课程育人价值。引导学生在学习和运用英语
+> 的过程中，了解不同国家的风土人情、文化历史，以及科技、艺术等
+> 方面的优秀成果，进行中外文化比较分析，拓宽国际视野，加深中华
+> 文化理解，增强中华文化认同感，逐步树立正确的世界观、人生观和 价值观。
+>
+> 教师要坚持面向全体学生，充分尊重每一个学生，对学生抱有合
+> 理期待，让他们获得积极学习体验，感受到学习的乐趣和教师的信
+> 任，健康、自信、阳光地成长。
+>
+> **2.** **加强单元教学的整体性**
+>
+> 推动实施单元整体教学。教师要强化素养立意，围绕单元主题，
+> 充分挖掘育人价值，确立单元育人目标和教学主线；深入解读和分析
+> 单元内各语篇及相关教学资源，并结合学生的认知逻辑和生活经验，
+> 对单元内容进行必要的整合或重组，建立单元内各语篇内容之间及语
+>
+> 义务教育英语课程标准(2022年版)
+>
+> 篇育人功能之间的联系，形成具有整合性、关联性、发展性的单元育
+> 人蓝图；引导学生基于对各语篇内容的学习和主题意义的探究，逐步
+> 建构和生成围绕单元主题的深层认知、态度和价值判断，促进其核心
+> 素养综合表现的达成。
+>
+> 依据单元育人蓝图实施教学，要构建由单元教学目标、语篇教学
+> 目标和课时教学目标组成的目标体系，使学生逐步建构起对单元主题
+> 的完整认知，促进正确态度和价值观的形成。各层级目标要把预期的
+> 核心素养综合表现融入其中，体现层级间逻辑关联，做到可操作、可
+> 观测、可评价。实现语篇教学目标和课时教学目标是达成单元教学目
+> 标的前提。
+>
+> 教师要以单元教学目标为统领，组织各语篇教学内容，规划系列
+> 教学活动，实施单元持续性评价，引导学生在学习过程中逐步建构对
+> 单元主题的认知，发展能力，形成素养。
+>
+> **3.** **深入开展语篇研读**
+>
+> 教师要以语篇研读为逻辑起点开展有效教学设计。充分认识语篇
+> 在传递文化意涵，引领价值取向，促进思维发展，服务语言学习、意
+> 义理解与表达等方面的重要作用。
+>
+> 开展语篇研读，教师要对语篇的主题、内容、文体结构、语言特
+> 点、作者观点等进行分析；明确主题意义，提炼语篇中的结构化知
+> 识，建立文体特征、语言特点等与主题意义的关联，多层次、多角度
+> 分析语篇传递的意义，挖掘文化内涵和育人价值，把握教学主线。根
+> 据学生基于主题的已知与未知，确定教学目标和教学重难点，为设计
+> 教与学的活动提供依据。
+>
+> 教师在研读语篇时要重点回答三个基本问题。第一，语篇的主题
+> 和内容是什么,即What 的问题。第二，语篇传递的意义是什么,即 Why
+> 的问题。不论口语语篇还是书面语篇都有其特定的交际目的或传
+> 递的主题意义，也就是作者或说话人的意图、情感态度或价值取向
+
+**六、课程实施**
+
+等。第三，语篇具有什么样的文体特征、内容结构和语言特点，如果
+语篇配有图片或表格，其传递何种意义或具有何种功能，即How 的
+问题。对口语语篇的研读不仅要关注其呈现形式，还要关注其语境的
+正式程度、语言表达方式及功能等，如语篇是以对话还是独白、访
+谈、指令等方式呈现的。如果是对话，则要关注对话场合的正式程度
+和说话人的身份，其语言表达方式是随意、直接、客气还是委婉，说
+话人使用了什么样的交际策略等。对语篇中配图的分析，教师要关注
+图片中人物或动物的行为、表情、心理状态、色彩搭配，以及场景布
+局等传递的意义，这些也是构成语篇主题意义的必要成分。教师要认
+识到关于Why和 How 的问题，受教育背景、生活阅历、认知方式等 的影响，
+一般没有唯一答案，要注重与其他教师交流研讨，相互 学 习 。
+
+> **4.** **秉持英语学习活动观组织和实施教学**
+
+教师要充分认识到学生是语言学习活动的主体，要引导学生围绕
+主题学习语言、获取新知、探究意义、解决问题，逐步从基于语篇的
+学习走向深入语篇和超越语篇的学习，确保语言学习的过程成为学生
+语言能力发展、思维品质提升、文化意识建构和学会学习的成长 过 程 。
+
+教学设计与实施要以主题为引领，以语篇为依托，通过学习理
+解、应用实践和迁移创新等活动，引导学生整合性地学习语言知识和
+文化知识，进而运用所学知识、技能和策略，围绕主题表达个人观点
+和态度，解决真实问题，达到在教学中培养学生核心素养的目的。
+
+关于学习理解类活动，教师要把握感知与注意、获取与梳理、概
+括与整合等基于语篇的学习活动的要求。教师通过感知与注意活动创
+设主题情境，激活学生已有知识经验，铺垫必要的语言和文化背景知
+识，明确要解决的问题，使学生在已有知识经验和学习主题之间建立
+关联，发现认知差距，形成学习期待。在此基础上，教师以解决问题
+
+> 为目的，引导学生通过获取与梳理、概括与整合等活动，学习和运用
+> 语言知识、语言技能，从语篇中获得与主题相关的文化知识，建立信
+> 息间的关联，形成新的知识结构，感知并理解语言所表达的意义。
+>
+> 关于应用实践类活动，教师要把握描述与阐释、分析与判断、内
+> 化与运用等深入语篇的学习活动的要求。在学习理解类活动的基础
+> 上，引导学生基于所形成的结构化知识开展描述、阐释、分析、应用
+> 等多种有意义的语言实践活动，内化语言知识和文化知识，加深对文
+> 化意涵的理解，巩固结构化知识，促进知识向能力的转化。从学习理
+> 解类活动到应用实践类活动的进阶既可以一次完成，也可以多次循环 完 成 。
+>
+> 关于迁移创新类活动，教师要把握推理与论证、批判与评价、想
+> 象与创造等超越语篇的学习活动的要求。引导学生针对语篇背后的价
+> 值取向与作者或主人公的态度和行为，开展推理与论证活动，学会赏
+> 析语篇的文体特征，把握语篇的结构，发现语言表达的手段和特点，
+> 并通过分析和思辨，评价作者或主人公的观点和行为，加深对主题意
+> 义的理解，进而运用所学知识技能、方法策略和思想观念，多角度认
+> 识和理解世界，创造性地解决新情境中的问题，理性表达情感、态度
+> 和观点，促进能力向素养的转化。
+>
+> 教师要有意识地为学生创设主动参与和探究主题意义的情境和空
+> 间，使学生获得积极的学习体验，成为意义探究的主体和积极主动的
+> 知识建构者。根据不同学段学生的年龄、认知和语言发展水平，设计
+> 由浅入深、关联递进、形式多样的学习活动，以及与目标对接的评价
+> 活动。评价活动要贯穿教与学始终，注重考查学习结束时学生对所学
+> 语言知识和文化知识的综合性运用、对主题意义的理解、对个人观点
+> 和态度有理有据的表达，体现正确的价值观，确保达成课程目标。
+>
+> **5.** **引导学生乐学善学**
+>
+> 英语教学不仅要重视“学什么”,更要关注学生是否“喜欢学”,
+>
+> **六、课程实施**
+>
+> **以及是否知道“如何学”。**
+>
+> 教师要根据学生的认知特点，设计多感官参与的语言实践活动，
+> 让学生在丰富有趣的情境中，围绕主题意义，通过感知、模仿、观
+> 察、思考、交流和展示等活动，感受学习英语的乐趣。引导学生采用
+> 多种学习方式，发挥自己的优势和特长，发现自己的兴趣和潜能，增
+> 强学习效能感。教师要把学生的努力程度、学习态度和素养表现作为
+> 评价的主要指标，善于发现学生的学习优势，及时肯定其取得的进
+> 步，悉心指导学生克服困难、解决问题、增强学习自信心。
+>
+> 教师要引导学生学会管理自己的学习，明确学习目标，做好学习
+> 计划和时间管理；提醒学生课前主动预习，课后及时复习和归纳；帮
+> 助学生选择适合自己的学习方式和方法，利用各种资源和工具书等进
+> 行自主阅读，有计划地收听、收看新闻或优秀影视作品等；指导学生
+> 对照学习目标，评价和反思自己的学习过程和学习效果，根据学习需
+> 要调整学习方法与策略，切实提高学习效率。
+>
+> **6.** **推动“教~~一学~~一评”一体化设计与实施**
+
+教师要准确把握教、学、评在育人过程中的不同功能，树立
+“教—学—评”的整体育人观念。“教”主要体现为基于核心素养目标
+和内容载体而设计的教学目标和教学活动，决定育人方向和基本方
+式，直接影响育人效果；“学”主要体现为基于教师指导的、学生作
+为主体参与的系列语言实践活动，决定育人效果；“评”主要发挥监
+控教与学过程和效果的作用，为促教、促学提供参考和依据。要注重
+三者相互依存、相互影响、相互促进，发挥协同育人功能。
+
+> 教师要注重各教学要素相互关系的分析，设计并实施目标、活
+> 动、评价相统一的教学。明确教什么、为什么教、怎么教、怎么评等
+> 方面的内涵和要求，建立相互间的关联，体现以学定教、以教定评，
+> 使评价镶嵌于教学之中，成为教学的有机组成部分。
+>
+> 在实施教学和评价的过程中，教师要通过观察、提问、追问，以
+>
+> **义务教育** 英语课程标准(2022年版)
+
+及合理、科学的测试等方式，收集学生学习是否真正发生的证据，包
+括理解了什么、能表达什么、会做什么,以及是否形成了正确的价值
+观等。及时诊断学生在学习过程中的问题，根据需要提供必要支架和
+及时反馈，帮助学生达成预设的教学目标，以评促学，以评促教。
+
+> **7.提升信息技术使用效益**
+
+教师要充分认识到现代信息技术不仅为英语教学提供了多模态的
+手段、平台和空间，还提供了丰富的资源与跨时空的语言学习和使用
+机会，对创设良好学习情境、促进教育理念更新和教学方式变革具有
+重要支撑作用。
+
+要积极关注现代信息技术在英语教学应用领域的发展和进步，努
+力营造信息化教学环境，基于互联网平台开发和利用丰富的、个性化
+的优质课程资源，为学生搭建自主学习平台。要将“互联网+”融入
+教学理念、教学方法、教学模式中，深化信息技术与英语课程的融
+合，推动线上线下学习相结合，提高英语学习效率。在利用信息技术
+开展教学时，要注意确保网站信息安全、健康、可用，引导学生关注
+网络资源使用的安全性；要合理、恰当使用现代信息技术，避免完全
+代替师生课堂上真实而鲜活的人际互动、观点碰撞、情感交流的语言 活动。
+
+> <span id="bookmark15" class="anchor"></span>**(二)评价建议**
+
+评价与考试旨在评测学生核心素养的发展水平，促进学生全面、
+健康而有个性地发展。通过形成性评价与终结性评价相结合的多元评
+价方式，检测和衡量学生在相关学段的学业成就，为高一级学校招生
+录取提供依据，为评价区域和学校教学质量提供参考，为改进教育教
+学提供指导。
+
+> **六、课程实施**
+>
+> **1.** **教学评价**
+>
+> 教学评价应贯穿英语课程教与学的全过程，包括课堂评价、作业
+> 评价、单元评价和期末评价等。教师要充分理解评价的作用，明确评
+> 价应遵循的原则，基于评价目标选择评价内容和评价方式，将评价结
+> 果应用到进一步改进教学和提高学生学习成效上，落实“教—学— 评”一体化。
+>
+> (1)教学评价的作用
+>
+> 教学评价对促进学生核心素养的发展具有重要作用。教学评价有
+> 助于学生不断体验英语学习的进步和成功，更加全面地认识自我、发
+> 现自我，保持并提高英语学习的兴趣和自信心；有助于教师获取英语
+> 教学的反馈信息，对自己的教学行为和效果进行反思，不断提高教学
+> 水平和专业能力；有助于学校和教育行政部门及时了解英语课程的实
+> 施情况、课程目标的达成程度和人才培养的实际效果，不断改进教学
+> 管理，推进课程实施，提升课程育人质量。
+>
+> (2)教学评价的基本原则
+>
+> 在实施教学评价时，应遵循以下基本原则。
+>
+> 第一，教学评价应以学生核心素养的全面发展为出发点和落脚
+> 点。评价目标和评价方式应与课程目标保持一致，评价结果应为后续
+> 教学决策提供依据。教师要提供针对性强的描述性评价结果和及时、
+> 准确的反馈，促进学生学习。
+>
+> 第二，教学评价应充分发挥学生的主体作用。教学过程中，教师
+> 应引导学生成为各类评价活动的设计者、参与者和合作者，帮助他们
+> 学会开展自我评价和相互评价，主动反思和评价自我表现，促进自我
+> 监督性学习，并在相互评价中取长补短，总结经验，规划学习。
+>
+> 第三，教学评价应采用多种评价方式和手段，体现多渠道、多视
+> 角、多层次、多方式的特点。应将形成性评价与终结性评价相结合、
+> 定性评价与定量评价相结合，使评价全面、准确和灵活。
+
+<img src="media/image9.jpeg" style="height:0.13194in" />义务教育
+英语课程标准(2022年版)
+
+> 第四，教学评价应充分关注学生的持续发展。教师应始终在关
+> 爱、信任、尊重的气氛中，从发展的视角、以发展的眼光、用发展的
+> 观点评价学生，不但重视学生过去的学习情况，更着眼于学生现在和
+> 未来的发展，体现评价的增值性。
+>
+> 第五，教学评价应充分关注学生的个体差异。在设计和实施评价
+> 时，教师应根据不同学段的教学特点与评价目的，充分考虑学生的年
+> 龄、心理特征、认知水平、个性特点，以及发展潜力，选用合理的评
+> 价方式，根据各因素的动态变化情况及时调整评价的主体、内容和形
+> 式，注重对学生学习过程、认知过程和成长过程的评价，帮助每个学
+> 生在原有基础上实现发展。
+>
+> (3)教学评价的内容和方式
+>
+> 课程实施中的评价活动有多种，如课堂评价、作业评价、单元评
+> 价，以及期末评价。教师要抓住重点环节，发挥好教学评价的效果。
+>
+> ①课堂评价
+>
+> 课堂评价主要指对学生课堂学习行为、学习方式和学习表现的评
+> 价。教师应根据课堂教学目标，及时了解学生的学习过程、学习进步
+> 和学习困难。例如，学生对学习活动是否感兴趣，学生参与学习活动
+> 是否投入和专注，学生的思考过程和观点是否合理，学生当前的学习
+> 发展水平与学习目标之间存在哪些差距，学生有哪些学习障碍，以及
+> 障碍产生的原因等。应采取有针对性的措施，确保课堂教学目标的 落实。
+>
+> 教师应根据学生回答问题、小组讨论、综述观点、自评互评、随
+> 堂检测等环节的具体表现，以口头、书面和肢体语言等反馈方式和量
+> 表等评价工具，评价学生对课堂任务的兴趣和投入程度、对任务的适
+> 应和完成程度、在解决问题过程中的能力和情感发展水平等，给予学
+> 生有针对性的鼓励、指导或建议，并基于学生在具体任务中的学业表
+> 现调整下一阶段的教学目标，改进教学方式和方法，提高教学效率。
+
+**六、课程实施** <img src="media/image10.jpeg"
+style="width:0.13891in;height:0.14576in" />
+
+> **案例**
+>
+> 教师在启发学生思考“如何想办法化解孩子和父母的矛盾”这一
+> 活动中，先引导学生完成一些语言练习活动，然后请学生给出自己解
+> 决问题的办法，旨在把学习推向深入，培养学生的创新意识和解决问
+> 题的能力。
+>
+> (Peter's parents don't want to let him join the basketball team.)
+>
+> Teacher:Now,do you have any ideas to help Peter solve the problem?
+>
+> Student 1:If Peter talks to his parents and invites his parents to
+> come
+>
+> and watch him play,he will solve the problem.
+>
+> Teacher:That sounds like a great idea.Perhaps they can even play
+>
+> basketball together.Very good!Any other ideas?
+>
+> Student 2:If Peter do something for his parents,such as …,he will
+> solve the problem.
+>
+> Teacher:If Peter…?
+>
+> Student 2:“Does.”
+>
+> Teacher:OK."Does."Can you say it again?
+>
+> Student 2:If Peter does something for his parents,such as…,he will
+> solve the problem.
+>
+> Teacher:Yes,excellent!By doing so,Peter shows his love and respect for
+> his parents.Perhaps,his parents will allow him to play basketball.Any
+> other ideas?
+>
+> Student 3:If Peter cries,he will solve the problem.
+>
+> Teacher: (教师佯作哭状)"Mum,basketball."Then do you think
+>
+> Peter's parents will allow him to play basketball?
+>
+> Students:Maybe.
+>
+> Teacher:Why?Is this a good idea to solve his problem?
+>
+> Student 4:Maybe not.
+>
+> Student 5:I think if Peter leaves his home for two days or two
+>
+> **义务教育** 英语课程标准(2022年版)
+>
+> months,he will solve the problem.(其他学生笑)
+>
+> Teacher:Well,this is not funny at all.Look,if you leave home without
+>
+> telling your parents,your parents will worry about you!Do
+>
+> you want your parents to worry about you? Student 3:
+> (学生思考了一会儿) No.
+>
+> Teacher:No.Of course not.You don't want your parents to worry about
+> you.So,you need to think of more effective and safer ways to solve
+> your problem.
+>
+> (Students continue sharing more ideas.)
+
+Teacher:Well,class.You have shared so many different ideas.Let's
+
+> work in groups again.Each group should vote for the best way to help
+> Peter solve his problem.Also,write down your reasons.
+>
+> **【案例说明】**
+>
+> 这是一个将教、学、评融为一体的课堂教学环节。学生给出的不
+> 同解决方案反映了学生积极思考、大胆尝试使用英语进行表达的学习
+> 态度。教师充分发挥教学机智， 一方面针对内容作出反馈，促进学生
+> 思维的发展；另一方面针对学生的语法错误，通过调整语调和重点重
+> 复，引导学生意识到 “do” 用错了，并立刻作出自我纠正。教师随即
+> 鼓励学生把正确的表达再说一遍，以评价学生是否理解并学会使用该
+> 表达；当学生说 “If Peter cries,he will solve the problem.” 时，教师佯
+> 作哭状模拟说话的情境，体现了教师对学生建议的关注和理解；当学 生说 “If
+> Peter leaves his home for two days or two months,he will solve the
+> problem.” 时，教师及时发现学生想法中的负面因素，用追问和
+> 给建议的方式引导学生认识到自己想法中的消极因素，并放弃原有 想法。
+>
+> **六、课程实施**
+>
+> ②作业评价
+
+作业评价是教学过程的重要组成部分。教师应通过作业评价及时
+了解学生对所学知识的理解程度和语言能力的发展水平，为教师检验
+教学的效果、发现和诊断学生学习的问题、调整和改进教学提供 依 据 。
+
+教师应深入理解作业评价的育人功能，坚持能力为重、素养导
+向。作业的设计既要有利于学生巩固语言知识和技能，又要有利于促
+进学生有效运用策略，增强学习动机。
+
+教师应根据不同学段学生的认知特点和学习需求，基于单元教学
+目标，兼顾个体差异，整体设计单元作业和课时作业，把握好作业的
+内容、难度和数量，使学生形成积极的情感体验，提升自我效能感。
+教师应创设真实的学习情境，建立课堂所学和学生生活的关联，设计
+复习巩固类、拓展延伸类和综合实践类等多种类型的作业，如朗读、
+角色扮演、复述、书面表达、故事创编、调研采访、海报制作、戏剧
+表演、课外阅读等，引导学生在完成作业的过程中，提升语言和思维
+能力，发挥学习潜能，促进自主学习。
+
+教师应明确作业要求，必要时可以给出示例。作业评价应根据需
+要采用集体讲评、个别讲解和书面评语等方式，提供有针对性的反
+馈，激励和指导学生不断取得进步。教师还要对学生作业进行跟踪评
+价，不仅关注学生是否改正了作业中的错误，还要关注学生成长进步
+的过程，以及良好习惯和态度的养成。
+
+> ③单元评价
+
+单元评价旨在考查学生完成单元学习后所达到的核心素养水平，
+包括单元学习过程评价和单元学习结果评价两个方面。学习过程评价
+考查学生参与各项具体学习活动的表现和完成系列学习任务的质量，
+重点评价在学生核心素养形成和发展过程中，其语言知识与技能发
+展、文化知识建构、核心策略与方法掌握和运用的程度，以及思维能
+力表现等。学习结果评价考查学生完成单元学习后，能否综合运用所
+
+义务教育英语课程标准(2022年版)
+
+学的知识技能、方法策略和价值观念，有逻辑地表达思想、观点和看
+法，并对事物作出正确的价值判断，重点评价学生核心素养的综合 表现。
+
+单元评价应根据单元教学目标，围绕核心素养综合表现进行设
+计，通过多元主体参与的方式，采用多种手段和形式组织实施。例
+如，单元学习过程评价可重点关注学生完成作业的情况、语言表达的
+准确性和流畅性、对问题思考的深度和广度、围绕单元内各语篇子主
+题所形成的知识结构和价值判断。单元学习结果评价可重点关注学生
+项目学习的成果、口语和书面产出任务的整体水平、单元学习的总结
+归纳和反思、单元纸笔测试表现等。
+
+> ④期末评价
+
+期末评价指对学生一个完整学期学习情况的评价。期末评价要综
+合考虑课程目标、课程内容和学业质量要求，采用不同类型的综合性
+和表现性评价方式，全面有效地考查学生在学期结束时核心素养发展
+的实际水平。
+
+期末评价应采用纸笔测试和非纸笔测试相结合的方式，题目应尽
+可能覆盖学期所学的主要内容。素材的选择应体现正确的价值导向，
+语言应尽可能真实、鲜活，内容应贴近学生生活，情境和任务应为学
+生所熟悉，体现交际的真实性。在纸笔测试中，客观性试题和主观性
+试题要合理配置。除测试外，期末评价还可以采用其他评价手段。例
+如：建立学习档案袋，记录学生在学习过程中所做的努力和取得的成
+绩；开展师生面谈，通过了解学生对自己学习情况的感受和看法，评
+价学生的进步，帮助学生解决问题。
+
+> **2.** **学业水平考试**
+>
+> (1)考试性质和目的
+
+义务教育英语学业水平考试是以学业质量标准、课程内容为依
+据，由省级教育行政部门组织实施的考试，旨在检测和衡量学生在义
+
+> **六、课程实施**
+>
+> 务教育阶段结束时的学业成就，为判断学生是否达到国家规定的毕业
+> 要求提供主要依据，为高一级学校招生录取提供重要依据，为评价区
+> 域和学校教学质量提供参考，为改进教育质量和教学方式提供指导。
+>
+> (2)命题原则
+>
+> 为确保实现测试目的，义务教育英语学业水平考试要依据课程目
+> 标、课程内容、教学建议和学业质量标准等命题，遵循导向性、科学
+> 性、规范性和适宜性等原则。
+>
+> 导向性原则。强化英语课程的育人导向，注重考试命题的素养立
+> 意，在真实情境中，全面考查学生在解决真实问题、完成真实任务的
+> 过程中体现出的语言能力、文化意识、思维品质和学习能力；发挥对
+> 教学的导向作用，引导教师积极探索将教学目标、教学内容、教学方
+> 法、教学过程、教学评价聚焦于培养和发展核心素养的育人模式。
+>
+> 科学性原则。严格依据课程内容和学业质量标准，确保命题框
+> 架、试题情境、任务难度等准确体现课程目标；根据评价内容特点，
+> 深入理解核心素养内涵，科学选取包括纸笔和非纸笔两种形式的评价
+> 方法，以具体情境为载体，设计典型、多样的问题任务，突出试题的
+> 基础性、代表性、综合性、探究性和开放性；试题符合教育测量学的
+> 指标，具有考试的信度和效度。
+>
+> 规范性原则。以国家教育法律法规和课程标准为依据，精心筛选
+> 命题人员，强化命题流程规范，严格试题质量评估，确保命题框架合
+> 理、试题内容准确、问题情境真实、容量难度恰当、考试指令清晰、
+> 考试结果有效。
+>
+> 适宜性原则。严格遵循课程内容要求和学业质量标准，命制的测
+> 试题目应紧密联系社会实际和学生的生活、学习经验，符合学生身心
+> 发展特点和认知水平，重点考查学生的价值观、文化意识、思维过
+> 程，以及综合运用英语解决问题的能力水平和成就表现。
+>
+> (3)命题规划
+
+积极探索和制订与素养立意原则相匹配的命题规划和考试题型，
+
+> **支持和引导课程标准的实施。制订命题规划要明确内容范围、水平要**
+>
+> 求、考试形式、试卷结构、题目命制等内容。
+>
+> **第一，科学制订命题框架。依据课程目标、课程内容和学业质量**
+> 标准，构建命题框架。命题框架应包括三个维度：第一个维度是课程
+> 目标，应能够全面考查学生的核心素养，即语言能力、文化意识、思
+> 维品质和学习能力，依据课程目标所含的核心素养综合发展及达标要
+> 求规划试题的比例及权重；第二个维度是课程内容，应包括人与自
+> 我、人与社会和人与自然三大主题范畴，以及语篇、语言知识、文化
+> 知识、语言技能、学习策略等内容要素；第三个维度是学业质量的基
+> 本水平，应能够据此规划评测优秀、良好和合格等不同水平试题的恰 当比例。
+>
+> 第二，合理选择测评形式。选择与测评内容相适应的测评形式，
+> 使之能够考查学生综合运用英语理解和表达意义、解决问题的过程和
+> 结果，以及在此过程中所体现的语言能力、文化意识、思维品质和学
+> 习能力及其水平，确保测评能准确考查学生的价值观、必备品格和关
+> 键能力。对于语言能力的测评，要设计能够体现学生在真实情境中综
+> 合运用英语进行理解和表达的试题；对于文化意识的测评，要设计能
+> 够体现学生基于对中外文化的正确理解而表现出的跨文化认知、态度
+> 和价值取向的试题；对于思维品质的测评，要设计能够体现学生理
+> 解、分析、比较、推断、评价、批判、创新等思维过程和方法的试
+> 题；对于学习能力的测评，要设计能够体现学生独立或合作运用学习
+> 方法及策略的试题。
+>
+> 第三，整体规划测评结构。要依据学业质量标准整体规划试题结
+> 构，基于核心素养的发展目标，以及主题、语篇、语言知识、文化知
+> 识、语言技能、学习策略等课程的内容要素，确定试卷的任务类型
+> (如独立型任务、综合型任务等)或题型(如选择题、填空题、判断
+> 题、匹配题、简答题、写作题等)及其比重，确定听、说、读、看、
+> 写等语言理解、表达的形式和比例；积极采用综合应用知识和技能、
+
+**六、课程实施**
+
+> 体现能力与情感态度水平的试题，避免采用机械记忆类试题，控制答
+> 案唯一试题的数量，摒弃纯语言形式转换类的试题，提高综合性、探
+> 究性、开放性试题的比例；重视英语听说能力的同步发展，创造条件
+> 组织听力考试和口语考试，合理调整并逐步加大听力测试题和口语测
+> 试题的比例。
+>
+> (4)题目命制
+>
+> 具体试题的命制，要依据学业质量标准，按照“明确测试意图和
+> 指标—预估测试难度和水平一选择测试题型和比例—设计测试情境和
+> 任务—命制试题和参考答案—确定评分标准和阅卷方法”的流程进
+> 行，明确每个题目所要考查的核心素养及其水平。试题设问的角度和
+> 表述方式要科学、合理、合情、可信、有效。试题基于学业质量标准
+> 可以划分为低、中、高三级水平，能够对学生作出准确、全面、客
+> 观、公正的评价。
+>
+> 题目命制要体现课程的育人目标和基本理念，有利于促进和引导
+> 教学全面落实课程目标、课程内容和学业质量标准；有利于引导学生
+> 优化学习方式，拓展学习渠道，提高学习效率；有利于教师改进教学
+> 方法；有利于学校综合评价学生的英语学习水平和能力表现。
+>
+> (5)考试样题
+>
+> **样** **题** **1**
+>
+> A.Listen and write.Listen and complete the form with the missing
+> information.
+
+<table style="width:99%;">
+<colgroup>
+<col style="width: 99%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>Example:</strong></p>
+<p><strong>You</strong> <strong>will</strong> <strong>hear</strong></p>
+<p>-Hello,International Sports Meeting Volunteer Organization.How can I
+help you?</p>
+<p>-Yes.I′m a student from No.8 High School.</p>
+<p><strong>You</strong> <strong>will</strong> <strong>read</strong></p>
+<p>0.From:No._ High School</p>
+<p>You will write“8”on the line.Number 0 is an example.</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+<img src="media/image11.jpeg"
+style="width:0.17356in;height:0.20134in" />**义务教育**
+英语课程标准(2022年版)
+
+<table style="width:99%;">
+<colgroup>
+<col style="width: 32%" />
+<col style="width: 66%" />
+</colgroup>
+<tbody>
+<tr>
+<td colspan="2"><blockquote>
+<p><strong>Volunteer</strong> <strong>Information</strong>
+<strong>Card</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p><strong>0.From:</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p>No.<u>8</u> High School</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p><strong>1.Name:</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p>Amy</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p><strong>2.Age:</strong></p>
+</blockquote></td>
+<td></td>
+</tr>
+<tr>
+<td><blockquote>
+<p><strong>3.Interview</strong> <strong>Time:</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p>On_ <img src="media/image12.png"
+style="width:0.625in" />_morning,12ᵗAugust</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p><strong>4.Place:</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p>Hotel</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p><strong>5.Phone</strong> <strong>Number:</strong></p>
+</blockquote></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+> B.Listen and say.Listen to the dialogue again and answer the follow-
+> ing two questions.
+>
+> 6.What will Amy probably do for the sports meeting?
+
+7.Do you think speaking English will bring you more chances?Give
+
+> one reason.
+>
+> 录音材料：
+>
+> Man:Hello,International Sports Meeting Volunteer Organization.How can
+> I help you?
+>
+> Girl:Yes.I'm a student from No.8 High School.I'd like to be a
+> volunteer for the International Sports Meeting.
+>
+> Man:You're welcome to join us.What's your name?
+>
+> Girl:My name is Amy Starke.
+>
+> Man:Thank you,Amy.Can you spell your last name for me,please?
+>
+> Girl:Yes,it's Starke,S-T-A-R-K-E.
+>
+> Man:S-T-A-R-K-E,Starke.I've got it.Amy,how old are you?
+>
+> Girl:I’m fourteen.
+>
+> Man:Fourteen?OK.How can you help at the Sports Meeting,Amy?
+>
+> Girl:I speak English well,so I think I can help the foreign guests and
+> athletes that are visiting Beijing.
+
+Man:Maybe you can be a tour guide and show them around.But we
+
+**六、课程实施** <img src="media/image13.jpeg"
+style="width:0.13891in;height:0.14576in" />
+
+> need to interview you first.
+>
+> Girl:Thank you very much.When is the interview?
+>
+> Man:Next Saturday morning,the twelfth of August.Is it OK for you?
+>
+> Girl:Sure.Where do I go for the interview?
+>
+> Man:Please come to the Park Hotel.Your interview will be in Meeting
+> Room 2.
+>
+> Girl:Meeting Room 2,Park Hotel.OK!
+>
+> Man:Oh,Amy,what's your telephone number?
+>
+> Girl:My number is 6521-3398.
+>
+> Man:Is it 6521-3998?
+>
+> Girl:No,it's 6521-3398.
+>
+> Man:Thank you.I've got it,Amy.See you next Saturday morning.
+>
+> Girl:Thank you.Bye-bye.
+>
+> **【样题分析】**
+>
+> 本题为听、写、说结合的综合技能题，情境属于“人与社会”主
+> 题范畴中“社会服务与人际沟通”这一主题群，涉及子主题“志愿服
+> 务与公共服务”。本题以日常对话的口语语篇为载体，重点考查学生
+> 能否听懂发音清晰、语速较慢的简单对话，获取、记录和归纳特定信
+> 息或者关键信息，抓住要点，围绕参与志愿服务主题，运用所学语言
+> 与他人进行交流，表达自己的情感、态度和观点，以及在口语表达中
+> 能否做到语音、语调、用词基本正确，语义连贯。本题主要考查学生
+> 的听说能力，同时渗透对学生文化意识的考查。
+>
+> **样** **题** **2**
+>
+> 阅读短文，完成任务。
+>
+> World Book Day is an event organised by the United Nations to
+> encourage book reading,publishing and copyright.The first World Book
+>
+> Day was 23April,1995 and it is celebrated every year on that day.It
+> chan- ges people's lives through the love of books and reading.Every
+> year on World Book Day,children around the world get together and read
+> their favourite books.Some organizations work hard to give every child
+> a book of their own.Reading for pleasure is very important for a young
+> person's future success—more important than their parents'educational
+> background or the money they make.
+>
+> A. 朗读上面的短文。
+>
+> B. 阅读短文，并根据短文内容回答问题。
+>
+> 1.What is World Book Day for?
+>
+> 2.How does World Book Day change people's lives?
+>
+> 3.What does the writer think of reading for pleasure?
+>
+> C. 根据你的个人情况回答问题。
+>
+> 1.What is the name of the book you like?
+>
+> 2.What is it about?
+>
+> 3.Why do you like it?
+>
+> **【样题分析】**
+>
+> 本题为读、说结合的综合技能题，情境属于“人与自我”主题范
+> 畴中“生活与学习”这一主题群，涉及子主题“丰富、充实、积极向
+> 上的生活”。试题素材为一篇介绍世界读书日的说明文。本题一方面
+> 考查学生能否读懂简短的书面语篇，提取并归纳关键信息，抓住要
+> 点，正确朗读短文；另一方面考查学生能否围绕读书的主题，运用所
+> 学语言与他人进行口头交流，描述和介绍身边的人和事物，表达自己
+> 对阅读的体验、认识和情感态度，以及能否在口语表达中做到语音、
+> 语调、用词基本正确，语义连贯。本题主要考查学生的阅读和口头表
+> 达能力，同时引导学生思考阅读的意义，分享阅读的乐趣。
+
+**六、课程实施**
+
+> **样** **题** **3**
+>
+> **观察下面两张照片，回答问题。**
+
+<img src="media/image14.png" style="width:3.38198in;height:4.13201in" />
+
+> 录音材料：
+>
+> 1.Please name the two places in the pictures.
+>
+> 2.What do people usually do there?
+>
+> 3.Does your school have these places?Which place do you like better?
+>
+> **【样题分析】**
+>
+> 本题为看、听、说结合的综合技能题，情境属于“人与自我”主
+> 题范畴中“生活与学习”这一主题群，涉及子主题“多彩、安全、有
+> 意义的学校生活”。本题依托多模态语篇，重点考查学生能否根据听
+> 到的提示问题，运用所学语言就看到的图片内容与他人进行日常交
+>
+> **义务教育** 英语课程标准(2022年版)
+
+流，描述和介绍学校的设施和活动，表达自己对学校生活的情感和态
+度，以及能否在口语表达中做到语音、语调、用词基本正确，语义连
+贯。本题主要考查学生的口头表达能力，间接考查学生关心学校、热
+爱生活的态度。
+
+> **样** **题** **4**
+>
+> 阅读下面的材料，根据短文内容回答问题并选择最佳答案。
+>
+> **Learning a New Language**
+
+Some people learn a second language easily.Other people have trouble
+learning a new language.How can you learn a new language,such as
+English?There are several ways to help you learn English more easily and
+to make your learning more interesting.
+
+First,feel positive about learning English.If you believe that you can
+learn,you will learn.Be patient.You don't have to understand everything
+all at once.Often you will make mistakes when you are learning something
+new.We can learn from our mistakes.
+
+Second,practise using your English.For example,you can write a
+journal,or a diary,every day.Soon,you will feel more comfortable writing
+your ideas in English.After several weeks,your writing will improve.In
+addition,try to speak English every day.You can practise with your
+classmates after class.You might make mistakes,but it's no
+worry.Gradual- ly you will feel confident when you write and speak in
+English.
+
+Third,keep a record of your language learning experience.You can write
+your learning experience in your journal.After each class,think about
+it.Do you answer questions correctly in class?Do you understand the
+teacher?Perhaps the lesson is a bit difficult,but you can try to
+understand it.Write these reflections in your journal.
+
+> You should be positive about learning English.You should believe that
+
+**六、课程实施** <img src="media/image15.jpeg"
+style="width:0.13891in;height:0.14576in" />
+
+you can do it.It is important to practise every day.You can make a
+record of your achievements.Make learning English fun,and have more
+confidence in yourself.
+
+1.List the ways that can help you improve your English language
+learning.
+
+2.Which of the following would the writer most likely agree with? Choose
+TWO answers.
+
+> a.Never fear making mistakes.
+>
+> b.Keep a diary of your learning.
+>
+> c.Learn things as fast as possible.
+>
+> d.Choose easy lessons to start with.
+>
+> e.Celebrate your success with your classmates.
+
+3.Which suggestion is the most helpful for you?Why?Write 30 words or
+more.
+
+> **【样题分析】**
+
+本题为读、写结合的综合技能题，情境属于“人与自我”主题范
+畴中“生活与学习”这一主题群，涉及子主题“积极的学习体验，恰
+当的学习方法与策略，勤学善思”。本题重点考查学生能否在理解稍
+长语篇主要内容的基础上，基于自我反思写出适合自己的英语学习方
+法并解释原因，渗透了对学生积极尝试运用不同学习策略改进英语学
+习方法、提高英语学习效率和养成良好学习习惯的引导。本题主要考
+查学生的读写能力，以及总结和选择有效语言学习方法的能力。
+
+> **样题5**
+>
+> 书面表达。
+>
+> 假设你是李辉。某英语报 “My Hometown” 专栏面向中学生招募
+>
+> **义务教育** 英语课程标准(2022年版)
+
+小记者，需要用英语向大家介绍自己的家乡。请你用英语给报社写一
+封自荐信。要点如下：
+
+> 1\. 熟悉家乡；
+>
+> 2\. 乐于交流；
+>
+> 3\. 擅长英语。
+>
+> **注意：**
+>
+> 1\. 词数为80左右；
+>
+> 2\. 可适当增加细节，以使行文连贯；
+>
+> 3\. 文中不能出现真实姓名及学校名称；
+>
+> 4.信的开头和结尾已给出，不计入总词数。
+
+参考词汇：journalist(n. 记者),column(n. 专栏) Dear Sir/Madam,
+
+|     |
+|-----|
+|     |
+|     |
+
+> Yours,
+
+Li Hui
+
+> **【样题分析】**
+
+本题为书面表达题，情境属于“人与社会”主题范畴中“社会服
+务与人际沟通”这一主题群，涉及子主题“良好的人际关系与人际交
+往”“家乡和社会的变迁”。本题重点考查学生能否根据明确的交际任
+务，围绕熟悉的主题，在真实的生活情境中运用所学语言与他人进行
+书面交流，描写和介绍家乡的人和事物，表达自己关注和热爱家乡，
+以及希望参与家乡发展的情感、态度和意图等。本题要求学生在书面
+表达中能做到内容清晰、结构完整、语言达意、逻辑连贯。本题主要
+考查学生的书面表达能力，体现家国情怀。
+
+> **六、课程实施**
+>
+> **样题6**
+>
+> 书面表达。
+>
+> 年夜饭是中国文化中最重要的团圆饭。请以 “The Family Dinner on Spring
+> Festival Eve” 为题，写一篇约80词的短文，向外国笔友
+> Steve介绍你自己家乡年夜饭的菜式、寓意，以及丰富多样的文化 习俗。
+>
+> **【样题分析】**
+
+本题为书面表达题，情境属于“人与社会”主题范畴中“历史、
+社会与文化”这一主题群，涉及子主题“世界主要国家的文化习俗”
+“节假日与庆祝活动”。本题重点考查学生能否在理解和感悟中华优秀
+传统文化的基础上，依托已有知识和经验，运用所学语言描述年夜饭
+这一文化现象及其蕴含的文化意涵，通过书面表达的方式传承和弘扬
+中国文化，展现跨文化交流的意识与能力。本题要求学生在书面表达
+中能做到内容清晰、结构完整、语言达意、连贯顺畅。本题主要考查
+学生的书面表达能力，体现对中华优秀传统文化的理解。
+
+> <span id="bookmark16" class="anchor"></span>**(三)教材编写建议**
+>
+> 义务教育英语教材包括供“六三”学制和“五四”学制使用的两
+> 种版本。“五四”学制6年级教材的内容与体例要求等应符合初中学
+> 生的学习和生活特点。1～2年级教材以听说为主，纳入地方课程教 材管理。
+>
+> **1.坚持思想性原则，落实立德树人根本任务**
+>
+> 英语教材既是英语教学的主要内容和载体，也是对学生进行思想
+> 品德教育的重要媒介。教材在内容选取、教学活动设计等方面应体现
+> 英语课程的育人价值，有机融入社会主义核心价值观和人类命运共同
+>
+> **义务教育** 英语课程标准(2022年版)
+>
+> 体意识，将立德树人根本任务落到实处。教材编写要有利于引导学生
+> 形成积极、健康的情感态度，以及正确的人生观和世界观；使学生通
+> 过英语学习培养国际理解意识、跨文化沟通意识与能力，以及文明互
+> 鉴共赏能力。教材应以适当的方式介绍社会主义先进文化、革命文化
+> 和中华优秀传统文化，积极渗透爱国主义教育、革命传统教育、中华
+> 传统美德教育，以及民主与法治教育。
+>
+> **2.** **面向全体学生，保证共同基础**
+>
+> 英语教材的编写应面向全体学生，保证学生在英语学习方面形成
+> 共同基础，确保全体学生的语言能力、文化意识、思维品质和学习能
+> 力得到发展和提升。教材的编写要有利于全体学生掌握最基本的英语
+> 语言知识和文化知识，形成最基本的理解能力和表达能力。教材的编
+> 写应考虑城乡差异、地区差异，以及学生个体差异，最大限度地提高
+> 教材的适用性。
+>
+> **3.** **以主题为主线，整体设计教学活动**
+>
+> 教学活动是英语课堂教学的基本组织形式，是培养学生核心素养
+> 的重要途径。教材各单元应围绕主题，选择适切的语篇材料，设计有
+> 利于学生接触、体验、感知、学习和运用语言的教学活动。教学活动
+> 的设计要有利于学生围绕主题意义，用英语进行真实的交流和表达。
+> 教材应将语言知识的教学融入语言实践活动之中，要注意在语境中呈
+> 现和讲解语言知识，给学生提供丰富的语言素材和实例，引导学生理
+> 解语言表达的意义，观察语言形式，发现和总结语言的规则和用法。
+>
+> **4.** **提高英语教学的真实性，激发学生的学习兴趣与动机**
+>
+> 语言教学的重要任务之一是使学生能够使用所学语言进行真实的
+> 交流。英语教材要选用相对真实的语言材料，设计含有真实交际的活
+> 动。教材各单元应围绕主题精选语篇素材，注意语篇类型和语言风格
+>
+> **六、课程实施**
+>
+> 的多样性，以及语篇内容的趣味性、知识性和交际性，激发学生的学
+> 习兴趣和动机，引导学生主动参与和积极思考。教材编写和设计应做
+> 到图文并茂，合理使用字体、字号和色彩，版面轻松活泼。教材应适
+> 当选用英语名著、名篇的节选，让学生感知英语文学语言的魅力。
+>
+> **5.** **遵循语言能力发展规律，满足不同学段学生学习需求**
+>
+> 依据学生语言能力发展的年龄特征，整体设计义务教育英语教
+> 材，体现由易到难、由浅到深、循序渐进、适度复现的原则。教材内
+> 容的选择要注意趣味性和层次性，以及学习形式的多样性和灵活性，
+> 保护学生对英语的好奇心和学习兴趣。教材册次、内容分级、教学要
+> 求等安排要注重学段有机衔接，螺旋上升。
+>
+> **6.** **确保适度的开放性，为灵活使用教材创造条件**
+>
+> 英语教材既要确保学生通过英语课程的学习掌握本课程规定的内
+> 容，又要具有适度的开放性。教材内容的选择和编排要有利于教师创
+> 造性地设计教学活动，灵活安排课堂教学环节；要为教师自主选择、
+> 增补和调整教学内容预留空间；要能够使教师接触新的教学理念与方
+> 法，促进教师改进已有教学方法。教材的编写既要反映课程标准的要
+> 求，保证基本内容的完整性和系统性，也要便于教师根据教学实际需
+> 要对教材内容做适当的取舍和补充。
+>
+> **7.** **注重培养学生的学习能力，为终身学习奠定基础**
+>
+> 英语教材要引导学生开展自主学习，要便于教师指导学生开展合
+> 作和探究式学习。教材设计的活动和练习应尽可能引导学生用英语做
+> 事情，并在此过程中体验、感知、学习和运用语言，自主归纳、总结
+> 语言规律。教材要注重为学生提供学习方法的指导，促使学生优化学
+> 习方式，形成良好的学习习惯和有效的学习策略，为终身学习奠定 基 础 。
+
+<img src="media/image16.jpeg"
+style="width:0.13195in;height:0.13194in" />**义务教育**
+英语课程标准(2022年版)
+
+> **8.** **有效利用信息技术，提高英语教学的智能化水平**
+>
+> 英语教材的编写要有效利用信息技术，推动信息技术与英语教学
+> 的深度融合。英语教材应配套数字学习资源，以辅助教材的使用，如
+> 建立教师与教师、教师与学生、学生与学生之间相互学习和交流的数
+> 字学习平台，便于师生交流和展示学习成果，分享资源与经验。平台
+> 要为教师提供丰富多样的数字教学资源，为他们开展智能化教学提供 支持。
+>
+> <span id="bookmark17" class="anchor"></span>**(四)课程资源开发与利用**
+>
+> 课程资源的开发与利用应服务于课程改革，满足课程实施的需 要
+> ，体现教育教学改革的理念。
+>
+> 积极开发与合理利用课程资源是有效实施英语课程的重要保证。
+> 英语课程资源包括教材及有利于学生学习和教师教学的其他教学材
+> 料、支持系统和教学环境，如音像资料、直观教具和实物、多媒体软
+> 件、广播影视节目、数字学习资源、报刊，以及图书馆、学校教学设
+> 施和教学环境；还包括人的资源，如学生、教师和家长的生活经历、
+> 情感体验和知识结构等。
+>
+> **1.充分利用和有效开发教材资源**
+>
+> 教材是英语课程的核心资源。为了充分利用和有效开发教材资
+> 源，教师应深入分析教材，准确把握教材设计理念和内容，熟悉教材
+> 编排特点。教师要深入研读教材，在教学中根据学生的水平和教学需
+> 要，有效利用和开发教材资源，激发学生的学习兴趣，开阔学生的视
+> 野，拓展学生的思维。
+>
+> 教育行政部门、教研机构和学校应及时了解教材的使用情况，为
+> 教材修订提出意见和建议。学校还可以适当选用或开发教材之外的优
+>
+> **六、课程实施**
+>
+> 质教学资源，以补充教材的教学内容。
+>
+> **2.** **突破教材的制约，合理开发教材以外的素材性资源**
+>
+> 在开发与利用英语课程资源的过程中，要严把意识形态关。教师
+> 要敢于突破教材的制约，充分挖掘教材以外的资源。在开发素材性英
+> 语课程资源时，要注意选用具有正确育人导向的，真实、完整、多样
+> 的英语材料，如与教材单元主题情境相匹配的英语绘本、短剧、时文
+> 等学习材料。应避免围绕教材过度开发练习题、检测题、导学案等教
+> 辅类学习材料。另外，还要特别注意根据日常教学的需要开发和利用
+> 课程资源，防止单纯从考试需要出发开发应试资源。
+>
+> **3.** **积极开发和利用学校资源**
+>
+> 教师要引导学生尽可能通过不同渠道、以不同形式学习英语。英
+> 语教学中，在合理、有效使用教材的基础上，教师应积极利用和开发
+> 学校的各种资源，如图书馆、语言实验室、音像设备等教学设施，增
+> 强英语学习的真实性、鲜活性和实用性。教育行政部门和学校要尽可
+> 能创造条件，提供课外英语读物和视听资料，以及计算机、投影仪、
+> 电子白板等硬件设备；应尽可能创造条件设置视听室等，定时向学生
+> 开放，为学生自主学习创造条件。
+>
+> **4.** **注重开发和利用学生资源**
+>
+> 学生资源包括每个学生的生活经历、学习体验，以及他们丰富的
+> 思想和情感。教师应充分认识、利用和开发好学生资源，通过创设开
+> 放性的师生、生生互动的交流与分享平台，有效激活并利用学生已有
+> 的知识、经验、想象力和创造力；引导学生建立和利用自己个性化的
+> 学习资源，并以适当方式进行交流与分享；组织学生建立班级图书角
+> 或图书柜，鼓励学生制作班级英语日志、英语墙报；引导学生在班级
+> 和学校进行英语环境设计，创建英语广播站等；组织学生用英语开展
+>
+> **义务教育** 英语课程标准(2022年版)
+>
+> 网络交流和讨论。
+>
+> **5.** **大力开发和利用数字学习资源**
+>
+> 计算机和数字技术为学生个性化学习和自主学习创造了有利条
+> 件，提供了适应信息时代所需的新的学习模式。通过计算机和互联
+> 网，学生可以根据自己的需要选择学习内容和学习方式，使学生之间
+> 更有效地相互帮助，分享学习资源。各级教育行政部门、学校和教师
+> 要积极创造条件，使学生能够有效利用数字资源。有条件的学校还可
+> 以建立自己的英语教学网站，开设网络课程，进一步增强学习的真实
+> 性、开放性和实效性。
+>
+> **6.** **注重课程资源开发与利用的实效性**
+>
+> 课程资源的开发与利用要考虑当地经济发展水平以及学生和家长
+> 的承受能力，以不增加学生的负担为前提，坚持简便、实用、有效的
+> 原则。学校要建立有效的课程资源管理体系，在充分利用已有课程资
+> 源的基础上，积极开发新的课程资源，同时杜绝课程资源闲置的现
+> 象。在利用和开发课程资源的过程中，要坚决制止编写和使用粗制滥
+> 造的教辅材料，严格禁止学校和教师向学生推荐非法出版的模拟试
+> 题、同步练习等材料。
+>
+> 课程资源的开发与利用要注重各种资源的有机整合，建立种类齐
+> 全、层次清晰、功能多样的课程资源完整体系，要避免课程资源的碎
+> 片化倾向。
+>
+> <span id="bookmark18" class="anchor"></span>**(五)教学研究与教师培训**
+>
+> 教师是确保英语课程有效实施的关键要素。教师的专业化水平是
+> 有效实施英语课程的关键。教学研究与教师培训要着力引导教师准
+> 确、深刻领会课程理念、目标和要求，并转化为切实有效的教学实
+>
+> **六、课程实施**
+>
+> 践，不断提升教师的专业素养，全面促成学生核心素养的形成与 发展。
+>
+> **1.凝聚智慧，建立教师学习和研究共同体**
+>
+> 教师是提升学校教育教学质量和落实立德树人根本任务的保障。
+> 学校要积极营造“全员参与、守正创新”的良好氛围，为教研组开展
+> 教学研究创造便利条件，提供有力支持。学校应从时间、人员、内
+> 容、形式等方面统筹规划和实施校本教研，凝聚全组教师的教育智
+> 慧，构建实践导向的学习和研究共同体，合力应对课程改革不断向纵
+> 深发展所带来的挑战。创设民主、开放和具有建设性的团队氛围，引
+> 导教师在读书、学习、思考和研讨过程中，通过倾听与对话、分享与
+> 碰撞，激发研究热情，相互取长补短，围绕立德树人根本任务，立足
+> 课程，聚焦课堂，分析学生，研读教材，落实目标，优化教学方式和
+> 学习方式，突破教学难点，以达到促进学生核心素养发展与教师专业
+> 素养提升的目的。有条件的地区还可以建立不同区域间和不同学校间
+> 教师学习、研究的共同体，帮助教师增进学术交流，拓宽专业视野，
+> 提高教学水平。
+>
+> **2.** **更新理念，把握课程标准的内容精髓**
+>
+> 课程标准是实施课程的纲领性文件，是开展教学、评价和考试命
+> 题的重要依据。教研和培训活动应注重引导教师深入研读课程理念，
+> 全面认识英语课程的育人价值和育人途径，把握其内容精髓，不断更
+> 新教育教学理念，从英语课程的育人价值层面重新审视和定位课堂教
+> 学的功能，将课程标准的理念和要求落实到教学设计与课堂实施中。
+> 教学研究和教师培训活动要引导教师改变传统的以孤立记忆和操练语
+> 言点为主的知识导向教学，从浅表性、碎片化和应试的教学模式中走
+> 出来，转向素养导向的单元整体教学实践。教师要探索和形成以学生
+> 发展为中心的教学方式，从传授知识转向培养能力，从讲解道理转向
+>
+> 引导发现，从呈现结果转向共筑过程。围绕学生不同阶段核心素养的
+> 发展目标重构课程内容，在英语学习活动观的指导下设计并组织学习
+> 活动，鼓励和引导学生在真实、复杂的情境中利用所学知识解决实际
+> 问题，走出教材，超越学科，回归生活，实现课程育人方式的改变。
+>
+> **3.** **研读教材，开展基于学情的精准教学**
+>
+> 教材是培养学生核心素养的重要载体。教学研究和教师培训活动
+> 要注重引导教师在正确解读课程标准理念和要求的基础上，充分研读
+> 教材，整合性和创造性地用好教材。教师要通读教材，熟知教材的设
+> 计理念、主题范围、语境创设、内容选择、活动设计和资源配置等，
+> 充分认识到教材对于落实英语课程育人目标的重要作用。教师要研读
+> 和梳理整套教材的编排特点，特别是各册之间、各单元之间，以及单
+> 元内各课之间的逻辑关联和进阶特点，为指导和组织学生循序渐进地
+> 学习课程内容奠定基础。教师还要基于学生已有基础和学习需求，挖
+> 掘每个语篇有价值的学习内容，把促进学生学习的真正发生作为教学
+> 的出发点和落脚点，依据学生不同的学习风格、生活经历、能力层次
+> 和语言水平，选择和组织教材内容，合理制订教学目标，精心设计、
+> 实施和评价教与学的活动，确保教学目标的达成。教学研究和教师培
+> 训活动要有利于教师在全面、准确、透彻理解教材编写意图的基础
+> 上，对教材内容进行科学、合理的重组或取舍，实施精准教学，确保
+> 学生学习机会的最大化和学习效果的最优化。
+>
+> **4.聚焦课例，开展反映真问题的小课题研究**
+>
+> 课堂教学是贯彻落实课程理念的关键环节。教师在真实课堂教学
+> 情境中，会遇到各种影响学习发生和学习效果的现象。教学研究和教
+> 师培训活动要培养教师敏锐的洞察力，善于抓住关键问题，确立研究
+> 方向，依托理论指导，开展基于课堂真问题的小课题研究。 一方面，
+> 教师要学会借助教学理论阐释课堂中发生的各种教学现象，审视和反
+>
+> **六、课程实施**
+>
+> 思自己的教学理念、教学组织和学生的学习效果；另一方面，教师要
+> 与同伴合作，依托课例实践并探索课程新理念和新要求倡导的教与学
+> 的方式。通过基于证据的教学实验和研究，解决问题，突破瓶颈，创
+> 新发展，提升自身课程设计与实施的能力。
+>
+> 学科教研组要制订分阶段的教研计划，组织定期和不定期相结合
+> 的教研活动，开展指向问题解决的课例研究。例如：围绕某一教学关
+> 键问题，教研组通过理论学习、课堂观察、数据收集与分析等，初步
+> 找到问题的症结；再通过集体研讨、团队磨课、同课异构等方式，探
+> 寻并实践解决问题的方法和路径，开展新一轮的证据收集；基于检验
+> 结果，再次展开深入研讨，聚焦教学细节，进一步分析和反思解决措
+> 施的实际效果，并将研究不断向前推进，直至问题得到有效解决。聚
+> 焦课堂的课例研究要引导教师通过关注教学现象，思考课程育人本
+> 质，以达到提升学生学习效益和教师科研能力的双重目的。
+>
+> **5.** **坚持反思，促进自身专业可持续发展**
+>
+> 教师的专业化水平是成功实施课程的关键保障。教师专业发展所
+> 需的知识、方法、信念和态度，除了通过外部培训和培养形成，还需
+> 要通过自主和合作探究、试错和反思逐步形成。教学反思是一种有益
+> 的思维活动和再学习方式，伴随着课堂教学目标落实的过程，监控、
+> 分析和解决问题是促进教师专业化发展的有效途径。教学研究和教师
+> 培训活动要引导教师从自身所处的特定情境出发，基于具体问题，不
+> 断对自己、自己的教学实践和相关事件进行深入的反思，善于从实践
+> 中发现意义与价值，吸取教益，实现改进，在持续的反思性实践中实
+> 现自身专业的可持续发展。
+>
+> 教师要将教学与研究有机结合，以培养学生的核心素养为出发
+> 点，不断审视自己的教学观念和方法，研究如何在教中学和在学中
+> 教，坚持从学生、教师和教学内容等不同角度进行自我反思和自我评
+> 价，探索精准、高效呈现教学内容的方式，构建有效的师生活动和教
+>
+> 与学的方式，有目的地改进和优化教学，提高教学效果。教师要在学
+> 习、实践与反思中，激活教学智慧，有机整合学科专业知识和学科教
+> 学知识，加深对教学本质的理解和认识，形成自主的专业发展意识和
+> 能力，逐步提炼适合个人特点的、有利于促进学生自主学习和提升学
+> 生学习效果的教学方式和方法，成为不断进取、具有反思意识和创新
+> 精神的英语教师。
+>
+> **6.** **深入课堂，扎根实践，改进教学**
+>
+> 教研员是教师专业发展过程中的指导者和合作伙伴。教师课程设
+> 计与实施能力的发展不是一蹴而就的，需要在教研员或培训者的指导
+> 下，通过不断自我反思与实践，循序渐进地形成并发展。教研员要率
+> 先学习课程标准提出的新理念、新要求，深刻理解其内容精髓，主动
+> 走进课堂，与教师共同实践，指导教师开展教学研究，不断提升课程
+> 育人质量。
+>
+> 教研员要定期深入基层学校，特别是农村学校和薄弱学校，走进
+> 课堂，基于教学现场，抓住关键环节，发现并聚焦教学真问题，实施
+> 全程化、跟进式教研，引领、指导教师探寻解决教学问题的思路与方
+> 法，不断提升教学质量，促进教师专业素养和学生核心素养同步发
+> 展。教研员要带领教师把课程标准中对学生长远的培养目标转化为具
+> 体的单元、语篇和课时的教学目标，并与教师合作，开展磨课和试
+> 课，在这个过程中观察学生的反应和变化，以及教学对学生学习行为
+> 和学习成效的影响，共同反思和总结，持续优化和改进。教研员还要
+> 借助基于实证分析和数据分析的教学诊断，携手教师共同研究和解决
+> 教学中的问题，带领教师逐步将课程理念转化为具体的课堂教学实践。
+>
+> **7.** **拓宽渠道，创新教学研究和教师培训机制，提升教师课程育**
+> **人能力**
+
+教学研究和教师培训是推动教师转变观念、引导教师实践课程理
+
+> **六、课程实施**
+>
+> 念、落实课程目标的重要保障。教师对教育教学有着丰富的经验和独
+> 特的理解。教学研究和教师培训要逐步引导教师基于自身的教学情境
+> 和已有的教学经验理解和掌握课程标准的新理念，同时注重营造教师
+> 之间积极分享交流的氛围，让教师感受到被认可、被尊重、被支持。
+>
+> 在教学研究和教师培训内容上，要重视教师学科专业知识和学科
+> 教学知识的不断更新，以及教学研究能力的发展，帮助教师提高语言
+> 素养、思维品质和跨文化交际能力，指导教师在反思中提升教学实践
+> 能力，推动教师参与指向学生核心素养发展的教学和评价研究。在教
+> 学研究与教师培训的方式上，要因地制宜、突破创新，采取区域教
+> 研、主题教研、课例展示、项目研究等多种形式，满足不同教师的学
+> 习和发展需求。同时，要积极探索教育信息化背景下教学研究与教师
+> 培训模式的改革，借助数字学习平台，线上线下结合，将专家讲座、
+> 专题微课、工作坊、主题论坛等多种方式有机融入面向全体教师的课
+> 程标准通识培训中。
+>
+> 在日常教研中，教研员要以服务好课程实施、教师教学和学生学
+> 习为指导思想，做好问题调研和需求诊断，规划并组织参与式、探究
+> 式和体验式的主题教研，有针对性地将教学过程中遇到的共性问题归
+> 纳梳理成系列教研主题，采用“问题呈现—团队研究一集体分享一课
+> 例展示—专家点评—成果固化”的路径，指导教师“做中学”“研中
+> 思”,让教研活动成为联结课程标准与课堂教学的桥梁，促进教师将
+> 课程理念转化为有效的课堂教学行为，最终促成学生核心素养的形成 与发展。
+>
+> <span id="bookmark36" class="anchor"></span>**附** **录**
+>
+> <span id="bookmark20" class="anchor"></span>**附录1**
+> **核心素养学段特征**
+>
+> 义务教育英语课程从“综合特征”和“分项特征”两方面分学段
+> 描述核心素养。综合特征体现核心素养的成长性、综合性和整体性，
+> 分项特征从不同维度描述各学段核心素养的具体表现。
+>
+> **一、综合特征**
+>
+> **3～4年级**
+>
+> 能在教师指导和帮助下完成学习任务。能理解日常生活中熟悉的
+> 简单语言材料，开始产生语感；能用基本的、简短的语言与他人交
+> 流，描述身边熟悉的事物。有主动了解中外文化的愿望，观察、感知
+> 不同国家或文化背景下的家庭生活、学校生活、社会生活等，具有身
+> 份意识和国家认同感。通过比较，识别各种现象的异同，尝试从不同
+> 角度观察世界。对英语学习产生兴趣，初步养成良好的学习习惯；在
+> 学习活动中尝试与他人合作，共同完成学习任务。
+>
+> **5～6年级**
+>
+> 能在教师引导和启发下完成学习任务。能理解日常生活中常见的
+> 简单语言材料，初步形成语感；能围绕相关主题，用所学语言进行交
+
+**附** **录**
+
+> 流，表达自己的想法，实现基本的沟通与交流。感知与体验文化多样
+> 性，能初步了解与中外文化有关的具体现象与事物；涵养家国情怀，
+> 树立文化自信，形成正确的价值观和良好的品格。能初步独立思考，
+> 具有问题意识，能多角度、辩证地看待事物，对事物作出正确的价值
+> 判断，并有条理地表达观点。能根据学习进展情况调整学习计划和策
+> 略，初步找到适合自己的英语学习方法，基本养成良好的学习习惯；
+> 在学习活动中主动探究，与他人合作，共同完成学习任务。
+>
+> **7～9年级**
+>
+> 能理解日常生活中的简单语言材料，有一定的语感；能在日常生
+> 活或一般社交场合中用所学语言与他人交流信息，表达自己的观点和
+> 情感态度。尊重与包容不同文化，具备分析、比较、判断文化差异性
+> 和相似性的基本能力，树立国际视野，涵养家国情怀；理解与感悟优
+> 秀文化的内涵，有正确的价值观、健康的审美情趣和良好的品格。能
+> 根据获取的信息，综合、归纳、概括、辨析、判断主要观点，发现规
+> 律，建立逻辑关联，独立思考，发现问题、分析问题并创造性地解决
+> 问题。能积极尝试运用不同的英语学习策略提高学习效率，找到适合
+> 自己的英语学习方法，学会反思，养成良好的学习习惯；能进行自主
+> 学习、合作学习和探究学习。
+>
+> **二** **、分项特征**
+>
+> 核心素养分项特征见表25至表28。
+>
+> **表25** **语言能力学段分项特征**
+
+<table style="width:99%;">
+<colgroup>
+<col style="width: 14%" />
+<col style="width: 84%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>学段</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>特征描述</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p><strong>3～4</strong> <strong>年级</strong></p>
+</blockquote></td>
+<td style="text-align: left;"><blockquote>
+<p><strong>能在教师指导和帮助下，围绕相应级别的主题，理解日常生活中熟悉</strong>
+<strong>的简单语言材料，识别、提取、梳理信息；运用所学语言与他人交</strong>
+<strong>流，描述熟悉的生活和身边的事物，并表明态度等，必要时借助模</strong>
+<strong>仿、重复、手势和表情等非语言手段，实现简单的沟通与交流。</strong></p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+> **义务教育** 英语课程标准(2022年版)
+>
+> **续表**
+
+<table style="width:99%;">
+<colgroup>
+<col style="width: 14%" />
+<col style="width: 84%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>学段</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>特征描述</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>5～6 年级</p>
+</blockquote></td>
+<td style="text-align: left;"><blockquote>
+<p>能在教师引导和启发下，围绕相应级别的主题，理解日常生活中常见
+的简单语言材料，领悟其基本意义，获取和整合基本的事实性信息，
+把握主要内容；运用所学语言与他人交流，传递信息，叙述事件，表
+达看法及观点，实现基本的沟通与交流。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>7～9</p>
+<p>年级</p>
+</blockquote></td>
+<td style="text-align: left;"><blockquote>
+<p>能在教师引导和协助下，围绕相应级别的主题，理解日常生活中的简
+单语言材料，具备一定的获取和归纳特定信息或关键信息的能力，抓
+住要点，分析、推断隐含的信息；运用所学语言与他人交流，描述现
+象与经历，介绍熟悉的人和事物，表达观点和情感态度等，表达基本
+准确、连贯、顺畅。</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+> **表26** **文化意识学段分项特征**
+
+<table style="width:99%;">
+<colgroup>
+<col style="width: 14%" />
+<col style="width: 84%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>学段</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>特征描述</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>3～4 年级</p>
+</blockquote></td>
+<td><blockquote>
+<p>能在教师指导和帮助下，观察、感知不同国家或文化背景下人们的生
+活、饮食和重大节日等，有主动了解中外文化的愿望；能通过图片、
+简单的语言材料(如歌谣、韵文等),获取中外文化的简单信息，对
+所学语篇的文化内容进行比较；能用简单的单词、短语和句子描述与
+中外文化有关的图片、熟悉的具体现象和事物。尝试比较和识别中外
+文化，具有身份意识和国家认同感。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>5～6 年级</p>
+</blockquote></td>
+<td style="text-align: left;"><blockquote>
+<p>能在教师引导和启发下，初步了解与中外文化有关的具体现象和事
+物，对学习、探索中外文化有兴趣；通过常见的简单语言材料(如故
+事、介绍、日常对话、动画等),获取中外文化的简单信息，感知与
+体验文化多样性；能用简短的句子描述所学的与中外文化有关的具体
+事物；认同中华文化，发现和感悟其中蕴含的人生哲理或价值观，形
+成正确的价值观和良好的品格；初步具备比较和识别中外文化异同的 能力。</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+**附** **录**I\|
+
+> **续表**
+
+<table style="width:99%;">
+<colgroup>
+<col style="width: 14%" />
+<col style="width: 84%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>学段</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>特征描述</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p><strong>7～9</strong> <strong>年级</strong></p>
+</blockquote></td>
+<td style="text-align: left;"><blockquote>
+<p><strong>能在教师引导和协助下，采用合适的方式、方法认识与中外文化有关</strong>
+<strong>的具体现象和事物；尊重并包容不同文化，涵养家国情怀，初步理解</strong>
+<strong>人类命运共同体的概念；能通过语言简单、主题相关的语篇材料获取</strong>
+<strong>并归纳中外文化信息；在参与交际活动时，意识到文化差异在语言交</strong>
+<strong>流中的表现，能尝试采用多种策略进行沟通和交流；能基于已有经验</strong>
+<strong>和知识，用所学英语描述熟悉的文化现象和文化差异；具备比较、判</strong>
+<strong>断常见的中外文化差异性和相似性的基本能力；能理解与感悟优秀文</strong>
+<strong>化的内涵，有正确的价值观、健康的审美情趣和良好的品格。</strong></p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+> **表27** **思维品质学段分项特征**
+
+<table style="width:99%;">
+<colgroup>
+<col style="width: 14%" />
+<col style="width: 84%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>学段</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>特征描述</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>3～4 年级</p>
+</blockquote></td>
+<td style="text-align: left;"><blockquote>
+<p>能在教师指导和帮助下，注意观察、识别所学语篇中的语言和文化现
+象，发现各种现象的异同；能根据获取的信息，判断主要信息和观
+点；初步具有问题意识，尝试从不同角度观察世界，积极提出问题。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>5～6 年级</p>
+</blockquote></td>
+<td style="text-align: left;"><blockquote>
+<p>能在教师引导和启发下，主动观察所学语篇中语言和文化的各种现
+象；通过比较，识别各种信息的相似性和差异性，发现并推断因果关
+系；能根据获取的信息，归纳、概括共同特征；具有问题意识，能提
+出自己的想法，有条理地表达观点；学会换位思考，尝试多角度认识
+世界，辩证地看待事物并对事物作出正确的价值判断；能初步进行独
+立思考，避免盲目接受或否定。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>7～9 年级</p>
+</blockquote></td>
+<td style="text-align: left;"><blockquote>
+<p>能在教师引导和协助下，自主采用合适的方式、方法，观察和理解所
+学语篇中语言和文化的各种现象；通过比较，识别关键信息，区分事
+实性和非事实性信息，分析和推断各种信息之间的关联和逻辑关系；
+能根据获取的信息，尝试归纳、概括主要观点和规律，发现问题、分
+析问题并逐步创造性地解决新的问题；能从不同角度认识和理解世
+界，对各种观点进行独立思考，判断信息的真实性，作出正确的价值
+判断，尝试提出合理的疑问。</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+> **表28** **学习能力学段分项特征**
+
+<table style="width:99%;">
+<colgroup>
+<col style="width: 14%" />
+<col style="width: 85%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>学段</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>特征描述</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>3～4 年级</p>
+</blockquote></td>
+<td style="text-align: left;"><blockquote>
+<p>能在教师指导和帮助下，感受英语学习的乐趣；初步认识到英语学习
+和汉语学习的不同；初步感受英语的发音、语调等特点，并发现简单
+的拼读规则；能尝试通过模仿、说唱、表演等方式参与语言实践活
+动。能意识到英语学习需要大胆表达，不怕犯错；能意识到在交流中
+需要倾听，并有礼貌地表达自己的想法。能初步制订自己的学习计划
+并尝试努力完成；能发现同伴的学习优点并主动请教；积极参与合作
+学习，初步养成良好的学习习惯。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>5～6</p>
+<p>年级</p>
+</blockquote></td>
+<td style="text-align: left;"><blockquote>
+<p>能在教师引导和启发下，基本认识到英语学习的重要性，英语学习的
+兴趣增强；初步了解英语学习的特点和规律，尝试运用不同的英语学
+习策略提高学习效率，制订合理的学习计划并努力完成；根据学习进
+展情况对学习计划和方法进行调整和优化，初步找到适合自己的英语
+学习方法并加以运用；利用多种资源开展学习，初步形成自主学习的
+意识，基本养成良好的学习习惯。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>7～9</p>
+<p>年级</p>
+</blockquote></td>
+<td style="text-align: left;"><blockquote>
+<p>能在教师引导和协助下，认识到英语学习的重要性；进一步激发英语
+学习的兴趣，遇到困难时具备一定的抗挫折能力；了解英语学习的特
+点和规律，积极尝试运用不同的英语学习策略提高学习效率，制订适
+合自己的学习计划并努力完成；及时反思，并根据学习进展对学习计
+划和策略进行调整，找到适合自己的英语学习方法并加以运用；能主
+动利用图书馆和其他资源进行拓展学习，初步具备自主学习、合作学
+习、探究学习的能力，养成良好的学习习惯。</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+**附** **录**
+
+> <span id="bookmark21" class="anchor"></span>**附录2** **语音项目表**
+>
+> **说明**
+
+1\. 语音是语言教学的重要内容之一。自然、规范的语音和语调
+将为有效的口语交际奠定良好的基础。
+
+2.语音教学应注重语义与语境、语调与语流相结合，要通过有
+意义的语言输入，引导学生在感知、理解语言的基础上，体会语音的
+表意功能，发现并归纳语音规则。应为学生提供大量听音、模仿和实
+践的机会，帮助学生形成语音意识。音标只作为7～9年级的学习
+
+内 容 。
+
+> **一** **、基本读音**
+>
+> 1.26个字母的读音
+>
+> 2\. 字母在单词中的基本读音
+>
+> 3\. 常见的元音字母组合在单词中的读音，如ee 、oa 、ou 等
+>
+> 4\. 常见的辅音字母组合在单词中的基本读音，如 th 、sh 、ch等
+
+5\. 常见的辅音连缀的读音，如black、class 、flag 、glass 、plane、 sleep
+、bright 、cry 、sky 、small 、speak 、star 、street 、spring 、screen、
+programme 、quiet等
+
+> 6\. 失去爆破，如picture、blackboard 等
+>
+> **二** **、重** **音**
+>
+> 1\. 单词重音
+>
+> 2.句子重读
+>
+> **三** **、意** **群**
+>
+> 1\. 连读
+>
+> **义务教育** 英语课程标准(2022年版)
+>
+> 2.弱读
+>
+> **四** **、语调与节奏**
+>
+> 1.语调(升调、降调)
+>
+> 2.节奏
+
+**附** **录**
+
+> <span id="bookmark22" class="anchor"></span>**附录3** **词汇表**
+>
+> **二级词汇表**
+>
+> **说明**
+
+1.根据核心素养的培养目标和课程内容六要素的要求，以使用
+为导向原则，本词汇表收录505个单词，为小学阶段英语课程应学习
+和掌握的基本词汇。各地可根据实际情况在本词汇表的基础上，选择
+增加100～300个单词(主要为三级词汇及少量相关主题范围内 词汇)。
+
+2.本词汇表采用英式英语拼写形式，常见的美式拼写形式用括 号标注 。
+
+3.为体现在具体语境中学习和使用单词的理念，本词汇表不标
+注单词的词性和中文释义。
+
+4.名词复数特殊变化、动词特殊人称变化、缩写等，采用括号 标注，如
+child(pl.children) 、be(am,is,are) 、PE(=physical educa-
+
+tion)。
+
+> 5.数词(含基数词、序数词)、月份、星期等单独列出。
+
+6.部分地理名称及相关信息，部分国家、重要组织机构名称缩
+写，部分重要节日名称、中国文化专有名词单独列出。
+
+> 7.不规则动词表单独列出。
+>
+> 8\. 本词汇表不列词组和短语。
+>
+> 9\. 本词汇表不列语法术语。
+
+10.本词汇表不列可根据构词法推导出的部分名词、形容词、副 词等 。
+
+<table style="width:75%;">
+<colgroup>
+<col style="width: 51%" />
+<col style="width: 23%" />
+</colgroup>
+<tbody>
+<tr>
+<td><img src="media/image17.jpeg"
+style="width:0.1458in;height:0.14586in" /><strong>义务教育</strong>
+<strong>英语课程标准(2022年版</strong>)</td>
+<td></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>A</p>
+<p>a/an</p>
+<p><strong>about</strong></p>
+<p><strong>after</strong></p>
+<p><strong>afternoon</strong></p>
+<p>again</p>
+<p>age</p>
+<p>ago</p>
+<p>air</p>
+<p>all</p>
+<p>also</p>
+<p>always</p>
+<p>and</p>
+<p>angry</p>
+<p>animal</p>
+<p>answer</p>
+<p>any</p>
+<p>apple</p>
+<p>arm</p>
+<p><strong>art</strong></p>
+<p>ask</p>
+<p>astronaut</p>
+<p>at</p>
+<p><strong>aunt</strong></p>
+<p><strong>autumn</strong></p>
+<p>B</p>
+<p><strong>baby</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>back</strong></p>
+<p><strong>bad</strong></p>
+<p><strong>bag</strong></p>
+<p><strong>ball</strong></p>
+<p><strong>banana</strong></p>
+<p><strong>basketball</strong></p>
+<p><strong>be(am,is,are)</strong></p>
+<p><strong>beach</strong></p>
+<p>bear</p>
+<p>beautiful</p>
+<p>because</p>
+<p>bed</p>
+<p>bee</p>
+<p>before</p>
+<p>begin</p>
+<p>behind</p>
+<p>beside</p>
+<p>best</p>
+<p>between</p>
+<p>big</p>
+</blockquote>
+<p>bike(=bicycle)</p>
+<blockquote>
+<p>bird</p>
+<p>birthday</p>
+<p>black</p>
+<p>blackboard</p>
+<p>blue</p>
+<p><strong>boat</strong></p>
+<p><strong>body</strong></p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+**附** **录**
+
+book
+
+box
+
+boy
+
+bread
+
+breakfast
+
+bring
+
+brother
+
+brown
+
+bus
+
+busy
+
+but
+
+buy
+
+by
+
+C
+
+cake
+
+call
+
+can
+
+candle
+
+candy
+
+cap
+
+car
+
+card
+
+careful
+
+**cat**
+
+**catch**
+
+**chair**
+
+**chicken**
+
+> **child(pl.children)**
+>
+> China
+>
+> Chinese
+>
+> chore
+>
+> cinema
+>
+> city
+>
+> class
+>
+> classroom clean
+>
+> clever clock
+>
+> close
+>
+> clothes cloudy coat
+>
+> cold
+>
+> colour(AmE color)
+>
+> come
+>
+> computer cook
+>
+> cool
+>
+> cousin
+>
+> **COw**
+>
+> cry cup
+>
+> **cut cute**
+>
+> **义务教育** 英语课程标准(2022年版)
+
+D
+
+dance
+
+day
+
+dear
+
+desk
+
+difficult dinner dirty
+
+do
+
+doctor dog
+
+doll
+
+door down draw dress drink driver duck
+
+E
+
+**ear**
+
+early earth
+
+**easy**
+
+**eat**
+
+**egg**
+
+**elephant**
+
+> email
+>
+> English evening
+>
+> **every**
+>
+> **excited exercise**
+>
+> eye
+>
+> F
+>
+> face
+>
+> family famous fan
+>
+> far
+>
+> farm
+>
+> farmer
+>
+> **fast**
+>
+> father(dad)
+>
+> **favourite(AmE favorite)** feel
+>
+> film find fine fire fish
+>
+> **floor**
+>
+> **flower**
+>
+> fly
+
+**附** **录**
+
+**food**
+
+**foot(pl.feet) football**
+
+**for**
+
+**free**
+
+**friend**
+
+from front fruit
+
+G
+
+game garden get
+
+gift girl give glass
+
+go
+
+good
+
+goodbye(bye)
+
+grandfather(grandpa)
+
+grandmother(grandma)
+
+grape grass great green
+
+> H
+>
+> hair
+>
+> half
+>
+> hand
+>
+> happy
+>
+> hard
+>
+> have (has)
+>
+> he
+>
+> head
+>
+> healthy
+>
+> hear
+>
+> heavy
+>
+> hello
+>
+> help
+>
+> helpful
+>
+> her
+>
+> here
+>
+> hi
+>
+> hill
+>
+> him
+>
+> his
+>
+> holiday
+>
+> home
+>
+> hometown
+>
+> horse
+>
+> hospital
+>
+> hot
+>
+> hour
+>
+> **义务教育英语课程标准(2022年版)**
+
+**house**
+
+**how**
+
+hungry hurry hurt
+
+I
+
+I
+
+ice
+
+**ice cream**
+
+idea
+
+**ill**
+
+**in**
+
+**interesting Internet**
+
+**it**
+
+**its**
+
+J
+
+job juice jump
+
+K
+
+keep
+
+kid
+
+kind
+
+kitchen
+
+> **kite**
+>
+> **know**
+>
+> L
+>
+> **lake**
+>
+> last
+>
+> late
+>
+> learn
+>
+> left
+>
+> leg
+>
+> lesson
+>
+> let
+>
+> letter
+>
+> library
+>
+> light
+>
+> like
+>
+> lion
+>
+> listen
+>
+> little
+>
+> live
+>
+> long
+>
+> look
+>
+> lot
+>
+> love
+>
+> lovely
+>
+> lunch
+
+**附** **录**
+
+M
+
+make
+
+**man(pl.men)** many
+
+map
+
+maths(=mathematics,AmE math) may
+
+me
+
+meat
+
+meet
+
+middle milk
+
+minute Miss
+
+money monkey month
+
+moon
+
+morning
+
+mother(mum AmE mom)
+
+mouse(pl.mice) mouth
+
+move
+
+Mr(AmE Mr.)
+
+Mrs(AmE Mrs.)
+
+Ms(AmE Ms.)
+
+much music
+
+> **must**
+>
+> **my**
+>
+> N
+>
+> **name**
+>
+> **near**
+>
+> **never**
+>
+> **new**
+>
+> **next**
+>
+> nice
+>
+> night
+>
+> no
+>
+> noodle
+>
+> nose
+>
+> not
+>
+> now
+>
+> nurse
+>
+> 0
+>
+> o'clock
+>
+> of
+>
+> off
+>
+> often
+>
+> **OK**
+>
+> **old**
+>
+> **on**
+>
+> **open**
+>
+> or
+
+<table style="width:68%;">
+<colgroup>
+<col style="width: 48%" />
+<col style="width: 19%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>义务教育</strong> 英语课程标准(2022年版)</p>
+</blockquote>
+<p><strong>orange</strong></p>
+<p><strong>our</strong></p>
+<p>out</p>
+<p>over</p></td>
+<td><blockquote>
+<p>playground please</p>
+<p>police</p>
+<p><strong>potato</strong></p>
+<p>put</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><p>P</p>
+<p>pair</p>
+<p>panda paper parent park party</p>
+<p>PE(=physical education)</p>
+<p>pen</p>
+<p>pencil people pet</p>
+<p>phone</p>
+<p><strong>photo(=photograph)</strong></p>
+<p>piano picture pig</p>
+<p><strong>ping-pong</strong></p>
+<p>pink</p>
+<p><strong>place plane plant play</strong></p></td>
+<td><blockquote>
+<p>Q</p>
+<p>question</p>
+<p>quiet</p>
+<p>R</p>
+<p>rabbit</p>
+<p>rain</p>
+<p>read</p>
+<p>red</p>
+<p>rice</p>
+<p>right</p>
+<p>river</p>
+<p>robot</p>
+<p>room</p>
+<p><strong>ruler</strong></p>
+<p><strong>run</strong></p>
+<p>S</p>
+<p><strong>sad</strong></p>
+<p><strong>safe</strong></p>
+<p><strong>say</strong></p>
+<p><strong>school</strong></p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+**附** **录**
+
+> schoolbag
+>
+> science
+>
+> **sea**
+>
+> **season**
+>
+> **see**
+>
+> sell
+>
+> share
+>
+> she
+>
+> sheep(pl.sheep)
+>
+> ship
+>
+> shirt
+>
+> shoe
+>
+> shop
+>
+> short
+>
+> shorts
+>
+> should
+>
+> show
+>
+> sing
+>
+> sister
+>
+> sit
+>
+> skirt
+>
+> sleep
+>
+> slow
+>
+> small
+>
+> **snow**
+>
+> **SO**
+>
+> **sock**
+>
+> **some**
+>
+> sometimes
+>
+> song
+>
+> sorry
+>
+> soup
+>
+> space
+>
+> speak
+>
+> sport
+>
+> spring
+>
+> stand
+>
+> star
+>
+> stop
+>
+> story
+>
+> street
+>
+> strong
+>
+> student
+>
+> study
+>
+> subject
+>
+> summer
+>
+> sun
+>
+> sunny
+>
+> supermarket
+>
+> sure
+>
+> sweater
+>
+> sweep
+>
+> swim
+>
+> T
+>
+> **table**
+>
+> **义务教育英语课程标准(2022年版)**
+
+**tail**
+
+**take**
+
+**talk**
+
+tall
+
+**taxi**
+
+**tea**
+
+**teacher**
+
+tell
+
+thank that
+
+the
+
+their them then there these they thin think this
+
+those tidy tiger time
+
+**tired**
+
+**to**
+
+today toilet
+
+> **tomato**
+>
+> **tomorrow too**
+>
+> **top**
+>
+> toy
+>
+> train
+>
+> travel
+>
+> **tree**
+>
+> **trousers**
+>
+> try
+>
+> turn
+>
+> **TV(=television)**
+>
+> U
+>
+> umbrella
+>
+> **uncle**
+>
+> **under**
+>
+> **up**
+>
+> **us**
+>
+> **use**
+>
+> V
+>
+> **vegetable**
+>
+> very
+>
+> visit
+>
+> W
+>
+> wait
+
+**附** **录**
+
+**wake**
+
+**walk**
+
+wall
+
+**want**
+
+**warm**
+
+wash
+
+watch
+
+water
+
+way
+
+we
+
+wear
+
+weather
+
+week
+
+welcome
+
+well
+
+what
+
+when
+
+where
+
+which
+
+white
+
+who
+
+whose
+
+why
+
+will
+
+win
+
+window
+
+> windy
+>
+> winter wish
+>
+> with
+>
+> woman(pl.women)
+>
+> wonderful word
+>
+> work
+>
+> worker world worry write
+>
+> wrong
+>
+> Y
+>
+> year
+>
+> yellow
+>
+> yes
+>
+> yesterday you
+>
+> young your
+>
+> Z
+>
+> **ZO0**
+>
+> **义务教育** 英语课程标准(2022年版)
+>
+> **三级词汇表**
+>
+> **说明**
+
+1.根据核心素养的培养目标和课程内容六要素的要求，以收录
+词根词为主的原则，本词汇表共收录1600个单词，含二级词汇505
+个(用“\*”标出),确定1095个单词为初中阶段英语课程应学习和
+掌握的基本词汇。各地可根据实际情况在本词汇表的基础上，选择增
+加100～300个单词。
+
+2\. 本词汇表采用英式英语拼写形式，常见的美式拼写形式用括 号标注。
+
+3\. 为体现在具体语境中学习和使用单词的理念，本词汇表不标
+注单词的词性和中文释义。
+
+4.名词复数特殊变化、动词特殊人称变化、缩写等，采用括号
+标注，如child(pl.children) 、be (am,is,are) 、PE(=physical educa-
+tion)。
+
+> 5\. 数词(含基数词、序数词)、月份、星期等单独列出。
+
+6\. 部分地理名称及相关信息，部分国家、重要组织机构名称缩
+写，部分重要节日名称、中国文化专有名词单独列出。
+
+> 7\. 不规则动词表单独列出。
+>
+> 8\. 本词汇表不列词组和短语。
+>
+> 9\. 本词汇表不列语法术语。
+
+10\. 本词汇表不列可根据构词法推导出的部分名词、形容词、副 词等。
+
+<table style="width:62%;">
+<colgroup>
+<col style="width: 30%" />
+<col style="width: 31%" />
+</colgroup>
+<tbody>
+<tr>
+<td><p>A</p>
+<p>a/an*</p></td>
+<td><blockquote>
+<p>about* above</p>
+</blockquote></td>
+</tr>
+<tr>
+<td>ability able</td>
+<td><blockquote>
+<p>abroad absent</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+**附** **录**
+
+> **accept**
+>
+> **accident**
+>
+> **according(to) account**
+>
+> **ache**
+>
+> **achieve acrosS**
+>
+> act
+>
+> action
+>
+> active
+>
+> activity
+>
+> actor/a ctress actually
+>
+> ad (=advertisement)
+>
+> add
+>
+> address
+>
+> admire
+>
+> adult
+>
+> advantage advice
+>
+> advise
+>
+> afford
+>
+> afraid
+>
+> after\*
+>
+> afternoon\* again\*
+>
+> against
+>
+> 关
+>
+> age
+
+**ago\* agree ahead**
+
+**AI(=artificial intelligence)**
+
+aid
+
+aim
+
+air\*
+
+airport
+
+alarm
+
+alive
+
+all\*
+
+allow
+
+almost
+
+alone
+
+along
+
+aloud
+
+already also\*
+
+although always\* a.m.
+
+amazing among
+
+ancient and\*
+
+angry\* animal\* another
+
+> **义务教育** 英语课程标准(2022年版)
+
+<img src="media/image18.jpeg" />
+
+> **answer**
+>
+> ant
+>
+> any\*
+>
+> **anybody/anyone**
+>
+> anything
+>
+> anyway
+>
+> anywhere
+>
+> apartment
+>
+> app(=application)
+>
+> appear apple\* area
+>
+> argue arm\*
+>
+> army
+>
+> around arrive art\*
+>
+> article artist
+>
+> as
+>
+> ask\*
+>
+> asleep
+>
+> astronaut\* at\*
+>
+> athlete attack
+>
+> **attend**
+
+attention
+
+aunt\*
+
+autumn\*
+
+average
+
+avoid
+
+awake
+
+award
+
+aware
+
+away
+
+awful
+
+B
+
+baby\*
+
+back\*
+
+background
+
+bad\*
+
+badminton
+
+bag\*
+
+balance
+
+ball\*
+
+balloon
+
+bamboo
+
+banana\*
+
+band
+
+bank
+
+**baseball**
+
+**basic**
+
+**basket**
+
+**附** **录**
+
+**basketball\***
+
+bat
+
+bath
+
+bathroom
+
+be(am,is,are)\*
+
+**beach\***
+
+bean
+
+**bear\***
+
+beat
+
+beautiful\* because\* become
+
+bed\*
+
+bedroom
+
+bee\*
+
+beef
+
+before\*
+
+begin\*
+
+behave
+
+behind\*
+
+believe
+
+bell
+
+belong
+
+below
+
+belt
+
+benefit
+
+**beside\***
+
+best\*
+
+> **better**
+>
+> **between\***
+>
+> big\*
+>
+> bike(=bicycle)\*
+>
+> bill
+>
+> bin
+>
+> biology
+>
+> bird\*
+>
+> birth
+>
+> birthday\*
+>
+> biscuit
+>
+> bit
+>
+> black\*
+>
+> blackboard\*
+>
+> bleed
+>
+> blind
+>
+> block
+>
+> blood
+>
+> blouse
+>
+> blow
+>
+> blue\*
+>
+> board
+>
+> boat\*
+>
+> body\*
+>
+> boil
+>
+> book\*
+>
+> boring
+>
+> born
+>
+> **义务教育** 英语课程标准(2022年版)
+
+**borrow**
+
+**boss**
+
+both
+
+bottle
+
+bottom
+
+bowl
+
+box\*
+
+boy\*
+
+brain
+
+brave
+
+bread\*
+
+break
+
+breakfast\* breath
+
+bridge
+
+bright
+
+bring\* brother\* brown\* brush
+
+budget build
+
+building bully
+
+burn
+
+bus\*
+
+business busy\*
+
+but\*
+
+**butter**
+
+**butterfly**
+
+buy\*
+
+by\*
+
+C
+
+cabbage
+
+cake\*
+
+calendar
+
+call\*
+
+calm
+
+camera
+
+camp
+
+> <img src="media/image19.jpeg" />
+
+can
+
+cancel
+
+cancer
+
+candle\*
+
+candy\*
+
+cap\*
+
+capital
+
+car\*
+
+card\*
+
+care
+
+careful\*
+
+careless
+
+carrot
+
+carry
+
+**附** **录**
+
+> **cartoon**
+>
+> **case cash**
+>
+> cat\*
+>
+> catch\*
+>
+> cause
+>
+> celebrate cent
+>
+> central
+>
+> centre(AmE center)
+>
+> century
+>
+> certain
+>
+> chair\*
+>
+> chalk
+>
+> challenge
+>
+> champion
+>
+> chance
+>
+> change
+>
+> character
+>
+> characteristic charity
+>
+> chat
+>
+> cheap
+>
+> cheat
+>
+> check
+>
+> cheer
+>
+> cheese
+>
+> chemistry
+>
+> chess
+>
+> chicken\*
+>
+> child(pl.children)\*
+>
+> China\*
+>
+> Chinese\*
+>
+> chip
+>
+> chocolate
+>
+> choice
+>
+> choose
+>
+> chopsticks chore\*
+>
+> Christmas cinema\*
+>
+> circle
+>
+> citizen
+>
+> city\*
+>
+> class\*
+>
+> classic
+>
+> classmate
+>
+> classroom\* clean\*
+>
+> clear
+>
+> clever\* click
+>
+> climate climb
+>
+> clock\* close\*
+>
+> **义务教育英语课程标准(2022年版)**
+
+**clothes\***
+
+**cloud**
+
+cloudy\* club
+
+coach coast
+
+coat\*
+
+coffee coin
+
+cold\*
+
+collect college
+
+colour(AmE color)\*
+
+> \*
+
+come
+
+comfortable
+
+common
+
+communicate community
+
+company
+
+compare
+
+compete
+
+complete
+
+computer\*
+
+concert
+
+condition
+
+confidence
+
+congratulation connect
+
+consider
+
+continue
+
+control
+
+convenient
+
+conversation
+
+cook\*
+
+cookie
+
+cool\*
+
+cooperate
+
+copy
+
+corn
+
+corner
+
+correct
+
+cost
+
+cotton
+
+cough
+
+could
+
+count
+
+country
+
+countryside
+
+couple
+
+courage
+
+course
+
+cousin\*
+
+cover
+
+cow\*
+
+crazy
+
+create
+
+**附** **录**
+
+creative
+
+crosS
+
+crowded
+
+cry\*
+
+cucumber
+
+culture
+
+cup\*
+
+curious
+
+customer
+
+cut\*
+
+cute\*
+
+D
+
+daily
+
+dance\*
+
+danger
+
+dangerous
+
+dark
+
+date
+
+daughter
+
+day\*
+
+dead
+
+deaf
+
+deal
+
+dear\*
+
+death
+
+**decide**
+
+deep
+
+> degree
+>
+> delicious dentist
+>
+> depend describe desert
+>
+> design desk\*
+>
+> develop
+>
+> dialogue(AmE dialog)
+>
+> diary
+>
+> dictionary die
+>
+> diet
+>
+> difference different
+>
+> difficult\* dig
+>
+> digital
+>
+> dining
+>
+> dinner\*
+>
+> direct
+>
+> director
+>
+> dirty\*
+>
+> disappoint disaster
+>
+> discover discuss
+>
+> **义务教育** 英语课程标准(2022年版)
+
+**disease**
+
+**dish**
+
+divide
+
+do\*
+
+doctor\*
+
+dog \*
+
+doll\*
+
+dollar
+
+donate
+
+door\*
+
+double
+
+doubt
+
+down\*
+
+download dragon
+
+drama
+
+draw\*
+
+dream
+
+dress\*
+
+drink\*
+
+drive
+
+driver\*
+
+drop
+
+dry
+
+duck\*
+
+dumpling during
+
+duty
+
+E
+
+each
+
+eagle
+
+ear\*
+
+early\*
+
+earth\*
+
+earthquake
+
+east
+
+> \*
+
+easy
+
+eat\*
+
+education
+
+effect
+
+effort
+
+egg\*
+
+either
+
+elder
+
+electric
+
+electronic
+
+elephant\*
+
+else
+
+email\*
+
+emergency
+
+emperor/empress
+
+empty
+
+encourage
+
+end
+
+enemy
+
+energetic
+
+**附** **录**
+
+> energy
+>
+> engineer
+>
+> English\*
+>
+> enjoy
+>
+> enough
+>
+> enter
+>
+> environment
+>
+> era
+>
+> eraser
+>
+> especially even
+>
+> evening\* event
+>
+> ever
+>
+> every\*
+>
+> everybody/everyone everyday
+>
+> everything
+>
+> everywhere
+>
+> exactly
+>
+> exam(=examination)
+>
+> example excellent except
+>
+> excited\* exciting excuse
+>
+> exercise\*
+>
+> expect
+>
+> expensive
+>
+> experience
+>
+> expert
+>
+> explain
+>
+> explore
+>
+> express
+>
+> eye\*
+>
+> F
+>
+> face\*
+>
+> fact
+>
+> factory
+>
+> fail
+>
+> fair
+>
+> fall
+>
+> false
+>
+> familiar
+>
+> family\*
+>
+> famous\*
+>
+> fan\*
+>
+> fantastic
+>
+> far\*
+>
+> farm\*
+>
+> farmer\*
+>
+> fashion
+>
+> fast\*
+>
+> fat
+>
+> **义务教育英语课程标准(2022年版**)
+>
+> **father(dad)\***
+>
+> **favourite(AmE favorite)\***
+>
+> fear
+>
+> feed
+>
+> feel\*
+>
+> feeling festival fever
+>
+> few field fight fill
+>
+> film\* final find\* fine\* finger finish fire\*
+>
+> fireman(pl.firemen) firework
+>
+> fish\* fit
+>
+> fix
+>
+> flag
+>
+> flat
+>
+> flood floor\*
+>
+> flower\* flu
+>
+> fly\*
+>
+> focus fog
+>
+> folk
+>
+> follow food\* fool
+>
+> foot(pl.feet)\*
+>
+> football\* for\*
+>
+> force
+>
+> foreign forest forever forget fork
+>
+> form
+>
+> forward found fox
+>
+> free\* freeze
+>
+> fresh
+>
+> fridge(=refrigerator) friend\*
+>
+> friendly
+
+**附** **录**
+
+friendship from\*
+
+front\* fruit\* full
+
+fun
+
+funny future
+
+G
+
+game\* garden\*
+
+gas
+
+gate
+
+general
+
+gentleman(pl.gentlemen) geography
+
+get\* gift\* giraffe girl\* give\* glad
+
+glass\* glove glue go\*
+
+goal
+
+> god
+>
+> gold good\*
+>
+> goodbye(bye)\* government
+>
+> grade
+>
+> graduate grammar
+>
+> grandfather(grandpa)\*
+>
+> grandmother(grandma)\*
+>
+> grape\* grass\* great\* green\* greet
+>
+> *grey(AmE gray)*
+>
+> ground group grow
+>
+> guard guess guest guide guitar gun
+>
+> gym(=gymnasium)
+>
+> **义务教育** 英语课程标准(2022年版)
+
+H
+
+habit
+
+hair\*
+
+half\*
+
+hall
+
+hamburger hand\*
+
+handsome hang
+
+happen happy\* hard\*
+
+hardly harm
+
+hat
+
+hate
+
+have(has)\* he\*
+
+head\*
+
+health
+
+healthy\* hear\*
+
+heart
+
+heat
+
+heavy\* height
+
+**hello\***
+
+help\*
+
+> helpful\* hen
+>
+> her\*
+>
+> here\*
+>
+> hero
+>
+> hers
+>
+> herself
+>
+> hi\*
+>
+> hide
+>
+> high
+>
+> hike
+>
+> hill\*
+>
+> him\*
+>
+> himself his\*
+>
+> history hit
+>
+> hobby
+>
+> hold
+>
+> hole
+>
+> holiday\* home\*
+>
+> hometown\* homework honest
+>
+> honey
+>
+> honour(AmE honor)
+>
+> hope
+
+**附** **录**
+
+horse\*
+
+hospital\*
+
+host/hostess hot\*
+
+hotel
+
+hour\*
+
+house\*
+
+housework how\*
+
+however hug
+
+huge human
+
+humour(AmE humor)
+
+hungry\* hunt
+
+hurry\* hurt\*
+
+husband
+
+> 工
+
+I\*
+
+ice\*
+
+ice cream\* idea\*
+
+**if**
+
+ill\*
+
+illness
+
+> imagine
+>
+> important
+>
+> impossible
+>
+> improve
+>
+> in\*
+>
+> include
+>
+> increase
+>
+> industry
+>
+> influence
+>
+> information
+>
+> insect
+>
+> inside
+>
+> instead
+>
+> instruction
+>
+> instrument
+>
+> interest
+>
+> interesting\*
+>
+> international
+>
+> Internet\*
+>
+> interview
+>
+> into
+>
+> introduce
+>
+> invent
+>
+> invite
+>
+> island
+>
+> it\*
+>
+> its\*
+>
+> itself
+>
+> J
+
+jacket jeans
+
+job\*
+
+jog
+
+join
+
+joke
+
+journey joy
+
+judge juice\* jump\* junior just
+
+K
+
+keep\*
+
+key
+
+keyboard kick
+
+kid\* kill
+
+kilo(=kilogram)
+
+kilometre(AmE kilometer)
+
+kind\*
+
+king
+
+kiss
+
+kitchen\*
+
+> kite\*
+>
+> knee
+>
+> **knife(pl.knives)**
+>
+> **knock**
+>
+> **know\***
+>
+> **knowledge**
+>
+> **kung fu**
+>
+> L
+>
+> lab(=laboratory)
+>
+> lady
+>
+> lake\*
+>
+> lamp
+>
+> land
+>
+> landscape
+>
+> language
+>
+> lantern
+>
+> laptop
+>
+> large
+>
+> last\*
+>
+> late\*
+>
+> later
+>
+> laugh
+>
+> law
+>
+> lawyer
+>
+> lay
+>
+> lazy
+>
+> lead
+
+**附** **录**
+
+**leaf(pl.leaves)**
+
+learn\*
+
+**least**
+
+leave
+
+left\*
+
+leg\*
+
+lemon
+
+lend
+
+less
+
+lesson\* let\*
+
+letter\*
+
+level
+
+library\*
+
+lie
+
+life(pl.lives)
+
+lift
+
+light\*
+
+lightning
+
+like\*
+
+likely
+
+line
+
+lion\*
+
+list
+
+listen\*
+
+literature
+
+litter
+
+little\*
+
+> live\*
+>
+> lively
+>
+> local
+>
+> lock
+>
+> lonely
+>
+> long\*
+>
+> look\*
+>
+> lose
+>
+> loss
+>
+> lost
+>
+> lot\*
+>
+> loud
+>
+> love\*
+>
+> lovely\*
+>
+> low
+>
+> luck
+>
+> lunch\*
+>
+> M
+>
+> machine
+>
+> mad
+>
+> madam
+>
+> magazine
+>
+> magic
+>
+> main
+>
+> make\*
+>
+> mall
+>
+> man (pl.men)\*
+
+**manage**
+
+**manner**
+
+> \*
+
+many
+
+> \*
+
+map
+
+mark
+
+market
+
+marry
+
+master
+
+match
+
+material
+
+maths(=mathematics,AmE math)\*
+
+matter may\* maybe me\*
+
+meal
+
+mean
+
+meaning
+
+> \*
+
+meat
+
+medal
+
+medical
+
+medicine
+
+medium(pl.media)
+
+meet\*
+
+meeting member mention
+
+menu
+
+**mess**
+
+**message**
+
+**method**
+
+**metre(AmE meter) middle\***
+
+might
+
+mile
+
+milk\*
+
+mind
+
+mine
+
+minute\* mirror
+
+miss
+
+Miss\*
+
+mistake mix
+
+mobile
+
+model
+
+modern
+
+moment money\* monkey\* month\*
+
+moon\*
+
+more
+
+morning\* most
+
+mother(mum AmE mom)\*
+
+**附** **录**
+
+mountain
+
+mouse(pl.mice)\* mouth\*
+
+move\* movie
+
+Mr(AmE Mr.)\* Mrs(AmE Mrs.)\* Ms(AmE Ms.)\* much\*
+
+museum music\* must \*
+
+mutton my\*
+
+myself
+
+N
+
+name\*
+
+narrow nation nature
+
+> \*
+
+near
+
+nearly
+
+necessary neck
+
+need
+
+negative
+
+neighbour(AmE neighbor)
+
+neither
+
+nervous
+
+> \*
+
+never
+
+new\*
+
+newS
+
+newspaper
+
+next\*
+
+nice\*
+
+night\*
+
+no\*
+
+nobody
+
+nod
+
+noise
+
+none
+
+noodle\*
+
+noon
+
+nor
+
+normal
+
+north
+
+nose\*
+
+not\*
+
+note
+
+notebook
+
+nothing
+
+notice
+
+novel
+
+now\*
+
+number
+
+> **义务教育** 英语课程标准(2022年版)
+
+**nurse** \*
+
+0
+
+object
+
+ocean
+
+o'clock\*
+
+of\*
+
+off\*
+
+offer
+
+office
+
+officer
+
+often\*
+
+oil
+
+OK\*
+
+old\*
+
+Olympic
+
+on\*
+
+once
+
+onion
+
+online
+
+only
+
+open\*
+
+opera
+
+operate
+
+opinion
+
+opposite
+
+or\*
+
+orange\*
+
+> **order**
+>
+> **organise (AmE organize) other**
+>
+> **our\***
+>
+> **ours**
+>
+> ourselves out\*
+>
+> outside
+>
+> oven
+>
+> over\* Own
+>
+> P
+>
+> pack
+>
+> packet
+>
+> page
+>
+> pain
+>
+> paint
+>
+> pair\*
+>
+> palace
+>
+> pale
+>
+> pancake panda\* paper\*
+>
+> paragraph pardon
+>
+> parent\* park\*
+
+**附** **录**
+
+part
+
+partner
+
+party\*
+
+pass
+
+passage
+
+passenger passport past
+
+patient
+
+pay
+
+PE(=physical education)\*
+
+peace
+
+pear
+
+pen\*
+
+pencil\* penguin people\* pepper
+
+per cent(AmE percent)
+
+perfect perform perhaps period
+
+person
+
+personal pet\*
+
+phone\*
+
+photo(=photograph)\*
+
+> physics
+>
+> piano\*
+>
+> pick
+>
+> picnic
+>
+> picture\*
+>
+> pie
+>
+> piece
+>
+> pig\*
+>
+> pill
+>
+> pilot
+>
+> ping-pong\*
+>
+> pink\*
+>
+> pioneer
+>
+> pity
+>
+> pizza
+>
+> place\*
+>
+> plan
+>
+> plane\*
+>
+> planet plant\*
+>
+> plastic
+>
+> plate
+>
+> play\*
+>
+> playground\*
+>
+> please\*
+>
+> pleasure
+>
+> plenty
+>
+> p.m.
+>
+> **义务教育** 英语课程标准(2022年版)
+
+**pocket**
+
+poem
+
+poet
+
+point
+
+police\*
+
+policeman /policewoman(pl.
+
+> policemen/policewomen)
+
+polite pollute pool
+
+poor
+
+popular
+
+population pork
+
+porridge position positive possible post
+
+postcard
+
+postman(pl.postmen)
+
+pot
+
+potato\* pound pour
+
+power
+
+practice praise
+
+prefer
+
+prepare
+
+present
+
+president press
+
+pressure pretty
+
+price
+
+pride
+
+primary
+
+prince /princess
+
+print
+
+private prize
+
+probably problem produce product
+
+programme(AmE program)
+
+progress
+
+project
+
+promise
+
+pronounce proper
+
+protect proud
+
+prove
+
+provide
+
+**附** **录**
+
+public
+
+publish
+
+pull
+
+punish
+
+purple
+
+purpose
+
+push put\*
+
+Q
+
+quality
+
+quarter
+
+queen
+
+question\*
+
+quick quiet\*
+
+quite
+
+R
+
+rabbit\*
+
+race
+
+radio
+
+railway
+
+rain\*
+
+rainbow
+
+raise
+
+rapid
+
+rather
+
+> reach read\* ready real
+>
+> realise(AmE realize) really
+>
+> reason receive
+>
+> recent
+>
+> recognise(AmE recognize) recommend
+>
+> record
+>
+> recycle
+>
+> red\*
+>
+> reduce
+>
+> refuse
+>
+> regret
+>
+> relationship relative
+>
+> relax
+>
+> remain
+>
+> remember remind
+>
+> repair repeat reply report require
+>
+> **义务教育** 英语课程标准(2022年版)
+
+**research**
+
+**respect**
+
+**responsible**
+
+rest
+
+restaurant result
+
+return review rice\*
+
+rich
+
+ride
+
+right\* ring rise
+
+risk
+
+river\* road
+
+robot\* rock
+
+rocket role
+
+room\*
+
+rope
+
+rose
+
+round
+
+**row**
+
+**rubbish**
+
+rule
+
+> ruler\*
+>
+> run\*
+>
+> **rush**
+>
+> S
+>
+> sad\*
+>
+> safe\*
+>
+> safety
+>
+> salad
+>
+> sale
+>
+> salt
+>
+> same
+>
+> sand
+>
+> sandwich
+>
+> satisfy
+>
+> save
+>
+> say\*
+>
+> scare
+>
+> scarf
+>
+> school\*
+>
+> schoolbag\*
+>
+> science\*
+>
+> scientist
+>
+> scissors
+>
+> Score
+>
+> screen
+>
+> sea\*
+>
+> search
+
+**附** **录**
+
+> 关
+>
+> **season**
+>
+> **seat**
+>
+> **secret see\***
+>
+> **seem**
+>
+> seldom
+>
+> sell\*
+>
+> send
+>
+> sense
+>
+> sentence
+>
+> separate
+>
+> serious
+>
+> serve
+>
+> service
+>
+> set
+>
+> several
+>
+> shake
+>
+> shall
+>
+> shame
+>
+> shape
+>
+> share\*
+>
+> shark
+>
+> she\*
+>
+> sheep(pl.sheep)\* shelf(pl.shelves)
+>
+> shine
+>
+> ship\*
+>
+> shirt\*
+>
+> **shock**
+>
+> **shoe\***
+>
+> **shoot**
+>
+> shop\*
+>
+> short\* shorts\*
+>
+> **should\***
+>
+> shoulder
+>
+> shout
+>
+> show\*
+>
+> shower
+>
+> shut
+>
+> shy
+>
+> sick
+>
+> side
+>
+> sign
+>
+> silent
+>
+> silk
+>
+> silly
+>
+> silver
+>
+> similar
+>
+> simple
+>
+> since
+>
+> sing\*
+>
+> single
+>
+> sir
+>
+> sister\*
+>
+> sit\*
+>
+> **义务教育英语课程标准(2022年版)**
+>
+> **situation**
+>
+> **size**
+>
+> **skate**
+>
+> ski
+>
+> skill skirt\* sky
+>
+> sleep\*
+>
+> slim
+>
+> slow\*
+>
+> small\*
+>
+> smart
+>
+> smell
+>
+> smile
+>
+> smoke
+>
+> smooth
+>
+> snack
+>
+> snake
+>
+> snow\*
+>
+> so\*
+>
+> social
+>
+> socialism society
+>
+> sock\* sofa
+>
+> soft
+>
+> soil
+>
+> soldier
+>
+> solve some\*
+>
+> **somebody/someone**
+>
+> **something**
+>
+> sometimes\* somewhere
+>
+> son
+>
+> song\* SOon
+>
+> sore
+>
+> sorry\* sound soup\* south space\* spare
+>
+> speak\* special speech
+>
+> speed
+>
+> spell
+>
+> spend
+>
+> spirit
+>
+> spoon sport\*
+>
+> spread
+>
+> spring\* square
+
+**附** **录**
+
+> **stage**
+>
+> **stamp**
+>
+> **stand\***
+>
+> **standard**
+>
+> **star\***
+>
+> start
+>
+> state
+>
+> station
+>
+> stay
+>
+> steal
+>
+> step
+>
+> stick
+>
+> still
+>
+> stomach
+>
+> stone
+>
+> stop\*
+>
+> store
+>
+> storm
+>
+> story\*
+>
+> straight
+>
+> strange
+>
+> strawberry
+>
+> street\*
+>
+> stress
+>
+> strict
+>
+> strong\*
+>
+> student\*
+>
+> study\*
+>
+> style
+>
+> **subject\***
+>
+> **succeed**
+>
+> **success**
+>
+> **such**
+>
+> sudden
+>
+> suffer
+>
+> sugar
+>
+> suggest
+>
+> suit
+>
+> summer\*
+>
+> sun\*
+>
+> sunny\*
+>
+> supermarket\*
+>
+> support
+>
+> suppose
+>
+> sure\*
+>
+> surface
+>
+> surprise
+>
+> survey
+>
+> survive
+>
+> sweater\*
+>
+> sweep\*
+>
+> sweet
+>
+> swim\*
+>
+> symbol
+>
+> **义务教育** 英语课程标准(2022年版)
+
+T
+
+table\*
+
+tail\*
+
+take\*
+
+talent
+
+talk\*
+
+tall\*
+
+tap
+
+tape
+
+task
+
+taste
+
+taxi\*
+
+tea\*
+
+teach
+
+teacher\* team
+
+teamwork
+
+technology teenage
+
+tell\*
+
+temperature tennis
+
+tent
+
+term
+
+terrible test
+
+text than
+
+> thank\* that\*
+>
+> the\*
+>
+> **theatre(AmE theater)**
+>
+> their\*
+>
+> theirs
+>
+> them\*
+>
+> themselves then\*
+>
+> there\*
+>
+> therefore these\*
+>
+> they\*
+>
+> thick
+>
+> thin\*
+>
+> thing
+>
+> think\* thirsty this\*
+>
+> those\* though thought throat
+>
+> through throw
+>
+> thunder ticket
+>
+> tidy\*
+
+**附** **录**
+
+tie
+
+tiger\*
+
+time\*
+
+tiny
+
+tired\*
+
+to\*
+
+today\*
+
+tofu
+
+together
+
+toilet\*
+
+tomato\*
+
+tomorrow\* ton
+
+tonight too\*
+
+tool
+
+tooth(pl.teeth) top\*
+
+total
+
+touch tour
+
+tourist
+
+towards(AmE toward) tower
+
+town
+
+toy\*
+
+trade
+
+tradition
+
+> traffic
+>
+> train\*
+>
+> training
+>
+> translate
+>
+> travel\*
+>
+> **treasure**
+>
+> treat tree\*
+>
+> trip
+>
+> trouble
+>
+> trousers\* truck
+>
+> true trust truth
+>
+> try\*
+>
+> T-shirt
+>
+> \*
+>
+> turn
+>
+> TV(=television)\*
+>
+> U
+>
+> ugly
+>
+> umbrella\*
+>
+> uncle\*
+>
+> under\*
+>
+> underground
+>
+> understand
+>
+> uniform
+>
+> **义务教育** 英语课程标准(2022年版)
+
+**unit**
+
+**universe**
+
+**university unless**
+
+until(till) up\*
+
+upon
+
+> \*
+
+us
+
+> \*
+
+use
+
+usual
+
+V
+
+vacation
+
+value
+
+vegetable\* very\*
+
+victory video view
+
+village violin virus visit\* voice
+
+volleyball voluntary volunteer
+
+vote
+
+W
+
+wait\*
+
+> 关
+
+wake
+
+walk\*
+
+wall\*
+
+wallet
+
+want\*
+
+war
+
+> <img src="media/image20.jpeg" />
+
+warm
+
+warn
+
+wash\*
+
+waste
+
+watch\*
+
+water\*
+
+watermelon
+
+wave
+
+> \*
+
+way
+
+we\*
+
+weak
+
+wealth
+
+wear\*
+
+weather\*
+
+website
+
+week\*
+
+weekday
+
+weekend
+
+weigh
+
+weight
+
+**附** **录**
+
+welcome\*
+
+well\*
+
+west
+
+wet
+
+whale
+
+what\*
+
+whatever
+
+wheel
+
+when\*
+
+whenever
+
+where\*
+
+whether
+
+which\*
+
+while
+
+white\*
+
+who\*
+
+whole
+
+whom
+
+whose\*
+
+why\*
+
+wide
+
+wife(pl.wives)
+
+wild
+
+will\*
+
+win\*
+
+wind
+
+window\*
+
+windy\*
+
+> wing
+>
+> winner winter\* wise
+>
+> wish\* with\* within
+>
+> without
+>
+> wolf(pl.wolves)
+>
+> woman(pl.women)\* wonder
+>
+> wonderful\*
+>
+> wood
+>
+> word\*
+>
+> work\*
+>
+> worker\* world\* worry\* worse
+>
+> worst
+>
+> worth
+>
+> would wound write\* wrong\*
+>
+> X
+>
+> X-ray
+>
+> **义务教育** 英语 **课程标准** (2022年版)
+
+Y
+
+yard
+
+year\*
+
+yellow\*
+
+yes\*
+
+yesterday\* yet
+
+yogurt you\*
+
+> **young**\* **your**
+>
+> **yours**
+>
+> **yourself(pl.yourselves) youth**
+>
+> Z
+>
+> zero
+>
+> zoo\*
+>
+> **数词表**
+
+<table style="width:43%;">
+<colgroup>
+<col style="width: 21%" />
+<col style="width: 21%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>基数词</strong></p>
+</blockquote></td>
+<td style="text-align: right;"><strong>序数词</strong></td>
+</tr>
+<tr>
+<td><strong>one</strong></td>
+<td style="text-align: right;"><blockquote>
+<p><strong>first</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><strong>two</strong></td>
+<td style="text-align: right;"><blockquote>
+<p><strong>second</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><strong>three</strong></td>
+<td style="text-align: right;"><blockquote>
+<p><strong>third</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><strong>four</strong></td>
+<td style="text-align: right;"><blockquote>
+<p><strong>fourth</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><strong>five</strong></td>
+<td style="text-align: right;"><blockquote>
+<p><strong>fifth</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td>six</td>
+<td style="text-align: right;"><blockquote>
+<p>sixth</p>
+</blockquote></td>
+</tr>
+<tr>
+<td>seven</td>
+<td style="text-align: right;">seventh</td>
+</tr>
+<tr>
+<td>eight nine</td>
+<td style="text-align: right;"><blockquote>
+<p>eighth ninth</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><strong>ten</strong></td>
+<td style="text-align: right;"><blockquote>
+<p>tenth</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+**附** **录**
+
+> **eleven**
+>
+> twelve
+>
+> thirteen
+>
+> fourteen
+>
+> fifteen
+>
+> sixteen
+>
+> seventeen
+>
+> eighteen
+>
+> nineteen
+>
+> twenty
+>
+> thirty
+>
+> forty
+>
+> fifty
+>
+> sixty
+>
+> seventy
+>
+> eighty
+>
+> ninety
+>
+> hundred
+>
+> thousand
+>
+> million
+>
+> **eleventh**
+>
+> **twelfth**
+>
+> **thirteenth**
+>
+> **fourteenth**
+>
+> fifteenth
+>
+> sixteenth
+>
+> seventeenth
+>
+> eighteenth
+>
+> nineteenth
+>
+> twentieth
+>
+> thirtieth
+>
+> fortieth
+>
+> fiftieth
+>
+> sixtieth
+>
+> seventieth
+>
+> eightieth
+>
+> ninetieth
+>
+> hundredth
+>
+> **义务教育** 英语课程标准(2022年版)
+>
+> **月份、星期词汇表**
+
+<table style="width:48%;">
+<colgroup>
+<col style="width: 23%" />
+<col style="width: 24%" />
+</colgroup>
+<tbody>
+<tr>
+<td>月份</td>
+<td><blockquote>
+<p><strong>星期</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><strong>January</strong></td>
+<td><blockquote>
+<p>Monday</p>
+</blockquote></td>
+</tr>
+<tr>
+<td>February March</td>
+<td><blockquote>
+<p>Tuesday</p>
+</blockquote>
+<p>Wednesday</p></td>
+</tr>
+<tr>
+<td>April</td>
+<td><blockquote>
+<p>Thursday</p>
+</blockquote></td>
+</tr>
+<tr>
+<td>May</td>
+<td><blockquote>
+<p>Friday</p>
+</blockquote></td>
+</tr>
+<tr>
+<td>June</td>
+<td><blockquote>
+<p>Saturday</p>
+</blockquote></td>
+</tr>
+<tr>
+<td>July</td>
+<td><blockquote>
+<p>Sunday</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><p>August</p>
+<p>September October</p>
+<p>November December</p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+> **部分地理名称及相关信息**
+
+<table style="width:94%;">
+<colgroup>
+<col style="width: 24%" />
+<col style="width: 20%" />
+<col style="width: 30%" />
+<col style="width: 17%" />
+</colgroup>
+<tbody>
+<tr>
+<td>Africa</td>
+<td><blockquote>
+<p><strong>n.</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p>African</p>
+</blockquote></td>
+<td style="text-align: right;"><em>n.,adj.</em></td>
+</tr>
+<tr>
+<td><strong>America</strong></td>
+<td><blockquote>
+<p><strong>n.</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>American</strong></p>
+</blockquote></td>
+<td style="text-align: right;">n.,adj.</td>
+</tr>
+<tr>
+<td><strong>Antarctica</strong></td>
+<td><blockquote>
+<p><strong>n.</strong></p>
+</blockquote></td>
+<td></td>
+<td style="text-align: right;"></td>
+</tr>
+<tr>
+<td><strong>Asia</strong></td>
+<td><blockquote>
+<p><strong>n.</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p>Asian</p>
+</blockquote></td>
+<td style="text-align: right;"><em>n.,adj.</em></td>
+</tr>
+<tr>
+<td><strong>Australia</strong></td>
+<td><blockquote>
+<p><strong>n.</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p>Australian</p>
+</blockquote></td>
+<td style="text-align: right;"><em>n.,adj.</em></td>
+</tr>
+</tbody>
+</table>
+
+**附** **录**
+
+<table style="width:94%;">
+<colgroup>
+<col style="width: 31%" />
+<col style="width: 13%" />
+<col style="width: 34%" />
+<col style="width: 14%" />
+</colgroup>
+<tbody>
+<tr>
+<td>Britain</td>
+<td><blockquote>
+<p><strong>n.</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p>British</p>
+</blockquote></td>
+<td style="text-align: right;"><em><strong>n.,adj.</strong></em></td>
+</tr>
+<tr>
+<td>Canada</td>
+<td><blockquote>
+<p><strong>n.</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p>Canadian</p>
+</blockquote></td>
+<td style="text-align: right;"><em>n.,adj.</em></td>
+</tr>
+<tr>
+<td>China</td>
+<td><blockquote>
+<p><strong>n.</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p>Chinese</p>
+</blockquote></td>
+<td style="text-align: right;"><em>n.,adj.</em></td>
+</tr>
+<tr>
+<td>England</td>
+<td><blockquote>
+<p>n.</p>
+</blockquote></td>
+<td><blockquote>
+<p>English</p>
+</blockquote></td>
+<td style="text-align: right;"><em>n.,adj.</em></td>
+</tr>
+<tr>
+<td>Europe</td>
+<td><blockquote>
+<p>n.</p>
+</blockquote></td>
+<td><blockquote>
+<p>European</p>
+</blockquote></td>
+<td style="text-align: right;"><em>n.,adj.</em></td>
+</tr>
+<tr>
+<td>France</td>
+<td><blockquote>
+<p>n.</p>
+</blockquote></td>
+<td><blockquote>
+<p>French</p>
+</blockquote></td>
+<td style="text-align: right;"><em>n.,adj.</em></td>
+</tr>
+<tr>
+<td>Germany</td>
+<td><blockquote>
+<p>n.</p>
+</blockquote></td>
+<td><blockquote>
+<p>German</p>
+</blockquote></td>
+<td style="text-align: right;"><em>n.,adj.</em></td>
+</tr>
+<tr>
+<td>India</td>
+<td><blockquote>
+<p>n.</p>
+</blockquote></td>
+<td><blockquote>
+<p>Indian</p>
+</blockquote></td>
+<td style="text-align: right;"><em>n.,adj.</em></td>
+</tr>
+<tr>
+<td>Italy</td>
+<td><blockquote>
+<p>n.</p>
+</blockquote></td>
+<td><blockquote>
+<p>Italian</p>
+</blockquote></td>
+<td style="text-align: right;"><em>n.,adj.</em></td>
+</tr>
+<tr>
+<td>Japan</td>
+<td><blockquote>
+<p>n.</p>
+</blockquote></td>
+<td><blockquote>
+<p>Japanese</p>
+</blockquote></td>
+<td style="text-align: right;"><em>n.,adj.</em></td>
+</tr>
+<tr>
+<td><p>London</p>
+<p>New York</p>
+<p>New Zealand</p></td>
+<td><blockquote>
+<p>n.</p>
+</blockquote></td>
+<td><blockquote>
+<p>New Zealander</p>
+</blockquote></td>
+<td style="text-align: right;"><em>n.,adj.</em></td>
+</tr>
+<tr>
+<td>Paris</td>
+<td></td>
+<td></td>
+<td style="text-align: right;"></td>
+</tr>
+<tr>
+<td>Russia</td>
+<td><blockquote>
+<p><strong>n.</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p>Russian</p>
+</blockquote></td>
+<td style="text-align: right;"><em><strong>n.,adj.</strong></em></td>
+</tr>
+<tr>
+<td>Singapore</td>
+<td><blockquote>
+<p><strong>n.</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p>Singaporean</p>
+</blockquote></td>
+<td style="text-align: right;"><em><strong>n.,adj.</strong></em></td>
+</tr>
+<tr>
+<td>South Africa</td>
+<td><blockquote>
+<p><strong>n.</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p>South African</p>
+</blockquote></td>
+<td style="text-align: right;"><em><strong>n.,adj.</strong></em></td>
+</tr>
+<tr>
+<td>The Atlantic Ocean</td>
+<td><blockquote>
+<p><strong>n.</strong></p>
+</blockquote></td>
+<td></td>
+<td style="text-align: right;"></td>
+</tr>
+<tr>
+<td>The Indian Ocean</td>
+<td><blockquote>
+<p><strong>n.</strong></p>
+</blockquote></td>
+<td></td>
+<td style="text-align: right;"></td>
+</tr>
+<tr>
+<td><strong>The Pacific Ocean</strong></td>
+<td><blockquote>
+<p><strong>n.</strong></p>
+</blockquote></td>
+<td></td>
+<td style="text-align: right;"></td>
+</tr>
+<tr>
+<td><strong>The United Kingdom</strong></td>
+<td></td>
+<td></td>
+<td style="text-align: right;"></td>
+</tr>
+<tr>
+<td><blockquote>
+<p><strong>(UK)</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>n.</strong></p>
+</blockquote></td>
+<td></td>
+<td style="text-align: right;"></td>
+</tr>
+<tr>
+<td><p><strong>The United States of</strong></p>
+<blockquote>
+<p><strong>America(USA)</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>n.</strong></p>
+</blockquote></td>
+<td></td>
+<td style="text-align: right;"></td>
+</tr>
+</tbody>
+</table>
+
+> **部分国家、重要组织机构名称缩写**
+>
+> CPC(Communist Party of China)
+>
+> PLA(People's Liberation Army)
+>
+> PRC(People's Republic of China)
+>
+> UN(United Nations)
+
+UNESCO(United Nations Educational,Scientific and Cultural Organi-
+
+> zation)
+>
+> WHO(World Health Organization)
+>
+> WTO(World Trade Organization)
+>
+> **部分重要节日名称、中国文化专有名词**
+>
+> 节日
+>
+> Children's Day
+>
+> Double Ninth Festival Dragon Boat Festival Labour Day
+>
+> Lantern Festival
+>
+> Mid-Autumn Festival National Day
+>
+> New Year's Day PLA Day
+>
+> Spring Festival
+>
+> Teachers'Day
+>
+> Tomb-sweeping Day Women's Day
+
+<table style="width:62%;">
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 32%" />
+</colgroup>
+<tbody>
+<tr>
+<td><p>地名景点</p>
+<p>Mount Huangshan</p>
+<p>Mount Qomolangma Mount Taishan</p></td>
+<td><blockquote>
+<p>其他专有名词</p>
+<p>Beijing opera(Peking opera)</p>
+<p>Beijing roast duck</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+The Changjiang River hot pot
+
+> (The Yangtze River)lunar calendar
+
+<table style="width:64%;">
+<colgroup>
+<col style="width: 29%" />
+<col style="width: 34%" />
+</colgroup>
+<tbody>
+<tr>
+<td><p>The Great Wall</p>
+<p>The Palace Museum The Yellow River</p>
+<p>Tian'anmen Square</p></td>
+<td style="text-align: left;"><blockquote>
+<p>mooncake paper-cut <em>qipao</em></p>
+<p>Spring Festival couplets spring roll</p>
+<p>The Silk Road</p>
+<p>Traditional Chinese</p>
+<p>Medicine(TCM)</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+**附** **录**
+
+> **动词**
+>
+> **awake**
+>
+> be(am,is,are)
+>
+> bear
+>
+> beat
+>
+> become
+>
+> begin
+>
+> bleed
+>
+> blow
+>
+> break
+>
+> bring
+>
+> build
+>
+> burn
+>
+> buy
+>
+> can
+>
+> catch
+>
+> choose
+>
+> come
+>
+> cost
+>
+> cut
+>
+> **deal**
+>
+> **dig**
+>
+> **do**
+>
+> **不规则动词表**
+
+过去式
+
+awoke
+
+was,were bore
+
+beat
+
+became
+
+began bled
+
+blew
+
+broke
+
+brought built
+
+burnt/burned
+
+bought could
+
+caught chose
+
+came
+
+cost
+
+cut
+
+dealt
+
+dug did
+
+过去分词
+
+awoken
+
+been
+
+born/borne
+
+beaten
+
+become
+
+begun
+
+bled
+
+blown
+
+broken
+
+brought
+
+built
+
+burnt/burned
+
+**bought**
+
+一
+
+caught
+
+**chosen**
+
+come
+
+cost
+
+cut
+
+dealt
+
+dug
+
+done
+
+> **draw drew drawn**
+>
+> **dream dreamt/dreamed dreamt/dreamed**
+>
+> **drink drank drunk**
+>
+> **drive drove driven**
+>
+> eat ate **eaten**
+>
+> fall fell **fallen**
+>
+> feed fed fed
+>
+> feel felt felt
+>
+> fight fought fought
+>
+> find found found
+>
+> fly flew flown
+>
+> forget forgot forgotten
+>
+> freeze froze frozen
+>
+> get got got/gotten
+>
+> give gave given
+>
+> go went gone
+>
+> grow grew grown
+>
+> hang (悬挂) hung hung
+>
+> have had had
+>
+> hear heard heard
+>
+> hide hid hidden
+>
+> hit hit hit
+>
+> hold held held
+>
+> hurt hurt hurt
+
+**附** **录**
+
+> keep
+>
+> **know**
+>
+> lay
+>
+> lead
+>
+> learn
+>
+> leave
+>
+> lend
+>
+> let
+>
+> lie (躺)
+>
+> light
+>
+> lose
+>
+> make
+>
+> may
+>
+> mean
+>
+> meet
+>
+> mistake
+>
+> must
+>
+> pay
+>
+> put
+>
+> read/ri:d/
+>
+> ride
+>
+> ring
+>
+> **rise**
+>
+> **run**
+>
+> **kept**
+>
+> **knew**
+>
+> **laid**
+>
+> **led**
+>
+> learnt/learned
+>
+> left
+>
+> lent
+>
+> let
+>
+> lay
+>
+> lit/lighted
+>
+> lost
+>
+> made
+>
+> might
+>
+> meant
+>
+> met
+>
+> mistook
+>
+> must
+>
+> paid
+>
+> put
+>
+> read/red
+>
+> rode
+>
+> rang
+>
+> **rose**
+>
+> **ran**
+>
+> **kept**
+>
+> **known**
+>
+> **laid**
+>
+> **led**
+>
+> **learnt/learned**
+>
+> **left**
+>
+> **lent**
+>
+> **let**
+>
+> lain
+>
+> **lit/lighted**
+>
+> lost
+>
+> **made**
+>
+> 一
+>
+> **meant**
+>
+> **met**
+>
+> **mistaken**
+>
+> 一
+>
+> **paid**
+>
+> **put**
+>
+> **read/red/**
+>
+> **ridden**
+>
+> rung
+>
+> risen
+>
+> run
+>
+> **义务教育英语课程标准(2022年版**)
+>
+> **say said said**
+>
+> **see saw seen**
+>
+> **sell sold sold**
+>
+> **send sent sent**
+>
+> **set** set **set**
+>
+> **shake** shook **shaken**
+>
+> **shall** should 一
+>
+> shine shone **shone**
+>
+> shoot shot shot
+>
+> show showed shown
+>
+> shut shut shut
+>
+> sing sang sung sit sat sat
+>
+> sleep slept slept
+>
+> smell smelt/smelled smelt/smelled
+>
+> speak spoke spoken
+>
+> speed sped/speeded sped/speeded
+>
+> spell spelt /spelled spelt /spelled
+>
+> spend spent spent spread spread spread stand stood stood steal stole
+> stolen stick stuck stuck
+>
+> sweep swept swept
+
+**附** **录**
+
+> **swim**
+>
+> **take**
+>
+> teach
+>
+> tell
+>
+> think
+>
+> throw
+>
+> understand
+>
+> wake
+>
+> wear
+>
+> will
+>
+> win
+>
+> write
+>
+> **Swam**
+>
+> **took**
+>
+> taught
+>
+> told
+>
+> thought
+>
+> threw
+>
+> understood
+>
+> woke
+>
+> wore
+>
+> would
+>
+> won
+>
+> wrote
+>
+> **Swum**
+>
+> **taken**
+>
+> **taught**
+>
+> told
+>
+> thought
+>
+> thrown
+>
+> **understood**
+>
+> **woken**
+>
+> **worn**
+>
+> 一
+>
+> won
+>
+> written
+>
+> **义务教育** 英语课程标准(2022年版)
+>
+> <span id="bookmark23" class="anchor"></span>**附录4** **语法项目表**
+>
+> **说明**
+>
+> 本语法项目表中标有“+”的条目为仅作理解要求的三级语法 项 目 。
+>
+> **一** **、词** **类**
+>
+> **(** **一)名词**
+>
+> 1\. 可数名词及其单、复数
+>
+> 2.不可数名词
+>
+> 3.专有名词
+>
+> 4.名词所有格
+>
+> **(二)动词**
+>
+> 1.动词的基本形式
+>
+> 2.及物动词和不及物动词
+>
+> 3\. 系动词
+>
+> 4.助动词
+>
+> 5.情态动词
+>
+> **(三)形容词**
+>
+> 1.形容词的基本形式
+>
+> 2.形容词的比较级和最高级
+
+**附** **录**
+
+> **(四)副词**
+>
+> 1\. 副词的基本形式
+>
+> 2.副词的比较级和最高级
+>
+> **(五)代词**
+>
+> 1.人称代词
+>
+> 2.物主代词
+>
+> 3.反身代词
+>
+> 4.指示代词
+>
+> 5.不定代词
+>
+> 6.疑问代词
+>
+> **(六)数词**
+>
+> 1.基数词
+>
+> 2.序数词
+>
+> **(七)介词**
+>
+> **(八)连词**
+>
+> **(九)冠词**
+>
+> **+(十)感叹词**
+>
+> **二** **、构词法**
+>
+> **(一)合成法**
+
+<img src="media/image22.jpeg" style="height:0.1389in" />**义务教育**
+英语课程标准(2022年版)
+
+> (二)派生法
+>
+> (三)转化法
+>
+> **+(四)缩写和简写**
+>
+> **三** **、句** **法**
+>
+> **(一)句子种类**
+>
+> 1\. 陈述句
+>
+> 2\. 疑问句
+>
+> (1)一般疑问句
+>
+> (2)特殊疑问句
+>
+> (3)选择疑问句
+>
+> 3\. 祈使句
+>
+> 4.感叹句
+>
+> **(二)简单句的基本句型**
+>
+> 1\. 主谓(主语+动词，下同)(SV) **<u>The bus is coming</u>.**
+>
+> 2\. 主 ( 系 ) 表(SP) <u>Amy is helpful</u>.
+>
+> 3\. 主谓宾 (SVO)
+>
+> **<u>John opened the door</u>.**
+>
+> 4.主谓宾宾 ( **SVOO)**
+>
+> **<u>Grandpa bought me a new dictionary.</u>**
+
+**附** **录**
+
+> 5\. 主谓宾补(SVOC)
+>
+> **<u>Most students have found online learning necessary</u>.**
+>
+> 6.存现句
+>
+> **<u>There</u> is <u>a tree behind the shop</u>.**
+>
+> **(三)谓语动词的时态**
+>
+> 1\. 一般现在时
+>
+> 2\. 一般过去时
+>
+> 3\. 一般将来时
+>
+> 4.现在进行时
+>
+> 5.过去进行时
+>
+> 6\. 现在完成时
+>
+> **(四)被动语态**
+>
+> 1\. 一般现在时的被动语态
+>
+> 2\. 一般过去时的被动语态
+>
+> 3\. 一般将来时的被动语态
+>
+> **(五)动词的非谓语形式**
+>
+> 1\. 动词不定式(作宾语、宾语补足语、目的状语)
+>
+> +2.动词的-ing形式 +3.动词的-ed形式
+>
+> **(六)并列复合句**
+>
+> **(七)主从复合句**
+>
+> 1.宾语从句
+>
+> 2\. 状语从句
+>
+> **义务教育** 英语课程标准(2022年版)
+>
+> 3\. 关系从句(亦称“定语从句”,能辨认出由关系代词that、
+> which、who引导的限定性定语从句，并能理解句意)
+>
+> **+(八)主谓一致**
+>
+> **附** **录**
+>
+> <span id="bookmark24" class="anchor"></span>**附录5** **教学案例**
+>
+> **案例1** **3～4年级单元整体教学设计(4课时)**
+>
+> 单元主题：Meet My Family
+>
+> 该主题属于“人与自我”和“人与社会”范畴，涉及“家庭与家
+> 庭生活”和“常见职业与人们的生活”。
+>
+> **一、单元内容分析**
+>
+> 本单元内容围绕Meet My Family这一主题展开，涉及四个语篇，
+> 包括两组对话、一个配图故事和一篇配图短文。
+>
+> 语篇一是小学生日常生活对话。Amy 请同学陈洁到家里做客，翻
+> 看家庭相册，并向陈洁介绍自己的家庭成员。
+>
+> 语篇二也是小学生日常生活对话。张鹏和好朋友Sarah 一起翻看
+> 家庭相册并交流，张鹏了解了Sarah 叔叔和婶婶的职业。该语篇拓展
+> 和延伸了家庭主题。
+>
+> 语篇三是配图故事，标题是 “June Sings”。故事讲述了主人公
+> June与家人组织家庭音乐会的故事。June因不擅长唱歌、被兄弟嘲笑
+> 而感到失落。父母通过和孩子们一起制订家庭规约，教育孩子们要彼
+> 此欣赏、互相帮助。该故事充满家庭温情，学生在阅读、理解故事的
+> 过程中，体会家人间需要相互理解、欣赏与爱护。
+>
+> 语篇四是配图短文。小学生Mike 通过图文结合的小书向同学介
+> 绍他的家庭，包括家庭成员的职业以及每位成员在家庭中承担的责
+> 任：爸爸是非常忙碌的消防员，晚上帮妈妈做饭，陪Mike 玩；妈妈
+> 是教师，常给家人做美食，周末陪Mike 读书；爷爷、奶奶在家帮忙 照看Mike
+> 和小弟弟；Mike 学习努力，经常帮助家长做事情。该语篇
+> 有助于引导学生感悟家庭成员对社会和家庭的责任与贡献，形成积极
+>
+> 的情感体验，养成主动承担家庭责任的意识，并付诸行动。
+>
+> 以下为学生需要在本单元学习的核心语言知识和技能与策略。
+
+<table style="width:100%;">
+<colgroup>
+<col style="width: 19%" />
+<col style="width: 21%" />
+<col style="width: 23%" />
+<col style="width: 35%" />
+</colgroup>
+<tbody>
+<tr>
+<td colspan="4"><blockquote>
+<p><strong>单元主题：Meet</strong> <strong>My</strong>
+<strong>Family</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p><strong>语篇</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>核心词汇</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>核心句式</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>技能与策略</strong> <strong>学习要点</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>1.“Family</p>
+<p>Album”</p>
+</blockquote></td>
+<td style="text-align: right;"><p>家庭及家庭成员：</p>
+<blockquote>
+<p>family,parent,</p>
+<p>uncle,aunt,</p>
+<p>cousin,baby</p>
+<p>brother,father,</p>
+<p>mother</p>
+</blockquote></td>
+<td><blockquote>
+<p>询问、介绍家庭</p>
+<p>成员：</p>
+<p>How many people</p>
+</blockquote>
+<p>are there in your</p>
+<blockquote>
+<p>family?</p>
+<p>My family has…</p>
+</blockquote></td>
+<td><blockquote>
+<p>·根据图片和标题，推测对 话的主题、语境及主要</p>
+<p>信 息 ；</p>
+<p>· 在语境中，根据单词的 音、形、义学习词汇。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>2.“Jobs of</p>
+<p>Family</p>
+<p>Members”</p>
+</blockquote></td>
+<td><blockquote>
+<p>职业：</p>
+</blockquote>
+<p>football player,</p>
+<blockquote>
+<p>doctor,nurse, teacher,cook,</p>
+<p>driver 外貌：</p>
+<p>tall,strong,</p>
+</blockquote>
+<p>short,beautiful,</p>
+<blockquote>
+<p>cute</p>
+</blockquote></td>
+<td><blockquote>
+<p>询问、介绍家庭</p>
+<p>成员的职业：</p>
+<p>What's his /her job?</p>
+<p>He /She is a… Is your.…a…?</p>
+</blockquote></td>
+<td><blockquote>
+<p>·询问和应答有关个人或他 人家庭成员的信息。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>3.“June Sings"</p>
+</blockquote></td>
+<td><blockquote>
+<p>家庭活动：</p>
+<p>play the drums, play the piano, play the violin,</p>
+<p>sing</p>
+<p>情绪和行为：</p>
+<p>sad,mad,cry</p>
+</blockquote></td>
+<td><blockquote>
+<p>描述家庭成员之</p>
+<p>间的相处方式：</p>
+<p>Don't be rude. I am part of the family.</p>
+<p>Family Rules:</p>
+<p>1.Work Hard</p>
+<p>2.Be Kind</p>
+<p>3.Say Sorry</p>
+</blockquote></td>
+<td><blockquote>
+<p>·根据图片和标题推测故事 的主要信息；</p>
+<p>· 推断故事的画面、色彩、 声音等传递的意义；</p>
+<p>·借助图片和核心语言讲述 故事的主要内容。</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+**附** **录**I\|
+
+> **续表**
+
+<table style="width:100%;">
+<colgroup>
+<col style="width: 19%" />
+<col style="width: 20%" />
+<col style="width: 23%" />
+<col style="width: 35%" />
+</colgroup>
+<tbody>
+<tr>
+<td colspan="4"><blockquote>
+<p><strong>单元主题：Meet</strong> <strong>My</strong>
+<strong>Family</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p><strong>语篇</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>核心词汇</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>核心句式</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>技能与策略</strong> <strong>学习要点</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p><strong>4.“My</strong></p>
+<p><strong>Family”</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p>职业及贡献：</p>
+</blockquote>
+<p>fireman,put out</p>
+<blockquote>
+<p>fires,rescue</p>
+<p>people and</p>
+<p>animals,teacher, teach English</p>
+<p>家庭活动：</p>
+<p>play,cook,read</p>
+</blockquote></td>
+<td><blockquote>
+<p>描述家庭成员的</p>
+<p>活动：</p>
+<p>He plays with me</p>
+<p>She reads books with me.</p>
+<p>My grandparents</p>
+<p>take care of my baby brother and</p>
+<p>me.</p>
+</blockquote></td>
+<td style="text-align: right;"><blockquote>
+<p>· 借助语言输出框架(总体 介绍一父母职业一每位成
+员对家庭的贡献—小结)</p>
+<p>和语言提示，介绍自己的 家庭。</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+> 本单元的四个语篇从不同视角谈论家庭及家庭成员，单元内各语
+> 篇与单元主题之间、各语篇之间相互关联，构成三个子主题，即“认
+> 识家庭成员在家庭和社会中的不同角色”“感悟家庭成员间应彼此关
+> 爱，相互支持和鼓励”“主动承担家庭责任，表达对家人的爱”。各课
+> 时围绕单元主题和子主题展开，课时之间既相对独立，又紧密关联。
+> 语言学习渗透在对语篇主题意义的探究中，学习活动由浅入深，理解
+> 性技能与表达性技能协同发展，有效帮助学生形成基于主题的结构化
+> 知识(见图3)。
+>
+> **义务教育** 英语课程标准(2022年版)
+
+![](media/image23.jpeg)
+
+> **图** **3** **Meet** **My** **Family单元主题内容框架图**
+>
+> **二** **、单元教学目标**
+
+<table style="width:99%;">
+<colgroup>
+<col style="width: 62%" />
+<col style="width: 37%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>单元教学目标</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>语篇</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td rowspan="2"><blockquote>
+<p>本单元学习后，学生能够：</p>
+<p>1.在语境中，与同伴交流并介绍自己的家庭和家
+庭成员，如外貌特征和从事的职业等。</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.对话</p>
+<p><strong>“Family</strong> <strong>Album”</strong></p>
+<p>(1课时)</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>2.对话</p>
+</blockquote>
+<p>“Jobs of Family Members”</p>
+<blockquote>
+<p>(1课时)</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>2.独立或合作设计“和谐家庭建设提示卡”,介
+绍家庭成员之间应如何相处。</p>
+</blockquote></td>
+<td><blockquote>
+<p>3.配图故事</p>
+<p>“June Sings”</p>
+<p>(1课时)</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+**附** **录**I\|
+
+> **续表**
+
+<table style="width:99%;">
+<colgroup>
+<col style="width: 62%" />
+<col style="width: 37%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>单元教学目标</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>语篇</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p><strong>3.仿照范例，以图文结合的方式介绍自己的家庭</strong></p>
+<p><strong>成员，包括外貌、职业、在家庭中承担的责任</strong>
+<strong>等，并表达自己对家人的情感。</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>4.配图短文</strong></p>
+<p><strong>“My</strong> <strong>Family”</strong></p>
+<p><strong>(1课时)</strong></p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+> **三、案例评析**
+>
+> 本案例中，教师从发展学生核心素养出发，围绕**Meet** **My** **Family**
+> 这一单元主题，对单元内各语篇进行了深入研读，挖掘出每个语篇蕴
+> 含的育人价值，在单元主题和各语篇子主题之间建立关联。在深入分
+> 析单元内容的基础上，整合单元内各板块的学习内容，搭建具有整体
+> 性和结构化特征的内容框架(见图3)。
+
+本单元教学目标符合小学3～4年级学生的认知水平、思维特点
+和生活经验，体现学生对“家庭”的理解不断丰富，引导学生运用所
+学语言介绍家庭成员及其从事的职业，并表达自己对家庭的热爱。如 第
+一、二课时，学生通过与同伴欣赏家庭相册，运用对话中的核心语 言 “How many
+people are there in your family?”“Is this your.…?” 交流、
+介绍自己的家庭成员，体会每个家庭成员都很重要；介绍家庭成员的
+职业，认识到家庭成员既有家庭角色也有社会角色，如 “What's his job?”“He is
+a football player.”。第三课时，学生通过阅读配图故事，
+理解故事大意，通过核心语言 “Don’t be rude.”“I am part of the family.” 、
+家庭规约“1.Work Hard”“2.Be Kind”“3.Say Sorry” 体 会
+家庭成员间需要彼此关爱，相互支持和鼓励。第四课时，学生通过阅
+读配图短文，选择运用语篇中的主要语言，如 “My mother is a …” “She reads
+books with me.”“My father is a…”“He plays with me.”, 从
+更丰富的视角介绍自己的家庭成员，包括外貌、从事的职业，以及在
+家庭中承担的责任等。
+
+<img src="media/image24.jpeg" style="height:0.13194in" />**义务教育**
+英语课程标准(2022年版)
+
+> 通过整个单元的学习，学生在不同语篇的语境中，从多视角认识
+> 家庭及家庭成员，体会家庭成员在家庭和社会中承担的不同角色及作
+> 出的贡献，思考家庭成员之间应该如何相处，表达对家庭成员的关
+> 爱。学生的语言经验不断丰富，从最初能够介绍自己的家庭成员及其
+> 职业，到单元学习结束时，能够在真实的语境中，介绍自己家庭中的
+> 一位或多位成员，包括外貌、职业、家庭责任等多方面信息。学生在
+> 对单元主题不断深化理解的过程中，反思自己在家庭中应承担的责
+> 任，形成正确的价值判断，逐渐建构正确的家庭观念，实现核心素养
+> 的发展。本案例较好地体现了语言学习与课程育人的融合与统一。
+>
+> **四、案例语篇**
+>
+> 语篇 一
+>
+> **Family Album**
+>
+> Amy:How many people are there in your family,Chen Jie?
+>
+> Chen Jie:Three.My parents and me.
+>
+> Amy:My family has eight members.
+>
+> Chen Jie:Eight?
+>
+> Amy:Yes.My father,my mother,my sister,my baby brother and me.
+>
+> And my aunt and uncle too!
+>
+> Chen Jie:But that's only seven.Who else?Your cousin?
+>
+> Amy:No.Our puppy!
+>
+> 语篇二
+>
+> **Jobs of Family Members**
+>
+> Zhang Peng:Is this your uncle,Sarah?
+>
+> Sarah:Yes,it is.
+>
+> Zhang Peng:He is tall and strong.What's his job?
+>
+> Sarah:He is a football player.
+
+**附** **录**<img src="media/image25.jpeg" />
+
+> Zhang Peng:Wow!Who is this?
+>
+> Sarah:That's my aunt!
+>
+> Zhang Peng:Is your aunt a doctor?
+>
+> Sarah:No,she isn't.She's a nurse.
+>
+> Zhang Peng:That's nice.Nurses are so kind.
+>
+> Sarah:Is this your baby brother?
+>
+> Zhang Peng:No.It's me!
+>
+> 语篇三
+>
+> **June Sings**
+>
+> This is June and her family.
+>
+> Dad plays the drums.Mum plays the piano.
+>
+> Luke plays the violin.
+>
+> And June?June sings.“La,la,la,la!”
+>
+> But Luke is rude.He says to her,“You sing like a frog!”
+>
+> June is sad.She cries,and then gets mad!
+>
+> "Don't be rude.Don't be mean to me.I am part of the family."
+>
+> "Sorry,June,"says Luke.
+>
+> FAMILY RULES
+>
+> 1.Work Hard
+>
+> 2.Be Kind
+>
+> 3.Say Sorry
+>
+> So now…June plays the drums.
+>
+> And Dad sings.“La,la,la,la!”
+>
+> “Nooooo!”
+
+<img src="media/image26.jpeg" style="height:0.13194in" />义务教育
+英语课程标准(2022年版)
+
+> 语篇四
+>
+> **My Family**
+>
+> I am Mike.There are six people in my family.They are my
+> grandparents,my parents,my baby brother and me.
+>
+> My mother is a teacher.She teaches English.She cooks for the family
+> and she reads books with me at the weekend.My father is a fireman.He
+> puts out fires,and rescues people and animals.He is busy,but he helps
+> Mum cook and plays with me in the evening.My grandparents often take
+> care of my baby brother and me.I am a student and I work hard at
+> school.
+>
+> I often help my family at home.
+>
+> I love my family.
+>
+> **案例2** **5～6年级单元整体教学设计(4课时)**
+>
+> 单元主题：Do Family Chores
+
+该主题属于“人与自我”范畴，涉及“劳动习惯与技能，热爱劳动”。
+
+> **一、单元内容分析**
+>
+> 本单元内容围绕Do Family Chores这一主题展开，涉及四个语篇，
+> 包括两组对话、 一个配图故事和一篇配图说明性短文。
+>
+> 语篇一是小学生日常生活对话。三位小学生在放学回家的路上商
+> 量一起踢足球，但因为各自要回家帮家长做家务，最终三人约定周末
+> 一起踢足球。该语篇旨在引发学生思考放学后是否应该做家务。
+>
+> 语篇二也是小学生日常生活对话。 Joy 打电话邀请 Bill一 起玩，
+> Bill委婉表示暂时不行，因为正在做家务，最终两人约定做完家务后
+> 再一起玩。语篇拓展和延伸了家务劳动这一主题内容，呈现了有关询
+> 问家务劳动的具体内容、做家务的感受等相关语言和打电话使用的基 本句式。
+
+**附** **录**
+
+学生通过前两个语篇的学习，能够与他人交流自己做家务的基本 情况。
+
+语篇三是配图故事。故事主人公Charlie 不喜欢做家务，他想了
+解伙伴们在家是否做家务，于是他询问了几位好朋友，发现身边的好
+朋友都做家务，而且每个人分担的家务不同。调查结束后，他明白了
+作为家庭的一员，应该主动承担家务。语篇复现了交流做家务的核心
+语言。该语篇有助于引导学生进一步体会做家务的意义与价值，形成
+积极的情感体验，养成主动做家务的习惯。
+
+语篇四是配图说明文。语篇展望科技进步与发展，介绍机器人为
+人类社会发展带来的便利和帮助。该语篇有助于引发学生思考：伴随
+科技的进步，机器人能为提升人们的生活品质做哪些工作?有了机器
+人，小学生是否还需要学习做家务?语篇为学生提供了深度思考和语
+言实践的空间。
+
+> 以下为学生需要在本单元学习的核心语言知识和技能与策略。
+
+<table style="width:100%;">
+<colgroup>
+<col style="width: 17%" />
+<col style="width: 21%" />
+<col style="width: 24%" />
+<col style="width: 37%" />
+</colgroup>
+<tbody>
+<tr>
+<td colspan="4"><blockquote>
+<p><strong>单元主题：Do</strong> <strong>Family</strong>
+<strong>Chores</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p><strong>语篇</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>核心短语</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>核心句式</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>技能与策略</strong> <strong>学习要点</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>1.“Do You</p>
+<p>Do Chores</p>
+</blockquote>
+<p>at Home?”</p></td>
+<td><blockquote>
+<p>家务事项：</p>
+<p>wash clothes, sweep the floor, tidy my desk,</p>
+</blockquote>
+<p>clean my room,</p>
+<p>water the flowers</p></td>
+<td><blockquote>
+<p>询问、介绍做家 务的情况：</p>
+<p>Do you do chores at home?</p>
+<p>Yes,I…</p>
+</blockquote></td>
+<td><blockquote>
+<p>· 询问和应答有关做家务的 信 息 ；</p>
+<p>· 根据图片和标题，推测对 话的主题、语境，事件的
+发生、发展和结局。</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+<img src="media/image27.jpeg"
+style="width:0.18052in;height:0.20134in" />**义务教育**
+英语课程标准(2022年版)
+
+> **续表**
+>
+> <img src="media/image28.png" style="width:5.04171in;height:7.50008in" />**单元主题：Do**
+> **Family** **Chores**
+>
+> **核心句式**
+>
+> **语篇**
+>
+> **核心短语**
+
+**技能与策略** **学习要点**
+
+> 询问、介绍做家 务的情况：
+>
+> What chores do you do at home?
+>
+> 家务事项：
+>
+> do chores,water the plants,feed
+>
+> the fish
+>
+> 2.“What
+>
+> Chores
+>
+> Do You
+>
+> Do at Home?”
+
+· 在看图、听对话的过程中， 获取并梳理有关时间、人 物，事件的发生、发展和
+结局的信息。
+
+> I…
+>
+> 打电话：
+>
+> Hello.This is…
+>
+> 家务事项：
+>
+> walk the dog,
+>
+> make breakfast,
+>
+> wash vegetables,
+>
+> feed the fish, make the bed,
+>
+> cook dinner
+>
+> · 在听、读故事的过程中， 提取、梳理故事中人物所 做的家务；
+>
+> · 得体表达对做家务的态度 和观点。
+>
+> · 找出文段中段落主题句， 体会主题句与段落内容之 间的关系；
+>
+> · 结合自己创意设计的机器 人形象写几句话，并向同 伴介绍，如“This is a
+>
+> robot.”“It is…”“It has… ” “It can…”“I think…”等。
+>
+> “Charlie's
+>
+> 3\.
+
+表达对做家务的
+
+> Chores”
+
+态度：
+
+> I’m happy to help
+>
+> them.
+>
+> I understand… We all should do chores.
+>
+> I will help my parents.
+>
+> 机器人能做的
+>
+> 事：take food
+>
+> and drinks to sick people,
+>
+> help doctors, study your
+>
+> needs,help you
+>
+> 4\. “Robots”
+
+介绍机器人：
+
+> Robots have come
+>
+> into our lives. They are becoming
+>
+> more and more helpful.
+>
+> Robots can…
+>
+> clean your house,cook
+>
+> food
+>
+> **附** **录**
+>
+> 本单元的四个语篇从不同视角谈论家务劳动，单元内各语篇与单
+> 元主题之间，以及各语篇之间相互关联，构成三个子主题，即“认识
+> 参与家务劳动的意义与价值”“主动承担家务，合理安排学习与生活”
+> 和“享受劳动快乐，体验劳动创造幸福”(见图4)。各课围绕单元主
+> 题展开，各课之间既相对独立，又相互关联。学习活动按照学习理
+> 解、应用实践和迁移创新三个层次逐步展开，循序渐进，螺旋上升。
+> 学生将零散的知识内容有意义地联系起来，构建基于主题的结构化知
+> 识，发展语言运用能力，形成正确的劳动观念和价值判断。
+
+![](media/image29.jpeg)
+
+> **图** **4** **Do Family Chores单元主题内容框架图**
+>
+> **二** **、单元教学目标**
+
+<table>
+<colgroup>
+<col style="width: 59%" />
+<col style="width: 40%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>单元教学目标</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>语篇</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>本单元学习后，学生能够：</p>
+<p>1.运用所学语言与小组成员交流、记录未来一
+周个人家务劳动计划，并向全班介绍。</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.对话</p>
+</blockquote>
+<p>“Do You Do Chores at Home?”</p>
+<blockquote>
+<p>(1课时)</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>2. (学)做一项家务，用喜欢的方式记录下来， 并在班级内展示、介绍。</p>
+</blockquote></td>
+<td><blockquote>
+<p>2.对话</p>
+<p>"What Chores Do</p>
+<p>You Do at Home?”</p>
+<p>(1课时)</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>3.描述主人公对做家务的态度变化过程。</p>
+<p>4.与同伴交流、分享自己常做的家务和做家务 的感受。</p>
+</blockquote></td>
+<td><blockquote>
+<p>3.配图故事</p>
+<p>“Charlie's Chores”</p>
+<p>(1课时)</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>5.创意设计一个机器人形象，在班级内介绍、
+描述机器人的外形和能为人们提供的服务与 帮助等。</p>
+<p>6.与同伴交流，在机器人能够帮助人们做家务
+的情况下，小学生学做家务的必要性。</p>
+</blockquote></td>
+<td><blockquote>
+<p>4.配图说明文</p>
+<p>“Robots”</p>
+<p>(1课时)</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+> **三** **、案例评析**
+>
+> 本案例中，教师从培养学生的核心素养出发，围绕 Do Family
+> Chores这一单元主题，对单元内各语篇进行深入研读与分析，挖掘出
+> 语篇蕴含的育人价值，在主题意义和语篇内容之间建立关联，整合单
+> 元内各板块学习内容，明确预期的核心素养综合表现，搭建单元内容
+> 框架(见图4),形成单元育人蓝图。单元设计遵循小学高年级学生
+> 的认知规律和思维特点，从学生生活经验出发，由浅入深、由具体到
+> 抽象，不断引导学生将个人对所学语篇的理解和思考与语言的真实运
+> 用相结合，做到知行合一，实现课程育人。
+
+**附** **录**
+
+> 学生在前三个课时中，通过学习对话及配图故事，能够逐渐运用
+> 所学语言与同伴围绕“做家务”进行介绍和交流，如介绍自己平时是
+> 否做家务，介绍本组成员下周的家务劳动计划；用喜欢的方式记录自
+> 己主动学习做家务的过程，向同伴介绍自己能做的家务及做家务的感
+> 受；描述他人从不喜欢做家务到愿意承担家务的变化过程，自我反思
+> 并表达自己对做家务的认识。第四课时，学生通过阅读配图说明文，
+> 运用在该语篇及前三个语篇学习并积累的语言与同伴讨论、评价机器
+> 人对人们日常生活的帮助，基于自己的创意设计，绘制机器人形象，
+> 并向同伴介绍；分析、讨论在科技发展的背景下，如果机器人能帮助
+> 人们做家务，小学生是否还有必要学习做家务，得出正确的结论。
+>
+> 在单元学习中，学生学习运用语言、理解语篇意义的过程也是学
+> 生情感、态度与价值观逐渐发展的过程。学生通过交流和讨论做家务
+> 的意义，整合性地学习和运用语言知识，将零散的知识内容有意义地
+> 联结起来，建构连贯的知识结构，树立对做家务的正确认识，并将其
+> 迁移到新的情境中，解决新问题，深化对单元主题的认知，形成对家
+> 务劳动的正确态度和价值判断。
+>
+> **四、案例语篇**
+>
+> 语篇一
+>
+> **Do You Do Chores at Home?**
+>
+> Andy:Hi,Lily.Are you free after school?Can we play football together?
+>
+> Lily: Sorry.I can't play with you today.My mother is busy at work.
+>
+> I'm going to help her at home.I'm going to wash clothes and sweep the
+> floor.
+>
+> Andy:What about you,Bill?Can you play with me?
+>
+> Bill: Sorry,I can't.I’m going to tidy my desk and clean my room.
+>
+> Do you do chores at home,Andy?
+>
+> **Andy:Yes,I help my parents water the flowers.Can we play footbal**l
+> **together this weekend?**
+>
+> Lily &Bill:Sure.That's great!
+>
+> 语篇二
+>
+> **What Chores Do You Do at Home?**
+>
+> Bill:Hello.This is Bill.
+>
+> Joy:Hi,Bill.This is Joy.Can you play with me?
+>
+> Bill:Sorry,not now.I'm doing my chores.
+>
+> Joy:Do you usually do chores at home?
+>
+> Bill:Yes,I usually water the plants.I also enjoy feeding my fish.I’m
+> sweeping the floor now.What chores do you usually do at home?
+>
+> Joy:I usually tidy my desk and clean my room.Do you like doing chores?
+>
+> Bill:Yes,I enjoy helping my parents.
+>
+> Joy:Me too.Call me when you're free.
+>
+> Bill:OK.Bye.
+>
+> 语篇三
+>
+> **Charlie's Chores**
+>
+> Charlie doesn't like doing family chores at all.He likes to play with
+> his friends in the park.Charlie asks his friends about their chores.
+>
+> Charlie:What do you have to do at home,Daniel?
+>
+> Daniel:I have to do homework every day.
+>
+> Charlie:But we all have to do homework.What about chores?You know,I
+> always have to do chores.I have to walk the dog and feed him every
+> day.I have to wash him once a week.Then I have to help my mum make
+> breakfast.And I don't have time
+
+**附** **录**
+
+> to play.What about you,Sue?
+>
+> Sue:Well,I feed the fish and wash vegetables every day.
+>
+> Charlie:I do so many chores at home.What about you,Lisa?
+>
+> Lisa:Every week I help my parents do some cleaning at home.I'm
+>
+> happy to help them because they always help me too.
+>
+> Charlie:Do you do chores at home,Ann?
+>
+> Ann:Sure.I make my bed every morning before school.I also help my mum
+> cook dinner every evening.
+>
+> Charlie:You are really helpful.Now I understand that we all should do
+> chores,so I will do them to help my parents
+>
+> 语篇四
+>
+> **Robots**
+
+Robots have come into our lives.They are becoming more and more
+helpful.For example,when some sick people cannot walk,robots can take
+food and drinks to them.Robots can help doctors too.
+
+Many people use robots to do chores.Some robots can study your
+needs.Then they know how to help you clean your house and how to cook
+food for you.In a few years,maybe robots will know how to do all chores!
+
+> **案例3** **5～6年级对话语篇教学设计**
+>
+> **“Do You Do Chores at Home?”**
+>
+> **一、语篇研读**
+
+What: 本课语篇为小学生日常对话，内容围绕学生放学后的时间
+安排展开。放学回家的路上，Andy 邀请同学Lily 和 Bill 一起踢足球，
+两位同学表示回家后要帮助家长做家务。最后，三人约定在周末一起 踢足球。
+
+义务教育英语课程标准(2022年版)
+
+Why: 作者通过描述Lily和 Bill为帮助父母做家务，礼貌地拒绝
+Andy放学后一起踢足球的邀约，使学生思考做家务的意义，引导学
+生树立合理安排课余时间、主动承担家务劳动的意识。
+
+How: 该对话是比较典型的学生日常生活对话，涉及介绍小学生
+日常所做家务的词汇，如 do chores、wash clothes、sweep the floor、 tidy
+my desk、clean my room、water the flowers; 交流做家务时使用的
+核心语言，如 “Do you do chores at home?Yes,I. …”。三位小学生在表
+达自己放学后打算做的事情时使用了一般将来时，学生在前面的课程
+中已经接触并学习过该时态。该对话情节简单，易于理解，具有现实
+意义和教育意义。
+
+> **二** **、教学目标**
+>
+> 通过本课时学习，学生能够：
+
+1\. 在看、听、说的活动中，获取、梳理对话中三位小学生所做
+的家务劳动；(学习理解)
+
+2.在教师的帮助下，分角色表演对话(程度较好的学生可以尝
+试转述、介绍三位小学生放学后的活动选择);(应用实践)
+
+> 3\. 简要评价对话中三位小学生的做法；(迁移创新)
+
+4\. 在小组内交流下周个人家务劳动计划，并向全班汇报交流结 果。(迁移创新)
+
+> 完成课时目标所需的核心语言如下。
+>
+> **【核心短语】**
+>
+> do chores,wash clothes,sweep the floor,tidy my desk,clean my
+
+**room,water the flowers**
+
+> **【核心句型】**
+>
+> I think…(helpful,kind,hardworking…)
+>
+> I’m going to …
+>
+> …is going to …
+
+**附** **录**
+
+> **三、教学过程**
+
+<table style="width:99%;">
+<colgroup>
+<col style="width: 21%" />
+<col style="width: 46%" />
+<col style="width: 31%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>教学目标</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>学习活动</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>效果评价</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>1.在看、听、说 的 活 动 中 ， 获取、梳理 对话中三位</p>
+<p>小学生所做 的家务劳动。 (学习理解)</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.学生基于图片和已有经验，在教 师的启发下，预测对话内容，感
+知新语言，如“Who are they?</p>
+<p>Where are they?What are they going to do?”。</p>
+<p>2.学生观看对话视频，验证预测， 理解对话大意，根据图片，用释
+义和列举的方式理解生词chore的 含义。</p>
+<p>3.学生再次观看对话视频，理解对 话细节，如“What does Andy</p>
+<p>invite Bill and Lily to do after school?Can Bill and Lily play
+footballwith Andy?Why?”,找到 对话中三位小学生放学后做家务
+的具体内容，将对话人物与其所 做家务进行匹配。</p>
+<p>4.学生借助图片和动作理解家务劳 动词汇的意思，拼读单词和短语，
+拓展和丰富词汇，如wash socks、 wash vegetables等。</p>
+<p>5.学生听录音跟读、分角色朗读对 话，关注语音、语调、节奏、连
+读、重读等。</p>
+</blockquote></td>
+<td style="text-align: left;"><blockquote>
+<p>教师观察学生能否参与 互动和交流，主动分享 个人对该主题已有的知
+识、经验，并根据需要 调整提问方式，进行追 问或给予鼓励。</p>
+<p>教师观察学生完成匹配 活动的情况，根据学生 表现给予指导和反馈。</p>
+<p>教师根据学生理解词 汇、拼读单词和拓展词 汇的情况，发现问题，
+及时提供帮助。</p>
+<p>教师根据不同能力水平 学生朗读对话的情况， 给予指导或鼓励。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td colspan="3" style="text-align: left;"><blockquote>
+<p><strong>设计意图：</strong>本阶段学习活动旨在帮助学生在语境中理解对话内容，学习对话中的
+词汇和核心语言。学生在教师指导下，通过观看对话视频，从大意到细节逐步理
+解对话内容。在词汇学习中，学生在教师指导下发展拼读能力，积累并拓展词
+汇。学生通过跟读和分角色朗读对话，进一步理解对话内容，内化语言，为语言
+输出奠定基础。</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+> **义务教育** 英语课程标准(2022年版)
+>
+> **续表**
+
+<table style="width:99%;">
+<colgroup>
+<col style="width: 21%" />
+<col style="width: 46%" />
+<col style="width: 31%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>教学目标</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>学习活动</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>效果评价</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td style="text-align: right;"><blockquote>
+<p>2.在教师的帮 助下，分角 色表演对话 (程度较好的 学生可以尝 试转述、介
+绍三位小学 生放学后的 活动选择)。 (应用实践)</p>
+</blockquote></td>
+<td><blockquote>
+<p>6.学生在教师指导下，梳理、归纳 对话的核心语言，并根据教师的
+板书，进行角色替换，开展同伴 问答活动。</p>
+<p>参考语言：</p>
+<p>-Can you play with me?</p>
+</blockquote>
+<p>-Sorry,I can't.I'm going to…</p>
+<blockquote>
+<p>7.基于对话内容，学生进行角色扮 演。程度较好的学生可以尝试向
+同伴转述、介绍三位小学生放学 后的活动选择。</p>
+</blockquote></td>
+<td><blockquote>
+<p>教师观察学生在语境中 运用核心语言进行问答 和交流的情况，根据学
+生的表现给予指导和</p>
+<p>反馈。</p>
+<p>教师观察学生能否借助 板书呈现的语言支架完 成角色扮演，介绍对话
+内容，根据学生的表现 给 予 必 要 的 提 示 和 指导。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td colspan="3" style="text-align: left;"><blockquote>
+<p><strong>设计意图：</strong>本阶段学习活动引导学生在归纳和整理核心语言的基础上，通过角色
+扮演使每位学生都能深入角色，运用语言理解意义。程度较好的学生还可以尝试
+使用连续话语介绍对话中人物放学后的活动选择，促进语言内化，从学习理解过
+渡到应用实践，为后面的真实表达做准备。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td style="text-align: right;"><blockquote>
+<p>3.简要评价对 话中三位小 学生的做法。 (迁移创新)</p>
+</blockquote></td>
+<td><blockquote>
+<p>8.学生在教师指导下，就Lily和Bill 拒绝Andy的邀请这件事进行分析
+和讨论，对三位小学生的做法进 行评价，体会对话语篇背后隐含 的意义。</p>
+</blockquote></td>
+<td style="text-align: left;"><blockquote>
+<p>教师根据学生对问题的 回应与反馈，引导讨论 和正确评价。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>4.在小组内交 流下周个人 家务劳动计 划，并向全 班汇报交流</p>
+<p>结果。(迁移 创新)</p>
+</blockquote></td>
+<td><blockquote>
+<p>9.学生在计划单上勾画、写出自己 下周要做的家务，并在小组内用
+对话中的核心语言交流下周各自 要做的家务，如“I′m going to wash
+clothes.”。组长在计划单上 对同学的回答做好记录。</p>
+<p>10.小组成员向全班介绍本组同学下 周家务劳动计划。</p>
+<p>11.学习小结。</p>
+</blockquote></td>
+<td style="text-align: left;"><blockquote>
+<p>教师观察学生在小组内 运用所学语言交流下周 家务劳动计划的情况，
+给予鼓励或帮助。</p>
+<p>教师观察学生向全班汇 报本组成员下周家务劳 动计划的情况，评价教
+与学的成效。</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+**附** **录**I\|
+
+> **续表**
+
+<table style="width:100%;">
+<colgroup>
+<col style="width: 21%" />
+<col style="width: 46%" />
+<col style="width: 31%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>教学目标</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>学习活动</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>效果评价</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td colspan="3"><blockquote>
+<p><strong>设计意图：本阶段学习活动旨在帮助学生在迁移的语境中，创造性地运用所学语</strong>
+<strong>言，交流下周个人家务劳动计划，并向全班介绍本组成员的计划。学生从课本走</strong></p>
+</blockquote>
+<p><strong>向现实生活，在制订计划、交流计划和介绍他人计划的过程中，发展语用能力，</strong></p>
+<blockquote>
+<p><strong>初步形成对家务劳动意义和价值的认识与理解。在实际教学中，教师可以根据不</strong>
+<strong>同水平学生的需求，将最后的教学活动与第二课时的内容进行整合，延后完成。</strong></p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+> **四、案例评析**
+>
+> 本课时为单元学习的起始课时，语篇素材为学生间的日常交流对
+> 话。在教学设计中，教师充分挖掘语篇蕴含的育人价值，在英语学习
+> 活动观的指导下，引导学生在真实的语境中，通过逻辑关联、层层递
+> 进的学习任务，体验有意义的学习过程，实现语言学习与课程育人的
+> 融合统一。
+>
+> 学生在本节课经历了三个学习阶段。第一阶段，学生观看对话视
+> 频，提取、梳理信息，学习对话核心语言。教师通过连续性的问题，
+> 引导学生反复观看完整对话视频，理解主旨大意，找到三位小学生放
+> 学后所做家务的具体内容。在理解对话的基础上，教师引导学生在语
+> 境中学习本课时目标词汇，启发学生借助图片和做动作等方式，展示
+> 自己对目标词汇的理解；指导学生运用已有的拼读经验，自主尝试拼
+> 读单词，发展拼读能力，拓展、积累词汇。这些是学习理解类的活
+> 动。第二阶段，学生在对话情境中进行角色替换，问答交流；在教师
+> 指导下，同伴合作，完成角色扮演或向同伴转述、介绍对话中人物所
+> 做的家务。这些应用实践类的学习活动，旨在帮助学生借助语言支
+> 架，通过控制性练习内化目标语言。第三阶段，学生对三位小学生的
+> 做法作出简要评价，制订下周家务劳动计划，在小组内交流的基础上
+> 向全班介绍本组成员下周家务劳动计划。这些迁移创新类的活动，强
+> 调学生在新的语境中，运用所学语言进行真实的交流与表达，是学习
+>
+> 活动的最高层次。
+>
+> 从本案例可以看出，学生经过“学习理解—应用实践—迁移创
+> 新”等体现语言能力螺旋上升的学习过程，逐渐从基于语篇的学习走
+> 向真实的生活世界；从理解、内化语言到运用所学语言，表达自己的
+> 思考与发现，认识做家务的意义与价值，规划自己的课余生活，意识
+> 到自己的事情自己做，并主动帮助家长做一些力所能及的家务。学生
+> 在深化对单元主题理解的过程中获得知识、提升能力、发展思维、塑
+> 造品格。在教学中，教师始终关注学生的学习表现和学习成效，根据
+> 需要给予必要的指导和帮助，推动“教—学—评”一体化的实施。
+>
+> **案例4** **5～6年级英语综合实践活动教学设计**
+>
+> **“元宵节灯谜会”(3课时)**
+>
+> **一** **、内容介绍**
+>
+> 本实践活动属于“人与社会”主题范畴，涉及“世界主要国家的
+> 传统节日，文化体验”。
+>
+> 本实践活动围绕中国传统节日“元宵节”设计并实施。活动设计
+> 力求将语言学习与中华优秀传统文化教育、艺术教育、劳动教育融
+> 合，引导学生在体验和实践中发展综合素质。学生通过视听、阅读短
+> 文，了解元宵节的文化习俗及意涵，包括该节日的时间、典型食品、
+> 庆祝方式，如观花灯、猜灯谜、吃元宵等；通过制作花灯，体会动手
+> 实践、设计创造的过程；通过设计、编写灯谜和猜灯谜，体验参与节
+> 日文化活动的乐趣。最终帮助学生实现对中国传统节日“元宵节”文
+> 化意涵的理解，逐渐形成对中华优秀传统文化的认同，坚定文化 自 信 。
+>
+> **附** **录**
+>
+> **二、活动目标**
+>
+> 通过参与“元宵节灯谜会”实践活动，学生能够：
+
+1\. 阅读介绍元宵节的语篇，理解大意，提取有关元宵节的信息，
+如节日的时间、庆祝方式和典型食品等；
+
+> 2\. 基于所提取的信息，与同伴合作，尝试介绍元宵节；
+
+3\. 根据花灯制作步骤的说明性指示语，独立或与同伴合作制作
+花灯，体验制作过程；
+
+4\. 独立或与同伴合作设计、编写灯谜，参与猜灯谜活动，体验
+元宵节的文化意涵。
+
+> **三、实施过程**
+
+阶段一 ：阅读介绍元宵节的语篇，提取相关信息，与同伴合作，
+尝试介绍元宵节。
+
+学生在教师引导下玩猜谜游戏，揭示谜底——花灯。学生思考并
+交流在哪些节日能见到花灯，看到花灯会产生哪些联想，进入学习主
+题“元宵节灯谜会”。通过师生交流，学生激活关于元宵节的已有知
+识经验，思考并表达希望进一步了解的信息，如元宵节的文化寓意、
+庆祝活动等。学生带着问题阅读语篇，借助信息图表提取、梳理核心
+信息(根据学生情况，教师也可以鼓励学生自己设计信息图表，梳理
+信息)。学生独立或与同伴合作，用喜欢的方式(图文结合的小书、
+海报、演示文稿等)展示阅读收获，尝试介绍元宵节，理解元宵节的 文化意涵。
+
+> 阶段二：学习制作花灯，创意设计，实践体验。
+
+师生交流，讨论确定制作花灯需要做的前期准备，如 “We need: two pieces of
+paper,a pair of scissors,coloured pens,a glue stick,a roll of sticky
+tape and some stickers.”。学生在教师指导下，借助示意图学习
+制作花灯。教师在介绍花灯制作方法时，可以参考以下语言。
+
+<img src="media/image31.jpeg"
+style="width:0.13195in;height:0.13194in" />**义务教育**
+英语课程标准(2022年版)
+
+> Steps:
+>
+> First,roll one piece of paper into a cylinder.
+>
+> **Then,fold the other piece of paper in half and cut it with
+> scissors**. **Next,put the paper around the cylinder and stick them
+> together**.
+>
+> **Then,make the tassels and glue the handle on the top.**
+>
+> **Finally,decorate the lantern.**
+
+<img src="media/image32.jpeg" style="width:4.993in;height:1.22915in" />
+
+> 学生在教师指导下，独立或与同伴合作设计、制作花灯，体验制 作过程。
+>
+> 阶段三：设计、编写灯谜，猜灯谜，体验元宵节文化活动。
+>
+> 师生共同布置猜灯谜活动场景。学生借鉴灯谜范例，设计、编写
+> 灯谜，贴在花灯上。师生共同开展猜灯谜活动。教师可以准备一些小
+> 奖品，鼓励学生设计、编写灯谜，积极参与语言实践与互动，感受灯
+> 谜会文化活动的乐趣。
+>
+> 灯谜范例：
+>
+> 1.I am colourful.You see me in the sky after it rains.(Answer:
+> rainbow)
+>
+> 2.I am cold.I am yummy on hot days.I can be many flavours. Children
+> like me a lot.(Answer:ice cream)
+>
+> **四** **、学习效果评价**
+>
+> 教师在活动实施过程中，通过随时观察、提问及与学生交流，评
+> 价、反馈学生学习任务的完成情况。
+>
+> 检视学生阅读语篇后完成学习单的情况。
+
+**附** **录**
+
+> 观察学生以同伴互助的方式介绍元宵节的情况。
+>
+> 观察学生制作花灯的过程。
+>
+> 观察学生在猜灯谜活动中参与设计、编写灯谜和猜灯谜的情况。
+>
+> 教师可以通过对上述学习活动的观察，及时了解学生的学习收获
+> 与困难，进行具体的、有针对性的指导。在该实践活动的总结阶段，
+> 教师引导学生借助学习评价单进行自我反思，总结学习收获，发现自
+> 己的成长与进步。
+>
+> **【学习评价单】**
+
+<table style="width:100%;">
+<colgroup>
+<col style="width: 14%" />
+<col style="width: 61%" />
+<col style="width: 24%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p>评价</p>
+<p>内容</p>
+</blockquote></td>
+<td><blockquote>
+<p>1.我能读懂关于元宵节的语篇。</p>
+<p>2.我能与同伴合作简单介绍元宵节。</p>
+<p>3.我能制作花灯。</p>
+<p>4.我能用英语编写并竞猜灯谜。</p>
+<p>5.在活动中，我能主动为同伴提供帮助。</p>
+</blockquote></td>
+<td><blockquote>
+<p>☆ ☆ ☆ ☆ ☆</p>
+<p>☆ ☆ ☆ ☆ ☆</p>
+<p>☆ ☆ ☆ ☆ ☆</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+> **五、案例评析**
+>
+> 本案例以“元宵节灯谜会”为主题，在英语学习中融入中华优秀
+> 传统文化、艺术与劳动教育。学生在综合实践活动中体验语言承载的
+> 文化，增强对中华优秀传统文化的理解与认同，发展合作、实践和创
+> 新能力。例如：学生通过阅读介绍元宵节的语篇，了解元宵节的时
+> 间、庆祝方式和典型食品，与同伴合作尝试用自己喜欢的方式介绍元
+> 宵节，体会元宵节的文化意涵；与同伴合作设计并制作花灯，发展动
+> 手实践和创新能力；在设计、编写灯谜和猜灯谜的过程中，体验语言
+> 运用与交流，感受参与节日文化活动的乐趣。
+>
+> 在本案例设计与实施过程中，教师创造性地开发和利用现实生活
+> 中鲜活的英语学习资源，如引入适合学生学习需求的配图语篇、影像
+> 视听素材，丰富了课程资源，拓展了英语学习渠道。本案例的实施能
+> 够有效促进学生语言能力、文化意识、思维品质和学习能力等协同 发展。
+>
+> **义务教育** 英语课程标准(2022年版)
+>
+> **六、案例语篇**
+>
+> <img src="media/image33.jpeg"
+> style="width:1.40969in;height:2.18746in" />**The Lantern Festival**
+
+The Lantern Festival is an important festival in China.It began 2,000
+years ago during the Han Dynasty.It falls on the 15ᵗday of the first
+lunar month and it marks the end of the Spring Festival celebrations.
+
+> People celebrate the festival in many ways.The
+
+lantern show is the most important part of the
+
+festival.On the eve of the festival,many lanterns are
+
+hung in the streets and parks.These lanterns light up the night during
+the
+
+festival.People often go out and watch the lantern show with family or
+friends.
+
+> Lantern riddle games are also popular during the Lantern Festival.
+
+<img src="media/image34.jpeg"
+style="width:1.24309in;height:1.34032in" />People write riddles on
+colourful lanterns.If someone gets the right answer, he or she will get
+a nice little gift.
+
+Tangyuan is the traditional food of the Lantern Festival.It can have
+many different fillings and flavours.The shape of tangyuan indicates
+family reunion.
+
+> People enjoy themselves during the Lantern Festival.
+>
+> **案例5** **7～9年级单元整体教学设计(8课时)**
+>
+> 单元主题：**Save the Planet**
+
+该主题属于“人与自然”范畴，涉及“环境污染及原因，环保意 识和行为”。
+
+> **附** **录**
+>
+> **一、单元内容分析**
+
+本单元由一篇说明文、 一段采访和一篇专题报道三个不同类型的
+语篇组成。说明文介绍了15岁男孩Jim 一家发现人们在环保方面存 在的问题：
+一是垃圾过多，二是用电过度。他们采取了一些日常环保
+措施，通过个人努力保护环境。采访为 Ellie 与 Jeremy 的 对 话 ，
+Jeremy介绍了社区河流污染事件，包括事件发生的地点、时间、具体
+情况，以及他的个人感受。专题报道讲述了两位全国植树造林模范邹
+连英和魏桂英面对滥砍滥伐问题，多年如一 日坚持植树造林的感人 事迹。
+
+本单元的核心语言主要围绕环境污染和解决污染的措施展开，涉
+及对环境问题的描述，如污染问题及产生的原因 (produce rubbish, waste
+decays,create pollution,air pollution,cut down trees)、污染造成的 影响
+(cause health problems and global warming,affect the climate,cause
+animals to move or die,cause deserts to expand), 以及应对污染问题所
+采取的措施或建议 (recycle,reduce the waste,save energy /electricity, use
+low energy light bulbs,use cars less,grow vegetables,keep hens,put into
+different bins,plant trees,prevent deserts from getting larger,stop the
+climate from getting warmer) 等。三个语篇涉及不同的语篇知识：第
+一个书面语篇以“提出问题—解决问题”为线索组织信息；第二个语
+篇是访谈形式的口语语篇，以问答的方式描述了事件的时间、地点、
+人物、起因、经过和结果；第三个语篇是专题报道，该语篇通过描述
+和记叙两种方式，列举了问题和措施，介绍了人物事迹，也提出了对
+未来的展望(见图5)。
+
+![](media/image35.jpeg)
+
+> **图** **5** **Save the Planet单** **元** **主** **题** **内** **容**
+> **框** **架** **图**
+>
+> 体现单元核心素养综合表现的重点语言表达如下(含已学和新学 语 言 ) 。
+>
+> **【** **环境污染问题** **】**
+>
+> **create pollution,air pollution,water/noise /light pollution,dirty
+> air / water**
+>
+> This causes problems.
+>
+> There are still some problems to solve.
+>
+> The water is /was polluted.
+>
+> Land that was once covered with forest has changed greatly.
+>
+> 【 环境污染原因 】
+>
+> produce rubbish,waste decays,cut down trees
+>
+> Some places no longer have trees because …
+
+**附** **录**
+
+> **【环境污染影响】**
+>
+> cause health problems and global warming,affect the climate,cause
+> animals to move or die,cause deserts to expand
+>
+> It can cause(serious health problems,sickness,cancer,etc.) …
+>
+> **【环保行动和计划】**
+>
+> recycle,reduce the waste,save energy /electricity,use low energy light
+> bulbs,use cars less,grow vegetables,keep hens,put into different
+> bins,plant trees,prevent deserts from getting larger,stop the climate
+> from getting warmer
+>
+> I/We should …
+>
+> I/We decide to …
+>
+> I am/We are going to …
+>
+> I/We will be able to …
+>
+> I/We try to …
+>
+> I/We need to …
+>
+> **【说明环保意义】**
+>
+> A lot of work is still needed to …
+>
+> If more people…,it will certainly make life better for everyone.
+>
+> Everyone must do something to make the world a better place.
+>
+> Rivers and lakes must be protected because water is the source of
+> life. To protect our homeland is to protect ourselves.
+>
+> **二** **、单元教学目标**
+
+<table style="width:100%;">
+<colgroup>
+<col style="width: 62%" />
+<col style="width: 37%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>单元教学目标</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>语篇</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p><strong>本单元学习后，学生能够：</strong></p>
+</blockquote>
+<p><strong>1.谈论日常生活中常见的环境问题，举例阐释个</strong></p>
+<blockquote>
+<p><strong>人及家庭生活的日常行为对环保的重要意义，</strong>
+<strong>交流个人可以参与的环保行动。</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>1.说明文</strong></p>
+<p><strong>“Going</strong> <strong>Green”</strong></p>
+<p><strong>(2课时)</strong></p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+> **续表**
+
+<table style="width:99%;">
+<colgroup>
+<col style="width: 61%" />
+<col style="width: 37%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>单元教学目标</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>语篇</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>2.设计访谈提纲，采访调查同伴所在社区的污染 现象，完成简要报告。</p>
+</blockquote></td>
+<td><blockquote>
+<p>2.采访对话</p>
+<p>“Our River”</p>
+<p>(2课时)</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>3.讲述全国植树造林模范的英雄事迹，思考环保</p>
+<p>行动的意义，交流个人参与环保的计划。</p>
+</blockquote></td>
+<td><blockquote>
+<p>3.专题报道</p>
+<p>“Tree Heroes”</p>
+<p>(2课时)</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>4.小组合作设计环保项目，参加班级优秀环保项 目评选。</p>
+</blockquote></td>
+<td><blockquote>
+<p>单元项目：Project Design</p>
+<p>(2课时)</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+> **三、案例评析**
+
+单元整体教学设计注重引导学生从单元视角展开对单元内各语篇
+主题意义的探究，指向预期的核心素养综合表现。本单元涉及环保主
+题，学生在教师指导下，通过三个语篇的学习，从“家庭—社区一社
+会”三个层面，探究意义、学习语言、建构新知、解决问题，由浅入
+深、由近及远地了解、学习、关注、思考并参与和开展环保活动，逐
+步加深对环保的理解，逐渐深入思考个人在环保中的作用，结合所学
+在不同类型的活动中进行表达，加深对环保意义的认识，提升参与环
+保行动的意识。首先，学生在教师引导下，从家庭层面入手，了解面
+对环境问题， 一个家庭可以采取的环保措施，并针对这些环境问题提
+出建议；在此基础上，学习转入社区层面，学生进一步了解社区生活
+环境中的污染情况，感受社区环保的重要意义，提升对社区环保的责
+任意识；最后，学习上升到社会层面，学生通过学习全国植树造林模
+范的感人事迹，思考并规划个人如何参与环保行动。在本单元的学习
+过程中，学生逐步理解并加深对“环保”这一单元主题的认识，形成
+“环境问题—造成影响—环保理念—环保措施”的结构化知识，并通
+过参与环保项目设计，形成绿色生活理念，承担环保社会责任，用所
+
+> **附** **录**
+
+学语言有逻辑地表达和描述上述认知、态度、价值判断和行为选择，
+达成本单元的核心素养综合表现，即“用所学语言阐述环境污染的问
+题、产生的原因、带来的影响，介绍家庭和模范人物的环保行动，作
+出个人环保计划，说明环境保护的重要意义和个人的责任担当”,实
+现课程育人的价值。
+
+这样的单元整体教学设计解决了以往单元教学缺乏整体意识、内
+容碎片化、关联不紧密的问题，有助于教师树立单元意识，开展基于
+单元的整体教学。本案例说明，要做好单元内容的整体分析，教师要
+高度关注学生的知识建构和语言学习的重心。例如，在本单元的设计
+中，教师针对学生需要学习和运用的核心语言进行整理和提炼，为学
+生基于主题意义探究开展结构化的语言学习、参与结构化的语言表达
+奠定了良好的基础。教师从学生学习具体语篇后在语言、文化和思维
+等方面的素养表现出发，设计单元教学目标，使之可操作、可评价、
+可落实。教师设计的小组合作输出活动从课堂延伸至课外，学生可以
+用一段时间完成作业，进一步优化和完善语言产出，并以不同形式的
+作品体现单元学习的阶段性成果。
+
+本案例通过一系列循环递进和整合关联的学习活动，使学生围绕
+环境污染和环境保护主题，从个人和家庭到社区，再到社会和国家，
+建构起一张结构化的知识网，推动学生对环保主题比较系统的理解和
+认识，达成预期的核心素养综合表现，实现语言学习和课程育人的有 机融合。
+
+> **四、案例语篇**
+>
+> 语篇 一
+>
+> **Going Green**
+
+*We hear a lot about how we should change our lives to help save our
+planet.Jim Barnes,15,from Oxford,talks about what his family does every
+day to save the planet.*
+
+I.义务教育 英语课程标准(2022年版)
+
+> A common UK family produces more than one ton of rubbish a year.
+>
+> Some of this waste takes hundreds of years to decay.It also costs lots
+> of money to keep buying new things to replace the things we throw
+> away.
+>
+> So,to help save the planet as well as save money,our family has
+> decided to recycle everything.We collect used things,such as paper and
+> bottles,and put them into different bins.After that we take them to a
+> recycling centre.Finally,they are treated and can be used
+> again.Recycling will help reduce a lot of waste.We're also going to
+> grow our own vegetables and we already keep hens.Soon,we'll be able to
+> have our own eggs for breakfast.
+>
+> In a year,a family like ours uses about 4,800 kW·h for such things as
+> watching television,taking showers,using the dishwasher and the
+> washing machine.To produce this much energy,a lot of pollution is
+> created.This pollution can cause health problems and global warming.
+>
+> Because of all this,we decided to do something to save electricity.We
+> watch less TV and use low energy light bulbs.We stopped using the
+> dishwasher.Mum also tries to save energy while cooking.
+>
+> What's more,we try to use our car less to cut down on air pollution.
+>
+> My dad and our neighbours organise a carpool and they take turns
+> driving to work.And I ride my bicycle to school.How cool is that?!
+>
+> 语篇二
+>
+> **Our River**
+>
+> *There's been an incident at a polluted local river:Ellie Watson is
+> interviewing someone who was there.*
+>
+> Ellie:Hello.Are you Jeremy?
+>
+> Jeremy:Yes.
+>
+> Ellie:Hello.I'm Ellie Watson.Can I ask you some questions about
+
+**附** **录**
+
+> what happened?
+>
+> Jeremy:Sure,no problem.
+>
+> Ellie:To start with,can you tell us when you were at the river?
+>
+> Jeremy:I was there yesterday afternoon,at around three o'clock.
+>
+> Ellie:You were fishing,weren't you?
+>
+> Jeremy:That's right.I was with my friends.We didn't catch anything
+>
+> though.As usual! Ellie:What do you mean?
+>
+> Jeremy:Well,there have been a lot of dead fish in the river recently.
+>
+> Ellie:That doesn't sound very good.
+>
+> Jeremy:No,it isn't.My dad tells me not to go fishing in that river.He
+> says we can't eat any fish from that water.
+>
+> Ellie:Mmm,that's terrible.So,what happened yesterday?
+>
+> Jeremy:Well,I was fishing when this lady walked past with her dog.
+>
+> He jumped into the water and couldn't get out.
+>
+> Ellie:So,what did you do?
+>
+> Jeremy:Well,I tried to save him.He didn’t like it,but I got him out of
+> there.
+>
+> Ellie:Then what happened?
+>
+> Jeremy:He started to look strange.
+>
+> Ellie:What do you mean?
+>
+> Jeremy:He obviously wasn't well.The lady took him to the vet.The vet
+> gave him some medicine and said the dog got sick because the water was
+> polluted.
+>
+> Ellie:So,what about you?How do you feel?
+>
+> Jeremy:Well,I've got these red spots on my arms,but other than that
+> I’m OK.
+>
+> Ellie:Oh.Those look painful.Hope they go away soon.Thanks,Jeremy.
+
+<img src="media/image36.jpeg" style="height:0.13194in" />**义务教育**
+英语课程标准(2022年版)
+
+> 语篇三
+>
+> **Tree Heroes**
+>
+> In many parts of the world,land that was once covered with forest has
+> changed greatly.Some of the land has become part of cities or
+> towns.Some forested areas have become farmland while some other places
+> no longer have any trees because they've been cut down for different
+> reasons.This causes problems.It affects the climate,causes animals to
+> move to other places or even die,and can cause deserts to expand.
+>
+> Because so many of forests have been cut down in the last 50 years,
+> China needs to plant trees.Although there are still problems to solve,
+> China's tree-planting programmes are huge.China plants more trees than
+> any other country in the world.Who are some of the heroes behind these
+> huge numbers?Let's find out.
+>
+> In Jiangxi Province,83-year-old Zou Lianying has been planting trees
+> on her land for almost 20 years.She knows that planting trees is good
+> for the environment,so at the age of 64,she sold her cows and pigs,and
+> borrowed money to open a forest farm.Her family's forest farm has more
+> than 8 million trees covering about 4 km².Her trees are worth around
+> 12 million RMB but she won't cut down even one tree and still lives
+> very simply.She believes the forest she has planted is a gift to
+> future generations.
+>
+> Near Beijing,Wei Guiying and a team of hero helpers have planted
+> millions of trees.They have been doing this for more than 20
+> years.Now, 20 km²of hills have turned green.It hasn't been easy for
+> her.She borrowed money to pay for seedlings and is still working to
+> pay a lot of it back.This doesn't seem to matter to her,though,as she
+> says proudly that she's not a millionaire,but has millions of trees
+> instead.
+
+A lot of work is still needed to prevent deserts from getting larger and
+
+**附** **录**
+
+> to stop the climate from getting warmer,but if more of us can be like
+> these tree heroes,it will certainly make life better for everyone.
+>
+> **案例68年级读写结合教学设计** **“Healthy Living”(2 课时)**
+>
+> 本课主题属于“人与自我”范畴，涉及“身心健康”“珍爱生命 的意识”。
+>
+> **一、写作范文研读**
+>
+> 本单元的主题围绕“健康生活”展开，本课是读写结合课，学生
+> 要在完成阅读和听力语篇的学习后，模仿范文写一篇作文。
+>
+> 1\. 主题与内容
+>
+> 写作范文是女孩吴文静的一篇反思日记。她在日记中记录了自己
+> 的生活习惯，反思了这些习惯是否健康，从饮食、卫生、运动等三个
+> 方面介绍了自己的健康生活方式和一些有待改进的不良生活习惯。
+>
+> 2\. 写作目的
+>
+> 作者以日记的形式，对自己的生活习惯是否健康进行了总结、分
+> 析和反思，进而表达了摒弃不良生活习惯的决心和方法，启发和鼓励
+> 读者反思并改进自己的不良生活习惯，养成更健康的生活习惯。
+>
+> 3.语篇结构
+>
+> 范文共五段，从背景、生活习惯和总结反思等三个方面进行说明
+> 和介绍。第一部分为第1段，交代了写日记的背景，即女孩参与学校
+> 组织的调查后，反思了自己的生活习惯。第二部分为第2～4段，分 别 从eating
+> habits 、keeping clean和 doing exercise等三个方面介绍和分
+> 析了自己健康和不健康的生活习惯及其原因。第三部分为第5段，作
+> 者对自己的生活习惯进行了简单总结，表达改进的决心和方法。
+>
+> 4\. 语言特点
+
+在对生活习惯进行分析和反思时，作者使用词块说明具体的生活
+
+义务教育 英语课程标准(2022年版)
+
+行为，如在反思eating habits时，使用eat healthy food和 eat junk food
+等短语分别列举了好的和不好的习惯；在反思keeping clean 时，使用 wash my
+hands、take a shower、brush my teeth等短语介绍了自己的好
+习惯；在反思doing exercise 时，使用play ping-pong和 walk to school
+等短语描述自己的好习惯。从健康的生活习惯过渡到不健康的生活习
+惯时，作者使用了however、although和 but等表示转折的连接词进行
+逻辑衔接。另外，作者还使用了表示频度的副词和短语描述行为习 惯，如often
+、sometimes 、every day 、twice a day 、once a month等；在
+表达需要改进某些不良习惯时，作者使用了短语need to do和比较级 eat less
+junk food 、exercise more等 。
+
+> **二、教学目标**
+>
+> 在本课学习结束时，学生能够：
+
+1\. 基于写作目的、文体和要求，分析范文结构，列出描述自身
+生活习惯的内容要点；
+
+2\. 确定描述和评价自身生活习惯是否健康的角度、具体内容， 形成改进方法；
+
+3\. 发现范文中作者用于介绍、分析和反思生活习惯的生动表达
+方式和句型，将其应用于自己的写作中；
+
+> 4\. 通过自评和互评，改进初稿的结构、内容和语言。
+>
+> **三、教学过程**
+>
+> **教学目标1:基于写作目的、文体和要求，分析范文结构，列出**
+> **描述自身生活习惯的内容要点。(学习理解、应用实践)**
+
+<u>Activity 1</u> 复习单元主题：学生基于教师的提问，回顾与健康生
+活这一主题相关的已学内容。(感知与注意)
+
+> 设计意图：引发学生反思自己的生活习惯。
+
+效果评价：观察学生回答问题的表现，根据其说出的具体内容，
+
+**附** **录**
+
+了解其对单元主题的整体把握。
+
+<u>Activity 2</u> 理解、明确写作任务：学生在教师指导下了解写作任
+务并总结写作要点。(获取与梳理)
+
+某网站面向全国中学生举办一场以“健康生活方式”为主题的英
+语征文活动。你的生活方式健康吗?请撰文投稿。不少于60词。
+
+> 设计意图：明确写作任务。
+
+效果评价：根据学生说出的写作要点了解其对单元写作任务的理 解情况。
+
+**<u>Activity 3</u>** 梳理范文结构：学生阅读并整理出范文的内容结构
+图。(获取与梳理、概括与整合)
+
+> 设计意图：学习范文的结构。
+
+效果评价：观察学生梳理的内容结构图是否清晰，逻辑是否关
+联，要点是否清楚，是否既包含作者对个人生活习惯的总体评价和对
+不良习惯的描述与反思，也包含个人的改进态度和改进方法等。
+
+**<u>Activity 4</u>** 列出写作内容要点：学生思考写作任务的要求并参照
+范文写出自己文章的内容要点。(内化与运用)
+
+设计意图：学习和仿照范文的结构，构思自己文章的内容架构，
+为笔头输出做准备。
+
+效果评价：检查学生所列的写作要点是否齐全，是否包含个人观
+点、个人不良生活习惯和反思，以及改进的方法等要点。
+
+> **教学目标2:确定描述和评价自身生活习惯是否健康的角度、具**
+> **体内容，形成改进方法。(学习理解、应用实践)**
+
+<u>**Activity** **5**</u> 梳理范文写作提纲：学生阅读并整理出范文中介绍每
+个习惯的具体要点，补充到范文结构图中。(获取与梳理)
+
+设计意图：引导学生学习每个习惯的描写方式，为笔头输出的细 节信息做准备。
+
+效果评价：观察学生补充在范文提纲中的具体内容，了解其梳理
+文章写作提纲的情况。(分析与判断、内化与运用)
+
+> **义务教育** 英语课程标准(2022年版)
+>
+> <u>Activity 6</u> 确定写作内容要点：学生思考并判定自己生活中健
+> 康、不健康的生活方式，讨论怎样改变不健康的生活方式，确定将哪
+> 些内容呈现在写作中，并将这些内容补充到自己的提纲中。
+>
+> 设计意图：引导学生思考、描述和评价自身生活是否健康，并列
+> 举支撑性的细节说明，为笔头输出细节信息做准备。
+>
+> 效果评价：观察并评价学生补充在自己提纲中的内容要点是否齐
+> 全，确定其能否有效筛选针对内容细节的支撑要点。
+>
+> **教学目标3:发现范文中作者用于介绍、分析和反思生活习惯的**
+> **生动表达方式和句型，将其应用于自己的写作中。(应用实践、迁移**
+> **创新)**
+>
+> <u>Activity 7</u> 学习范文语言：在教师引导性问题的帮助下，学生阅
+> 读并挑选出范文中有用的句型和表达，分析、探讨这些语言对清晰、
+> 准确、生动表达主题意义的作用。(分析与判断)
+>
+> 设计意图：引导学生学习和分析与本主题相关的有效语言表达。
+>
+> 效果评价：观察学生能否在范文中找到有用的词语和句型，根据
+> 学生表现，提供必要帮助。
+>
+> <u>Activity 8</u> 完成初稿写作：学生基于提纲和写作要点，借鉴范文
+> 中有效的语言表达，独立写出自己文章的初稿。(内化与运用、想象 与创造)
+>
+> 设计意图：引导学生综合运用本课所学，写出初稿。
+>
+> 效果评价：评价学生初稿中综合运用所学词语、句型和结构的情
+> 况，给予必要指导和反馈。
+>
+> **教学目标4:通过自评和互评，改进初稿的结构、内容和语言。**
+> **(迁移创新)**
+>
+> <u>Activity 9</u> 自评、修改并形成二稿：学生根据写作自评表对初稿
+> 进行自我评价，并根据评价结果修改初稿，完成二稿。(批判与评价、
+> 想象与创造)
+>
+> 设计意图：引导学生反思和评价自己文章的表达效果，反复修
+
+**附** **录**
+
+> 改、完善文章，提升写作质量，实现以评促学。
+>
+> 效果评价：从学生完成的自评表和二稿的完成情况，了解其写作
+> 能力的进步和存在的问题。
+>
+> **<u>Activity 10</u>** 互评和完善二稿：学生根据写作互评表，两人互相
+> 评价、反馈，并根据评价结果修改二稿。(批判与评价、想象与创造)
+>
+> 设计意图：引导学生反思和评价同伴文章的表达效果，反复修
+> 改、完善文章，提升写作质量，实现以评促学。
+>
+> 效果评价：从学生完成的互评表和文章的二稿修改，了解其参与
+> 评价的表现和写作水平的提高情况。
+>
+> 作业建议：请完成作文的三(终)稿。
+>
+> **【写作自评表】**
+>
+> 请使用下面的表格完成自评和修改。依据每个问题进行自查，看
+> 看结果是“是”还是“否”。如果是“否”,请记录如何修改以完善自 己的写作。
+
+<table style="width:100%;">
+<colgroup>
+<col style="width: 60%" />
+<col style="width: 7%" />
+<col style="width: 7%" />
+<col style="width: 23%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>问题</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>是</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>否</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>如果为“否”,</strong> <strong>如何改进?</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>你在短文中是否反思了自己生活习惯的健康 程度?</p>
+</blockquote></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>你在短文的第一段是否针对自己的生活习惯给出 了总体评价?</p>
+</blockquote></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>你在短文中是否分段描写了自己不同方面生活习 惯的健康程度?</p>
+</blockquote></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>你在短文各段中是否提供了重要和充足的细节支 撑点?</p>
+</blockquote></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>你在短文的最后一段是否写明了自己将如何改进
+生活习惯，使生活更健康?</p>
+</blockquote></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>你的短文是否使用了恰当的句型和丰富的词语?</p>
+</blockquote></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>你的短文在拼写、语法和标点方面是否都正确?</p>
+</blockquote></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+> **义务教育** 英语课程标准(2022年版)
+>
+> **【写作互评表】**
+>
+> 请一位同伴阅读你写的短文并完成下面的表格。之后，请你根据
+> 同伴的反馈进一步修改和完善你的短文。
+
+<table style="width:99%;">
+<colgroup>
+<col style="width: 66%" />
+<col style="width: 9%" />
+<col style="width: 24%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>评价指标</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>得分</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>评分标准</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>短文是否包含了对生活习惯健康程度的反思?</p>
+</blockquote></td>
+<td></td>
+<td rowspan="6"><blockquote>
+<p>5=Excellent 4=Good</p>
+<p>3=Acceptable 2=Needs</p>
+<p>Improvement</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>短文是否有清晰的开头和结尾?</p>
+</blockquote></td>
+<td></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>短文是否分段介绍了不同方面生活习惯的健康程度?</p>
+</blockquote></td>
+<td></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>短文各段的细节是否足以支撑观点?</p>
+</blockquote></td>
+<td></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>短文是否使用了恰当的句型和丰富的词语?</p>
+</blockquote></td>
+<td></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>短文的拼写、语法和标点是否正确?</p>
+</blockquote></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+> **四、案例评析**
+>
+> 本节读写结合课的教学设计表现出以下几个突出特点。
+>
+> 第一，充分体现了读写结合的教学特点，实现了学生阅读和写作
+> 技能的融合发展，使阅读始终服务于写作任务的达成。在教学中，教
+> 师首先通过感知与注意的活动，布置写作任务，明确写作对象，激发
+> 学生思考如何设计篇章结构、筛选内容和遣词造句。然后，教师根据
+> 写作目的，提供阅读范文，引导学生获取与梳理范文的篇章结构和主
+> 要内容的选取方式，为学生运用所学完成自己的写作提纲、选择和组
+> 织内容奠定基础。在此基础上，教师进一步引导学生关注和发现范文
+> 的语言表达方式和衔接手段，鼓励学生尝试从写句子到写段落。至
+> 此，学生已经可以基于自己的写作提纲和提炼的语言表达方式，起草
+> 自己的作文。这种读写结合的设计不仅使学生的阅读有了明确的目的
+> 和意义，也为学生完成写作任务搭建了台阶，使写作过程变得水到渠
+> 成，体现了读与写的互惠性。
+>
+> 第二，突出了以学生为主体的教学理念。在学生完成写作任务的
+> 过程中，教师始终是课堂资源的提供者和学生学习的引导者。教师通
+>
+> **附** **录**
+>
+> 过精心设计的课堂活动，引导学生通过体验、参与、自主发现、合作
+> 探究等方式，最终独立解决问题。例如，学生为达成不同的学习目
+> 的，先后三次回到范文中寻求解决问题的方法，真正体现了学生是学
+> 习的主体。在完成初稿之后，教师还组织学生以自评和互评的方式进
+> 行有意义的反馈和修改，不仅培养了学生的批判评价能力，还培养了
+> 学生合作学习的能力，增强了学生学习英语的兴趣和自信心。
+>
+> 第三，基于主题的写作任务，促进学生养成健康的生活方式。本
+> 课的写作任务是请学生向某网站以“健康生活方式”为主题的征文活
+> 动投稿。写作任务贴近学生的生活实际，具有较强的交际性。在整个
+> 写作过程中，教师引导学生先后就自己的生活习惯、对健康生活习惯
+> 的认定和辨别，以及今后如何改进不良生活习惯等进行反思和表达，
+> 不仅达成了语言知识、语言技能的训练目标，也实现了育人目标，润
+> 物细无声地促进学生核心素养的发展。
+>
+> **五、案例语篇**
+>
+> We did a survey at school today.It was about healthy habits.I have
+> some good habits,although I have a few bad habits,too.
+>
+> I usually eat healthy food because my mum and dad are good cooks.
+>
+> When they cook,I often help them.However,I sometimes eat junk food
+> when I'm with my friends.They love candy and chocolate.
+>
+> I'm also very clean and tidy.I wash my hands often and I also take a
+> shower every day.I brush my teeth twice a day.
+>
+> Although I'm thin,I don't exercise very much.When you exercise,it
+> makes your bones stronger.I play ping-pong once a month,but I’m not
+> very good at it.I walk to school every day,but I should do more.
+>
+> I have a lot of good habits,but I need to eat less junk food and
+> exercise more.
+>
+> Wu Wenjing
+>
+> **义务教育** 英语课程标准(2022年版)
+>
+> **案例7** **8年级对话语篇教学设计“A** **Picnic”(1** **课时)**
+
+本课属于“人与社会”主题范畴，涉及“良好的人际关系与人际 交往”。
+
+> **一、语篇研读**
+
+What: 本课语篇是女孩Julie 和 Uncle Dan 有关周末野餐计划安排
+的电话对话。对话中，两人主要交流了野餐的时间、地点、参加人，
+以及需要准备的物品等信息。针对两家各自为野餐准备的食物和餐 具 ，Uncle
+Dan 特别叮嘱Julie 为其父母捎口信， Julie 答 应 了Uncle Dan,
+逐一做好记录，并承诺转告父母。
+
+Why:Julie 和 Uncle Dan 在现实生活情境中的电话对话可以帮助
+学生了解青少年与亲近的长辈之间打电话的基本交际礼仪，培养记录
+电话留言的技能，同时关注和学习如何请求对方为自己捎口信，以及
+如何回应对方请求的语言表达，学习在新情境中运用相关知识和技
+能，打电话交换和记录信息。
+
+How: 本课的语篇内容是Julie 与 Uncle Dan的电话对话，主要内
+容为商量野餐的细节。由于是与亲近的人通话，对话体现了非正式语
+体的主要特征。对话可以分为两个部分：第一部分主要是确认野餐的
+出发时间、集合地点及参加人的信息；第二部分主要是Uncle Dan告 诉Julie
+两家各自需要准备的食物和餐具，请Julie 记录并转告其父母。 这 部 分 包 含
+了 野 餐 食 物 和 餐 具 的 主 题 词 汇 ， 如 strawberries、
+watermelons、sausages和 spoons and plates等，以及请对方转达信息的
+语言表达，如 “Can you tell them not to buy more fruit?”“Please tell them
+not to buy any sausages.”“Can you remind them to bring spoons and
+plates?” 等。
+
+对话中Julie 和 Uncle Dan使用了多种时态准确传达信息。例如：
+使用一般将来时be going to 、will do表述野餐的时间和地点安排；使
+
+**附** **录**
+
+> 用现在完成时交流已经购买的物品，以及确认已经记录的信息等。
+>
+> **二、教学目标**
+>
+> 通过本课的学习，学生能够：
+>
+> 1\. 获 取Julie 与 Uncle Dan在电话对话中谈到的野餐计划和安排，
+> 包括出发时间、集合地点、参加人，以及各家需要准备的食物和餐具
+> 等信息，完成留言条；
+>
+> 2\. 基于电话留言条，讲述两家的野餐计划，关注、提取、归纳
+> 并内化电话中请求对方转达信息的语言表达方式；
+>
+> 3\. 运用相关的语言表达方式，与同伴角色扮演打电话，谈论班
+> 级的野餐计划，并完成留言条。
+>
+> **三、教学过程**
+
+<table style="width:100%;">
+<colgroup>
+<col style="width: 21%" />
+<col style="width: 46%" />
+<col style="width: 31%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>教学目标</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>学习活动</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>效果评价</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p><strong>1.获取Julie与</strong></p>
+<p><strong>Uncle</strong> <strong>Dan在</strong>
+<strong>电话对话中</strong> <strong>谈到的野餐</strong>
+<strong>计划和安排，</strong> <strong>包括出发时</strong>
+<strong>间、集合地</strong> <strong>点、参加人，</strong>
+<strong>以及各家需</strong> <strong>要准备的食</strong>
+<strong>物和餐具等</strong></p>
+<p><strong>信息，完成</strong> <strong>留言条。(学</strong>
+<strong>习理解)</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>1.学生观察春天的风景图片，思考</strong>
+<strong>并表达是否想去集体野餐；之后</strong>
+<strong>通过头脑风暴活动，说出野餐需</strong>
+<strong>要准备的食物和餐具，并分享自</strong>
+<strong>己的建议。</strong></p>
+<p><strong>2.学生根据给出的对话情境和人物</strong>
+<strong>关系，预测Julie该做什么、怎么</strong>
+<strong>做才能帮助Uncle</strong> <strong>Dan;之后听电</strong>
+<strong>话通话的完整录音并验证预测。</strong></p>
+<p><strong>3.学生重点听对话的前半部分，提</strong>
+<strong>取关键信息，并在留言条中记录</strong>
+<strong>关于野餐的出发时间和集合地点</strong>
+<strong>等信息；之后与同伴或在小组内</strong>
+<strong>交流记录的信息。</strong></p>
+</blockquote></td>
+<td style="text-align: left;"><blockquote>
+<p><strong>观察学生回答问题的表</strong>
+<strong>现，根据说出的具体单</strong>
+<strong>词，了解其关于野餐食</strong>
+<strong>物和餐具的词汇储备。</strong></p>
+<p><strong>根据学生猜测出的后续</strong>
+<strong>对话内容的合理程度，</strong>
+<strong>评价其利用情境线索推</strong>
+<strong>断对话内容的能力。</strong></p>
+<p><strong>观察学生在电话留言条</strong>
+<strong>中记录的关键词，判断</strong>
+<strong>其获取并记录信息的全</strong>
+<strong>面和准确程度。</strong></p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+> **义务教育** 英语课程标准(2022年版)
+>
+> **续表**
+
+<table style="width:100%;">
+<colgroup>
+<col style="width: 21%" />
+<col style="width: 46%" />
+<col style="width: 31%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>教学目标</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>学习活动</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>效果评价</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td></td>
+<td><blockquote>
+<p>4.学生听对话的后半部分，提取关 键信息，并在留言条中记录关于
+野餐时两家需要携带的食物和餐 具等信息；之后与同伴或在小组
+内交流记录的信息。</p>
+<p>5.学生跟读对话录音(整体或片</p>
+<p>段),重点模仿部分语句的语音、 语调和节奏，感知、体会和明确
+其表意功能。</p>
+</blockquote></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="3" style="text-align: left;"><blockquote>
+<p><strong>设计意图：</strong>导入主题，创设情境，激发学生参与的兴趣，激活学生关于野餐需携
+带的食物和餐具的词汇；通过预测任务引发学生思考，培养学生利用情境线索进
+行推断预测的能力；帮助学生整体感知对话内容，并培养学生准确获取、梳理和
+记录关键信息的能力。(感知与注意、获取与梳理)</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>2.基于电话留言 条，讲述两家 的野餐计划， 关注、提取、 归纳并内化电
+话中请求对方 转达信息的语 言表达方式。 (应用实践)</p>
+</blockquote></td>
+<td><blockquote>
+<p>6.借助留言条，学生先自己描述、 后组内交流Uncle Dan和Julie两
+家的野餐计划。</p>
+<p>7.学生在全班介绍两家野餐计划的 细节信息。</p>
+<p>8.学生在对话中找出并总结请求对 方转达信息的语言表达；之后朗
+读重点语句，并通过练习加以</p>
+<p>内化。</p>
+<p>9.学生再听录音并跟读对话，模仿 朗读并角色扮演电话对话。</p>
+</blockquote></td>
+<td style="text-align: left;"><blockquote>
+<p>观察学生描述两家野餐 计划的细节信息是否全 面、具体，使用语言是
+否正确，把握学生内化 所 学 内 容 和 语 言 的 情况。</p>
+<p>观察班级讨论时学生是 否能够准确发现相关语 言表达，朗读和模仿表
+达是否正确，把握学生 对重点语言表达的学习 和内化情况。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td colspan="3"><blockquote>
+<p><strong>设计意图：</strong>引导学生转述对话的核心内容，梳理、学习和内化关键句型与重点语
+言，为进一步在现实生活情境中运用所学做好铺垫。(描述与阐释、内化与运用)</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+**附** **录**I\|
+
+> **续表**
+
+<table style="width:100%;">
+<colgroup>
+<col style="width: 21%" />
+<col style="width: 46%" />
+<col style="width: 31%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>教学目标</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>学习活动</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>效果评价</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>3.运用相关的 语言表达方 式，与同伴</p>
+<p>角色扮演打 电话，谈论 班级的野餐 计划，并完 成留言条。</p>
+</blockquote>
+<p>(迁移创新)</p></td>
+<td><blockquote>
+<p>10.学生回到本课开始时教师创设的 集体野餐的情境，分角色扮演教
+师和学生班长。教师在电话中通 知班长有关班级野餐的计划和安
+排细节；班长记录信息，并向全 班转述教师的通知；其他同学根
+据通知内容提取并记录关键信 息，完成教师的电话通知。</p>
+</blockquote></td>
+<td><blockquote>
+<p>观察小组讨论和小组展</p>
+<p>示中学生能否说出野餐</p>
+<p>的时间、地点、参加</p>
+<p>人，以及携带的食物和</p>
+<p>餐具等细节信息，根据</p>
+<p>需要给出必要指导和 反馈。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td colspan="3" style="text-align: left;"><blockquote>
+<p><strong>设计意图：</strong>引导学生进行超越语篇、联系实际生活的活动，用所学语言做事情。
+根据新情境整合运用相关语言表达，模拟电话通话，完成交际任务，学以致用，
+培养学生在真实情境中运用所学语言和文化知识解决实际问题的能力，推动迁移
+创新。(想象与创造)</p>
+</blockquote></td>
+</tr>
+<tr>
+<td colspan="3" style="text-align: left;"><blockquote>
+<p><strong>作</strong> <strong>业</strong>
+<strong>：</strong>请与同伴共同选择教材提供的一个活动情境，用所学短语和表达方式创编
+一组对话并进行角色扮演。(Choose a situation in the textbook,and design a
+conversation by using the key sentences.)</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+> **四、案例评析**
+>
+> 在本节听说课的教学设计中，教师基于全面、深入的语篇研读，
+> 设计了体现主题意义探究、逻辑连贯、可操作、可检测的教学目标。
+> 围绕教学目标，教师设计了一系列紧密关联的听说教学活动。首先，
+> 教师通过感知与注意的活动，创设了春暖花开的假日情境，导入了出
+> 游野餐的主题。活动设计从野餐需要准备什么食物和餐具入手，启发
+> 学生基于已知尝试解决问题。接着，教师引入Uncle Dan打电话给 Julie
+> 的父母，由于父母不在家， Julie 需要应答的主题情境，引导学 生预测Julie
+> 该怎么做，激发学生思考如何解决现实生活中的问题。
+> 教师通过开放性问题，引导学生生成真实的语言表达，进行经验分
+>
+> 义务教育英语课程标准(2022年版)
+>
+> 享，如请Uncle Dan 晚上再打电话，或者等父母回家后转达等。在此
+> 基础上，学生听录音，获取Julie解决问题的办法，并采用与Julie相
+> 同的方式，尝试运用留言条记录Uncle Dan请 Julie 转达的关于野餐的
+> 具体信息，如出发时间、集合地点、准备的食品和餐具等；学生在获
+> 取信息的同时，既学习了语言，也学习了解决问题的办法。
+>
+> 在本课教学设计中，教师充分利用场景的转换，以解决问题为目
+> 的，不断向学生提出问题，不仅引导学生思考如何解决问题，还引导
+> 学生实际参与到问题解决中，激发其语言学习的兴趣和动机。在意义
+> 探究的过程中，教师在英语学习活动观的指导下，使学生通过学习理
+> 解、应用实践和迁移创新等循环递进的学习活动，不断加深对主题意
+> 义的认识和对核心语言的内化。例如：得体使用电话用语和记录电话
+> 留言，并通过角色扮演尝试转述获取的信息，为学生在真实情境中使
+> 用新知奠定了基础；教师引导学生跟读电话录音，感知和模仿语音、
+> 语调、节奏，体会其表意功能等，内化所学语言，充分体现了对学生
+> 语用意识和语用能力的培养。本课的输出任务是学生运用电话语言，
+> 请对方转达班级野餐计划并完成留言条，得体、有效地使用语言。活
+> 动设计贴近现实生活情境，有利于调动学生积极参与，切实提高用英
+> 语做事情的能力，从输入到输出水到渠成。教学中，教师关注对学生
+> 听说技能与策略的指导和训练，如利用所给情境线索进行推断预测，
+> 抓住关键词获取信息，快速记录信息、整合信息并进行转述等。学生
+> 既学会了语言，也发展了能力；既学会了做事，也学会了与人相处和
+> 创造性地解决实际生活中的问题。体现了英语课程的育人价值，凸显
+> 了以学生为主体的教学理念。
+>
+> **五、案例语篇**
+>
+> Julie:Hello?
+>
+> Uncle Dan:Hello,Julie?
+>
+> Julie:Oh hi,Uncle Dan.
+
+**附** **录**
+
+> Uncle Dan:Can I speak to your mum or dad?
+>
+> Julie:I'm sorry.They're not here.Can I take a message?
+>
+> Uncle Dan:Sure.We're going out now but please tell them we're
+>
+> going to leave at 10:30 tomorrow morning and we'll see you and your
+> mum and dad tomorrow afternoon for our picnic at the lake.
+>
+> Julie:OK.I'll tell them.It's going to be fun.Dean's coming too,right?
+>
+> Uncle Dan:Yes,your cousin Dean will be there.
+>
+> Julie:Good.OK,bye!
+>
+> Uncle Dan:Now,just wait.There's more.Have your mum and dad bought any
+> fruit for the picnic?
+>
+> Julie:Yes,I think they've already bought some strawberries and
+> vegetables.
+>
+> Uncle Dan:OK.Can you tell them not to buy more fruit?We’ve got a
+> couple of big watermelons.
+>
+> Julie:All right.Anything else?
+>
+> Uncle Dan:Yes.Please tell them not to buy any sausages.We'll buy them
+> tomorrow before the picnic.Are you writing this down?
+>
+> Julie:Yes.
+>
+> Uncle Dan:And can you remind them to bring spoons and plates?
+>
+> We'll bring knives and forks.
+>
+> Julie:Yes,I can do that.
+>
+> Uncle Dan:OK.Thanks a lot.
+>
+> Julie:No problem.I've written it down and I'll give them the message
+> when they come home.
+>
+> Uncle Dan:Great.Bye now.
+>
+> Julie:Bye.
+>
+> **义务教育** 英语课程标准(2022年版)
+>
+> **案** **例** **8** **9年级阅读语篇研读及教学设计**
+>
+> **“To** **the** **South** **Pole”(2课** **时** **)**
+>
+> 本课主题属于“人与自然”范畴，涉及“热爱与敬畏自然”。
+>
+> **一** **、语篇研读**
+>
+> What: 本课语篇是在南极探险队接近目的地时主人公写的日记，
+> 主要讲述了作者和他的团队南极探险45天的艰难经历，特别是他们
+> 在探险过程中遇到的重重困难：每天大约12小时的行走，在冰雪上
+> 行进的困难和暴风雪的袭击、准备食物的困难、脚部的寒冷等。但
+> 是，他们借助榜样的力量、恰当的路线规划、合适的食物和医生的帮
+> 助等克服了各种困难，终于接近了目的地。作者还描写了他对即将到
+> 达目的地的美好憧憬和探险旅程的感悟。
+>
+> Why: 作者通过描述南极探险遇到的各种困难及解决办法，使读
+> 者明白，要想克服困难取得成功，不仅要有优秀的个人品质(坚强的
+> 毅力、坚定的信念和永不放弃的精神等),还必须要有各方面充分的
+> 准备，体现出在探索自然的过程中，人类所需的勇气、毅力和奋斗精
+> 神。本文内容尽管与学生生活有一定距离，但具有现实意义和教育 意 义 。
+>
+> How: 语篇按照典型的日记写作风格进行叙述，明线讲述了作者
+> 一行在南极探险中的经历和对到达目的地的憧憬与感悟；暗线则揭示
+> 了探险成功的根本原因。全文分为三个部分：第一部分(第1段)主
+> 要介绍了写作的时间、地点，交代了日记的背景信息；第二部分(第
+> 2～5段)主要描述了探险经历中遇到的困难和采取的措施；第三部
+> 分(第6段)主要表达了对到达南极的憧憬和感悟。
+>
+> 第2～5段是该语篇的主体部分。作者主要描述了四种困难和相
+> 关措施。根据困难的不同、困难出现的先后顺序，作者使用了表示顺
+
+**附** **录**
+
+> 序 的 词 语 实 现 语 篇 衔 接 ， 如 first 、another challenge of the
+> journey 、the hardest part等 。 每 个 段 落 中 ， 困 难 和 解 决 措 施
+> 紧 密 关 联 。 每 陈 述 一 个
+> 困难，作者都会使用表示转折的词语着重说明解决办法，如however、
+> luckily、even so等，使全文形成一个整体。语篇逻辑脉络清晰，便于
+> 读者推断、总结和概括信息，即克服困难、取得成功的主、客观 因 素 。
+>
+> 文中合理使用了多种时态以实现作者的表达意图。例如：用大量
+> 的一般现在时和现在完成时描述探险的过程中作者及其团队遭遇到和
+> 已克服的困难，突出了探险艰难的常态；用一般过去时表明作者曾经
+> 有过的一念之间的想法；最后用一般将来时表达了作者对抵达南极的
+> 憧憬，用现在完成时抒发了作者的感慨和感悟，进而说明作者对此行
+> 感到满足和欣慰。这也反映出，正是期盼到达南极的强烈愿望支撑他 们 克 服
+> 困 难 、 取 得 胜 利 ( 见 图 6 ) 。
+
+![](media/image37.jpeg)
+
+> **图** **6** **To** **the** **South** **Pole内** **容** **知** **识**
+> **结** **构** **图**
+>
+> **义务教育** 英语课程标准(2022年版)
+>
+> **二** **、教** **学** **目** **标**
+>
+> 通过本课学习，学生能够：
+>
+> 1\. 获取探险队南极探险的基本信息(如人员、时间、位置、经
+> 历、感悟等),梳理、概括探险队所遇困难和克服困难的办法，借助
+> 可视化图形呈现结构化知识；
+>
+> 2.基于结构化知识，描述探险队所遇困难和解决办法，分析、
+> 推断探险队得以克服种种困难的深层原因；
+>
+> 3\. 分析、评价探险者的行为和观点，推断探险队获得成功的关
+> 键要素(不仅要有优秀的个人品质，还必须有充分的准备);
+>
+> 4\. 模拟采访南极探险者，完成答记者问，并为给 Teens Junior杂
+> 志撰写新闻报道做准备。
+>
+> **三** **、教学过程**
+
+<table style="width:100%;">
+<colgroup>
+<col style="width: 21%" />
+<col style="width: 46%" />
+<col style="width: 31%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>教学目标</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>学习活动</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>效果评价</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p><strong>1.获取探险队南</strong></p>
+<p><strong>极探险的基本</strong> <strong>信</strong> <strong>息</strong>
+<strong>(</strong> <strong>如</strong> <strong>人</strong>
+<strong>员、时间、位</strong> <strong>置、经历、感</strong>
+<strong>悟等),梳理、</strong> <strong>概括探险队所</strong>
+<strong>遇困难和克服</strong> <strong>困难的办法，</strong>
+<strong>借助可视化图</strong> <strong>形呈现结构化</strong>
+<strong>知识。(学习</strong> <strong>理解)</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>1.学生观察南极图片，根据已知回</strong>
+<strong>答有关南极气候、环境等的相关</strong>
+<strong>问题；之后观看南极探险视频，</strong>
+<strong>简单发表对视频中南极探险的</strong></p>
+<p><strong>感想。</strong></p>
+<p><strong>2.学生说出自己期待了解的关于南</strong>
+<strong>极和南极探险的相关问题。</strong></p>
+<p><strong>3.学生通过阅读，获取并概括关于</strong>
+<strong>南极探险的基本信息。</strong></p>
+<p><strong>4.学生获取、梳理、概括、整合关</strong>
+<strong>于南极探险遇到的困难和解决的</strong>
+<strong>措施，利用思维导图建构和呈现</strong>
+<strong>语篇信息。</strong></p>
+</blockquote></td>
+<td style="text-align: left;"><blockquote>
+<p><strong>观察学生回答问题的表</strong>
+<strong>现，根据其说出的具体</strong>
+<strong>信息了解其关于南极的</strong> <strong>已知和未知。</strong></p>
+<p><strong>从学生完成思维导图的</strong></p>
+<p><strong>情况(是否包括本次探</strong></p>
+<p><strong>险的时间、人物、路</strong></p>
+<p><strong>线、困难和措施),评</strong>
+<strong>价其形成的关于南极探</strong>
+<strong>险的结构化知识。</strong></p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+**附** **录**I\|
+
+> **续表**
+
+<table style="width:99%;">
+<colgroup>
+<col style="width: 21%" />
+<col style="width: 46%" />
+<col style="width: 31%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>教学目标</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>学习活动</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>效果评价</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td colspan="3" style="text-align: left;"><blockquote>
+<p><strong>设计意图：</strong>激发学生对南极的好奇心和求知欲，引发学生自主思考，激活学生与
+语篇之间知识和经验的关联，明确本课要解决的问题，培养学生的预测能力；帮
+助学生把握语篇的意义主线，有逻辑地梳理作者南极探险的信息，体会语言、文
+化与思维的关联。(感知与注意、获取与梳理、概括与整合)</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>2.基于结构化知 识，描述探险 队所遇困难和 解决办法，分 析、推断探险
+队得以克服种 种困难的深层 原因。(应用 实践)</p>
+</blockquote></td>
+<td><blockquote>
+<p>5.学生借助思维导图，先自己描述、 后组内交流作者南极探险所遇困
+难及解决办法。</p>
+<p>6.学生借助思维导图在班级内分享 南极探险所遇困难的信息。</p>
+<p>7.学生在教师指导下，分析、推断 探险队克服困难的原因，深入探
+究语篇的主题意义，即克服困难 的原因——坚强的毅力、坚定的</p>
+<p>信念和必要的科学知识、前期准 备工作。</p>
+</blockquote></td>
+<td style="text-align: left;"><blockquote>
+<p>观察学生在小组和班级 描述探险队所遇困难和 克服困难方法的展示是
+否全面、具体，使用语 言和时态是否正确，表 示顺序和转折的衔接词
+使用是否恰当等，把握 学生对语言和信息的内 化情况。</p>
+<p>观察班级讨论时学生是 否能从精神和物质准备 两方面进行提炼，学生
+能否推断和概括探险队 克服困难的隐含信息。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td colspan="3" style="text-align: left;"><blockquote>
+<p><strong>设计意图：</strong>引导学生内化结构化新知和关键语言，并根据语篇表层结构的主线探
+究和深入理解作者的隐含信息，启发深度思考，探究深层意义，为进一步提炼和
+概括信息做好铺垫。(描述与阐释、分析与判断、内化与运用)</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>3.分析、评价探 险者的行为和 观点，推断探 险队获得成功 的关键要素</p>
+</blockquote>
+<p>(不仅要有优</p></td>
+<td><blockquote>
+<p>8.学生进一步推理和论证探险队克 服困难的主要原因：不仅要有优
+秀的个人品质，还必须有充分的 准备。</p>
+</blockquote>
+<p>9.学生推测探险最终能否取得成功。</p></td>
+<td style="text-align: left;"><blockquote>
+<p>观察小组讨论和小组展 示中学生能否说出意志 品质和充分准备两方面
+原因，根据需要给出必 要的指导和反馈。</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+> **续表**
+
+<table style="width:100%;">
+<colgroup>
+<col style="width: 21%" />
+<col style="width: 46%" />
+<col style="width: 31%" />
+</colgroup>
+<tbody>
+<tr>
+<td><blockquote>
+<p><strong>教学目标</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>学习活动</strong></p>
+</blockquote></td>
+<td><blockquote>
+<p><strong>效果评价</strong></p>
+</blockquote></td>
+</tr>
+<tr>
+<td style="text-align: left;"><blockquote>
+<p>秀的个人品质， 还必须有充分的 准备)。(迁移创 新 )</p>
+</blockquote></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="3" style="text-align: left;"><blockquote>
+<p><strong>设计意图：</strong>引导学生超越语篇，上升到与作者对话的层面，实现探究语篇的内涵
+价值与意义的目的，促进学生逻辑思维和辩证思维的发展，同时引领主流价值，
+塑造品格。(推理与论证、批判与评价)</p>
+</blockquote></td>
+</tr>
+<tr>
+<td><blockquote>
+<p>4.模拟采访南极</p>
+<p>探险者，完成 答记者问，并</p>
+<p>为 给 T e e n s Junior杂志撰 写新闻报道做 准备。(迁移 创新)</p>
+</blockquote></td>
+<td><blockquote>
+<p>10.学生基于情境，以Teens Junior小 记者的身份，采访从南极成功探</p>
+<p>险归来的探险者，并给出自己的 评价。</p>
+</blockquote></td>
+<td><blockquote>
+<p>关注学生在小组讨论和 班级展示中的问答是否 涵盖了文中谈到的主要
+事实性信息和隐含信</p>
+<p>息，教师根据情况给予 必要的指导和反馈。</p>
+</blockquote></td>
+</tr>
+<tr>
+<td colspan="3"><blockquote>
+<p><strong>设计意图：</strong>引导学生用所学语言做事情，推动迁移创新。(想象与创造)</p>
+</blockquote></td>
+</tr>
+<tr>
+<td colspan="3"><blockquote>
+<p><strong>作业</strong></p>
+<p>必做：请根据课堂采访，为Teens Junior撰写新闻报道。</p>
+<p>选做：</p>
+<p>1.请上网搜索更多关于南极探险的信息并制作一张海报。(Surf the Internet
+to get more information about expeditions to the South Pole and make a
+poster.)</p>
+<p>2.如果有机会去喜马拉雅山探险，你可能会遇到什么困难?你计划做哪些相应的</p>
+<p>准备?请制作一张海报呈现你的计划。(If you have a chance to explore
+the</p>
+<p>Himalayas,what difficulties might you meet and how will you prepare
+for them?Make a poster about your plan.)</p>
+</blockquote></td>
+</tr>
+</tbody>
+</table>
+
+> **附** **录**
+>
+> **四** **、案例评析**
+>
+> 本节课的教学设计建立在教师对语篇多角度、深层次研读的基础
+> 上，为教师将研读结果转化为一系列循环递进的课堂学习活动奠定了
+> 基础。教师对语篇的研读从 What、Why 和 How 三个方面展开。在
+> What方面，教师客观地概述了语篇的主题和主要内容，表述简洁、
+> 清晰。在Why方面，教师挖掘了本课的育人价值，明确了学生通过
+> 该语篇学习能够实现的成长。在How 方面，教师分析了语篇的文体
+> 特征和逻辑结构，并基于单元对学生需要形成的结构化知识和核心语
+> 言进行了梳理，确保教学活动能够围绕意义有机融入语言学习。本课
+> 的教学目标设计紧紧围绕主题探究展开，凸显了以学生为主体的教学
+> 理念。活动设计以英语学习活动观为指导，通过学习理解类活动，引
+> 导学生进入主题，围绕主题获取、梳理、概括、整合基本的事实性信
+> 息，指导学生借助可视化图形整理结构化知识，通过在文中筛选、摘
+> 录，以及在图形中呈现与主题意义紧密关联的词块学习语言。在此基
+> 础上，教师通过应用实践类活动，指导学生开展多层次的实践活动，
+> 帮助他们内化所学语言和文化知识。教师继而基于问题链设计活动，
+> 引导学生分析和推断探险队能够克服困难的深层次原因，使学生认识
+> 到探险取得成功不能仅仅靠意志品质，还要有充分的前期准备，促进
+> 学生对主题的认识由浅入深，得到发展。本案例的学习效果评价设计
+> 同样紧紧围绕教学目标和活动意图展开，贯穿课堂教学的始终，凸显
+> 教师坚持“教—学—评”一体化实施的理念，确保学习真正发生并取
+> 得成效。教师对教学活动设计意图的说明简洁、清晰，与教学目标紧
+> 密对接，关注结构化知识的梳理和内化，使学生的思维品质得到循序
+> 渐进的发展，体现了教师对学生语言、文化和思维协同发展的关注，
+> 确保育人目标在课堂教学中有效落实。
+>
+> **义务教育** 英语课程标准(2022年版)
+>
+> **五、案例语篇**
+>
+> **To the South Pole**
+
+"It's Day 45 of our expedition to the South Pole.This must be one of the
+most difficult days I've ever had."I thought with a heavy breath as I
+walked against the wind and snow in the sub-zero temperatures.We’re
+finally just a few miles away from our destination.
+
+This whole trip has been very dfficult.We've been walking around 12
+hours a day and I'’m very tired.However,I can't complain because it's
+nothing compared to the journey of Roald Amundsen.Whenever I was almost
+ready to give up,I tried to think of how he overcame his difficulties
+more than 100 years ago.
+
+This journey has been special even though at times it felt like it was
+never going to end.First,it's not easy to move over the snow and ice
+that seems like a frozen ocean.Sometimes,it's hard to see more than a
+few metres because of the white snow and the snow storms.Luckily,we have
+planned the routes well.
+
+Another challenge of the journey is preparing good food.For example, hot
+food has to be eaten fast,as it gets cold quickly.Sometimes,we just have
+some nuts and sweets since there's no time to stop for a proper meal.
+Even so,we've always made sure that we eat the right food so that we
+could continue our journey with enough energy.
+
+I think the hardest part is protecting our feet.It would be awful if we
+couldn't get to the pole because of foot or other injuries.Our team
+doctor has always treated our injuries well and has kept us in good
+shape.
+
+Well,we made it!How wonderful it feels to finally be standing at the
+South Pole!This expedition has taught me that we need to overcome all
+kinds of difficulties before we can succeed and that we should never
+give up.

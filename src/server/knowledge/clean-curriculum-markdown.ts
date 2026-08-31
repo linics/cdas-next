@@ -12,8 +12,12 @@ const TRAILING_PAGE_NUMBER =
 const ROMAN_ONLY = /^[IVXLCDMⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ]+[.．、]?$/u;
 const PUBLISHER_ENGLISH =
   /^(?:BEL?IJING|BEIJING).*(?:UNIVER|UNVERSIT).*PUBL/iu;
-const RUNNING_TITLE =
-  /^(?:[IVXLCDMⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ]+[.．、]?)?(?:义务教育)?(?:课程方案|(?:语文|数学|物理|信息科技)?课程标准)\(?2022年版\)?$/u;
+const SUBJECT_STANDARD_TITLES =
+  /(?:道德与法治|语文|数学|英语|科学|历史|地理|物理|化学|生物学|信息科技|劳动|艺术|体育与健康)?课程标准/u;
+const RUNNING_TITLE = new RegExp(
+  `^(?:[IVXLCDMⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ]+[.．、]?)?(?:义务教育)?(?:课程方案|${SUBJECT_STANDARD_TITLES.source})\\(?2022年版\\)?$`,
+  "u",
+);
 
 export function stripCurriculumMarkup(value: string): string {
   return value
@@ -87,6 +91,16 @@ function isCoverOrRunningTitle(cleanLine: string): boolean {
     folded === "数学课程标准" ||
     folded === "物理课程标准" ||
     folded === "信息科技课程标准" ||
+    folded === "道德与法治课程标准" ||
+    folded === "历史课程标准" ||
+    folded === "英语课程标准" ||
+    folded === "地理课程标准" ||
+    folded === "科学课程标准" ||
+    folded === "生物学课程标准" ||
+    folded === "体育与健康课程标准" ||
+    folded === "艺术课程标准" ||
+    folded === "劳动课程标准" ||
+    folded === "化学课程标准" ||
     folded === "(2022年版)" ||
     folded === "（2022年版）"
   ) {
