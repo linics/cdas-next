@@ -23,12 +23,16 @@ export function isSerializationFailure(error: unknown): boolean {
 }
 
 /**
- * The same, plus the unique violation a racing idempotency-key insert raises.
+ * The same, plus the unique violation a racing idempotency-key insert raises:
+ * the winner stored the response first, and the next attempt should re-read it
+ * rather than report a constraint violation.
  *
- * Only for commands that write an idempotency record: there P2002 means the
- * winner already stored the response and this attempt should re-read it. A
- * command without that write must keep to `isSerializationFailure`, where a
- * P2002 is a real constraint violation and retrying it would only hide the bug.
+ * Ten commands use this. Six others write an idempotency record too and still
+ * only retry `isSerializationFailure` — they predate this module and are left
+ * exactly as they were, because widening what a command retries is a behaviour
+ * change and this one is meant to add a delay, nothing else. Whether those six
+ * should widen is an open question with a real answer either way; it wants its
+ * own reasoning and its own test, not a rename.
  */
 export function isRetryableSerializationError(error: unknown): boolean {
   return (
