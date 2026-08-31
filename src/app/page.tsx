@@ -99,7 +99,7 @@ export default function HomePage() {
               <DoorArrow />
             </span>
           </Link>
-          <Link className={styles.door} href="/admin">
+          <Link className={styles.door} href="/admin/login">
             <p className={styles.doorEyebrow}>管理员</p>
             <h2>学校管理</h2>
             <p className={styles.doorDetail}>

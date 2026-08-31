@@ -79,7 +79,7 @@ export function AdminAccessGate({
           ? {
               eyebrow: "尚未绑定管理员",
               title: "找不到对应的管理员身份",
-              detail: "请使用已绑定的 Clerk 用户运行 pnpm bootstrap:admin。",
+            detail: "请使用 pnpm bootstrap:admin 交互式创建管理员账号。",
             }
           : {
               eyebrow: "需要登录",

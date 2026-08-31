@@ -142,6 +142,59 @@ BEGIN
 END
 $test$;
 
+INSERT INTO local_credentials (
+  id, user_id, identifier, password_hash, updated_at
+) VALUES (
+  '00000000-0000-0000-0000-000000000940',
+  '00000000-0000-4000-8000-000000000001',
+  'teacher:scharchx:t001', 'fixture-hash', now()
+);
+
+DO $test$
+BEGIN
+  BEGIN
+    INSERT INTO local_credentials (
+      id, user_id, identifier, password_hash, updated_at
+    ) VALUES (
+      '00000000-0000-0000-0000-000000000941',
+      '00000000-0000-4000-8000-000000000001',
+      'teacher:scharchx:t002', 'fixture-hash', now()
+    );
+    RAISE EXCEPTION 'an AppUser accepted two local credentials';
+  EXCEPTION WHEN unique_violation THEN
+    NULL;
+  END;
+
+  BEGIN
+    INSERT INTO auth_sessions (
+      id, user_id, token_hash, expires_at, created_at
+    ) VALUES (
+      '00000000-0000-0000-0000-000000000942',
+      '00000000-0000-4000-8000-000000000001', repeat('a', 64),
+      now() - interval '1 minute', now()
+    );
+    RAISE EXCEPTION 'an auth session accepted expiry before creation';
+  EXCEPTION WHEN check_violation THEN
+    NULL;
+  END;
+
+  BEGIN
+    INSERT INTO teacher_provisionings (
+      id, school_id, staff_no, display_name, app_user_id,
+      status, completed_at, updated_at
+    ) VALUES (
+      '00000000-0000-0000-0000-000000000943',
+      'c0de0000-0000-4000-8000-00000000c0de', 'T-INVARIANT',
+      '待开通教师', '00000000-0000-4000-8000-000000000001',
+      'PENDING', now(), now()
+    );
+    RAISE EXCEPTION 'pending provisioning accepted completed_at';
+  EXCEPTION WHEN check_violation THEN
+    NULL;
+  END;
+END
+$test$;
+
 INSERT INTO agent_runs (id, actor_id, status, model, started_at)
 VALUES (
   '00000000-0000-4000-8000-000000000101',

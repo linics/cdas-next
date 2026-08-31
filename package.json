@@ -8,7 +8,6 @@
   },
   "scripts": {
     "postinstall": "prisma generate",
-    "bootstrap:clerk": "node --import tsx scripts/bootstrap-clerk-classroom.ts",
     "bootstrap:admin": "node --import tsx scripts/bootstrap-admin.ts",
     "demo:seed": "node --import ./scripts/demo/register-server-only.mjs --import tsx scripts/demo/seed.ts",
     "development:infra": "node --import tsx scripts/development-infrastructure/index.ts",
@@ -73,7 +72,6 @@
   "dependencies": {
     "@ai-sdk/openai-compatible": "3.0.35",
     "@ai-sdk/react": "4.0.69",
-    "@clerk/nextjs": "7.7.7",
     "@next/env": "16.3.1",
     "@prisma/adapter-pg": "7.9.1",
     "@prisma/client": "7.9.1",

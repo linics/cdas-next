@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
 import { createDatabaseClient } from "../db/client";
 import { bootstrapPlatformAdmin } from "../bootstrap/bootstrap-admin";
+import { hashPassword } from "../auth/local-auth";
 import {
   createSchool,
   resetSchoolTeacherInvite,
@@ -38,7 +39,8 @@ async function ensureTestAdmin(): Promise<string> {
     return existing.id;
   }
   const created = await bootstrapPlatformAdmin(database!, {
-    adminAuthSubject: `user_admin${randomUUID().replaceAll("-", "")}`,
+    adminIdentifier: `admin:admin${randomUUID().replaceAll("-", "")}`,
+    passwordHash: await hashPassword("test-admin9"),
     adminDisplayName: "平台管理员",
   });
   return created.admin.id;

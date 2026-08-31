@@ -1,16 +1,11 @@
+import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { Prisma, type PrismaClient } from "../../generated/prisma/client";
 
-const clerkSubjectSchema = z
-  .string()
-  .trim()
-  .min(6)
-  .max(200)
-  .regex(/^user_[A-Za-z0-9]+$/u, "Expected a Clerk user ID beginning with user_");
-
 export const bootstrapAdminInputSchema = z
   .object({
-    adminAuthSubject: clerkSubjectSchema,
+    adminIdentifier: z.string().trim().regex(/^admin:[a-z0-9][a-z0-9._-]{0,63}$/u),
+    passwordHash: z.string().trim().min(1).max(256),
     adminDisplayName: z.string().trim().min(1).max(120),
   })
   .strict();
@@ -49,36 +44,55 @@ export async function bootstrapPlatformAdmin(
 ): Promise<BootstrapAdminResult> {
   const input = bootstrapAdminInputSchema.parse(rawInput);
   const now = clock();
+  const identifier = input.adminIdentifier;
+  const passwordHash = input.passwordHash;
 
   try {
     return await database.$transaction(async (transaction) => {
-      const existingSubject = await transaction.appUser.findUnique({
-        where: { authSubject: input.adminAuthSubject },
-        select: { id: true, role: true, displayName: true },
+      const existingCredential = await transaction.localCredential.findUnique({
+        where: { identifier },
+        select: { user: { select: { id: true, role: true, displayName: true } } },
       });
-      if (existingSubject) {
-        if (existingSubject.role !== "ADMIN") {
+      if (existingCredential) {
+        if (existingCredential.user.role !== "ADMIN") {
           throw new BootstrapAdminError("USER_ROLE_CONFLICT");
         }
-        if (existingSubject.displayName !== input.adminDisplayName) {
+        if (existingCredential.user.displayName !== input.adminDisplayName) {
           throw new BootstrapAdminError("USER_PROFILE_CONFLICT");
         }
         return bootstrapAdminResultSchema.parse({
-          admin: { id: existingSubject.id, status: "EXISTING" },
+          admin: { id: existingCredential.user.id, status: "EXISTING" },
         });
       }
 
       const otherAdmin = await transaction.appUser.findFirst({
         where: { role: "ADMIN" },
-        select: { id: true },
+        select: { id: true, displayName: true, localCredential: { select: { id: true } } },
       });
       if (otherAdmin) {
-        throw new BootstrapAdminError("ADMIN_ALREADY_EXISTS");
+        if (otherAdmin.localCredential) {
+          throw new BootstrapAdminError("ADMIN_ALREADY_EXISTS");
+        }
+        if (otherAdmin.displayName !== input.adminDisplayName) {
+          throw new BootstrapAdminError("USER_PROFILE_CONFLICT");
+        }
+        await transaction.appUser.update({
+          where: { id: otherAdmin.id },
+          data: { authSubject: `local:${otherAdmin.id}` },
+        });
+        await transaction.localCredential.create({
+          data: { userId: otherAdmin.id, identifier, passwordHash },
+        });
+        return bootstrapAdminResultSchema.parse({
+          admin: { id: otherAdmin.id, status: "EXISTING" },
+        });
       }
 
+      const adminId = randomUUID();
       const created = await transaction.appUser.create({
         data: {
-          authSubject: input.adminAuthSubject,
+          id: adminId,
+          authSubject: `local:${adminId}`,
           displayName: input.adminDisplayName,
           role: "ADMIN",
           accountStatus: "ACTIVE",
@@ -87,6 +101,9 @@ export async function bootstrapPlatformAdmin(
           updatedAt: now,
         },
         select: { id: true },
+      });
+      await transaction.localCredential.create({
+        data: { userId: created.id, identifier, passwordHash },
       });
       return bootstrapAdminResultSchema.parse({
         admin: { id: created.id, status: "CREATED" },

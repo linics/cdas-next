@@ -1,19 +1,10 @@
 import "server-only";
 
-import { auth } from "@clerk/nextjs/server";
-import { headers } from "next/headers";
+import { cookies } from "next/headers";
 import type { AppUser, PrismaClient } from "../../generated/prisma/client";
 import { getDatabaseClient } from "../db/client";
-import {
-  clickthroughAuthSubject,
-  isClickthroughAuthEnabled,
-  resolveClickthroughAudience,
-} from "./clickthrough-auth";
-import { isClerkAuthenticationAvailable } from "./clerk-availability";
-import {
-  SchoolMemberAuthorizationError,
-  assertActiveBusinessActor,
-} from "../school/teacher-authorization";
+import { SchoolMemberAuthorizationError, assertActiveBusinessActor } from "../school/teacher-authorization";
+import { getSession, SESSION_COOKIE } from "./local-auth";
 
 export class AuthenticationError extends Error {
   constructor(
@@ -22,7 +13,8 @@ export class AuthenticationError extends Error {
       | "UNAUTHENTICATED"
       | "USER_NOT_PROVISIONED"
       | "ACCOUNT_DISABLED"
-      | "SCHOOL_DISABLED",
+      | "SCHOOL_DISABLED"
+      | "PASSWORD_CHANGE_REQUIRED",
   ) {
     super(code);
     this.name = "AuthenticationError";
@@ -34,54 +26,38 @@ export async function getCurrentActor(
 ): Promise<AppUser> {
   const db = database ?? getDatabaseClient();
 
-  if (isClickthroughAuthEnabled()) {
-    return loadClickthroughActor(db);
+  const token = (await cookies()).get(SESSION_COOKIE)?.value;
+  if (!token) throw new AuthenticationError("UNAUTHENTICATED");
+  const session = await getSession(db, token);
+  if (!session) throw new AuthenticationError("UNAUTHENTICATED");
+  const actor = session.user;
+  const gated = gateActiveActor(actor);
+  if (
+    session.user.localCredential?.mustChangePassword &&
+    (gated.role === "TEACHER" || gated.role === "STUDENT")
+  ) {
+    throw new AuthenticationError("PASSWORD_CHANGE_REQUIRED");
   }
-
-  if (!isClerkAuthenticationAvailable()) {
-    throw new AuthenticationError("AUTH_NOT_CONFIGURED");
-  }
-
-  const session = await auth();
-  if (!session.userId) {
-    throw new AuthenticationError("UNAUTHENTICATED");
-  }
-
-  const actor = await db.appUser.findUnique({
-    where: { authSubject: session.userId },
-    include: { school: { select: { status: true } } },
-  });
-  if (!actor) {
-    throw new AuthenticationError("USER_NOT_PROVISIONED");
-  }
-
-  return gateActiveActor(actor);
+  return gated;
 }
 
-async function loadClickthroughActor(database: PrismaClient): Promise<AppUser> {
-  const headerList = await headers();
-  const audience = resolveClickthroughAudience({
-    pathname: headerList.get("x-cdas-pathname"),
-    referer: headerList.get("referer"),
+export async function getPasswordChangeActor(database?: PrismaClient): Promise<AppUser> {
+  const db = database ?? getDatabaseClient();
+  const token = (await cookies()).get(SESSION_COOKIE)?.value;
+  if (!token) throw new AuthenticationError("UNAUTHENTICATED");
+  const session = await getSession(db, token);
+  if (!session) throw new AuthenticationError("UNAUTHENTICATED");
+  return gateActiveActor(session.user);
+}
+
+export async function clearSessionCookie(): Promise<void> {
+  (await cookies()).set(SESSION_COOKIE, "", {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 0,
   });
-  if (!audience) {
-    throw new AuthenticationError("UNAUTHENTICATED");
-  }
-
-  const authSubject = clickthroughAuthSubject(audience);
-  if (!authSubject) {
-    throw new AuthenticationError("AUTH_NOT_CONFIGURED");
-  }
-
-  const actor = await database.appUser.findUnique({
-    where: { authSubject },
-    include: { school: { select: { status: true } } },
-  });
-  if (!actor || actor.role !== audience) {
-    throw new AuthenticationError("USER_NOT_PROVISIONED");
-  }
-
-  return gateActiveActor(actor);
 }
 
 function gateActiveActor(

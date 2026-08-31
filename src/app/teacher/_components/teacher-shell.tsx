@@ -1,8 +1,6 @@
-import { SignInButton, SignOutButton } from "@clerk/nextjs";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import type { AuthenticationError } from "../../../server/auth/current-actor";
-import { isClickthroughAuthEnabled } from "../../../server/auth/clickthrough-auth";
 import { InlineAlert } from "../../_components/ui";
 import {
   WorkspaceShell,
@@ -58,6 +56,7 @@ export function TeacherAccessGate({
   code: AuthenticationError["code"];
   returnPath: string;
 }) {
+  void returnPath;
   const copy =
     code === "AUTH_NOT_CONFIGURED"
       ? {
@@ -127,18 +126,10 @@ export function TeacherAccessGate({
         </div>
         <InlineAlert tone="info">{copy.detail}</InlineAlert>
         <div className={gateStyles.actions}>
-          {isClickthroughAuthEnabled() ? null : code === "UNAUTHENTICATED" ? (
-            <SignInButton mode="modal" fallbackRedirectUrl={returnPath}>
-              <button className={gateStyles.primaryButton} type="button">
-                登录教师账号
-              </button>
-            </SignInButton>
+          {code === "UNAUTHENTICATED" || code === "PASSWORD_CHANGE_REQUIRED" ? (
+            <Link className={gateStyles.primaryButton} href="/teacher/login">登录教师账号</Link>
           ) : code === "USER_NOT_PROVISIONED" ? (
-            <SignOutButton redirectUrl={returnPath}>
-              <button className={gateStyles.secondaryButton} type="button">
-                退出当前账号
-              </button>
-            </SignOutButton>
+            <Link className={gateStyles.secondaryButton} href="/teacher/login">切换教师账号</Link>
           ) : null}
           <Link className={gateStyles.backLink} href="/">返回首页</Link>
         </div>
