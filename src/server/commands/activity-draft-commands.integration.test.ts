@@ -1,6 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
-import type { ActivityContentV2 } from "../../domain/activity/activity-content";
+import {
+  v3ProjectionColumns,
+  type ActivityContentV2,
+} from "../../domain/activity/activity-content";
+import { waterConservationTaskBookV3 } from "../../fixtures/water-conservation-v3";
 import {
   waterConservationActivity,
   waterConservationTaskBook,
@@ -202,6 +206,55 @@ describeWithDatabase("activity draft write commands", () => {
       summary: draft.summary,
       agentRunId: null,
     });
+  });
+
+  it("stores a v3 task book and derives its summary columns", async () => {
+    const { teacherId } = await createActors();
+    const created = await saveActivityDraft(database!, commandContext(teacherId), {
+      draftId: null,
+      expectedVersion: null,
+      desiredStatus: "EDITING",
+      content: waterConservationTaskBookV3,
+      agentRunId: null,
+      idempotencyKey: `draft_${randomUUID()}`,
+    });
+
+    const draft = await database!.activityDraft.findUniqueOrThrow({
+      where: { id: created.draftId },
+      include: { revisions: true },
+    });
+    const projection = v3ProjectionColumns(waterConservationTaskBookV3);
+
+    // The row only exists if the database's own re-derivation agreed with
+    // ours; a v3 draft that cannot be stored is the failure this guards.
+    expect(draft.schemaVersion).toBe(3);
+    expect(draft.learningObjectives).toEqual(projection.learningObjectives);
+    expect(draft.evidenceRequirements).toEqual(projection.evidenceRequirements);
+    expect(draft.feedbackCriteria).toEqual(projection.feedbackCriteria);
+    expect(draft.revisions).toHaveLength(1);
+    expect(draft.revisions[0]?.schemaVersion).toBe(3);
+  });
+
+  it("rejects a v3 task book whose goals no phase serves", async () => {
+    const { teacherId } = await createActors();
+    const orphaned = {
+      ...waterConservationTaskBookV3,
+      phases: waterConservationTaskBookV3.phases.map((phase) => ({
+        ...phase,
+        learningGoalIds: [waterConservationTaskBookV3.learningGoals[0]!.id],
+      })),
+    };
+
+    await expect(
+      saveActivityDraft(database!, commandContext(teacherId), {
+        draftId: null,
+        expectedVersion: null,
+        desiredStatus: "EDITING",
+        content: orphaned,
+        agentRunId: null,
+        idempotencyKey: `draft_${randomUUID()}`,
+      }),
+    ).rejects.toThrow();
   });
 
   it("rechecks role, ownership, version, and sealed state", async () => {
