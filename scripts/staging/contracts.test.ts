@@ -125,10 +125,48 @@ describe("evaluateStagingPreflight", () => {
     );
   });
 
-  it("keeps generic Go/No-Go free of protected-mode secrets while Agent acceptance binds them", () => {
+  it("keeps generic Go/No-Go local-auth-only and Agent acceptance binds protected mode", () => {
     const generic = readFileSync(".github/workflows/staging-go-no-go.yml", "utf8");
+    const realE2e = readFileSync(".github/workflows/e2e-real.yml", "utf8");
+    expect(generic).not.toMatch(/clerk/iu);
+    expect(realE2e).not.toMatch(/clerk/iu);
+    expect(generic).toContain(
+      "STAGING_LOCAL_AUTH_ATTESTED: ${{ vars.STAGING_LOCAL_AUTH_ATTESTED }}",
+    );
+    expect(generic).toContain("STAGING_AUTH_MODE: postgres-local-v1");
+    for (const variable of [
+      "STAGING_TEST_PRIMARY_SCHOOL_CODE",
+      "STAGING_TEST_SECONDARY_SCHOOL_CODE",
+      "STAGING_TEST_TEACHER_STAFF_NO",
+      "STAGING_TEST_STUDENT_NO",
+      "STAGING_TEST_OTHER_STUDENT_NO",
+      "STAGING_TEST_OTHER_TEACHER_STAFF_NO",
+    ]) {
+      expect(generic).toContain(
+        variable + ": ${{ vars." + variable + " }}",
+      );
+    }
     expect(generic).not.toContain("STAGING_DEPLOYMENT_PROTECTION_REQUIRED");
     expect(generic).not.toContain("STAGING_VERCEL_AUTOMATION_BYPASS_SECRET");
+    expect(realE2e).toContain(
+      "E2E_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5434/cdas_next_e2e",
+    );
+    for (const identitySecret of [
+      "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
+      "CLERK_SECRET_KEY",
+      "DEV_TEST_TEACHER_CLERK_ID",
+      "DEV_TEST_STUDENT_CLERK_ID",
+    ]) {
+      expect(realE2e).not.toContain(identitySecret);
+    }
+    for (const realModelSecret of [
+      "DEEPSEEK_API_KEY",
+      "AI_TOOL_APPROVAL_SECRET",
+      "AI_MODEL",
+      "E2E_REAL_MODEL_ACK",
+    ]) {
+      expect(realE2e).toContain(realModelSecret);
+    }
     const agent = readFileSync(".github/workflows/staging-agent-acceptance.yml", "utf8");
     expect(agent).toContain('STAGING_DEPLOYMENT_PROTECTION_REQUIRED: "1"');
     expect(agent).toContain("STAGING_VERCEL_AUTOMATION_BYPASS_SECRET");
