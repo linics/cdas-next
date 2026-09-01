@@ -212,15 +212,17 @@ describe("teacher feedback page access boundary", () => {
     expect(mocks.getTeacherFeedbackWorkspace).not.toHaveBeenCalled();
   });
 
-  it("uses the local teacher login only when unauthenticated", async () => {
+  it("renders the local teacher login form only when unauthenticated", async () => {
     mocks.createUiCommandContext.mockRejectedValue(
       new AuthenticationError("UNAUTHENTICATED"),
     );
 
     const markup = await renderPage();
 
-    expect(markup).toContain('href="/teacher/login"');
-    expect(markup).toContain("登录教师账号");
+    expect(markup).toContain('name="schoolCode"');
+    expect(markup).toContain('name="identifier"');
+    expect(markup).toContain('name="password"');
+    expect(markup).toContain("进入工作台");
     expect(markup).not.toContain(secretSubmissionBody);
     expect(markup).not.toContain("data-feedback-composer");
   });

@@ -1,11 +1,11 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import type { AuthenticationError } from "../../../server/auth/current-actor";
-import { InlineAlert } from "../../_components/ui";
 import {
   WorkspaceShell,
   type WorkspaceCrumb,
 } from "../../_components/workspace-shell";
+import { LocalLoginForm } from "../../auth/local-login-form";
 import gateStyles from "../../_components/access-gate.module.css";
 
 const teacherNavigation = [
@@ -62,28 +62,20 @@ export function TeacherAccessGate({
       ? {
           eyebrow: "登录服务未设置",
           title: "教师工作台当前没有开放",
-          detail:
-            "系统当前无法验证教师身份，不会读取任何草稿、班级或发布记录。完成登录服务配置后即可使用。",
         }
       : code === "ACCOUNT_DISABLED" || code === "SCHOOL_DISABLED"
         ? {
             eyebrow: "账号或学校已停用",
             title: "教师工作台当前不能进入",
-            detail:
-              "停用后不会读取草稿、班级或发布记录。请联系平台管理员恢复后再登录。",
           }
         : code === "USER_NOT_PROVISIONED"
         ? {
             eyebrow: "教师账号尚未创建",
             title: "找不到对应的工作台身份",
-            detail:
-              "当前登录账号尚未关联教师身份。请联系管理员完成账号与班级配置。",
           }
         : {
             eyebrow: "需要登录",
             title: "先确认教师身份",
-            detail:
-              "未登录时不会读取任何教师草稿、班级、发布记录或学生提交。请登录后重新进入。",
           };
 
   return (
@@ -91,8 +83,8 @@ export function TeacherAccessGate({
       <section className={gateStyles.gateAside}>
         <Link
           className={gateStyles.brand}
-          href="/teacher"
-          aria-label="CDAS Next 教师工作台"
+          href="/"
+          aria-label="返回 CDAS Next 首页"
         >
           <strong>CDAS</strong>
           <small>跨学科学习活动</small>
@@ -124,18 +116,17 @@ export function TeacherAccessGate({
           <p className={gateStyles.eyebrow}>{copy.eyebrow}</p>
           <h2>{copy.title}</h2>
         </div>
-        <InlineAlert tone="info">{copy.detail}</InlineAlert>
-        <div className={gateStyles.actions}>
-          {code === "UNAUTHENTICATED" || code === "PASSWORD_CHANGE_REQUIRED" ? (
-            <Link className={gateStyles.primaryButton} href="/teacher/login">登录教师账号</Link>
-          ) : code === "USER_NOT_PROVISIONED" ? (
-            <Link className={gateStyles.secondaryButton} href="/teacher/login">切换教师账号</Link>
-          ) : null}
-          <Link className={gateStyles.backLink} href="/">返回首页</Link>
-        </div>
-        <p className={gateStyles.gateNote}>
-          教师工作台 · 身份确认前不会读取任何草稿、班级与提交数据。
-        </p>
+        {code === "UNAUTHENTICATED" || code === "USER_NOT_PROVISIONED" ? (
+          <LocalLoginForm role="TEACHER">
+            <Link className={gateStyles.backLink} href="/teacher/register">
+              使用邀请码开通教师账号
+            </Link>
+          </LocalLoginForm>
+        ) : code === "PASSWORD_CHANGE_REQUIRED" ? (
+          <div className={gateStyles.actions}>
+            <Link className={gateStyles.primaryButton} href="/teacher/password">修改密码后继续</Link>
+          </div>
+        ) : null}
       </main>
     </div>
   );

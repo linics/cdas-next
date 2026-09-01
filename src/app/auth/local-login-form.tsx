@@ -7,7 +7,7 @@ import {
   teacherLoginAction,
   type LoginActionState,
 } from "./local-login-actions";
-import styles from "../_components/access-gate.module.css";
+import styles from "./local-login-form.module.css";
 
 export function LocalLoginForm({
   role,
@@ -15,7 +15,7 @@ export function LocalLoginForm({
   error,
 }: {
   role: "ADMIN" | "TEACHER" | "STUDENT";
-  children: ReactNode;
+  children?: ReactNode;
   error?: string;
 }) {
   const isAdmin = role === "ADMIN";
@@ -29,15 +29,23 @@ export function LocalLoginForm({
     { error, schoolCode: "", account: "" },
   );
   return (
-    <form action={formAction} className={styles.accessGate}>
-      {children}
-      {!isAdmin ? <label htmlFor="login-school">学校代码<input id="login-school" name="schoolCode" autoComplete="organization" defaultValue={state.schoolCode} required /></label> : null}
-      <label htmlFor="login-account">{isAdmin ? "用户名" : role === "TEACHER" ? "工号" : "学号"}
+    <form action={formAction} className={styles.form}>
+      {!isAdmin ? (
+        <label className={styles.field} htmlFor="login-school">
+          <span>学校代码</span>
+          <input id="login-school" name="schoolCode" autoComplete="organization" defaultValue={state.schoolCode} required />
+        </label>
+      ) : null}
+      <label className={styles.field} htmlFor="login-account">
+        <span>{isAdmin ? "用户名" : role === "TEACHER" ? "工号" : "学号"}</span>
         <input id="login-account" name="identifier" autoComplete="username" defaultValue={state.account} required />
       </label>
-      <label htmlFor="login-password">密码<input id="login-password" name="password" type="password" autoComplete="current-password" required /></label>
+      <label className={styles.field} htmlFor="login-password">
+        <span>密码</span>
+        <input id="login-password" name="password" type="password" autoComplete="current-password" required />
+      </label>
       {state.error ? (
-        <p role="alert">
+        <p className={styles.error} role="alert">
           {state.error === "INVALID_CREDENTIALS"
             ? "账号信息或密码不正确"
             : state.error === "ACCOUNT_LOCKED"
@@ -49,9 +57,11 @@ export function LocalLoginForm({
                   : "登录失败"}
         </p>
       ) : null}
-      <button className={styles.primaryButton} disabled={pending} type="submit">
-        {pending ? "登录中…" : "登录"}
+      <button className={styles.submit} disabled={pending} type="submit">
+        {pending ? "正在确认…" : "进入工作台"}
+        <span aria-hidden="true">→</span>
       </button>
+      {children}
     </form>
   );
 }
