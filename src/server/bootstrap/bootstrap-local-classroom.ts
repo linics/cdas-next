@@ -116,6 +116,8 @@ async function ensureUser(
         passwordHash: input.passwordHash,
         mustChangePassword: false,
         passwordChangedAt: now,
+        failedLoginCount: 0,
+        lockedUntil: null,
       },
     });
     // Re-entry rotates the synthetic password, so every session issued under

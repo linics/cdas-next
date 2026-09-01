@@ -452,7 +452,7 @@ describe("teacher evaluation server actions", () => {
     expect(state.message).not.toContain("hidden schema path");
   });
 
-  it("does not prepare when the Clerk session is unavailable", async () => {
+  it("does not prepare when the local session is unavailable", async () => {
     mocks.createUiCommandContext.mockRejectedValue(
       new AuthenticationError("UNAUTHENTICATED"),
     );

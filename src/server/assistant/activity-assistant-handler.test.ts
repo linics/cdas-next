@@ -134,7 +134,7 @@ const usage = {
 
 const teacher: AppUser = {
   id: actorId,
-  authSubject: "clerk_teacher",
+  authSubject: "local:teacher",
   role: "TEACHER",
   displayName: "林老師",
   rosterKey: null,

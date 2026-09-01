@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import nextEnvironment from "@next/env";
 import type { ActivityContent } from "../../src/domain/activity/activity-content";
 import { classroomDaylightTaskBook } from "../../src/fixtures/classroom-daylight";
@@ -6,11 +6,15 @@ import { waterConservationTaskBook } from "../../src/fixtures/water-conservation
 import type { TeacherEvaluationOutcome } from "../../src/domain/evaluation/teacher-evaluation-intent";
 import type { PrismaClient } from "../../src/generated/prisma/client";
 import { createDatabaseClient } from "../../src/server/db/client";
-import { bootstrapClerkClassroom } from "../../src/server/bootstrap/bootstrap-clerk-classroom";
+import {
+  bootstrapLocalStaging,
+  stagingLocalIdentifier,
+} from "../../src/server/bootstrap/bootstrap-local-staging";
 import {
   resolveBootstrapDatabaseTarget,
-  serializeBootstrapClerkCliError,
-} from "../../src/server/bootstrap/bootstrap-clerk-cli";
+  serializeBootstrapAdminCliError,
+} from "../../src/server/bootstrap/bootstrap-admin-cli";
+import { legacySchoolCode, legacySchoolId } from "../../src/domain/school/legacy-school";
 import type { CommandContext } from "../../src/server/commands/command-context";
 import { decideActionIntent } from "../../src/server/commands/decide-action-intent";
 import { saveActivityDraft } from "../../src/server/commands/save-activity-draft";
@@ -50,21 +54,28 @@ const DEMO_LOGIN_STUDENT_NAME = "陈同学";
 
 const extraStudents = [
   {
-    authSubject: "user_demoLiMing",
+    studentNo: "700002",
     displayName: "李明",
     rosterKey: "DEMOSTU02",
   },
   {
-    authSubject: "user_demoWangFang",
+    studentNo: "700003",
     displayName: "王芳",
     rosterKey: "DEMOSTU03",
   },
   {
-    authSubject: "user_demoZhaoQiang",
+    studentNo: "700004",
     displayName: "赵强",
     rosterKey: "DEMOSTU04",
   },
 ] as const;
+
+const DEMO_TEACHER_STAFF_NO = "T-DEMO";
+const DEMO_LOGIN_STUDENT_NO = "700001";
+
+function processOnlyPassword(name: string): string {
+  return process.env[name]?.trim() || randomBytes(32).toString("base64url");
+}
 
 function context(actorId: string, now: Date): CommandContext {
   return {
@@ -73,14 +84,6 @@ function context(actorId: string, now: Date): CommandContext {
     traceId: `demo-seed-${randomUUID()}`,
     clock: () => now,
   };
-}
-
-function requireEnv(name: string): string {
-  const value = process.env[name]?.trim();
-  if (!value) {
-    throw new Error(`${name}_REQUIRED`);
-  }
-  return value;
 }
 
 function parseSeedArgs(argv: readonly string[]): {
@@ -171,40 +174,50 @@ class Clock {
   }
 }
 
-async function ensureStudent(
+async function findLocalIdentityId(
   database: PrismaClient,
-  input: {
-    authSubject: string;
-    displayName: string;
-    rosterKey: string;
-  },
+  identifier: string,
 ): Promise<string> {
-  const existing = await database.appUser.findUnique({
-    where: { authSubject: input.authSubject },
-    select: { id: true, role: true, rosterKey: true },
+  const credential = await database.localCredential.findUnique({
+    where: { identifier },
+    select: { user: { select: { id: true, schoolId: true } } },
   });
-  if (existing) {
-    if (existing.role !== "STUDENT") {
-      throw new Error(`DEMO_STUDENT_ROLE_CONFLICT:${input.displayName}`);
-    }
-    if (!existing.rosterKey) {
-      await database.appUser.update({
-        where: { id: existing.id },
-        data: { rosterKey: input.rosterKey },
-      });
-    }
-    return existing.id;
+  if (!credential || credential.user.schoolId !== legacySchoolId) {
+    throw new Error("DEMO_LOCAL_IDENTITY_NOT_FOUND");
   }
-  const created = await database.appUser.create({
-    data: {
-      authSubject: input.authSubject,
-      role: "STUDENT",
-      displayName: input.displayName,
-      rosterKey: input.rosterKey,
-    },
-    select: { id: true },
+  return credential.user.id;
+}
+
+async function setStudentRosterKeys(
+  database: PrismaClient,
+  students: readonly { identifier: string; rosterKey: string }[],
+): Promise<void> {
+  await database.$transaction(async (transaction) => {
+    for (const student of students) {
+      const credential = await transaction.localCredential.findUnique({
+        where: { identifier: student.identifier },
+        select: {
+          user: { select: { id: true, role: true, schoolId: true, rosterKey: true } },
+        },
+      });
+      if (
+        !credential ||
+        credential.user.role !== "STUDENT" ||
+        credential.user.schoolId !== legacySchoolId
+      ) {
+        throw new Error("DEMO_STUDENT_PROFILE_CONFLICT");
+      }
+      if (credential.user.rosterKey && credential.user.rosterKey !== student.rosterKey) {
+        throw new Error("DEMO_STUDENT_ROSTER_KEY_CONFLICT");
+      }
+      if (!credential.user.rosterKey) {
+        await transaction.appUser.update({
+          where: { id: credential.user.id },
+          data: { rosterKey: student.rosterKey },
+        });
+      }
+    }
   });
-  return created.id;
 }
 
 async function ensureMembership(
@@ -628,25 +641,101 @@ async function main(): Promise<void> {
   const clock = new Clock();
 
   try {
-    const bootstrapped = await bootstrapClerkClassroom(database, {
-      teacherAuthSubject: requireEnv("DEV_TEST_TEACHER_CLERK_ID"),
-      teacherDisplayName: DEMO_TEACHER_NAME,
-      studentAuthSubject: requireEnv("DEV_TEST_STUDENT_CLERK_ID"),
-      studentDisplayName: DEMO_LOGIN_STUDENT_NAME,
-      studentRosterKey: "DEMOSTU01",
-      classroomId: DEMO_CLASSROOM_ID,
-      classroomName: DEMO_CLASSROOM_NAME,
+    const loginStudentIdentifier = stagingLocalIdentifier({
+      schoolCode: legacySchoolCode,
+      role: "STUDENT",
+      studentNo: DEMO_LOGIN_STUDENT_NO,
     });
+    const extraStudentIdentities = extraStudents.map((student, index) => ({
+      ...student,
+      identifier: stagingLocalIdentifier({
+        schoolCode: legacySchoolCode,
+        role: "STUDENT",
+        studentNo: student.studentNo,
+      }),
+      password: processOnlyPassword(`DEV_TEST_DEMO_STUDENT_${index + 2}_PASSWORD`),
+    }));
+    await bootstrapLocalStaging(database, {
+      schools: [
+        { code: legacySchoolCode, name: "历史迁移学校", status: "ACTIVE" },
+      ],
+      identities: [
+        {
+          schoolCode: legacySchoolCode,
+          identifier: stagingLocalIdentifier({
+            schoolCode: legacySchoolCode,
+            role: "TEACHER",
+            staffNo: DEMO_TEACHER_STAFF_NO,
+          }),
+          password: processOnlyPassword("DEV_TEST_DEMO_TEACHER_PASSWORD"),
+          displayName: DEMO_TEACHER_NAME,
+          role: "TEACHER",
+          staffNo: DEMO_TEACHER_STAFF_NO,
+        },
+        {
+          schoolCode: legacySchoolCode,
+          identifier: loginStudentIdentifier,
+          password: processOnlyPassword("DEV_TEST_DEMO_STUDENT_1_PASSWORD"),
+          displayName: DEMO_LOGIN_STUDENT_NAME,
+          role: "STUDENT",
+          studentNo: DEMO_LOGIN_STUDENT_NO,
+        },
+        ...extraStudentIdentities.map((student) => ({
+          schoolCode: legacySchoolCode,
+          identifier: student.identifier,
+          password: student.password,
+          displayName: student.displayName,
+          role: "STUDENT" as const,
+          studentNo: student.studentNo,
+        })),
+      ],
+      classroom: {
+        id: DEMO_CLASSROOM_ID,
+        name: DEMO_CLASSROOM_NAME,
+        teacherIdentifier: stagingLocalIdentifier({
+          schoolCode: legacySchoolCode,
+          role: "TEACHER",
+          staffNo: DEMO_TEACHER_STAFF_NO,
+        }),
+        studentIdentifiers: [
+          loginStudentIdentifier,
+          ...extraStudentIdentities.map((student) => student.identifier),
+        ],
+      },
+    });
+    const teacherIdentifier = stagingLocalIdentifier({
+      schoolCode: legacySchoolCode,
+      role: "TEACHER",
+      staffNo: DEMO_TEACHER_STAFF_NO,
+    });
+    const teacherId = await findLocalIdentityId(database, teacherIdentifier);
+    const loginStudentId = await findLocalIdentityId(
+      database,
+      loginStudentIdentifier,
+    );
+    const extraStudentIds = await Promise.all(
+      extraStudentIdentities.map((student) =>
+        findLocalIdentityId(database, student.identifier),
+      ),
+    );
+    const [liMingId, wangFangId, zhaoQiangId] = extraStudentIds;
+    await setStudentRosterKeys(database, [
+      { identifier: loginStudentIdentifier, rosterKey: "DEMOSTU01" },
+      ...extraStudentIdentities.map((student) => ({
+        identifier: student.identifier,
+        rosterKey: student.rosterKey,
+      })),
+    ]);
     const teacher = await database.appUser.findUniqueOrThrow({
-      where: { id: bootstrapped.teacher.id },
+      where: { id: teacherId },
       select: { id: true, displayName: true, role: true },
     });
     const loginStudent = await database.appUser.findUniqueOrThrow({
-      where: { id: bootstrapped.student.id },
+      where: { id: loginStudentId },
       select: { id: true, displayName: true, role: true },
     });
     const classroom = {
-      id: bootstrapped.classroom.id,
+      id: DEMO_CLASSROOM_ID,
       name: DEMO_CLASSROOM_NAME,
     };
 
@@ -705,15 +794,10 @@ async function main(): Promise<void> {
       return;
     }
 
-    const liMingId = await ensureStudent(database, extraStudents[0]);
-    const wangFangId = await ensureStudent(database, extraStudents[1]);
-    const zhaoQiangId = await ensureStudent(database, extraStudents[2]);
     const membershipJoinedAt = clock.now();
     for (const studentId of [
       loginStudent.id,
-      liMingId,
-      wangFangId,
-      zhaoQiangId,
+      ...extraStudentIds,
     ]) {
       await ensureMembership(
         database,
@@ -1101,7 +1185,7 @@ async function main(): Promise<void> {
             teacher: teacher.displayName,
             student: loginStudent.displayName,
             extraStudents: extraStudents.map((student) => student.displayName),
-            note: "李明、王芳、赵强只能在教师端看到，没有对应 Clerk 登录。",
+            note: "李明、王芳、赵强用于演示花名册，登录凭据只存在于进程内。",
           },
           seeded: {
             drafts: [EDITING_TITLE, READY_TITLE],
@@ -1118,7 +1202,7 @@ async function main(): Promise<void> {
 }
 
 main().catch((error: unknown) => {
-  process.stderr.write(`${serializeBootstrapClerkCliError(error)}\n`);
+  process.stderr.write(`${serializeBootstrapAdminCliError(error)}\n`);
   if (error instanceof Error && error.message === "CONFIRM_DATABASE_REQUIRED") {
     process.stderr.write(
       "Usage: pnpm demo:seed -- --confirm-database <database-name> [--reset]\n",

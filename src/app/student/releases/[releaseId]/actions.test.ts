@@ -353,7 +353,7 @@ describe("student submission server actions", () => {
     });
   });
 
-  it("does not call a write command when the Clerk session is unavailable", async () => {
+  it("does not call a write command when the local session is unavailable", async () => {
     mocks.createUiCommandContext.mockRejectedValue(
       new AuthenticationError("UNAUTHENTICATED"),
     );

@@ -206,7 +206,7 @@ describe("teacher release submissions page boundary", () => {
     expect(markup).not.toContain("尚未正式提交");
     expect(markup).not.toContain("学生正式提交正文");
     expect(markup).not.toContain("教师正式反馈正文");
-    expect(markup).not.toContain("clerk_auth_subject");
+    expect(markup).not.toContain("auth_subject");
     expect(markup).toContain("准备关闭活动");
     expect(markup).not.toContain("确认并关闭活动");
   });
