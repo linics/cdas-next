@@ -64,6 +64,7 @@ export class SaveActivityDraftError extends Error {
       | "STALE_VERSION"
       | "DRAFT_SEALED"
       | "LEGACY_SCHEMA_READ_ONLY"
+      | "SCHEMA_VERSION_CHANGED"
       | "INVALID_AGENT_RUN"
       | "IDEMPOTENCY_MISMATCH"
       | "CONCURRENT_WRITE",
@@ -249,7 +250,12 @@ async function runTransaction(
       } else {
         const draft = await transaction.activityDraft.findUnique({
           where: { id: input.draftId },
-          select: { ownerId: true, status: true, version: true },
+          select: {
+            ownerId: true,
+            status: true,
+            version: true,
+            schemaVersion: true,
+          },
         });
         if (!draft || draft.ownerId !== context.actorId) {
           throw new SaveActivityDraftError("NOT_FOUND");
@@ -260,6 +266,9 @@ async function runTransaction(
         if (draft.version !== input.expectedVersion) {
           throw new SaveActivityDraftError("STALE_VERSION");
         }
+        if (draft.schemaVersion !== input.content.schemaVersion) {
+          throw new SaveActivityDraftError("SCHEMA_VERSION_CHANGED");
+        }
 
         version = draft.version + 1;
         beforeVersion = draft.version;
@@ -268,6 +277,7 @@ async function runTransaction(
             id: input.draftId,
             ownerId: context.actorId,
             version: draft.version,
+            schemaVersion: input.content.schemaVersion,
             status: { not: "SEALED" },
           },
           data: {

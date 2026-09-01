@@ -33,7 +33,7 @@ function context(actorId: string, now: Date): CommandContext {
 }
 
 function writableFixtureContent(content: ActivityContent): ActivityContent {
-  if (content.schemaVersion === 2) return content;
+  if (content.schemaVersion !== 1) return content;
   const projection = projectionColumns(content);
   return {
     ...waterConservationTaskBook,

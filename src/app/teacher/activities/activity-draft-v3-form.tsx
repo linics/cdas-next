@@ -17,6 +17,7 @@ import {
 import { coreCompetenciesForDiscipline } from "../../../domain/curriculum/core-competencies";
 import {
   createBlankLearningGoal,
+  nextLearningGoalId,
   createBlankPhase,
   createBlankRubricDimension,
   normalizeV3Values,
@@ -560,7 +561,7 @@ export function ActivityDraftV3Form({
                   ...current,
                   learningGoals: [
                     ...current.learningGoals,
-                    createBlankLearningGoal(`goal-${current.learningGoals.length + 1}`),
+                    createBlankLearningGoal(nextLearningGoalId(current.learningGoals)),
                   ],
                 }))
               }

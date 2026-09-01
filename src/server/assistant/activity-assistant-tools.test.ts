@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ActivityContentV3 } from "../../domain/activity/activity-content";
+import { waterConservationTaskBook } from "../../fixtures/water-conservation";
 import type { PrismaClient } from "../../generated/prisma/client";
 import { DecideActionIntentError } from "../commands/decide-action-intent";
 import { PreparePublishActivityIntentError } from "../commands/prepare-publish-activity-intent";
@@ -876,6 +877,58 @@ describe("activity assistant draft revision", () => {
       }),
     );
     expect(mocks.onBusinessWriteSuccess).toHaveBeenCalledWith("DRAFT_UPDATED");
+  });
+
+  it("keeps existing v2 drafts editable without upgrading their schema", async () => {
+    mocks.readDraftDetail.mockResolvedValue({
+      ...currentDraftDetail,
+      content: waterConservationTaskBook,
+    });
+    const registry = tools();
+    await registry.get_activity_draft.execute!(
+      { draftId },
+      options("read_v2_before_revise"),
+    );
+    const revised = {
+      ...waterConservationTaskBook,
+      summary: `${waterConservationTaskBook.summary} 补充校园真实情境。`,
+    };
+
+    await expect(
+      registry.update_activity_draft.execute!(
+        {
+          draftId,
+          expectedVersion: 3,
+          changes: [
+            {
+              area: "BASIC_SETTINGS" as const,
+              change: "补充校园真实情境。",
+              reason: "教师要求说明任务发生地点。",
+            },
+          ],
+          content: revised,
+        },
+        options("revise_v2"),
+      ),
+    ).resolves.toMatchObject({ version: 4 });
+    expect(mocks.saveDraft).toHaveBeenCalledWith(
+      expect.anything(),
+      agentContext,
+      expect.objectContaining({ content: revised }),
+    );
+  });
+
+  it("rejects a revision that changes the task-book schema version", async () => {
+    mocks.readDraftDetail.mockResolvedValue({
+      ...currentDraftDetail,
+      content: waterConservationTaskBook,
+    });
+    const registry = tools({ draftReads: new Map([[draftId, 3]]) });
+
+    await expect(
+      registry.update_activity_draft.execute!(revision(), options("revise_schema")),
+    ).rejects.toThrow("ACTIVITY_REVISE_SCHEMA_VERSION_CHANGED");
+    expect(mocks.saveDraft).not.toHaveBeenCalled();
   });
 
   it("refuses to revise a draft that was never read in this conversation", async () => {

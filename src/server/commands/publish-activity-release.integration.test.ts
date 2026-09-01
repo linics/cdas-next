@@ -5,7 +5,11 @@ import {
   publishRequestSchema,
 } from "../../domain/activity/prepare-publish-intent";
 import { waterConservationActivity } from "../../fixtures/water-conservation";
-import { closePublishedActivity } from "../../test/fixtures/published-activity";
+import { waterConservationTaskBookV3 } from "../../fixtures/water-conservation-v3";
+import {
+  closePublishedActivity,
+  createPublishedActivity,
+} from "../../test/fixtures/published-activity";
 import { createDatabaseClient } from "../db/client";
 import {
   publishActivityRelease,
@@ -170,6 +174,53 @@ async function createPublishFixture(
 describeWithDatabase("publishActivityRelease database command", () => {
   afterAll(async () => {
     await database?.$disconnect();
+  });
+
+  it("publishes the exact v3 revision and keeps sequential execution", async () => {
+    if (!database) throw new Error("TEST_DATABASE_URL is required");
+    const teacherId = randomUUID();
+    const classroomId = randomUUID();
+    const publishedAt = new Date("2026-09-01T08:00:00.000Z");
+    await database.appUser.create({
+      data: {
+        id: teacherId,
+        authSubject: `teacher_${teacherId}`,
+        role: "TEACHER",
+        displayName: "v3 发布教师",
+      },
+    });
+    await database.classroom.create({
+      data: { id: classroomId, name: "v3 测试班", managerId: teacherId },
+    });
+    const content = {
+      ...waterConservationTaskBookV3,
+      submissionMode: "phased" as const,
+    };
+    const published = await createPublishedActivity(database, {
+      teacherId,
+      classroomId,
+      publishedAt,
+      content,
+    });
+    const release = await database.activityRelease.findUniqueOrThrow({
+      where: { id: published.releaseId },
+      include: { snapshot: true },
+    });
+    const revision = await database.activityDraftRevision.findUniqueOrThrow({
+      where: {
+        draftId_version: {
+          draftId: published.draftId,
+          version: published.draftVersion,
+        },
+      },
+    });
+
+    expect(release.executionVersion).toBe(1);
+    if (!release.snapshot) throw new Error("Published release requires a snapshot");
+    expect(release.snapshot.schemaVersion).toBe(3);
+    expect(release.snapshot.content).toEqual(content);
+    expect(release.snapshot.content).toEqual(revision.taskBook);
+    expect(release.snapshot.contentHash).toBe(published.snapshotHash);
   });
 
   it("rejects another teacher, then publishes once and safely replays", async () => {

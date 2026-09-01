@@ -1,5 +1,9 @@
 import {
+  assignmentSubtypeLabel,
+  assignmentTypeDetails,
   disciplineLabel,
+  inquiryDepths,
+  submissionModes,
   v3EvidenceTypeLabel,
   type ActivityContentV3,
 } from "../../domain/activity/activity-content";
@@ -16,13 +20,44 @@ import {
  * v3 shows 达标 where v1 and v2 said 合格; the older wording stays on older
  * snapshots because those are sealed history, not a style choice.
  */
-export function TaskBookV3View({ content }: { content: ActivityContentV3 }) {
+export function TaskBookV3View({
+  content,
+  showBackground = true,
+}: {
+  content: ActivityContentV3;
+  showBackground?: boolean;
+}) {
   const goalName = new Map(
     content.learningGoals.map((goal, index) => [goal.id, `目标 ${index + 1}`]),
   );
 
   return (
     <>
+      <section>
+        <h3>基本设置</h3>
+        <p>{content.topic}</p>
+        <p>
+          {content.schoolStage === "PRIMARY" ? "小学" : "初中"} {content.grade} 年级；
+          主学科 {disciplineLabel(content.mainDisciplineCode)}；融合学科 {content.integratedDisciplineCodes.map(disciplineLabel).join("、")}；
+          {assignmentTypeDetails(content.assignmentType).label}
+          {assignmentSubtypeLabel(content.assignmentType, content.assignmentSubtype)
+            ? ` · ${assignmentSubtypeLabel(content.assignmentType, content.assignmentSubtype)}`
+            : ""}
+          {content.inquiryDepth
+            ? ` · ${inquiryDepths.find((item) => item.code === content.inquiryDepth)?.label ?? content.inquiryDepth}`
+            : ""}
+          {` · ${submissionModes.find((item) => item.code === content.submissionMode)?.label ?? content.submissionMode} · ${content.durationWeeks} 周`}
+        </p>
+        <p>{assignmentTypeDetails(content.assignmentType).description}</p>
+      </section>
+
+      {showBackground ? (
+        <section>
+          <h3>背景设定</h3>
+          <p>{content.backgroundSetting}</p>
+        </section>
+      ) : null}
+
       <section>
         <h3>总体任务</h3>
         <p>{content.taskInstructions}</p>

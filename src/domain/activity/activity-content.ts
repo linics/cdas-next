@@ -499,6 +499,9 @@ export type ActivityContentV2 = z.infer<typeof activityContentV2Schema>;
 export type ActivityContentV3 = z.infer<typeof activityContentV3Schema>;
 export type ActivityContentStructured = ActivityContentV2 | ActivityContentV3;
 export type ActivityContent = z.infer<typeof activityContentSchema>;
+export type ActivityTaskPhase = ActivityContentStructured["phases"][number];
+export type ActivityRubricDimension =
+  ActivityContentStructured["rubricDimensions"][number];
 
 export function isStructuredContent(
   content: ActivityContent,

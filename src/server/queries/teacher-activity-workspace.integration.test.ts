@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { ActivityContent } from "../../domain/activity/activity-content";
 import { waterConservationTaskBook } from "../../fixtures/water-conservation";
+import { waterConservationTaskBookV3 } from "../../fixtures/water-conservation-v3";
 import type { CommandContext, CommandSource } from "../commands/command-context";
 import { decideActionIntent } from "../commands/decide-action-intent";
 import { preparePublishActivityIntent } from "../commands/prepare-publish-activity-intent";
@@ -102,6 +103,14 @@ async function createFixture() {
     agentRunId: null,
     idempotencyKey: `draft_${randomUUID()}`,
   });
+  const v3Editing = await saveActivityDraft(database, context(teacherId), {
+    draftId: null,
+    expectedVersion: null,
+    desiredStatus: "EDITING",
+    content: waterConservationTaskBookV3,
+    agentRunId: null,
+    idempotencyKey: `draft_${randomUUID()}`,
+  });
   const ready = await saveActivityDraft(database, context(teacherId), {
     draftId: null,
     expectedVersion: null,
@@ -179,6 +188,7 @@ async function createFixture() {
     classroom,
     foreignClassroom,
     editing,
+    v3Editing,
     ready,
     foreignDraft,
     prepared,
@@ -251,6 +261,17 @@ describeWithDatabase("teacher activity workspace queries", () => {
     expect(draft.draft.revision.content).toMatchObject({
       topic: "观察校园用水主题",
       mainDisciplineCode: "physics",
+    });
+
+    const v3Draft = await getTeacherActivityDraft(
+      database!,
+      context(fixture.teacherId),
+      { draftId: fixture.v3Editing.draftId },
+    );
+    expect(v3Draft.draft.revision).toMatchObject({
+      id: fixture.v3Editing.revisionId,
+      version: fixture.v3Editing.version,
+      content: waterConservationTaskBookV3,
     });
 
     const preview = await getTeacherActivityPreview(

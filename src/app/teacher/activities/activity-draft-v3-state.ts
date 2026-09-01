@@ -2,6 +2,7 @@ import type {
   ActivityContentV3,
   DisciplineCode,
 } from "../../../domain/activity/activity-content";
+import { findCoreCompetency } from "../../../domain/curriculum/core-competencies";
 
 export type ActivityDraftV3FormValues = ActivityContentV3;
 
@@ -23,6 +24,15 @@ export type ActivityDraftV3ActionState = {
 
 export function createBlankLearningGoal(id: string): ActivityContentV3["learningGoals"][number] {
   return { id, description: "", competencyReferences: [] };
+}
+
+export function nextLearningGoalId(
+  goals: readonly ActivityContentV3["learningGoals"][number][],
+): string {
+  const used = new Set(goals.map((goal) => goal.id));
+  let suffix = 1;
+  while (used.has(`goal-${suffix}`)) suffix += 1;
+  return `goal-${suffix}`;
 }
 
 export function createBlankPhase(name: string): ActivityContentV3["phases"][number] {
@@ -70,10 +80,10 @@ export const emptyActivityDraftV3Values: ActivityDraftV3FormValues = {
   summary: "",
   schoolStage: "MIDDLE",
   grade: 7,
-  mainDisciplineCode: "science",
+  mainDisciplineCode: "physics",
   integratedDisciplineCodes: ["chinese"],
   disciplineContributions: [
-    createBlankContribution("science"),
+    createBlankContribution("physics"),
     createBlankContribution("chinese"),
   ],
   assignmentType: "inquiry",
@@ -122,9 +132,19 @@ export function normalizeV3Values(
   const goalIds = new Set(values.learningGoals.map((goal) => goal.id));
   const learningGoals = values.learningGoals.map((goal) => ({
     ...goal,
-    competencyReferences: goal.competencyReferences.filter((reference) =>
-      selected.includes(reference.disciplineCode),
-    ),
+    competencyReferences: goal.competencyReferences.filter((reference) => {
+      const competency = findCoreCompetency(
+        reference.disciplineCode,
+        reference.competencyCode,
+      );
+      return (
+        selected.includes(reference.disciplineCode) &&
+        competency !== undefined &&
+        competency.schoolStages.includes(values.schoolStage) &&
+        values.grade >= competency.gradeRange[0] &&
+        values.grade <= competency.gradeRange[1]
+      );
+    }),
   }));
 
   return {

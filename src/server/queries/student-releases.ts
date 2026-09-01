@@ -1,7 +1,10 @@
 import "server-only";
 
 import { z } from "zod";
-import { activityContentSchema } from "../../domain/activity/activity-content";
+import {
+  activityContentSchema,
+  isStructuredContent,
+} from "../../domain/activity/activity-content";
 import { reviewFollowUp } from "../../domain/feedback/review-follow-up";
 import type { PrismaClient } from "../../generated/prisma/client";
 import {
@@ -214,7 +217,7 @@ export async function listStudentReleases(
     );
     const hasCurrentEvaluation = Boolean(
       submission &&
-        content.schemaVersion === 2 &&
+        isStructuredContent(content) &&
         submission.latestRevisionNumber > 0 &&
         currentRevision?.revisionNumber ===
           submission.latestRevisionNumber &&

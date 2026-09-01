@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import { tool } from "ai";
 import { z } from "zod";
 import {
+  activityContentStructuredSchema,
   activityContentV3Schema,
 } from "../../domain/activity/activity-content";
 import type { TeacherAgentPageContext } from "../../domain/assistant/teacher-agent-page-context";
@@ -391,7 +392,7 @@ export const activityDraftRevisionProposalSchema = z
     draftId: z.uuid(),
     expectedVersion: z.int().positive(),
     changes: z.array(revisionChangeSchema).min(1).max(8),
-    content: activityContentV3Schema,
+    content: activityContentStructuredSchema,
   })
   .strict()
   .superRefine((proposal, context) => {
@@ -916,7 +917,7 @@ export function createActivityAssistantTools({
 
     update_activity_draft: tool({
       description:
-        "把教师要求的修改写成这份已有草稿的新版本。只能改写本人的、未封存的草稿，且必须先用 get_activity_draft 读过同一版本。content 必须是改写后的完整 schema v3 任务书，不是片段；未被要求改动的部分必须逐字保留教师原文。changes 必须如实列出你改动的每一个区域及理由；服务端会把它与真实差异逐一核对，谎报或漏报会直接失败。此操作会暂停并展示你声明的改动，只有教师明确确认后才写入，且原版本作为历史修订保留。",
+        "把教师要求的修改写成这份已有草稿的新版本。只能改写本人的、未封存的草稿，且必须先用 get_activity_draft 读过同一版本。content 必须是改写后的完整结构化任务书，不是片段，并保持 get_activity_draft 返回的 schemaVersion；未被要求改动的部分必须逐字保留教师原文。changes 必须如实列出你改动的每一个区域及理由；服务端会把它与真实差异逐一核对，谎报或漏报会直接失败。此操作会暂停并展示你声明的改动，只有教师明确确认后才写入，且原版本作为历史修订保留。",
       inputSchema: activityDraftRevisionProposalSchema,
       outputSchema: updatedDraftToolOutputSchema,
       strict: true,
@@ -948,6 +949,10 @@ export function createActivityAssistantTools({
         if (current.version !== proposal.expectedVersion) {
           onToolFailure("REVISE_STALE_READ");
           throw new Error("ACTIVITY_REVISE_STALE_READ");
+        }
+        if (current.content.schemaVersion !== proposal.content.schemaVersion) {
+          onToolFailure("REVISE_SCHEMA_VERSION_CHANGED");
+          throw new Error("ACTIVITY_REVISE_SCHEMA_VERSION_CHANGED");
         }
 
         const actuallyChanged = changedTaskBookAreas(

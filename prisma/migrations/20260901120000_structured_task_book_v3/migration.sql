@@ -1,5 +1,51 @@
--- D-055: v3 is a forward-only JSON task-book extension.  No Prisma table is
+-- D-061: v3 is a forward-only JSON task-book extension.  No Prisma table is
 -- changed and v1/v2 rows continue through their existing validators.
+
+-- The registry is frozen inside schema v3. Future curriculum changes require
+-- a new schema version rather than changing what an old v3 citation means.
+CREATE FUNCTION "cdas_core_competency_v3_is_valid"(
+  discipline_code_value TEXT,
+  competency_code_value TEXT,
+  stage_value TEXT,
+  grade_value INTEGER
+)
+RETURNS BOOLEAN
+LANGUAGE sql
+IMMUTABLE
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM jsonb_to_recordset(
+      $registry$[
+        {"disciplineCode":"politics","schoolStages":["PRIMARY","MIDDLE"],"minGrade":1,"maxGrade":9,"competencyCodes":["political_identity","moral_cultivation","rule_of_law_concept","sound_personality","sense_of_responsibility"]},
+        {"disciplineCode":"chinese","schoolStages":["PRIMARY","MIDDLE"],"minGrade":1,"maxGrade":9,"competencyCodes":["cultural_confidence","language_application","thinking_ability","aesthetic_creation"]},
+        {"disciplineCode":"math","schoolStages":["PRIMARY"],"minGrade":1,"maxGrade":6,"competencyCodes":["number_sense","quantity_sense","symbolic_awareness","operation_ability","geometric_intuition","spatial_concept","reasoning_awareness","data_awareness","model_awareness"]},
+        {"disciplineCode":"math","schoolStages":["MIDDLE"],"minGrade":7,"maxGrade":9,"competencyCodes":["abstraction_ability","operation_ability_middle","geometric_intuition_middle","spatial_concept_middle","quantitative_sense","reasoning_ability","data_concept","model_concept","application_awareness","innovation_awareness"]},
+        {"disciplineCode":"english","schoolStages":["PRIMARY","MIDDLE"],"minGrade":1,"maxGrade":9,"competencyCodes":["language_ability","cultural_awareness","thinking_quality","learning_ability"]},
+        {"disciplineCode":"science","schoolStages":["PRIMARY","MIDDLE"],"minGrade":1,"maxGrade":9,"competencyCodes":["scientific_concept","scientific_thinking","inquiry_practice","responsible_attitude"]},
+        {"disciplineCode":"history","schoolStages":["MIDDLE"],"minGrade":7,"maxGrade":9,"competencyCodes":["historical_materialism","temporal_spatial_concept","historical_evidence","historical_interpretation","patriotism"]},
+        {"disciplineCode":"geography","schoolStages":["MIDDLE"],"minGrade":7,"maxGrade":9,"competencyCodes":["human_earth_coordination","comprehensive_thinking","regional_cognition","geographical_practice"]},
+        {"disciplineCode":"physics","schoolStages":["MIDDLE"],"minGrade":7,"maxGrade":9,"competencyCodes":["physical_concept","scientific_thinking","scientific_inquiry","scientific_attitude_responsibility"]},
+        {"disciplineCode":"chemistry","schoolStages":["MIDDLE"],"minGrade":7,"maxGrade":9,"competencyCodes":["chemical_concept","scientific_thinking","scientific_inquiry_practice","scientific_attitude_responsibility"]},
+        {"disciplineCode":"biology","schoolStages":["MIDDLE"],"minGrade":7,"maxGrade":9,"competencyCodes":["life_concept","scientific_thinking","inquiry_practice","attitude_responsibility"]},
+        {"disciplineCode":"infoTech","schoolStages":["PRIMARY","MIDDLE"],"minGrade":3,"maxGrade":8,"competencyCodes":["information_awareness","computational_thinking","digital_learning_innovation","information_social_responsibility"]},
+        {"disciplineCode":"labor","schoolStages":["PRIMARY","MIDDLE"],"minGrade":1,"maxGrade":9,"competencyCodes":["labor_concept","labor_ability","labor_habits_quality","labor_spirit"]},
+        {"disciplineCode":"arts","schoolStages":["PRIMARY","MIDDLE"],"minGrade":1,"maxGrade":9,"competencyCodes":["aesthetic_perception","artistic_expression","creative_practice","cultural_understanding"]},
+        {"disciplineCode":"sports","schoolStages":["PRIMARY","MIDDLE"],"minGrade":1,"maxGrade":9,"competencyCodes":["motor_ability","health_behavior","sports_morality"]}
+      ]$registry$::JSONB
+    ) AS registry(
+      "disciplineCode" TEXT,
+      "schoolStages" JSONB,
+      "minGrade" INTEGER,
+      "maxGrade" INTEGER,
+      "competencyCodes" JSONB
+    )
+    WHERE registry."disciplineCode" = discipline_code_value
+      AND registry."schoolStages" ? stage_value
+      AND grade_value BETWEEN registry."minGrade" AND registry."maxGrade"
+      AND registry."competencyCodes" ? competency_code_value
+  );
+$$;
 
 CREATE FUNCTION "cdas_activity_task_book_v3_is_valid"(task_book JSONB)
 RETURNS BOOLEAN
@@ -104,17 +150,22 @@ BEGIN
   ) THEN
     RETURN FALSE;
   END IF;
-  -- JSONB guards cannot import the application registry, but they still bind a
-  -- reference to a selected non-integrated discipline and reject duplicates.
-  -- The complete code/stage/grade lookup remains the versioned TypeScript
-  -- registry used by every save and assistant path.
+  -- Bind every reference both to this task and to schema v3's frozen registry.
+  -- The TypeScript registry is checked against this snapshot in unit tests.
   IF EXISTS (
     SELECT 1 FROM jsonb_array_elements(task_book -> 'learningGoals') goal
     WHERE (SELECT count(*) FROM jsonb_array_elements(goal -> 'competencyReferences'))
         <> (SELECT count(DISTINCT (ref ->> 'disciplineCode') || ':' || (ref ->> 'competencyCode')) FROM jsonb_array_elements(goal -> 'competencyReferences') ref)
       OR EXISTS (
         SELECT 1 FROM jsonb_array_elements(goal -> 'competencyReferences') ref
-        WHERE ref ->> 'disciplineCode' = 'integrated' OR NOT ((ref ->> 'disciplineCode') = ANY(selected_disciplines))
+        WHERE ref ->> 'disciplineCode' = 'integrated'
+          OR NOT ((ref ->> 'disciplineCode') = ANY(selected_disciplines))
+          OR NOT "cdas_core_competency_v3_is_valid"(
+            ref ->> 'disciplineCode',
+            ref ->> 'competencyCode',
+            stage,
+            grade_number
+          )
       )
   ) THEN RETURN FALSE; END IF;
   goal_ids := ARRAY(SELECT jsonb_array_elements_text(jsonb_path_query_array(task_book, '$.learningGoals[*].id')));

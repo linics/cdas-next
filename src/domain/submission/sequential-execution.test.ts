@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { waterConservationTaskBook } from "../../fixtures/water-conservation";
+import { waterConservationTaskBookV3 } from "../../fixtures/water-conservation-v3";
 import {
   executionVersionForContent,
   resolveSubmissionExecutionScope,
@@ -15,6 +16,29 @@ describe("sequential submission execution", () => {
         submissionMode: "once",
       }),
     ).toBe(0);
+    expect(
+      executionVersionForContent({
+        ...waterConservationTaskBookV3,
+        submissionMode: "phased",
+      }),
+    ).toBe(1);
+  });
+
+  it("resolves v3 phased and mixed scopes without downgrading them", () => {
+    const phased = {
+      ...waterConservationTaskBookV3,
+      submissionMode: "phased" as const,
+    };
+    const first = resolveSubmissionExecutionScope(1, phased, 1, [1]);
+    expect(first.phase?.name).toBe(phased.phases[0]?.name);
+    expect(first.nextPhaseIndex).toBe(2);
+
+    const mixed = { ...phased, submissionMode: "mixed" as const };
+    expect(
+      resolveSubmissionExecutionScope(1, mixed, mixed.phases.length, [1])
+        .nextPhaseIndex,
+    ).toBe(0);
+    expect(resolveSubmissionExecutionScope(1, mixed, 0).phase).toBeNull();
   });
 
   it("resolves the next frozen phase and the mixed final", () => {

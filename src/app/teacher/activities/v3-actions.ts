@@ -115,7 +115,7 @@ function failureState(
   }
   if (error instanceof SaveActivityDraftError) {
     if (
-      ["STALE_VERSION", "CONCURRENT_WRITE", "IDEMPOTENCY_MISMATCH", "DRAFT_SEALED"].includes(
+      ["STALE_VERSION", "CONCURRENT_WRITE", "IDEMPOTENCY_MISMATCH", "DRAFT_SEALED", "SCHEMA_VERSION_CHANGED"].includes(
         error.code,
       )
     ) {

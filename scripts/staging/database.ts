@@ -46,6 +46,7 @@ export const requiredHistoryProtectionFunctions = [
   "assert_teacher_evaluation_target_current",
   "assert_teacher_feedback_target_current",
   "cdas_activity_content_v1_canonical",
+  "cdas_core_competency_v3_is_valid",
   "cdas_activity_task_book_v2_is_valid",
   "cdas_activity_task_book_v3_is_valid",
   "cdas_activity_task_book_v3_projection_matches",
