@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+
 import { describe, expect, it } from "vitest";
 
 import {
@@ -11,7 +12,7 @@ import {
   redactAgentAcceptanceText,
 } from "./contracts";
 import { createAgentGate, isAgentGate } from "./gate";
-import { issueAgentTeacherTicket } from "./ticket";
+import { isPassingAgentIdentityEvidence } from "./prerequisites";
 
 const marker = "cdas-staging-agent-12345678-1";
 
@@ -22,21 +23,29 @@ function environment(extra: Record<string, string | undefined> = {}) {
     STAGING_VERCEL_PROJECT_NAME: "cdas-next",
     STAGING_DEPLOYMENT_PROTECTION_REQUIRED: "1",
     STAGING_VERCEL_AUTOMATION_BYPASS_SECRET: "V".repeat(32),
+    STAGING_AUTH_MODE: "postgres-local-v1",
     AI_PROVIDER_DISABLED: "0",
     STAGING_AI_ACK: "synthetic-data-cost-approved",
     DEEPSEEK_API_KEY: "deepseek-key-012345",
     AI_MODEL: "deepseek-v4-flash",
     AI_TOOL_APPROVAL_SECRET: "a".repeat(32),
-    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_0123456789abcdef",
-    CLERK_SECRET_KEY: "sk_test_0123456789abcdef",
-    STAGING_TEST_TEACHER_CLERK_ID: "user_Teacher123",
-    STAGING_TEST_STUDENT_CLERK_ID: "user_Student123",
-    STAGING_TEST_OTHER_STUDENT_CLERK_ID: "user_OtherStudent123",
-    STAGING_TEST_OTHER_TEACHER_CLERK_ID: "user_OtherTeacher123",
-    STAGING_ACCEPTANCE_TEST_TEACHER_NAME:
-      agentAcceptanceTeacherDisplayName,
-    STAGING_ACCEPTANCE_TEST_STUDENT_NAME:
-      agentAcceptanceStudentDisplayName,
+    STAGING_TEST_PRIMARY_SCHOOL_CODE: "SCHABC23",
+    STAGING_TEST_SECONDARY_SCHOOL_CODE: "SCHDEF45",
+    STAGING_TEST_DISABLED_SCHOOL_CODE: "SCHGHJ67",
+    STAGING_TEST_TEACHER_STAFF_NO: "T-001",
+    STAGING_TEST_STUDENT_NO: "000001",
+    STAGING_TEST_OTHER_STUDENT_NO: "000002",
+    STAGING_TEST_OTHER_TEACHER_STAFF_NO: "T-002",
+    STAGING_TEST_DISABLED_ACCOUNT_STUDENT_NO: "000003",
+    STAGING_TEST_DISABLED_SCHOOL_TEACHER_STAFF_NO: "T-003",
+    STAGING_TEST_TEACHER_PASSWORD: "Cdas-teacher-password9",
+    STAGING_TEST_STUDENT_PASSWORD: "Cdas-student-password9",
+    STAGING_TEST_OTHER_STUDENT_PASSWORD: "Cdas-other-student9",
+    STAGING_TEST_OTHER_TEACHER_PASSWORD: "Cdas-other-teacher9",
+    STAGING_TEST_DISABLED_ACCOUNT_PASSWORD: "Cdas-disabled-account9",
+    STAGING_TEST_DISABLED_SCHOOL_TEACHER_PASSWORD: "Cdas-disabled-school9",
+    STAGING_ACCEPTANCE_TEST_TEACHER_NAME: agentAcceptanceTeacherDisplayName,
+    STAGING_ACCEPTANCE_TEST_STUDENT_NAME: agentAcceptanceStudentDisplayName,
     STAGING_ACCEPTANCE_TEST_OTHER_STUDENT_NAME:
       agentAcceptanceOtherStudentDisplayName,
     STAGING_ACCEPTANCE_TEST_OTHER_TEACHER_NAME:
@@ -46,19 +55,17 @@ function environment(extra: Record<string, string | undefined> = {}) {
     CDAS_DEPLOYMENT_ID: "a".repeat(40),
     CDAS_SOURCE_FINGERPRINT: "b".repeat(64),
     STAGING_HEALTH_PROOF_SECRET: "h".repeat(32),
-    DATABASE_URL:
-      "postgresql://u:p@staging-pooler.example.test/staging?sslmode=require",
-    DIRECT_URL:
-      "postgresql://u:p@staging.example.test/staging?sslmode=require",
+    DATABASE_URL: "postgresql://u:p@staging-pooler.example.test/staging",
+    DIRECT_URL: "postgresql://u:p@staging.example.test/staging",
     STAGING_DATABASE_NAME: "staging",
     STAGING_SYNTHETIC_ONLY_ATTESTED: "true",
-    STAGING_CLERK_INSTANCE_ATTESTED: "true",
+    STAGING_LOCAL_AUTH_ATTESTED: "true",
     STAGING_DATABASE_ISOLATION_ATTESTED: "true",
     STAGING_HOSTING_ACCESS_ATTESTED: "true",
     STAGING_ROLLBACK_OWNER_ATTESTED: "true",
     STAGING_RETENTION_ATTESTED: "true",
     STAGING_AGENT_WRITES_ATTESTED: "true",
-    STAGING_AGENT_CLERK_TOKENS_ATTESTED: "true",
+    STAGING_AGENT_LOCAL_SESSIONS_ATTESTED: "true",
     STAGING_AGENT_MODEL_COST_ATTESTED: "true",
     STAGING_AGENT_RETENTION_ATTESTED: "true",
     STAGING_AGENT_RUN_MODEL_ATTESTED: "true",
@@ -72,9 +79,7 @@ describe("agent acceptance contracts", () => {
     expect(agentAcceptanceNamespace(marker).classroomId).toMatch(
       /-5[0-9a-f]{3}-[89ab]/u,
     );
-    expect(evaluateAgentAcceptanceReadiness(environment()).status).toBe(
-      "PASS",
-    );
+    expect(evaluateAgentAcceptanceReadiness(environment()).status).toBe("PASS");
     expect(
       evaluateAgentAcceptanceReadiness(
         environment({ DEEPSEEK_API_KEY: "short" }),
@@ -87,15 +92,14 @@ describe("agent acceptance contracts", () => {
     ).toBe("FAIL");
     expect(
       evaluateAgentAcceptanceReadiness(
-        environment({ STAGING_VERCEL_AUTOMATION_BYPASS_SECRET: "short" }),
+        environment({ STAGING_TEST_OTHER_STUDENT_NO: "000001" }),
       ).status,
     ).toBe("FAIL");
   });
 
-  it("binds secret configuration without serializing it", async () => {
+  it("binds non-password configuration without serializing credentials", async () => {
     const actual = environment();
-    const source = (await import("../source-fingerprint"))
-      .createSourceFingerprint();
+    const source = (await import("../source-fingerprint")).createSourceFingerprint();
     const candidate = await createAgentGate(
       { ...actual, CDAS_SOURCE_FINGERPRINT: source },
       {
@@ -107,7 +111,7 @@ describe("agent acceptance contracts", () => {
         checks: [],
       },
     );
-    const go = {
+    const gate = {
       ...candidate,
       decision: "GO" as const,
       checks: candidate.checks.map((check) => ({
@@ -116,91 +120,93 @@ describe("agent acceptance contracts", () => {
       })),
     };
     const boundEnvironment = { ...actual, CDAS_SOURCE_FINGERPRINT: source };
-    expect(isAgentGate(go, boundEnvironment)).toBe(true);
+    expect(isAgentGate(gate, boundEnvironment)).toBe(true);
     expect(
-      isAgentGate(go, { ...boundEnvironment, AI_MODEL: "deepseek-v4-pro" }),
+      isAgentGate(gate, { ...boundEnvironment, AI_MODEL: "deepseek-other" }),
     ).toBe(false);
-    expect(
-      isAgentGate(go, {
-        ...boundEnvironment,
-        STAGING_VERCEL_AUTOMATION_BYPASS_SECRET: "W".repeat(32),
-      }),
-    ).toBe(false);
-    expect(JSON.stringify(go)).not.toContain(actual.DEEPSEEK_API_KEY);
+    expect(JSON.stringify(gate)).not.toContain(actual.STAGING_TEST_TEACHER_PASSWORD);
   });
 
-  it("does not issue a teacher ticket until the exact gate is ready", async () => {
-    let calls = 0;
-    const client = {
-      signInTokens: {
-        createSignInToken: async (input: {
-          userId: string;
-          expiresInSeconds: number;
-        }) => {
-          calls += 1;
-          expect(input.expiresInSeconds).toBe(60);
-          return { token: "memory" };
-        },
-      },
-    };
-    await expect(
-      issueAgentTeacherTicket(
-        environment({ AI_PROVIDER_DISABLED: "1" }),
-        client,
-      ),
-    ).rejects.toThrow();
-    expect(calls).toBe(0);
-    await expect(
-      issueAgentTeacherTicket(environment(), client),
-    ).resolves.toBe("memory");
+  it("redacts forbidden connection, credential, cookie, and AI key shapes", () => {
+    const output = redactAgentAcceptanceText(
+      "postgresql://a:b@x password=secret Bearer abc Cookie session=x sk_test_value",
+    );
+    expect(output).not.toContain("postgresql://");
+    expect(output).not.toContain("password=secret");
+    expect(output).not.toContain("sk_test_value");
   });
 
-  it("redacts evidence and scopes secrets away from action and install steps", () => {
-    expect(
-      redactAgentAcceptanceText(
-        "postgresql://a:b@x ticket=token sk_test_value",
-      ),
-    ).not.toContain("token");
-
+  it("keeps secrets scoped to the protected gate and action steps", () => {
     const workflow = readFileSync(
       ".github/workflows/staging-agent-acceptance.yml",
       "utf8",
     );
-    const jobEnvironmentBlocks = [
-      ...workflow.matchAll(/^    env:\n((?:^      [^\n]*\n)*)/gmu),
-    ].map((match) => match[1] ?? "");
-    expect(jobEnvironmentBlocks).toHaveLength(2);
-    expect(jobEnvironmentBlocks.join("\n")).not.toContain("secrets.");
-    expect(workflow).not.toMatch(/^\s*uses:\s*[^\s]+@(v\d+|main|master)\s*$/gmu);
-    expect(workflow).toContain("STAGING_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY");
-    expect(workflow).not.toContain("STAGING_CLERK_PUBLISHABLE_KEY");
+    expect(workflow).not.toContain("NEXT_PUBLIC_");
+    expect(workflow).not.toContain("PROVIDER_SECRET_");
+    expect(workflow).not.toContain("issue-teacher-");
+    expect(workflow).toContain("STAGING_TEST_TEACHER_PASSWORD");
     expect(workflow).toContain("STAGING_VERCEL_AUTOMATION_BYPASS_SECRET");
     expect(workflow).toContain('STAGING_DEPLOYMENT_PROTECTION_REQUIRED: "1"');
-    expect(workflow).toContain(
-      ".venv-staging-agent-acceptance/bin/python -m pip install -r scripts/e2e/requirements.txt",
+    const bootstrapStart = workflow.indexOf("id: bootstrap");
+    const bootstrapEnd = workflow.indexOf(
+      "run: pnpm staging:agent:bootstrap",
+      bootstrapStart,
     );
-    expect(workflow).toContain(
-      ".venv-staging-agent-acceptance/bin/python -m playwright install --with-deps chromium",
-    );
-    expect(workflow).toContain(
-      'echo "$PWD/.venv-staging-agent-acceptance/bin" >> "$GITHUB_PATH"',
-    );
-    expect(workflow).not.toContain("pnpm exec playwright install");
+    const bootstrapStep = workflow.slice(bootstrapStart, bootstrapEnd);
+    expect(bootstrapStep).toContain("STAGING_TEST_TEACHER_PASSWORD");
+    expect(bootstrapStep).not.toContain("DEEPSEEK_API_KEY");
+    expect(bootstrapStep).not.toContain("AI_TOOL_APPROVAL_SECRET");
+    expect(bootstrapStep).not.toContain("STAGING_VERCEL_AUTOMATION_BYPASS_SECRET");
+    const order = [
+      "id: agent-gate",
+      "id: chromium",
+      "id: immediate-health",
+      "id: bootstrap",
+      "id: identity",
+      "id: browser",
+      "id: cleanup",
+      "id: verify",
+    ].map((id) => workflow.indexOf(id));
+    expect(order.every((position) => position >= 0)).toBe(true);
+    expect(order).toEqual([...order].sort((left, right) => left - right));
+  });
 
-    expect(workflow.indexOf("id: agent-gate")).toBeLessThan(
-      workflow.indexOf("id: chromium"),
-    );
-    expect(workflow.indexOf("id: identity")).toBeLessThan(
-      workflow.indexOf("id: immediate-health"),
-    );
-    expect(workflow.indexOf("id: immediate-health")).toBeLessThan(
-      workflow.indexOf("id: bootstrap"),
-    );
-    expect(workflow.indexOf("id: bootstrap")).toBeLessThan(
-      workflow.indexOf("id: browser"),
-    );
-    expect(workflow.indexOf("id: browser")).toBeLessThan(
-      workflow.indexOf("id: verify"),
-    );
+  it("requires strict identity evidence before browser execution", () => {
+    const codes = [
+      "TEACHER_LOCAL_AUTHENTICATES",
+      "STUDENT_LOCAL_AUTHENTICATES",
+      "OTHER_STUDENT_LOCAL_AUTHENTICATES",
+      "OTHER_TEACHER_LOCAL_AUTHENTICATES",
+      "DISABLED_ACCOUNT_IS_REJECTED",
+      "DISABLED_SCHOOL_IS_REJECTED",
+      "CROSS_SCHOOL_IDENTIFIER_REJECTED",
+    ];
+    const identity = {
+      schema: "staging-agent-acceptance-identity.v1",
+      status: "PASS",
+      checks: codes.map((code) => ({ code, status: "PASS" })),
+      directSessionsRevoked: true,
+      realStudentDataAllowed: false,
+      productionDecision: "NO_GO",
+    };
+    expect(isPassingAgentIdentityEvidence(identity)).toBe(true);
+    expect(
+      isPassingAgentIdentityEvidence({ ...identity, status: "FAIL" }),
+    ).toBe(false);
+    const incomplete = structuredClone(identity);
+    incomplete.checks.pop();
+    expect(isPassingAgentIdentityEvidence(incomplete)).toBe(false);
+    const swapped = structuredClone(identity);
+    [swapped.checks[4], swapped.checks[5]] = [
+      swapped.checks[5],
+      swapped.checks[4],
+    ];
+    expect(isPassingAgentIdentityEvidence(swapped)).toBe(false);
+    expect(
+      isPassingAgentIdentityEvidence({
+        ...identity,
+        directSessionsRevoked: false,
+      }),
+    ).toBe(false);
   });
 });

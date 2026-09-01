@@ -38,6 +38,12 @@ export function TeacherManager({
           {actionState.message}
         </InlineAlert>
       ) : null}
+      {actionState.oneTimePassword ? (
+        <InlineAlert tone="success">
+          一次性密码（仅显示一次）：<strong>{actionState.oneTimePassword}</strong>
+          <br />教师首次登录后必须立即修改密码。
+        </InlineAlert>
+      ) : null}
 
       <form action={dispatchAction} className={styles.form}>
         <input name="operation" type="hidden" value="register" />
@@ -107,6 +113,20 @@ export function TeacherManager({
                 >
                   {teacher.accountStatus === "ACTIVE" ? "停用" : "恢复"}
                 </button>
+                {teacher.staffNo && !teacher.legacyProfile ? (
+                  <button
+                    className={styles.secondaryButton}
+                    onClick={() => {
+                      const data = new FormData();
+                      data.set("operation", "issue-password");
+                      data.set("teacherId", teacher.id);
+                      dispatchAction(data);
+                    }}
+                    type="button"
+                  >
+                    {teacher.provisioningStatus === "PENDING" ? "签发初始密码" : "重置密码"}
+                  </button>
+                ) : null}
               </td>
             </tr>
           ))}

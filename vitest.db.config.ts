@@ -13,6 +13,7 @@ export default defineConfig({
     fileParallelism: false,
     include: [
       "src/server/bootstrap/*.integration.test.ts",
+      "src/server/auth/*.integration.test.ts",
       "src/server/commands/*.integration.test.ts",
       "src/server/queries/*.integration.test.ts",
       "scripts/staging/*.integration.test.ts",

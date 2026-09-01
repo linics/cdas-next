@@ -43,8 +43,18 @@ const readinessCodes = [
   "AGENT_DEEPSEEK_KEY",
   "AGENT_MODEL",
   "AGENT_APPROVAL_SECRET",
-  "AGENT_CLERK_TEST",
-  "AGENT_IDENTITIES",
+  "AGENT_AUTH_MODE",
+  "AGENT_SCHOOLS",
+  "AGENT_STAFF_NUMBERS",
+  "AGENT_STUDENT_NUMBERS",
+  "AGENT_IDENTITIES_DISTINCT",
+  "AGENT_NEGATIVE_FIXTURES_DISTINCT",
+  "AGENT_STAGING_TEST_TEACHER_PASSWORD_PRESENT",
+  "AGENT_STAGING_TEST_STUDENT_PASSWORD_PRESENT",
+  "AGENT_STAGING_TEST_OTHER_STUDENT_PASSWORD_PRESENT",
+  "AGENT_STAGING_TEST_OTHER_TEACHER_PASSWORD_PRESENT",
+  "AGENT_STAGING_TEST_DISABLED_ACCOUNT_PASSWORD_PRESENT",
+  "AGENT_STAGING_TEST_DISABLED_SCHOOL_TEACHER_PASSWORD_PRESENT",
   "AGENT_FIXED_DISPLAY_NAMES",
   "AGENT_RUN_METADATA",
   ...agentAcceptanceAttestations,
@@ -56,14 +66,13 @@ const gateCodes = [
   "AGENT_BINDING_MAC",
 ];
 const identityCodes = [
-  "TEACHER_IDENTITY_EXISTS",
-  "STUDENT_IDENTITY_EXISTS",
-  "OTHER_STUDENT_IDENTITY_EXISTS",
-  "OTHER_TEACHER_IDENTITY_EXISTS",
-  "TEACHER_TICKET_REVOKED",
-  "STUDENT_TICKET_REVOKED",
-  "OTHER_STUDENT_TICKET_REVOKED",
-  "OTHER_TEACHER_TICKET_REVOKED",
+  "TEACHER_LOCAL_AUTHENTICATES",
+  "STUDENT_LOCAL_AUTHENTICATES",
+  "OTHER_STUDENT_LOCAL_AUTHENTICATES",
+  "OTHER_TEACHER_LOCAL_AUTHENTICATES",
+  "DISABLED_ACCOUNT_IS_REJECTED",
+  "DISABLED_SCHOOL_IS_REJECTED",
+  "CROSS_SCHOOL_IDENTIFIER_REJECTED",
 ];
 
 function checks(codes: readonly string[]) {
@@ -101,7 +110,7 @@ function exactEvidence(): AgentAcceptanceEvidenceSet {
       schema: "staging-agent-acceptance-identity.v1",
       status: "PASS",
       checks: checks(identityCodes),
-      ticketsRevoked: true,
+      directSessionsRevoked: true,
       ...boundary(),
     },
     immediateHealth: {
@@ -143,6 +152,14 @@ function exactEvidence(): AgentAcceptanceEvidenceSet {
       ),
       ...boundary(),
     },
+    cleanup: {
+      schema: "staging-agent-acceptance-cleanup.v1",
+      status: "PASS",
+      targetCount: 6,
+      revokedCount: 6,
+      remainingCount: 0,
+      ...boundary(),
+    },
     verification: {
       schema: "staging-agent-acceptance-verify.v1",
       status: "PASS",
@@ -161,6 +178,7 @@ describe("Agent acceptance final evidence", () => {
       immediateHealth: true,
       bootstrap: true,
       browser: true,
+      cleanup: true,
       verification: true,
     });
   });
@@ -168,10 +186,11 @@ describe("Agent acceptance final evidence", () => {
   it.each([
     ["readiness", "checks"],
     ["gate", "bindingMac"],
-    ["identity", "ticketsRevoked"],
+    ["identity", "directSessionsRevoked"],
     ["immediateHealth", "checks"],
     ["bootstrap", "resources"],
     ["browser", "checks"],
+    ["cleanup", "remainingCount"],
     ["verification", "checks"],
   ] as const)("rejects %s when %s is missing", (artifact, key) => {
     const evidence = structuredClone(exactEvidence()) as Record<
@@ -220,6 +239,21 @@ describe("Agent acceptance final evidence", () => {
       "01-draft-proposal.png"
     ] = "not-a-sha256";
     expect(evaluateAgentAcceptanceEvidence(malformed, marker).browser).toBe(
+      false,
+    );
+  });
+
+  it("keeps disabled-account and disabled-school failures distinct", () => {
+    const evidence = structuredClone(exactEvidence()) as Record<
+      keyof AgentAcceptanceEvidenceSet,
+      Record<string, unknown>
+    >;
+    const identityChecks = evidence.identity.checks as Array<
+      Record<string, unknown>
+    >;
+    identityChecks[4].code = "DISABLED_SCHOOL_IS_REJECTED";
+    identityChecks[5].code = "DISABLED_ACCOUNT_IS_REJECTED";
+    expect(evaluateAgentAcceptanceEvidence(evidence, marker).identity).toBe(
       false,
     );
   });

@@ -114,6 +114,30 @@ describe("GitHub CLI provider", () => {
     expect(attempts).toBe(2);
     expect(waits).toEqual([2_000]);
   });
+  it("deletes only allowlisted legacy variables and secrets, idempotently", async () => {
+    const calls: Call[] = [];
+    let variablePresent = true;
+    let secretPresent = true;
+    const runner: CommandRunner = { run: async (command, args, options) => {
+      calls.push({ command, args, input: options?.input });
+      if (args[0] === "variable" && args[1] === "list") return { stdout: JSON.stringify(variablePresent ? [{ name: "STAGING_CLERK_INSTANCE_ATTESTED", value: "true" }] : []), stderr: "" };
+      if (args[0] === "secret" && args[1] === "list") return { stdout: JSON.stringify(secretPresent ? [{ name: "STAGING_CLERK_SECRET_KEY" }] : []), stderr: "" };
+      if (args[0] === "variable" && args[1] === "delete") { variablePresent = false; return { stdout: "", stderr: "" }; }
+      if (args[0] === "secret" && args[1] === "delete") { secretPresent = false; return { stdout: "", stderr: "" }; }
+      return { stdout: "", stderr: "" };
+    } };
+    const provider = new GitHubCliProvider(runner);
+    await provider.deleteVariable("STAGING_CLERK_INSTANCE_ATTESTED");
+    await provider.deleteVariable("STAGING_CLERK_INSTANCE_ATTESTED");
+    await provider.deleteSecret("STAGING_CLERK_SECRET_KEY");
+    await provider.deleteSecret("STAGING_CLERK_SECRET_KEY");
+    await expect(provider.deleteVariable("STAGING_DATABASE_NAME")).rejects.toThrow("DEVELOPMENT_INFRA_GITHUB_VARIABLE_DELETE_UNSAFE");
+    await expect(provider.deleteSecret("STAGING_DATABASE_URL")).rejects.toThrow("DEVELOPMENT_INFRA_GITHUB_SECRET_DELETE_UNSAFE");
+    const deletions = calls.filter((call) => call.args[1] === "delete");
+    expect(deletions).toHaveLength(2);
+    expect(deletions.every((call) => !call.args.includes("--confirm"))).toBe(true);
+    expect(deletions.every((call) => !call.args.includes("true"))).toBe(true);
+  });
   it("rejects workflow run URLs bound to another repository, host, or id", async () => {
     for (const url of ["https://github.com/other/repo/actions/runs/2", "https://evil.test/owner/repo/actions/runs/2", "https://github.com/owner/repo/actions/runs/3"]) {
       let listCount = 0;

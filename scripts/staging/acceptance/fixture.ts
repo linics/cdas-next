@@ -16,10 +16,10 @@ export async function probeAcceptanceNamespace(
     where: { id: classroomId },
     select: {
       name: true,
-      manager: { select: { authSubject: true } },
+      manager: { select: { authSubject: true, localCredential: { select: { identifier: true } } } },
       memberships: {
         select: {
-          student: { select: { authSubject: true } },
+          student: { select: { authSubject: true, localCredential: { select: { identifier: true } } } },
           endedAt: true,
         },
       },
@@ -27,12 +27,12 @@ export async function probeAcceptanceNamespace(
   });
   if (!classroom) return "ABSENT";
   const matching = classroom.name === classroomName &&
-    classroom.manager.authSubject === teacherSubject &&
+    classroom.manager.localCredential?.identifier === teacherSubject &&
     classroom.memberships.length === 2 &&
     classroom.memberships.every((membership) => membership.endedAt === null) &&
-    new Set(classroom.memberships.map((membership) => membership.student.authSubject)).size === 2 &&
-    new Set(classroom.memberships.map((membership) => membership.student.authSubject)).has(studentSubject) &&
-    new Set(classroom.memberships.map((membership) => membership.student.authSubject)).has(otherStudentSubject);
+    new Set(classroom.memberships.map((membership) => membership.student.localCredential?.identifier)).size === 2 &&
+    new Set(classroom.memberships.map((membership) => membership.student.localCredential?.identifier)).has(studentSubject) &&
+    new Set(classroom.memberships.map((membership) => membership.student.localCredential?.identifier)).has(otherStudentSubject);
   return matching ? "MATCHING" : "COLLISION";
 }
 
@@ -44,7 +44,7 @@ export async function assertNoAcceptanceBusinessHistory(
   const count = await database.activityDraft.count({
     where: {
       title: activityTitle,
-      owner: { authSubject: teacherSubject },
+      owner: { localCredential: { identifier: teacherSubject } },
     },
   });
   if (count !== 0) {

@@ -1,4 +1,62 @@
 import type { createDatabaseClient } from "../../../src/server/db/client";
-type Db=ReturnType<typeof createDatabaseClient>;
-export async function probeAgentNamespace(db:Db,id:string,name:string,teacher:string,student:string,otherStudent:string){const classroom=await db.classroom.findUnique({where:{id},select:{name:true,manager:{select:{authSubject:true}},memberships:{select:{student:{select:{authSubject:true}},endedAt:true}}}});if(!classroom)return "ABSENT" as const;const subjects=new Set(classroom.memberships.map((membership)=>membership.student.authSubject));return classroom.name===name&&classroom.manager.authSubject===teacher&&classroom.memberships.length===2&&classroom.memberships.every((membership)=>membership.endedAt===null)&&subjects.size===2&&subjects.has(student)&&subjects.has(otherStudent)?"MATCHING" as const:"COLLISION" as const;}
-export async function assertNoAgentBusinessHistory(db:Db,teacher:string,title:string){if(await db.activityDraft.count({where:{owner:{authSubject:teacher},title}}))throw new Error("STAGING_AGENT_ACCEPTANCE_BUSINESS_HISTORY_ALREADY_EXISTS");}
+
+type DatabaseClient = ReturnType<typeof createDatabaseClient>;
+export type AgentNamespaceProbe = "ABSENT" | "MATCHING" | "COLLISION";
+
+export async function probeAgentNamespace(
+  database: DatabaseClient,
+  classroomId: string,
+  classroomName: string,
+  teacherIdentifier: string,
+  studentIdentifier: string,
+  otherStudentIdentifier: string,
+): Promise<AgentNamespaceProbe> {
+  const classroom = await database.classroom.findUnique({
+    where: { id: classroomId },
+    select: {
+      name: true,
+      manager: {
+        select: { localCredential: { select: { identifier: true } } },
+      },
+      memberships: {
+        select: {
+          student: {
+            select: { localCredential: { select: { identifier: true } } },
+          },
+          endedAt: true,
+        },
+      },
+    },
+  });
+  if (!classroom) return "ABSENT";
+  const identifiers = new Set(
+    classroom.memberships.map(
+      (membership) => membership.student.localCredential?.identifier,
+    ),
+  );
+  const matching =
+    classroom.name === classroomName &&
+    classroom.manager.localCredential?.identifier === teacherIdentifier &&
+    classroom.memberships.length === 2 &&
+    classroom.memberships.every((membership) => membership.endedAt === null) &&
+    identifiers.size === 2 &&
+    identifiers.has(studentIdentifier) &&
+    identifiers.has(otherStudentIdentifier);
+  return matching ? "MATCHING" : "COLLISION";
+}
+
+export async function assertNoAgentBusinessHistory(
+  database: DatabaseClient,
+  teacherIdentifier: string,
+  activityTitle: string,
+): Promise<void> {
+  const count = await database.activityDraft.count({
+    where: {
+      title: activityTitle,
+      owner: { localCredential: { identifier: teacherIdentifier } },
+    },
+  });
+  if (count !== 0) {
+    throw new Error("STAGING_AGENT_ACCEPTANCE_BUSINESS_HISTORY_ALREADY_EXISTS");
+  }
+}

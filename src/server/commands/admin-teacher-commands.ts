@@ -1,6 +1,6 @@
 import "server-only";
 
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { createHash } from "node:crypto";
 import canonicalize from "canonicalize";
 import { z } from "zod";
@@ -12,8 +12,10 @@ import {
   pendingTeacherAuthSubject,
   schoolNameSchema,
   staffNoSchema,
+  teacherIdentifier,
 } from "../../domain/school/identity";
 import { requireActivePlatformAdmin } from "../school/admin-authorization";
+import { hashPassword } from "../auth/local-auth";
 import {
   type CommandContext,
   resolveCommandContext,
@@ -65,6 +67,10 @@ export const registerSchoolTeacherResultSchema = z
   })
   .strict();
 export const setTeacherAccountStatusResultSchema = teacherStatusReplaySchema;
+const issueTeacherPasswordInputSchema = z.object({ teacherId: teacherIdSchema, idempotencyKey: idempotencyKeySchema }).strict();
+export const issueTeacherPasswordResultSchema = z.object({ teacherId: teacherIdSchema, oneTimePassword: z.string().min(20) }).strict();
+export type IssueTeacherPasswordInput = z.input<typeof issueTeacherPasswordInputSchema>;
+export type IssueTeacherPasswordResult = z.infer<typeof issueTeacherPasswordResultSchema>;
 
 export type RegisterSchoolTeacherInput = z.input<
   typeof registerSchoolTeacherInputSchema
@@ -87,11 +93,91 @@ export class TeacherAdminCommandError extends Error {
       | "STAFF_NO_CONFLICT"
       | "SCHOOL_DISABLED"
       | "IDEMPOTENCY_MISMATCH"
+      | "PASSWORD_ALREADY_ISSUED"
       | "CONCURRENT_WRITE",
   ) {
     super(code);
     this.name = "TeacherAdminCommandError";
   }
+}
+
+function issueOneTimePassword(): string {
+  return `Cdas-${randomBytes(18).toString("base64url")}9a`;
+}
+
+export async function issueTeacherOneTimePassword(
+  database: PrismaClient,
+  commandContext: CommandContext,
+  rawInput: IssueTeacherPasswordInput,
+): Promise<IssueTeacherPasswordResult> {
+  const input = issueTeacherPasswordInputSchema.parse(rawInput);
+  const context = resolveCommandContext(commandContext, ["UI"]);
+  const oneTimePassword = issueOneTimePassword();
+  const passwordHash = await hashPassword(oneTimePassword);
+  const requestHash = hashSafeRequest({ action: "issue_teacher_password", teacherId: input.teacherId });
+  const result = await database.$transaction(async (transaction) => {
+    await requireActivePlatformAdmin(transaction, context.actorId).catch(() => { throw new TeacherAdminCommandError("FORBIDDEN"); });
+    const teacher = await transaction.appUser.findUnique({ where: { id: input.teacherId }, select: { id: true, role: true, authSubject: true, staffNo: true, school: { select: { code: true } } } });
+    if (!teacher || teacher.role !== "TEACHER") throw new TeacherAdminCommandError("NOT_FOUND");
+    if (!teacher.school?.code || !teacher.staffNo) {
+      throw new TeacherAdminCommandError("NOT_FOUND");
+    }
+    if (
+      !teacher.authSubject.startsWith("pending:") &&
+      teacher.authSubject !== `local:${teacher.id}`
+    ) {
+      throw new TeacherAdminCommandError("STAFF_NO_CONFLICT");
+    }
+    const existing = await transaction.idempotencyRecord.findUnique({
+      where: {
+        actorId_commandName_idempotencyKey: {
+          actorId: context.actorId,
+          commandName: "issue_teacher_password",
+          idempotencyKey: input.idempotencyKey,
+        },
+      },
+    });
+    if (existing) {
+      if (existing.requestHash !== requestHash) {
+        throw new TeacherAdminCommandError("IDEMPOTENCY_MISMATCH");
+      }
+      throw new TeacherAdminCommandError("PASSWORD_ALREADY_ISSUED");
+    }
+    await transaction.localCredential.upsert({
+      where: { userId: teacher.id },
+      create: { userId: teacher.id, identifier: teacherIdentifier(teacher.school?.code ?? "", teacher.staffNo ?? ""), passwordHash, mustChangePassword: true },
+      update: { passwordHash, mustChangePassword: true, failedLoginCount: 0, lockedUntil: null, passwordChangedAt: null },
+    });
+    if (teacher.authSubject.startsWith("pending:")) await transaction.appUser.update({ where: { id: teacher.id }, data: { authSubject: `local:${teacher.id}` } });
+    await transaction.authSession.updateMany({ where: { userId: teacher.id, revokedAt: null }, data: { revokedAt: context.now } });
+    await transaction.idempotencyRecord.create({
+      data: {
+        actorId: context.actorId,
+        commandName: "issue_teacher_password",
+        idempotencyKey: input.idempotencyKey,
+        requestHash,
+        response: { teacherId: teacher.id, issued: true },
+        resourceType: "AppUser",
+        resourceId: teacher.id,
+      },
+    });
+    await transaction.actionAudit.create({
+      data: {
+        actorId: context.actorId,
+        source: context.source,
+        actionName: "issue_teacher_password",
+        targetType: "AppUser",
+        targetId: teacher.id,
+        requestHash,
+        idempotencyKey: input.idempotencyKey,
+        outcome: "SUCCEEDED",
+        resultResourceId: teacher.id,
+        traceId: context.traceId,
+      },
+    });
+    return { teacherId: teacher.id, oneTimePassword };
+  }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+  return issueTeacherPasswordResultSchema.parse(result);
 }
 
 function hashSafeRequest(value: unknown): string {

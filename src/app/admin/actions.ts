@@ -14,6 +14,7 @@ import {
 } from "../../server/commands/admin-school-commands";
 import {
   registerSchoolTeacher,
+  issueTeacherOneTimePassword,
   setTeacherAccountStatus,
   TeacherAdminCommandError,
 } from "../../server/commands/admin-teacher-commands";
@@ -23,7 +24,12 @@ import {
 } from "./action-state";
 
 function fail(message: string): AdminActionState {
-  return { status: "error", message, inviteCode: null };
+  return {
+    status: "error",
+    message,
+    inviteCode: null,
+    oneTimePassword: null,
+  };
 }
 
 function commandErrorMessage(error: unknown): string {
@@ -59,6 +65,7 @@ export async function createSchoolAction(
       status: "success",
       message: `已创建学校 ${result.schoolCode}`,
       inviteCode: result.teacherInviteCode,
+      oneTimePassword: null,
     };
   } catch (error) {
     return fail(commandErrorMessage(error));
@@ -76,7 +83,12 @@ export async function updateSchoolNameAction(
       idempotencyKey: `ui_rename_school_${randomUUID()}`,
     });
     refresh();
-    return { status: "success", message: "已更新学校名称。", inviteCode: null };
+    return {
+      status: "success",
+      message: "已更新学校名称。",
+      inviteCode: null,
+      oneTimePassword: null,
+    };
   } catch (error) {
     return fail(commandErrorMessage(error));
   }
@@ -98,6 +110,7 @@ export async function setSchoolStatusAction(
       status: "success",
       message: status === "DISABLED" ? "已停用该校。" : "已恢复该校。",
       inviteCode: null,
+      oneTimePassword: null,
     };
   } catch (error) {
     return fail(commandErrorMessage(error));
@@ -122,6 +135,7 @@ export async function resetSchoolTeacherInviteAction(
       status: "success",
       message: "已重置教师邀请码。明文只出现这一次。",
       inviteCode: result.teacherInviteCode,
+      oneTimePassword: null,
     };
   } catch (error) {
     return fail(commandErrorMessage(error));
@@ -148,6 +162,7 @@ export async function registerSchoolTeacherAction(
       status: "success",
       message: "已登记教师。登录凭据将在本地认证切片开通。",
       inviteCode: null,
+      oneTimePassword: null,
     };
   } catch (error) {
     return fail(commandErrorMessage(error));
@@ -174,8 +189,40 @@ export async function setTeacherAccountStatusAction(
       status: "success",
       message: accountStatus === "DISABLED" ? "已停用该教师。" : "已恢复该教师。",
       inviteCode: null,
+      oneTimePassword: null,
     };
   } catch (error) {
+    return fail(commandErrorMessage(error));
+  }
+}
+
+export async function issueTeacherPasswordAction(
+  _previous: AdminActionState,
+  formData: FormData,
+): Promise<AdminActionState> {
+  try {
+    const result = await issueTeacherOneTimePassword(
+      getDatabaseClient(),
+      await createUiCommandContext(),
+      {
+        teacherId: String(formData.get("teacherId") ?? ""),
+        idempotencyKey: `ui_issue_teacher_password_${randomUUID()}`,
+      },
+    );
+    refresh();
+    return {
+      status: "success",
+      message: "一次性密码仅显示这一次，教师首次登录后必须改密。",
+      inviteCode: null,
+      oneTimePassword: result.oneTimePassword,
+    };
+  } catch (error) {
+    if (
+      error instanceof TeacherAdminCommandError &&
+      error.code === "PASSWORD_ALREADY_ISSUED"
+    ) {
+      return fail("该请求已签发过一次性密码，请生成新的签发请求。");
+    }
     return fail(commandErrorMessage(error));
   }
 }
@@ -207,6 +254,8 @@ export async function teacherManagerAction(
       return registerSchoolTeacherAction(previous, formData);
     case "status":
       return setTeacherAccountStatusAction(previous, formData);
+    case "issue-password":
+      return issueTeacherPasswordAction(previous, formData);
     default:
       return fail("无法识别这次教师操作，请刷新后重试。");
   }

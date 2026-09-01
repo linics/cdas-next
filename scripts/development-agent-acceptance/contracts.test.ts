@@ -11,6 +11,7 @@ import {
   readValidatedModelAcceptanceEnvironmentFile,
   stableDevelopmentAgentError,
 } from "./contracts";
+import { AgentGitHubOperator } from "./index";
 
 const directories: string[] = [];
 afterEach(async () => {
@@ -155,5 +156,123 @@ describe("development Agent acceptance contracts", () => {
     );
     expect(verifyArtifact).toContain('"--import",\n          tsxLoader');
     expect(verifyArtifact).not.toContain('"--import",\n          "tsx"');
+  });
+
+  it("rejects names outside the exact Agent environment allowlists", async () => {
+    const calls: string[][] = [];
+    const runner = {
+      run: async (_command: string, args: readonly string[]) => {
+        calls.push([...args]);
+        return { stdout: "", stderr: "" };
+      },
+    };
+    const operator = new AgentGitHubOperator(runner, async () => undefined);
+    await expect(operator.setVariable("UNEXPECTED", "value")).rejects.toThrow(
+      "DEVELOPMENT_AGENT_GITHUB_VARIABLE_UNSAFE",
+    );
+    await expect(operator.setSecret("UNEXPECTED", "value")).rejects.toThrow(
+      "DEVELOPMENT_AGENT_GITHUB_SECRET_UNSAFE",
+    );
+    await expect(operator.deleteSecret("UNEXPECTED")).rejects.toThrow(
+      "DEVELOPMENT_AGENT_GITHUB_SECRET_DELETE_UNSAFE",
+    );
+    await expect(operator.deleteVariable("UNEXPECTED")).rejects.toThrow(
+      "DEVELOPMENT_AGENT_GITHUB_VARIABLE_DELETE_UNSAFE",
+    );
+    expect(calls).toEqual([]);
+  });
+
+  it("deletes only exact retired entries and proves they are absent", async () => {
+    const legacyVariable = "STAGING_CLERK_INSTANCE_ATTESTED";
+    const legacySecret = "STAGING_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY";
+    const variables = new Set([legacyVariable, `${legacyVariable}_COPY`]);
+    const secrets = new Set([legacySecret, `${legacySecret}_COPY`]);
+    const runner = {
+      run: async (_command: string, args: readonly string[]) => {
+        if (args[0] === "variable" && args[1] === "list") {
+          return {
+            stdout: JSON.stringify(
+              [...variables].map((name) => ({ name, value: "true" })),
+            ),
+            stderr: "",
+          };
+        }
+        if (args[0] === "secret" && args[1] === "list") {
+          return {
+            stdout: JSON.stringify([...secrets].map((name) => ({ name }))),
+            stderr: "",
+          };
+        }
+        if (args[0] === "variable" && args[1] === "delete") {
+          variables.delete(args[2] ?? "");
+        }
+        if (args[0] === "secret" && args[1] === "delete") {
+          secrets.delete(args[2] ?? "");
+        }
+        return { stdout: "", stderr: "" };
+      },
+    };
+    const operator = new AgentGitHubOperator(runner, async () => undefined);
+    await operator.deleteLegacyConfiguration();
+    expect(variables).toEqual(new Set([`${legacyVariable}_COPY`]));
+    expect(secrets).toEqual(new Set([`${legacySecret}_COPY`]));
+  });
+
+  it("closes paid secrets idempotently when none or only one remains", async () => {
+    for (const initial of [[], ["STAGING_DEEPSEEK_API_KEY"]]) {
+      const secrets = new Set(initial);
+      const deleted: string[] = [];
+      let listCount = 0;
+      const runner = {
+        run: async (_command: string, args: readonly string[]) => {
+          if (args[0] === "secret" && args[1] === "list") {
+            listCount += 1;
+            return {
+              stdout: JSON.stringify([...secrets].map((name) => ({ name }))),
+              stderr: "",
+            };
+          }
+          if (args[0] === "secret" && args[1] === "delete") {
+            const name = args[2] ?? "";
+            deleted.push(name);
+            secrets.delete(name);
+          }
+          return { stdout: "", stderr: "" };
+        },
+      };
+      const operator = new AgentGitHubOperator(runner, async () => undefined);
+      await expect(operator.deletePaidSecrets()).resolves.toBeUndefined();
+      expect(deleted).toEqual(initial);
+      expect(secrets.size).toBe(0);
+      expect(listCount).toBe(2);
+    }
+  });
+
+  it("generates one password map for secret configuration and local artifact verification", () => {
+    const source = readFileSync(
+      "scripts/development-agent-acceptance/index.ts",
+      "utf8",
+    );
+    expect(source).toContain("const passwords = generateSyntheticPasswords()");
+    expect(source).toContain("...input.passwords");
+    expect(source).not.toContain("JSON.stringify(passwords)");
+    expect(source).not.toContain("console.log(passwords)");
+  });
+
+  it("binds the artifact environment to the local-auth workflow contract", () => {
+    const source = readFileSync(
+      "scripts/development-agent-acceptance/index.ts",
+      "utf8",
+    );
+    expect(source).toContain('STAGING_AUTH_MODE: "postgres-local-v1"');
+    for (const name of [
+      "STAGING_LOCAL_AUTH_ATTESTED",
+      "STAGING_AGENT_LOCAL_SESSIONS_ATTESTED",
+      "STAGING_TEST_PRIMARY_SCHOOL_CODE",
+      "STAGING_TEST_DISABLED_SCHOOL_TEACHER_STAFF_NO",
+      "syntheticPasswordNames",
+    ]) {
+      expect(source).toContain(name);
+    }
   });
 });

@@ -43,8 +43,18 @@ const readinessCodes = [
   "AGENT_DEEPSEEK_KEY",
   "AGENT_MODEL",
   "AGENT_APPROVAL_SECRET",
-  "AGENT_CLERK_TEST",
-  "AGENT_IDENTITIES",
+  "AGENT_AUTH_MODE",
+  "AGENT_SCHOOLS",
+  "AGENT_STAFF_NUMBERS",
+  "AGENT_STUDENT_NUMBERS",
+  "AGENT_IDENTITIES_DISTINCT",
+  "AGENT_NEGATIVE_FIXTURES_DISTINCT",
+  "AGENT_STAGING_TEST_TEACHER_PASSWORD_PRESENT",
+  "AGENT_STAGING_TEST_STUDENT_PASSWORD_PRESENT",
+  "AGENT_STAGING_TEST_OTHER_STUDENT_PASSWORD_PRESENT",
+  "AGENT_STAGING_TEST_OTHER_TEACHER_PASSWORD_PRESENT",
+  "AGENT_STAGING_TEST_DISABLED_ACCOUNT_PASSWORD_PRESENT",
+  "AGENT_STAGING_TEST_DISABLED_SCHOOL_TEACHER_PASSWORD_PRESENT",
   "AGENT_FIXED_DISPLAY_NAMES",
   "AGENT_RUN_METADATA",
   ...agentAcceptanceAttestations,
@@ -56,14 +66,13 @@ const gateCodes = [
   "AGENT_BINDING_MAC",
 ] as const;
 const identityCodes = [
-  "TEACHER_IDENTITY_EXISTS",
-  "STUDENT_IDENTITY_EXISTS",
-  "OTHER_STUDENT_IDENTITY_EXISTS",
-  "OTHER_TEACHER_IDENTITY_EXISTS",
-  "TEACHER_TICKET_REVOKED",
-  "STUDENT_TICKET_REVOKED",
-  "OTHER_STUDENT_TICKET_REVOKED",
-  "OTHER_TEACHER_TICKET_REVOKED",
+  "TEACHER_LOCAL_AUTHENTICATES",
+  "STUDENT_LOCAL_AUTHENTICATES",
+  "OTHER_STUDENT_LOCAL_AUTHENTICATES",
+  "OTHER_TEACHER_LOCAL_AUTHENTICATES",
+  "DISABLED_ACCOUNT_IS_REJECTED",
+  "DISABLED_SCHOOL_IS_REJECTED",
+  "CROSS_SCHOOL_IDENTIFIER_REJECTED",
 ] as const;
 
 type Evidence = Readonly<Record<string, unknown>>;
@@ -74,6 +83,7 @@ export type AgentAcceptanceEvidenceSet = Readonly<{
   immediateHealth: unknown;
   bootstrap: unknown;
   browser: unknown;
+  cleanup: unknown;
   verification: unknown;
 }>;
 
@@ -123,6 +133,19 @@ function exactPassingChecks(
     seen.add(check.code);
     return true;
   });
+}
+
+function exactPassingChecksInOrder(
+  value: unknown,
+  expectedCodes: readonly string[],
+): boolean {
+  if (!exactPassingChecks(value, expectedCodes) || !Array.isArray(value)) {
+    return false;
+  }
+  return value.every(
+    (candidate, index) =>
+      evidenceObject(candidate)?.code === expectedCodes[index],
+  );
 }
 
 function exactStatusEvidence(
@@ -213,14 +236,14 @@ function passingIdentity(value: unknown): boolean {
         "schema",
         "status",
         "checks",
-        "ticketsRevoked",
+        "directSessionsRevoked",
         "realStudentDataAllowed",
         "productionDecision",
       ]) &&
       evidence.schema === "staging-agent-acceptance-identity.v1" &&
       evidence.status === "PASS" &&
-      evidence.ticketsRevoked === true &&
-      exactPassingChecks(evidence.checks, identityCodes) &&
+      evidence.directSessionsRevoked === true &&
+      exactPassingChecksInOrder(evidence.checks, identityCodes) &&
       hasCommonBoundary(evidence),
   );
 }
@@ -309,6 +332,29 @@ function passingBrowser(value: unknown): boolean {
   );
 }
 
+function passingCleanup(value: unknown): boolean {
+  const evidence = evidenceObject(value);
+  return Boolean(
+    evidence &&
+      exactKeys(evidence, [
+        "schema",
+        "status",
+        "targetCount",
+        "revokedCount",
+        "remainingCount",
+        "realStudentDataAllowed",
+        "productionDecision",
+      ]) &&
+      evidence.schema === "staging-agent-acceptance-cleanup.v1" &&
+      evidence.status === "PASS" &&
+      evidence.targetCount === 6 &&
+      typeof evidence.revokedCount === "number" &&
+      evidence.revokedCount >= 0 &&
+      evidence.remainingCount === 0 &&
+      hasCommonBoundary(evidence),
+  );
+}
+
 function passingVerification(value: unknown): boolean {
   return Boolean(
     exactStatusEvidence(
@@ -330,6 +376,7 @@ export function evaluateAgentAcceptanceEvidence(
     immediateHealth: passingImmediateHealth(evidence.immediateHealth),
     bootstrap: passingBootstrap(evidence.bootstrap, marker),
     browser: passingBrowser(evidence.browser),
+    cleanup: passingCleanup(evidence.cleanup),
     verification: passingVerification(evidence.verification),
   };
 }
@@ -374,6 +421,7 @@ async function main(): Promise<void> {
     immediateHealth,
     bootstrap,
     browser,
+    cleanup,
     verification,
   ] = await Promise.all([
     readEvidence(directory, "readiness.json"),
@@ -382,6 +430,7 @@ async function main(): Promise<void> {
     readEvidence(directory, "immediate-health.json"),
     readEvidence(directory, "bootstrap.json"),
     readEvidence(directory, "browser.json"),
+    readEvidence(directory, "cleanup.json"),
     readEvidence(directory, "verify.json"),
   ]);
 
@@ -391,9 +440,10 @@ async function main(): Promise<void> {
       gate,
       identity,
       immediateHealth,
-      bootstrap,
-      browser,
-      verification,
+    bootstrap,
+    browser,
+    cleanup,
+    verification,
     },
     marker,
   );

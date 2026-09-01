@@ -13,14 +13,6 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("server-only", () => ({}));
-vi.mock("@clerk/nextjs", () => ({
-  SignInButton: ({ children }: { children: ReactNode }) => (
-    <span data-clerk-sign-in="true">{children}</span>
-  ),
-  SignOutButton: ({ children }: { children: ReactNode }) => (
-    <span data-clerk-sign-out="true">{children}</span>
-  ),
-}));
 vi.mock("next/link", () => ({
   default: ({
     children,

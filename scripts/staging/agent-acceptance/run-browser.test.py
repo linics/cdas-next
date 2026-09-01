@@ -7,7 +7,6 @@ module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 public_hostname = module.public_hostname
 exact_origin = module.exact_origin
-canonical_origin = module.canonical_origin
 allowed_vercel_preview = module.allowed_vercel_preview
 origin_scoped_bypass_headers = module.origin_scoped_bypass_headers
 class HostTests(unittest.TestCase):
@@ -47,7 +46,16 @@ class HostTests(unittest.TestCase):
     self.assertIn("固定合成验收摘要（教师人工修订）", source)
     self.assertIn("保存并标记可预览", source)
     self.assertIn('get_by_text("草稿修订 2"', source)
-    self.assertIn("signIn.create", source)
+    self.assertIn('page.goto(f"{base}/{destination}/login"', source)
+    self.assertIn('get_by_label("学校代码", exact=True)', source)
+    self.assertIn('get_by_label("密码", exact=True)', source)
+    self.assertIn('get_by_role("button", name="登录", exact=True)', source)
+    self.assertIn('cookie.get("name") == "cdas_session"', source)
+    self.assertIn('session.get("httpOnly") is not True', source)
+    self.assertIn('session.get("sameSite") != "Lax"', source)
+    self.assertIn('session.get("secure") is not True', source)
+    self.assertIn('session.get("path") != "/"', source)
+    self.assertIn('float(session.get("expires", 0)) <= 0', source)
     self.assertIn('aria-label="发布确认"', source)
     self.assertIn('get_by_text("可使用", exact=True).wait_for(timeout=120_000)', source)
     self.assertIn('r"/teacher/releases/[0-9a-f-]+/submissions"', source)
@@ -70,12 +78,14 @@ class HostTests(unittest.TestCase):
     self.assertIn("确认并关闭活动", source)
     self.assertIn("STALE_STUDENT_WRITE_REJECTED_AFTER_CLOSE", source)
     self.assertIn("CLOSED_STUDENT_READONLY", source)
-    self.assertNotIn("sign-in?ticket=", source)
+    self.assertNotIn("sign-in?", source)
+    self.assertNotIn("window.", source[source.index("def sign_in"):source.index("def wait_text")])
+    self.assertNotIn("issue_", source)
     self.assertNotIn("rm -rf", source)
     secret="A"*32
     self.assertIn("x-vercel-protection-bypass",origin_scoped_bypass_headers("https://cdas-next-agent-linics1.vercel.app/path","https://cdas-next-agent-linics1.vercel.app",secret))
-    self.assertNotIn("x-vercel-protection-bypass",origin_scoped_bypass_headers("https://accounts.clerk.com/path","https://cdas-next-agent-linics1.vercel.app",secret))
-  def test_ticket_origin_rejects_cross_origin_redirects(self):
+    self.assertNotIn("x-vercel-protection-bypass",origin_scoped_bypass_headers("https://accounts.example.test/path","https://cdas-next-agent-linics1.vercel.app",secret))
+  def test_form_login_origin_rejects_cross_origin_redirects(self):
     expected="https://staging.example.test"
     self.assertTrue(exact_origin("https://staging.example.test/teacher/activities/new",expected))
     self.assertTrue(exact_origin("https://staging.example.test:443/",expected))
@@ -83,10 +93,7 @@ class HostTests(unittest.TestCase):
     self.assertFalse(exact_origin("https://evil.example.test/",expected))
     self.assertFalse(exact_origin("https://staging.example.test.evil.test/",expected))
     self.assertFalse(exact_origin("https://staging.example.test:444/",expected))
-    self.assertEqual(canonical_origin("https://staging.example.test:443/"),expected)
     source = pathlib.Path(__file__).with_name("run-browser.py").read_text(encoding="utf8")
-    self.assertLess(source.index("assert_origin(page.url, base)"),source.index("issue_ticket(role)"))
-    evaluate_source=source[source.index("signed_in = page.evaluate"):source.index("if not signed_in")]
-    self.assertIn("window.top !== window",evaluate_source)
-    self.assertLess(evaluate_source.index("window.location.origin !== expectedOrigin"),evaluate_source.index("window.Clerk"))
+    self.assertLess(source.index("assert_origin(page.url, base)"),source.index("page.get_by_label(\"学校代码\""))
+    self.assertIn("finally:", source[source.index("def sign_in"):source.index("def wait_text")])
 if __name__=="__main__": unittest.main()

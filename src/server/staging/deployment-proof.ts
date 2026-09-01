@@ -5,8 +5,6 @@ export type DeploymentProofInput = Readonly<{
   deploymentId: string | undefined;
   databaseUrl: string | undefined;
   sourceFingerprint: string | undefined;
-  clerkPublishableKey: string | undefined;
-  clerkSecretKey: string | undefined;
   aiProviderDisabled: string | undefined;
   deepseekApiKey?: string | undefined;
   aiModel?: string | undefined;
@@ -21,8 +19,7 @@ export type DeploymentConfiguration = Readonly<{
   databaseIdentity: string;
   databaseUrlHash: string;
   sourceFingerprint: string;
-  clerkPublishableKey: string;
-  clerkSecretKeyHash: string;
+  authMode: "postgres-local-v1";
   aiProviderDisabled: "0" | "1";
   deepseekApiKeyHash?: string;
   aiModel?: string;
@@ -123,9 +120,7 @@ export function deploymentConfiguration(
   const deploymentId = input.deploymentId?.trim().toLowerCase() ?? "";
   const databaseIdentity = parseRuntimeDatabaseIdentity(input.databaseUrl);
   const sourceFingerprint = input.sourceFingerprint?.trim().toLowerCase() ?? "";
-  const clerkPublishableKey = input.clerkPublishableKey?.trim() ?? "";
-  const clerkSecretKey = input.clerkSecretKey?.trim() ?? "";
-  const aiProviderDisabled = input.aiProviderDisabled?.trim() ?? "";
+  const aiProviderDisabled = input.aiProviderDisabled?.trim() || "0";
   const deepseekApiKey = input.deepseekApiKey?.trim() ?? "";
   const aiModel = input.aiModel?.trim() ?? "";
   // A deployment that reads attachments calls a second model, so the identity
@@ -148,8 +143,6 @@ export function deploymentConfiguration(
     !/^[a-f0-9]{40}$/u.test(deploymentId) ||
     !databaseIdentity ||
     !/^[a-f0-9]{64}$/u.test(sourceFingerprint) ||
-    !/^pk_test_[A-Za-z0-9_-]{10,}$/u.test(clerkPublishableKey) ||
-    !/^sk_test_[A-Za-z0-9_-]{10,}$/u.test(clerkSecretKey) ||
     (aiProviderDisabled !== "1" && aiProviderDisabled !== "0") ||
     (aiEnabled && !validEnabledAiConfiguration) ||
     !/^[a-f0-9]{32,128}$/u.test(challenge)
@@ -161,10 +154,7 @@ export function deploymentConfiguration(
     databaseIdentity,
     databaseUrlHash: createHash("sha256").update(input.databaseUrl?.trim() ?? "", "utf8").digest("hex"),
     sourceFingerprint,
-    clerkPublishableKey,
-    clerkSecretKeyHash: createHash("sha256")
-      .update(clerkSecretKey, "utf8")
-      .digest("hex"),
+    authMode: "postgres-local-v1",
     aiProviderDisabled: aiEnabled ? "0" : "1",
     challenge,
   };

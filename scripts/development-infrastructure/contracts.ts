@@ -1,29 +1,49 @@
-import { createHmac } from "node:crypto";
+import { createHmac, randomBytes } from "node:crypto";
 import { lstat, readFile } from "node:fs/promises";
 import path from "node:path";
 import { minimalCommandEnvironment, type CommandRunner } from "./providers";
 
 export const infrastructureEnvironment = "staging-synthetic-acceptance";
-export const syntheticExternalIds = {
-  teacher: "cdas-staging-synthetic-teacher",
-  student: "cdas-staging-synthetic-student",
-  otherStudent: "cdas-staging-synthetic-other-student",
-  otherTeacher: "cdas-staging-synthetic-other-teacher",
+/** Stable, non-secret fixtures shared by the synthetic workflow and bootstrap. */
+export const syntheticFixtures = {
+  primarySchoolCode: "SCHABC23",
+  secondarySchoolCode: "SCHDEF45",
+  teacherStaffNo: "T-001",
+  studentNo: "000001",
+  otherStudentNo: "000002",
+  otherTeacherStaffNo: "T-002",
+  disabledAccountStudentNo: "000003",
+  disabledSchoolCode: "SCHGHJ67",
+  disabledSchoolTeacherStaffNo: "T-003",
 } as const;
-export const syntheticUsernames = {
-  teacher: "cdas_staging_synthetic_teacher",
-  student: "cdas_staging_synthetic_student",
-  otherStudent: "cdas_staging_synthetic_other_student",
-  otherTeacher: "cdas_staging_synthetic_other_teacher",
-} as const;
+
+export const syntheticPasswordNames = [
+  "STAGING_TEST_TEACHER_PASSWORD",
+  "STAGING_TEST_STUDENT_PASSWORD",
+  "STAGING_TEST_OTHER_STUDENT_PASSWORD",
+  "STAGING_TEST_OTHER_TEACHER_PASSWORD",
+  "STAGING_TEST_DISABLED_ACCOUNT_PASSWORD",
+  "STAGING_TEST_DISABLED_SCHOOL_TEACHER_PASSWORD",
+] as const;
+
+export type SyntheticPasswordName = (typeof syntheticPasswordNames)[number];
+
+/** Generates passwords only in process memory; callers must not include them in results. */
+export function generateSyntheticPasswords(): Readonly<Record<SyntheticPasswordName, string>> {
+  const passwords = Object.fromEntries(
+    syntheticPasswordNames.map((name) => [name, randomBytes(32).toString("base64url")]),
+  ) as Record<SyntheticPasswordName, string>;
+  if (new Set(Object.values(passwords)).size !== syntheticPasswordNames.length) {
+    throw new Error("DEVELOPMENT_INFRA_SYNTHETIC_PASSWORDS_NOT_DISTINCT");
+  }
+  return Object.freeze(passwords);
+}
 
 export type DevelopmentInfrastructureConfig = Readonly<{
   masterSecret: string;
   vercelToken: string;
   neonApiKey: string;
   neonProjectId: string;
-  clerkSecretKey: string;
-  clerkPublishableKey: string;
   vercelTeamId?: string;
   vercelProjectName: string;
   neonBranchName: string;
@@ -37,10 +57,15 @@ const required = [
   "VERCEL_TOKEN",
   "NEON_API_KEY",
   "NEON_PROJECT_ID",
-  "CLERK_SECRET_KEY",
-  "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
 ] as const;
-const allowed = new Set([...required, "VERCEL_TEAM_ID", "VERCEL_PROJECT_NAME", "NEON_STAGING_BRANCH_NAME", "NEON_STAGING_DATABASE_NAME", "NEON_STAGING_ROLE_NAME"]);
+const allowed = new Set([
+  ...required,
+  "VERCEL_TEAM_ID",
+  "VERCEL_PROJECT_NAME",
+  "NEON_STAGING_BRANCH_NAME",
+  "NEON_STAGING_DATABASE_NAME",
+  "NEON_STAGING_ROLE_NAME",
+]);
 
 function requiredValue(values: Readonly<Record<string, string>>, name: string): string {
   const value = values[name]?.trim() ?? "";
@@ -97,14 +122,22 @@ export function validateConfig(values: Readonly<Record<string, string>>): Develo
   const branchName = (values.NEON_STAGING_BRANCH_NAME ?? "cdas-next-development").trim();
   const databaseName = (values.NEON_STAGING_DATABASE_NAME ?? "cdas_next_staging").trim();
   const roleName = (values.NEON_STAGING_ROLE_NAME ?? "cdas_staging_owner").trim();
-  if (!/^sk_test_[A-Za-z0-9_-]{10,}$/u.test(requiredValue(values, "CLERK_SECRET_KEY"))) throw new Error("DEVELOPMENT_INFRA_CLERK_SECRET_NOT_TEST");
-  if (!/^pk_test_[A-Za-z0-9_-]{10,}$/u.test(requiredValue(values, "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY"))) throw new Error("DEVELOPMENT_INFRA_CLERK_PUBLISHABLE_NOT_TEST");
   if (!/^[a-z0-9](?:[a-z0-9-]{0,98}[a-z0-9])?$/u.test(projectName) || /(?:prod|production|live)/u.test(projectName)) throw new Error("DEVELOPMENT_INFRA_VERCEL_PROJECT_INVALID");
   if (!/^[a-z0-9_-]{6,128}$/iu.test(requiredValue(values, "NEON_PROJECT_ID")) || /(?:prod|production|live)/u.test(requiredValue(values, "NEON_PROJECT_ID"))) throw new Error("DEVELOPMENT_INFRA_NEON_PROJECT_INVALID");
   if (!/^[a-z][a-z0-9_-]{2,62}$/u.test(databaseName) || !databaseName.includes("staging") || /prod(?:uction)?/u.test(databaseName)) throw new Error("DEVELOPMENT_INFRA_DATABASE_NAME_UNSAFE");
   if (!/^[a-z][a-z0-9_-]{2,62}$/u.test(roleName) || /prod(?:uction)?/u.test(roleName)) throw new Error("DEVELOPMENT_INFRA_ROLE_NAME_UNSAFE");
   if (!/^[a-z0-9][a-z0-9-]{2,62}$/u.test(branchName) || /prod(?:uction)?/u.test(branchName)) throw new Error("DEVELOPMENT_INFRA_BRANCH_NAME_UNSAFE");
-  return Object.freeze({ masterSecret, vercelToken: requiredValue(values, "VERCEL_TOKEN"), neonApiKey: requiredValue(values, "NEON_API_KEY"), neonProjectId: requiredValue(values, "NEON_PROJECT_ID"), clerkSecretKey: requiredValue(values, "CLERK_SECRET_KEY"), clerkPublishableKey: requiredValue(values, "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY"), vercelTeamId: values.VERCEL_TEAM_ID?.trim() || undefined, vercelProjectName: projectName, neonBranchName: branchName, neonDatabaseName: databaseName, neonRoleName: roleName });
+  return Object.freeze({
+    masterSecret,
+    vercelToken: requiredValue(values, "VERCEL_TOKEN"),
+    neonApiKey: requiredValue(values, "NEON_API_KEY"),
+    neonProjectId: requiredValue(values, "NEON_PROJECT_ID"),
+    vercelTeamId: values.VERCEL_TEAM_ID?.trim() || undefined,
+    vercelProjectName: projectName,
+    neonBranchName: branchName,
+    neonDatabaseName: databaseName,
+    neonRoleName: roleName,
+  });
 }
 
 export function deriveInfrastructureSecrets(masterSecret: string): Readonly<{ healthProofSecret: string; vercelBypassSecret: string }> {
@@ -121,6 +154,6 @@ export function stableInfrastructureErrorCode(error: unknown): string {
 export function redactInfrastructureText(value: string): string {
   return value
     .replace(/postgres(?:ql)?:\/\/[^\s"']+/giu, "[REDACTED_DATABASE_URL]")
-    .replace(/\b(?:pk|sk)_(?:test|live)_[A-Za-z0-9_-]+\b/gu, "[REDACTED_CLERK_KEY]")
+    .replace(/\b(?:pk|sk)_(?:test|live)_[A-Za-z0-9_-]+\b/gu, "[REDACTED_PROVIDER_KEY]")
     .replace(/\b(?:Bearer|token|secret|ticket|cookie)\s*[:=]?\s*[^\s"']+/giu, "$1=[REDACTED]");
 }

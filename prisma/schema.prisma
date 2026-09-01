@@ -169,11 +169,44 @@ model AppUser {
   feedbackConfirmations    TeacherFeedbackRevision[]   @relation("TeacherFeedbackConfirmer")
   evaluations              TeacherEvaluation[]         @relation("TeacherEvaluationTeacher")
   evaluationConfirmations  TeacherEvaluationRevision[] @relation("TeacherEvaluationConfirmer")
+  localCredential         LocalCredential?
+  authSessions            AuthSession[]
 
   @@unique([schoolId, staffNo])
   @@unique([schoolId, studentNo])
   @@index([schoolId, role, accountStatus])
   @@map("app_users")
+}
+
+model LocalCredential {
+  id                 String   @id @default(uuid()) @db.Uuid
+  userId             String   @unique @map("user_id") @db.Uuid
+  identifier         String   @unique @db.VarChar(96)
+  passwordHash       String   @map("password_hash") @db.VarChar(256)
+  mustChangePassword Boolean  @default(false) @map("must_change_password")
+  passwordChangedAt  DateTime? @map("password_changed_at") @db.Timestamptz(3)
+  failedLoginCount   Int      @default(0) @map("failed_login_count")
+  lockedUntil        DateTime? @map("locked_until") @db.Timestamptz(3)
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  user               AppUser  @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([lockedUntil])
+  @@map("local_credentials")
+}
+
+model AuthSession {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  tokenHash String   @unique @map("token_hash") @db.Char(64)
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(3)
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz(3)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  user      AppUser  @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId, revokedAt, expiresAt])
+  @@index([expiresAt])
+  @@map("auth_sessions")
 }
 
 model Classroom {

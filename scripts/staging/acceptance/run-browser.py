@@ -186,23 +186,6 @@ def artifacts(marker_value: str) -> Path:
     return path
 
 
-def issue_ticket(role: str) -> str:
-    result = subprocess.run(
-        ["pnpm", "exec", "tsx", "scripts/staging/acceptance/issue-clerk-ticket.ts", role],
-        cwd=ROOT,
-        env=os.environ.copy(),
-        text=True,
-        capture_output=True,
-        check=False,
-    )
-    if result.returncode != 0:
-        raise AcceptanceFailure("STAGING_ACCEPTANCE_TICKET_ISSUE_FAILED")
-    ticket = result.stdout.strip()
-    if not ticket or len(ticket) > 16_384 or "\n" in ticket:
-        raise AcceptanceFailure("STAGING_ACCEPTANCE_TICKET_INVALID")
-    return ticket
-
-
 def assert_browser_prerequisites() -> None:
     result = subprocess.run(
         ["pnpm", "staging:acceptance:assert-browser-prerequisites"],
@@ -218,36 +201,75 @@ def assert_browser_prerequisites() -> None:
 
 def sign_in(page: Page, remote: str, role: str) -> None:
     destination = "teacher" if role in ("teacher", "other_teacher") else "student"
-    ticket = ""
+    if role == "teacher":
+        school_code = required("STAGING_TEST_PRIMARY_SCHOOL_CODE")
+        account = required("STAGING_TEST_TEACHER_STAFF_NO")
+        password = required("STAGING_TEST_TEACHER_PASSWORD")
+    elif role == "student":
+        school_code = required("STAGING_TEST_PRIMARY_SCHOOL_CODE")
+        account = required("STAGING_TEST_STUDENT_NO")
+        password = required("STAGING_TEST_STUDENT_PASSWORD")
+    elif role == "other_student":
+        school_code = required("STAGING_TEST_PRIMARY_SCHOOL_CODE")
+        account = required("STAGING_TEST_OTHER_STUDENT_NO")
+        password = required("STAGING_TEST_OTHER_STUDENT_PASSWORD")
+    elif role == "other_teacher":
+        school_code = required("STAGING_TEST_SECONDARY_SCHOOL_CODE")
+        account = required("STAGING_TEST_OTHER_TEACHER_STAFF_NO")
+        password = required("STAGING_TEST_OTHER_TEACHER_PASSWORD")
+    else:
+        raise AcceptanceFailure("STAGING_ACCEPTANCE_LOGIN_ROLE_INVALID")
+    password_field = None
     try:
         initial = page.goto(remote, wait_until="domcontentloaded")
         assert_origin(page.url, remote)
         if not initial or initial.status != 200:
             raise AcceptanceFailure("STAGING_ACCEPTANCE_PROTECTED_PREVIEW_INITIAL_REQUEST_FAILED")
-        page.wait_for_function("() => Boolean(window.Clerk?.loaded && window.Clerk.status === 'ready' && window.Clerk.client)", timeout=60_000)
-        assert_origin(page.url, remote)
-        ticket = issue_ticket("OTHER_STUDENT" if role == "other_student" else role.upper())
-        page.evaluate(
-            """async ({ticket, expectedOrigin}) => {
-              if (window.top !== window || window.location.origin !== expectedOrigin) throw new Error('ORIGIN_MISMATCH');
-              const clerk = window.Clerk;
-              if (!clerk?.loaded || clerk.status !== 'ready' || !clerk.client) throw new Error('CLERK_NOT_READY');
-              await clerk.signOut();
-              const result = await clerk.client.signIn.create({ strategy: 'ticket', ticket });
-              if (result.status !== 'complete' || !result.createdSessionId) throw new Error('CLERK_TICKET_INCOMPLETE');
-              await clerk.setActive({ session: result.createdSessionId });
-            }""", {"ticket": ticket, "expectedOrigin": canonical_origin(remote)},
+        login = page.goto(
+            f"{remote}/{destination}/login",
+            wait_until="domcontentloaded",
         )
         assert_origin(page.url, remote)
-        page.goto(f"{remote}/{destination}", wait_until="domcontentloaded")
+        if not login or login.status != 200:
+            raise AcceptanceFailure("STAGING_ACCEPTANCE_LOGIN_PAGE_FAILED")
+        page.get_by_label("学校代码", exact=True).fill(school_code)
+        account_label = "工号" if destination == "teacher" else "学号"
+        page.get_by_label(account_label, exact=True).fill(account)
+        password_field = page.get_by_label("密码", exact=True)
+        password_field.fill(password)
+        page.get_by_role("button", name="登录", exact=True).click()
+        page.wait_for_url(f"{remote}/{destination}", timeout=30_000)
         assert_origin(page.url, remote)
         if urlsplit(page.url).path != f"/{destination}":
             raise AcceptanceFailure("STAGING_ACCEPTANCE_SIGN_IN_REDIRECT")
+        session = next(
+            (
+                cookie
+                for cookie in page.context.cookies([remote])
+                if cookie.get("name") == "cdas_session"
+            ),
+            None,
+        )
+        if (
+            not session
+            or not session.get("value")
+            or session.get("httpOnly") is not True
+            or session.get("sameSite") != "Lax"
+            or session.get("secure") is not True
+            or session.get("path") != "/"
+            or float(session.get("expires", 0)) <= 0
+        ):
+            raise AcceptanceFailure("STAGING_ACCEPTANCE_SESSION_COOKIE_INVALID")
     except PlaywrightError as error:
         raise AcceptanceFailure("STAGING_ACCEPTANCE_SIGN_IN_FAILED") from error
     finally:
-        # The Python object is the last in-process reference; never log it.
-        ticket = ""
+        # Clear the last page-level copy before failure screenshots are taken.
+        if password_field is not None:
+            try:
+                password_field.fill("")
+            except PlaywrightError:
+                pass
+        password = ""
 
 
 def screenshot(page: Page, output: Path, name: str) -> str:

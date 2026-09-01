@@ -169,7 +169,7 @@ describe("teacher activity draft server action", () => {
     expect(result.message).toContain("页面输入仍然保留");
   });
 
-  it("does not call a command when the Clerk session is unavailable", async () => {
+  it("does not call a command when the local session is unavailable", async () => {
     mocks.createUiCommandContext.mockRejectedValue(
       new AuthenticationError("UNAUTHENTICATED"),
     );

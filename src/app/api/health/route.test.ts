@@ -8,8 +8,6 @@ describe("GET /api/health", () => {
     Object.assign(process.env, {
       CDAS_DEPLOYMENT_ID: "a".repeat(40),
       DATABASE_URL: "postgresql://runtime:secret@project-pooler.example.com/cdas_next_staging?sslmode=require",
-      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_abcdefghijklmnopqrstuv",
-      CLERK_SECRET_KEY: "sk_test_abcdefghijklmnopqrstuv",
       AI_PROVIDER_DISABLED: "1",
       STAGING_HEALTH_PROOF_SECRET: "h".repeat(32),
       CDAS_SOURCE_FINGERPRINT: "f".repeat(64),
@@ -28,8 +26,6 @@ describe("GET /api/health", () => {
     Object.assign(process.env, {
       CDAS_DEPLOYMENT_ID: "a".repeat(40),
       DATABASE_URL: "postgresql://runtime:secret@project-pooler.example.com/cdas_next_staging?sslmode=require",
-      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_abcdefghijklmnopqrstuv",
-      CLERK_SECRET_KEY: "sk_test_abcdefghijklmnopqrstuv",
       AI_PROVIDER_DISABLED: "1",
       STAGING_HEALTH_PROOF_SECRET: "h".repeat(32),
       CDAS_SOURCE_FINGERPRINT: "",
@@ -49,8 +45,6 @@ describe("GET /api/health", () => {
     Object.assign(process.env, {
       CDAS_DEPLOYMENT_ID: "a".repeat(40),
       DATABASE_URL: "postgresql://runtime:secret@project-pooler.example.com/cdas_next_staging?sslmode=require",
-      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_abcdefghijklmnopqrstuv",
-      CLERK_SECRET_KEY: "sk_test_abcdefghijklmnopqrstuv",
       AI_PROVIDER_DISABLED: "0",
       DEEPSEEK_API_KEY: apiKey,
       AI_MODEL: "deepseek-v4-flash",

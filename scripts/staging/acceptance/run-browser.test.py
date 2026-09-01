@@ -72,7 +72,7 @@ class BrowserContractTests(unittest.TestCase):
             "https://staging.example.test:444/student",
             "https://user@staging.example.test/student",
             "https://staging.example.test.evil.test/student",
-            "https://clerk.example.test/sign-in",
+            "https://identity.example.test/sign-in",
             "https://cdn.example.test/asset.js",
         ):
             scoped = MODULE.origin_scoped_bypass_headers(target, expected, secret, {"accept": "text/html"})
@@ -87,7 +87,7 @@ class BrowserContractTests(unittest.TestCase):
             "x-vercel-set-bypass-cookie": "true",
         }
         scoped = MODULE.origin_scoped_bypass_headers(
-            "https://clerk.example.test/continue",
+            "https://identity.example.test/continue",
             expected,
             secret,
             polluted,
@@ -118,10 +118,18 @@ class BrowserContractTests(unittest.TestCase):
         with patch.dict(environ, {"STAGING_BASE_URL": "https://cdas-next-preview-linics1.vercel.app:443/", "STAGING_VERCEL_PROJECT_NAME": "cdas-next"}):
             self.assertEqual(MODULE.base_url(), "https://cdas-next-preview-linics1.vercel.app:443")
 
-    def test_source_locks_ticket_origin_and_group_evidence(self):
+    def test_source_locks_local_login_origin_and_group_evidence(self):
         source = MODULE_PATH.read_text(encoding="utf-8")
-        self.assertLess(source.index("assert_origin(page.url, remote)\n        ticket = issue_ticket"), source.index("ticket = issue_ticket") + 1)
-        self.assertIn("window.top !== window", source)
+        login_navigation = 'f"{remote}/{destination}/login"'
+        password_fill = 'password_field.fill(password)'
+        self.assertLess(source.index(login_navigation), source.index(password_fill))
+        self.assertIn('page.get_by_label("学校代码", exact=True)', source)
+        self.assertIn('page.get_by_label("密码", exact=True)', source)
+        self.assertIn('cookie.get("name") == "cdas_session"', source)
+        self.assertIn('session.get("httpOnly") is not True', source)
+        self.assertIn('session.get("sameSite") != "Lax"', source)
+        self.assertIn('session.get("secure") is not True', source)
+        self.assertIn('password_field.fill("")', source)
         self.assertIn("AI_DISABLED_MANUAL_PATH", source)
         self.assertEqual(source.count('#classroom-roster-manager[data-hydrated="true"]'), 2)
         self.assertIn('("基本设置", "背景设定", "三维目标", "总体任务", "任务链", "评价标准")', source)
@@ -131,7 +139,7 @@ class BrowserContractTests(unittest.TestCase):
         self.assertIn('locator("summary").filter(has_text="查看完整任务书")', source)
         self.assertNotIn("#activity-learningObjectives", source)
         self.assertIn("TEACHER_STUDENT_RESOURCE_HIDDEN", source)
-        self.assertIn("OTHER_STUDENT", source)
+        self.assertIn('role == "other_student"', source)
         self.assertIn('other_student_context = browser.new_context', source)
         self.assertIn('other_student.goto(f"{remote}{activity_href}"', source)
         self.assertIn('other_student.goto(f"{remote}{submission_href}"', source)
@@ -265,7 +273,7 @@ class BrowserContractTests(unittest.TestCase):
             source.index('checks.append({"code": "VERCEL_PROTECTION_BYPASS_SCOPED"'),
         )
 
-    def test_browser_checks_local_prerequisite_artifacts_before_clerk(self):
+    def test_browser_checks_local_prerequisite_artifacts_before_login(self):
         with patch.object(MODULE.subprocess, "run", return_value=subprocess.CompletedProcess([], 0, "", "")) as run:
             MODULE.assert_browser_prerequisites()
             run.assert_called_once()

@@ -1,19 +1,23 @@
 import { parseArgs } from "node:util";
 import { z } from "zod";
+import { adminIdentifier } from "../auth/local-auth-primitives";
 import {
   resolveBootstrapDatabaseTarget,
   type BootstrapDatabaseTarget,
-} from "./bootstrap-clerk-cli";
+} from "./bootstrap-database-cli";
 import {
   BootstrapAdminError,
-  bootstrapAdminInputSchema,
-  type BootstrapAdminInput,
   type BootstrapAdminResult,
 } from "./bootstrap-admin";
 
+const cliInputSchema = z.object({
+  adminIdentifier: z.string().trim().regex(/^admin:[a-z0-9][a-z0-9._-]{0,63}$/u),
+  adminDisplayName: z.string().trim().min(1).max(120),
+}).strict();
+
 const runOptionsSchema = z
   .object({
-    adminSubject: z.string(),
+    adminUsername: z.string().trim().min(1).max(64),
     adminName: z.string(),
     confirmDatabase: z.string().trim().min(1).max(200),
   })
@@ -23,18 +27,17 @@ export type ParsedBootstrapAdminCli =
   | Readonly<{ kind: "help" }>
   | Readonly<{
       kind: "run";
-      input: BootstrapAdminInput;
+      input: z.infer<typeof cliInputSchema>;
       confirmedDatabase: string;
     }>;
 
 export const bootstrapAdminCliHelp = `Usage:
   pnpm bootstrap:admin \\
-    --admin-subject user_... \\
+    --admin-username operator \\
     --admin-name "Operator name" \\
     --confirm-database <database-name>
 
-The Clerk user must already exist. This command never calls Clerk, never
-stores a password, and will not overwrite a teacher or student account.
+The command prompts for a hidden password and never accepts it as a CLI argument.
 The platform has exactly one ADMIN.
 `;
 
@@ -48,7 +51,7 @@ export function parseBootstrapAdminCliArguments(
     strict: true,
     options: {
       help: { type: "boolean", default: false },
-      "admin-subject": { type: "string" },
+      "admin-username": { type: "string" },
       "admin-name": { type: "string" },
       "confirm-database": { type: "string" },
     },
@@ -57,14 +60,14 @@ export function parseBootstrapAdminCliArguments(
     return { kind: "help" };
   }
   const options = runOptionsSchema.parse({
-    adminSubject: values["admin-subject"],
+    adminUsername: values["admin-username"],
     adminName: values["admin-name"],
     confirmDatabase: values["confirm-database"],
   });
   return {
     kind: "run",
-    input: bootstrapAdminInputSchema.parse({
-      adminAuthSubject: options.adminSubject,
+    input: cliInputSchema.parse({
+      adminIdentifier: adminIdentifier(options.adminUsername),
       adminDisplayName: options.adminName,
     }),
     confirmedDatabase: options.confirmDatabase,

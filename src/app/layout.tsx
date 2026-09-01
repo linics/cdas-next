@@ -1,9 +1,6 @@
-import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Lora, Noto_Serif_SC } from "next/font/google";
 import type { ReactNode } from "react";
-import { isClickthroughAuthEnabled } from "../server/auth/clickthrough-auth";
-import { isClerkAuthenticationAvailable } from "../server/auth/clerk-availability";
 import "./globals.css";
 
 const displayFont = Cormorant_Garamond({
@@ -33,7 +30,7 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
-  const document = (
+  return (
     <html
       className={`${displayFont.variable} ${bodyFont.variable} ${chineseFont.variable}`}
       data-scroll-behavior="smooth"
@@ -41,11 +38,5 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     >
       <body>{children}</body>
     </html>
-  );
-
-  return isClerkAuthenticationAvailable() && !isClickthroughAuthEnabled() ? (
-    <ClerkProvider>{document}</ClerkProvider>
-  ) : (
-    document
   );
 }

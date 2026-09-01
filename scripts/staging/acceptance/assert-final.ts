@@ -5,6 +5,7 @@ import { isAcceptanceGate } from "./gate";
 import { isPassingImmediateHealthEvidence } from "./immediate-health";
 import { writeAcceptanceArtifact } from "./output";
 import { isPassingBrowserEvidence } from "./browser-evidence-contract";
+import { isPassingSessionCleanupEvidence } from "./cleanup";
 import {
   isPassingBootstrapEvidence,
   isPassingIdentityEvidence,
@@ -28,19 +29,21 @@ function passingVerify(value: unknown): boolean {
 async function main(): Promise<void> {
   const marker = process.env.STAGING_RUN_MARKER?.trim() ?? "";
   const directory = path.join(process.cwd(), "output", "staging-acceptance", marker);
-  const [gate, immediateHealth, identity, bootstrap, evidence, verify] = await Promise.all([
+  const [gate, immediateHealth, identity, bootstrap, sessions, evidence, verify] = await Promise.all([
     "gate.json",
     "immediate-health.json",
     "identity.json",
     "bootstrap.json",
+    "sessions.json",
     "evidence.json",
     "verify.json",
   ].map(async (name) => JSON.parse(await readFile(path.join(directory, name), "utf8")) as unknown));
   const checks = [
     { code: "SAME_RUN_GATE_GO", status: isAcceptanceGate(gate, process.env) ? "PASS" : "FAIL" },
     { code: "IMMEDIATE_APPLICATION_HEALTH", status: isPassingImmediateHealthEvidence(immediateHealth, process.env) ? "PASS" : "FAIL" },
-    { code: "CLERK_IDENTITIES_AND_TICKETS", status: isPassingIdentityEvidence(identity) ? "PASS" : "FAIL" },
+    { code: "LOCAL_IDENTITIES_AND_DIRECT_SESSIONS", status: isPassingIdentityEvidence(identity) ? "PASS" : "FAIL" },
     { code: "ADDITIVE_BOOTSTRAP_EVIDENCE", status: isPassingBootstrapEvidence(bootstrap, process.env) ? "PASS" : "FAIL" },
+    { code: "SYNTHETIC_SESSIONS_CLEANED_UP", status: isPassingSessionCleanupEvidence(sessions) ? "PASS" : "FAIL" },
     { code: "BROWSER_EVIDENCE", status: await passingEvidence(evidence, marker, directory) ? "PASS" : "FAIL" },
     { code: "READ_ONLY_NAMESPACE_VERIFY", status: passingVerify(verify) ? "PASS" : "FAIL" },
   ];

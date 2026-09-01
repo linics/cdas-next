@@ -56,3 +56,7 @@ export function generateSchoolCode(): string {
 export function pendingTeacherAuthSubject(provisioningId: string): string {
   return `pending:${provisioningId}`;
 }
+
+export function teacherIdentifier(schoolCode: string, staffNo: string): string {
+  return `teacher:${normalizeSchoolCode(schoolCode).toLowerCase()}:${normalizeStaffNo(staffNo).toLowerCase()}`;
+}

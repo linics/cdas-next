@@ -1,9 +1,15 @@
 """跨全部路由的界面审查：字号层级、对比度、溢出、点击区、行长、状态样式。"""
-import json, sys
+import json
+import os
+import sys
+from urllib.parse import urlparse
+
 from playwright.sync_api import sync_playwright
 
 BASE = "http://localhost:3000"
-SECRET = "0123456789abcdef0123456789abcdef01"
+DEMO_SCHOOL_CODE = "SCHARCHX"
+DEMO_TEACHER_ACCOUNT = "T-DEMO"
+DEMO_STUDENT_ACCOUNT = "700001"
 
 TEACHER_ROUTES = [
     ("首页", "/"),
@@ -68,47 +74,81 @@ AUDIT = r"""
 }
 """
 
-SIGN_IN = r"""
-async ({ role, secret }) => {
-  for (let i = 0; i < 100 && !(window.Clerk && window.Clerk.loaded); i++) await new Promise(r => setTimeout(r, 200));
-  const res = await fetch('/api/dev/e2e-clerk-ticket', { method: 'POST', headers: { Authorization: 'Bearer ' + secret, 'X-CDAS-E2E-Role': role }, cache: 'no-store', credentials: 'same-origin' });
-  if (res.status !== 200) return 'STATUS_' + res.status;
-  const body = await res.json();
-  const clerk = window.Clerk;
-  await clerk.signOut();
-  let signIn = clerk.client && clerk.client.signIn;
-  for (let i = 0; !signIn && i < 60; i++) { await new Promise(r => setTimeout(r, 100)); signIn = clerk.client && clerk.client.signIn; }
-  const a = await signIn.create({ strategy: 'ticket', ticket: body.ticket });
-  await clerk.setActive({ session: a.createdSessionId });
-  return a.status;
-}
-"""
+def loopback_origin(url: str) -> str:
+    parsed = urlparse(url)
+    if parsed.scheme not in {"http", "https"} or parsed.hostname not in {"localhost", "127.0.0.1", "::1"}:
+        raise RuntimeError("UI_AUDIT_BASE_NOT_LOOPBACK")
+    return f"{parsed.scheme}://{parsed.netloc}"
+
+
+def login(page, role: str, password: str) -> None:
+    login_path, destination, account_label, account = (
+        ("/teacher/login", "/teacher", "工号", DEMO_TEACHER_ACCOUNT)
+        if role == "TEACHER"
+        else ("/student/login", "/student", "学号", DEMO_STUDENT_ACCOUNT)
+    )
+    expected_origin = loopback_origin(BASE)
+    password_field = page.get_by_label("密码", exact=True)
+    try:
+        page.goto(BASE + login_path, wait_until="networkidle")
+        page.get_by_label("学校代码", exact=True).fill(DEMO_SCHOOL_CODE)
+        page.get_by_label(account_label, exact=True).fill(account)
+        password_field.fill(password)
+        page.get_by_role("button", name="登录", exact=True).click()
+        page.wait_for_url(BASE + destination, wait_until="networkidle")
+        if page.url != BASE + destination:
+            raise RuntimeError("DESTINATION")
+        if loopback_origin(page.url) != expected_origin:
+            raise RuntimeError("ORIGIN")
+    except Exception:
+        raise RuntimeError(f"UI_AUDIT_{role}_LOGIN_FAILED") from None
+    finally:
+        try:
+            password_field.fill("")
+        except Exception:
+            pass
+
+
+def required_password(role: str) -> str:
+    variable = f"DEV_TEST_DEMO_{role}_PASSWORD"
+    value = os.environ.get(variable, "")
+    if not value:
+        raise RuntimeError(f"UI_AUDIT_{role}_PASSWORD_REQUIRED")
+    return value
 
 def run(widths):
     findings = {}
+    passwords = {
+        "TEACHER": required_password("TEACHER"),
+        "STUDENT": required_password("STUDENT_1"),
+    }
     with sync_playwright() as pw:
         browser = pw.chromium.launch()
         for role, routes in (("TEACHER", TEACHER_ROUTES), ("STUDENT", STUDENT_ROUTES)):
             ctx = browser.new_context(viewport={"width": widths[0], "height": 900})
             page = ctx.new_page()
-            # DEV_CLICKTHROUGH_AUTH=1 时 /teacher 与 /student 直接按路径判定身份，
-            # 不需要登录。注意：设了 E2E_RUN_MARKER 会关掉这条通道。
-            page.goto(BASE, wait_until="domcontentloaded")
-            for w in widths:
-                page.set_viewport_size({"width": w, "height": 900})
-                for label, path in routes:
-                    page.goto(BASE + path, wait_until="networkidle")
-                    page.wait_for_timeout(250)
-                    res = page.evaluate(AUDIT)
-                    key = f"{label} @{w}"
-                    hits = {k: v for k, v in res.items() if k not in ("sizesSeen",) and v}
-                    if hits:
-                        findings[key] = hits
-                    findings.setdefault("__sizes", {}).update({str(k): 1 for k in res["sizesSeen"]})
-            ctx.close()
+            try:
+                login(page, role, passwords[role])
+                for w in widths:
+                    page.set_viewport_size({"width": w, "height": 900})
+                    for label, path in routes:
+                        page.goto(BASE + path, wait_until="networkidle")
+                        page.wait_for_timeout(250)
+                        res = page.evaluate(AUDIT)
+                        key = f"{label} @{w}"
+                        hits = {k: v for k, v in res.items() if k not in ("sizesSeen",) and v}
+                        if hits:
+                            findings[key] = hits
+                        findings.setdefault("__sizes", {}).update({str(k): 1 for k in res["sizesSeen"]})
+            finally:
+                ctx.close()
         browser.close()
     return findings
 
 if __name__ == "__main__":
-    widths = [int(x) for x in (sys.argv[1:] or ["1280"])]
-    print(json.dumps(run(widths), ensure_ascii=False, indent=1))
+    try:
+        widths = [int(x) for x in (sys.argv[1:] or ["1280"])]
+        print(json.dumps(run(widths), ensure_ascii=False, indent=1))
+    except RuntimeError as error:
+        print(error.args[0] if error.args else "UI_AUDIT_FAILED", file=sys.stderr)
+        raise SystemExit(1)

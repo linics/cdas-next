@@ -4,7 +4,17 @@ import path from "node:path";
 import { isSafeStagingRunMarker } from "../contracts";
 
 const root = path.resolve(process.cwd(), "output", "staging-acceptance");
-const allowedNames = new Set(["readiness.json", "gate.json", "immediate-health.json", "identity.json", "bootstrap.json", "verify.json", "evidence.json", "final.json"]);
+const allowedNames = new Set([
+  "readiness.json",
+  "gate.json",
+  "immediate-health.json",
+  "identity.json",
+  "bootstrap.json",
+  "sessions.json",
+  "verify.json",
+  "evidence.json",
+  "final.json",
+]);
 
 export function acceptanceOutputDirectory(marker: string): string {
   if (!isSafeStagingRunMarker(marker)) throw new Error("STAGING_ACCEPTANCE_MARKER_INVALID");

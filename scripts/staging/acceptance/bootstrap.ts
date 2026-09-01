@@ -1,18 +1,12 @@
 import nextEnvironment from "@next/env";
 
-import {
-  bootstrapAdditionalClerkClassroomStudent,
-  bootstrapClerkClassroom,
-  bootstrapStandaloneClerkTeacher,
-} from "../../../src/server/bootstrap/bootstrap-clerk-classroom";
+import { bootstrapLocalStaging, stagingLocalIdentifier } from "../../../src/server/bootstrap/bootstrap-local-staging";
 import { createDatabaseClient } from "../../../src/server/db/client";
 import {
   acceptanceNamespace,
   acceptanceOtherStudentDisplayName,
-  acceptanceOtherStudentRosterKey,
   acceptanceOtherTeacherDisplayName,
   acceptanceStudentDisplayName,
-  acceptanceStudentRosterKey,
   acceptanceTeacherDisplayName,
   evaluateAcceptanceReadiness,
   stableAcceptanceErrorCode,
@@ -30,6 +24,17 @@ function required(name: string): string {
   return result;
 }
 
+type StagingIdentity = {
+  schoolCode: string;
+  identifier: string;
+  password: string;
+  displayName: string;
+  role: "TEACHER" | "STUDENT";
+  staffNo?: string;
+  studentNo?: string;
+  accountStatus?: "ACTIVE" | "DISABLED";
+};
+
 async function main(): Promise<void> {
   nextEnvironment.loadEnvConfig(process.cwd());
   const marker = required("STAGING_RUN_MARKER");
@@ -38,34 +43,87 @@ async function main(): Promise<void> {
   await assertBootstrapPrerequisites(process.env);
   const namespace = acceptanceNamespace(marker);
   const database = createDatabaseClient(required("DIRECT_URL"));
+  let identities: StagingIdentity[] = [];
   try {
-    await assertNoAcceptanceBusinessHistory(
-      database,
-      required("STAGING_TEST_TEACHER_CLERK_ID"),
-      namespace.activityTitle,
-    );
-    const probe = await probeAcceptanceNamespace(database, namespace.classroomId, namespace.classroomName, required("STAGING_TEST_TEACHER_CLERK_ID"), required("STAGING_TEST_STUDENT_CLERK_ID"), required("STAGING_TEST_OTHER_STUDENT_CLERK_ID"));
+    const primarySchoolCode = required("STAGING_TEST_PRIMARY_SCHOOL_CODE");
+    const secondarySchoolCode = required("STAGING_TEST_SECONDARY_SCHOOL_CODE");
+    const teacherIdentifier = stagingLocalIdentifier({ schoolCode: primarySchoolCode, role: "TEACHER", staffNo: required("STAGING_TEST_TEACHER_STAFF_NO") });
+    const studentIdentifier = stagingLocalIdentifier({ schoolCode: primarySchoolCode, role: "STUDENT", studentNo: required("STAGING_TEST_STUDENT_NO") });
+    const otherStudentIdentifier = stagingLocalIdentifier({ schoolCode: primarySchoolCode, role: "STUDENT", studentNo: required("STAGING_TEST_OTHER_STUDENT_NO") });
+    const otherTeacherIdentifier = stagingLocalIdentifier({ schoolCode: secondarySchoolCode, role: "TEACHER", staffNo: required("STAGING_TEST_OTHER_TEACHER_STAFF_NO") });
+    const disabledSchoolCode = required("STAGING_TEST_DISABLED_SCHOOL_CODE");
+    const disabledAccountStudentNo = required("STAGING_TEST_DISABLED_ACCOUNT_STUDENT_NO");
+    const disabledSchoolTeacherStaffNo = required("STAGING_TEST_DISABLED_SCHOOL_TEACHER_STAFF_NO");
+    await assertNoAcceptanceBusinessHistory(database, teacherIdentifier, namespace.activityTitle);
+    const probe = await probeAcceptanceNamespace(database, namespace.classroomId, namespace.classroomName, teacherIdentifier, studentIdentifier, otherStudentIdentifier);
     if (probe === "COLLISION") throw new Error("STAGING_ACCEPTANCE_NAMESPACE_COLLISION");
-    const result = await bootstrapClerkClassroom(database, {
-      teacherAuthSubject: required("STAGING_TEST_TEACHER_CLERK_ID"),
-      teacherDisplayName: acceptanceTeacherDisplayName,
-      studentAuthSubject: required("STAGING_TEST_STUDENT_CLERK_ID"),
-      studentDisplayName: acceptanceStudentDisplayName,
-      studentRosterKey: acceptanceStudentRosterKey,
-      classroomId: namespace.classroomId,
-      classroomName: namespace.classroomName,
-    });
-    const otherStudent = await bootstrapAdditionalClerkClassroomStudent(database, {
-      teacherAuthSubject: required("STAGING_TEST_TEACHER_CLERK_ID"),
-      classroomId: namespace.classroomId,
-      classroomName: namespace.classroomName,
-      additionalStudentAuthSubject: required("STAGING_TEST_OTHER_STUDENT_CLERK_ID"),
-      additionalStudentDisplayName: acceptanceOtherStudentDisplayName,
-      additionalStudentRosterKey: acceptanceOtherStudentRosterKey,
-    });
-    const otherTeacher = await bootstrapStandaloneClerkTeacher(database, {
-      teacherAuthSubject: required("STAGING_TEST_OTHER_TEACHER_CLERK_ID"),
-      teacherDisplayName: acceptanceOtherTeacherDisplayName,
+    identities = [
+      {
+        schoolCode: primarySchoolCode,
+        identifier: teacherIdentifier,
+        password: required("STAGING_TEST_TEACHER_PASSWORD"),
+        displayName: acceptanceTeacherDisplayName,
+        role: "TEACHER" as const,
+        staffNo: required("STAGING_TEST_TEACHER_STAFF_NO"),
+      },
+      {
+        schoolCode: primarySchoolCode,
+        identifier: studentIdentifier,
+        password: required("STAGING_TEST_STUDENT_PASSWORD"),
+        displayName: acceptanceStudentDisplayName,
+        role: "STUDENT" as const,
+        studentNo: required("STAGING_TEST_STUDENT_NO"),
+      },
+      {
+        schoolCode: primarySchoolCode,
+        identifier: otherStudentIdentifier,
+        password: required("STAGING_TEST_OTHER_STUDENT_PASSWORD"),
+        displayName: acceptanceOtherStudentDisplayName,
+        role: "STUDENT" as const,
+        studentNo: required("STAGING_TEST_OTHER_STUDENT_NO"),
+      },
+      {
+        schoolCode: secondarySchoolCode,
+        identifier: otherTeacherIdentifier,
+        password: required("STAGING_TEST_OTHER_TEACHER_PASSWORD"),
+        displayName: acceptanceOtherTeacherDisplayName,
+        role: "TEACHER" as const,
+        staffNo: required("STAGING_TEST_OTHER_TEACHER_STAFF_NO"),
+      },
+      {
+        schoolCode: primarySchoolCode,
+        identifier: stagingLocalIdentifier({
+          schoolCode: primarySchoolCode,
+          role: "STUDENT",
+          studentNo: disabledAccountStudentNo,
+        }),
+        password: required("STAGING_TEST_DISABLED_ACCOUNT_PASSWORD"),
+        displayName: "CDAS Staging Synthetic Disabled Account",
+        role: "STUDENT" as const,
+        studentNo: disabledAccountStudentNo,
+        accountStatus: "DISABLED" as const,
+      },
+      {
+        schoolCode: disabledSchoolCode,
+        identifier: stagingLocalIdentifier({
+          schoolCode: disabledSchoolCode,
+          role: "TEACHER",
+          staffNo: disabledSchoolTeacherStaffNo,
+        }),
+        password: required("STAGING_TEST_DISABLED_SCHOOL_TEACHER_PASSWORD"),
+        displayName: "CDAS Staging Synthetic Disabled School Teacher",
+        role: "TEACHER" as const,
+        staffNo: disabledSchoolTeacherStaffNo,
+      },
+    ];
+    const result = await bootstrapLocalStaging(database, {
+      schools: [
+        { code: primarySchoolCode, name: "CDAS Staging Synthetic School A", status: "ACTIVE" },
+        { code: secondarySchoolCode, name: "CDAS Staging Synthetic School B", status: "ACTIVE" },
+        { code: disabledSchoolCode, name: "CDAS Staging Synthetic School C", status: "DISABLED" },
+      ],
+      identities,
+      classroom: { id: namespace.classroomId, name: namespace.classroomName, teacherIdentifier, studentIdentifiers: [studentIdentifier, otherStudentIdentifier] },
     });
     await writeAcceptanceArtifact(marker, "bootstrap.json", {
       schema: "staging-synthetic-acceptance-bootstrap.v1",
@@ -73,19 +131,22 @@ async function main(): Promise<void> {
       namespace: { marker, classroomDerived: true },
       collisionProbe: probe,
       resources: {
-        teacher: result.teacher.status,
-        student: result.student.status,
-        otherStudent: otherStudent.additionalStudent.status,
-        otherTeacher: otherTeacher.teacher.status,
-        classroom: result.classroom.status,
-        membership: result.membership.status,
-        otherMembership: otherStudent.membership.status,
+        teacher: result.identities[teacherIdentifier],
+        student: result.identities[studentIdentifier],
+        otherStudent: result.identities[otherStudentIdentifier],
+        otherTeacher: result.identities[otherTeacherIdentifier],
+        classroom: result.classroom,
+        membership: result.memberships > 0 ? "CREATED" : "EXISTING",
+        otherMembership: result.memberships > 1 ? "CREATED" : "EXISTING",
       },
       realStudentDataAllowed: false,
       productionDecision: "NO_GO",
     });
     process.stdout.write('{"schema":"staging-synthetic-acceptance-bootstrap.v1","status":"PASS"}\n');
-  } finally { await database.$disconnect(); }
+  } finally {
+    for (const identity of identities) identity.password = "";
+    await database.$disconnect();
+  }
 }
 
 void main().catch(async (error: unknown) => {
