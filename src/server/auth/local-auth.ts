@@ -22,6 +22,29 @@ const MAX_FAILURES = 5;
 const LOCK_MS = 15 * 60 * 1000;
 export { createSessionToken, hashSessionToken } from "./local-auth-primitives";
 
+/**
+ * The configured public origin is the authority for the transport the browser
+ * actually uses. Production keeps the conservative Secure default whenever
+ * that origin is absent or malformed, while the explicitly supported
+ * HTTP-only self-hosted origin can retain its local-auth session.
+ */
+export function sessionCookieIsSecure(
+  publicOrigin = process.env.CDAS_PUBLIC_ORIGIN,
+  nodeEnvironment = process.env.NODE_ENV,
+): boolean {
+  const origin = publicOrigin?.trim();
+  if (origin) {
+    try {
+      const protocol = new URL(origin).protocol;
+      if (protocol === "https:") return true;
+      if (protocol === "http:") return false;
+    } catch {
+      // Fall through to the production-safe default below.
+    }
+  }
+  return nodeEnvironment === "production";
+}
+
 export async function createAuthSession(
   database: PrismaClient,
   userId: string,

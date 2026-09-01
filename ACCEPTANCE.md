@@ -49,6 +49,16 @@ Agent 不是新的业务主体。审计中的 actor 始终是登录用户，`age
 ```
 
 ```gherkin
+场景: 会话 Cookie 与已配置公开 origin 的传输协议一致
+  假如部署的公开 origin 为 HTTPS，或生产环境未配置有效公开 origin
+  当任一角色使用正确凭据建立、续期或清除本地会话
+  那么 cdas_session Cookie 必须带 Secure 属性
+  假如受支持的自托管公开 origin 明确为 HTTP
+  当任一角色使用正确凭据建立、续期或清除本地会话
+  那么 cdas_session Cookie 不得带 Secure 属性，且同一 HTTP origin 的后续工作台请求必须携带该会话
+```
+
+```gherkin
 场景: 停用账号或学校拒绝登录和既有会话访问
   假如账号或其所属学校已被管理员停用
   当该用户提交正确密码或使用停用前建立的会话访问工作台

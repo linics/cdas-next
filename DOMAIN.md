@@ -27,7 +27,7 @@
 ### AuthSession（认证会话）
 
 - 登录成功产生 32 字节随机令牌；浏览器只持有 base64url 原值，数据库只保存其 SHA-256，默认有效期 12 小时。
-- `cdas_session` cookie 为 HttpOnly、SameSite=Lax、Path=/，生产环境启用 Secure，并带匹配的 Expires/Max-Age。
+- `cdas_session` cookie 为 HttpOnly、SameSite=Lax、Path=/，当配置的公开 origin 为 HTTPS 时启用 Secure，并带匹配的 Expires/Max-Age。生产环境若未配置或配置了无效 origin，保守地保持 Secure；受支持的 HTTP-only 自托管 origin 则明确关闭 Secure，使浏览器能保留会话。
 - 登出先撤销数据库会话再清 cookie；改密撤销该用户全部既有会话并创建新会话。过期或已撤销会话不能恢复。
 - AuthSession 只解析当前 actor。每次 UI 与 Agent 命令仍须在服务端重新检查账号、学校、资源所有权或成员关系；会话存在本身不授予任何教学权限。
 

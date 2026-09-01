@@ -7,6 +7,7 @@ import {
   authenticate,
   hashSessionToken,
   SESSION_COOKIE,
+  sessionCookieIsSecure,
   studentIdentifier,
   teacherIdentifier,
 } from "../../server/auth/local-auth";
@@ -45,7 +46,7 @@ async function loginForRole(
   (await cookies()).set(SESSION_COOKIE, result.token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: sessionCookieIsSecure(),
     path: "/",
     maxAge: 43200,
     expires: result.expiresAt,
@@ -91,7 +92,7 @@ export async function logoutAction(): Promise<void> {
   cookieStore.set(SESSION_COOKIE, "", {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: sessionCookieIsSecure(),
     path: "/",
     maxAge: 0,
   });

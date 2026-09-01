@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import type { AppUser, PrismaClient } from "../../generated/prisma/client";
 import { getDatabaseClient } from "../db/client";
 import { SchoolMemberAuthorizationError, assertActiveBusinessActor } from "../school/teacher-authorization";
-import { getSession, SESSION_COOKIE } from "./local-auth";
+import { getSession, SESSION_COOKIE, sessionCookieIsSecure } from "./local-auth";
 
 export class AuthenticationError extends Error {
   constructor(
@@ -54,7 +54,7 @@ export async function clearSessionCookie(): Promise<void> {
   (await cookies()).set(SESSION_COOKIE, "", {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: sessionCookieIsSecure(),
     path: "/",
     maxAge: 0,
   });

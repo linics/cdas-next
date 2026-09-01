@@ -6,6 +6,7 @@ import { getPasswordChangeActor } from "../../server/auth/current-actor";
 import {
   changeLocalPassword,
   SESSION_COOKIE,
+  sessionCookieIsSecure,
 } from "../../server/auth/local-auth";
 import { passwordSchema } from "../../server/auth/password-policy";
 import { getDatabaseClient } from "../../server/db/client";
@@ -26,7 +27,7 @@ async function changePasswordForRole(
   if (actor.role !== role) return { error: "账号角色不匹配" };
   const now = new Date();
   const session = await changeLocalPassword(database, actor.id, password, now);
-  (await cookies()).set(SESSION_COOKIE, session.token, { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/", maxAge: 43200, expires: session.expiresAt });
+  (await cookies()).set(SESSION_COOKIE, session.token, { httpOnly: true, sameSite: "lax", secure: sessionCookieIsSecure(), path: "/", maxAge: 43200, expires: session.expiresAt });
   redirect(role === "TEACHER" ? "/teacher" : "/student", RedirectType.replace);
 }
 

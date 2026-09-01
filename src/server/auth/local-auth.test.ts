@@ -13,6 +13,7 @@ import {
   adminIdentifier,
   hashPassword,
   hashSessionToken,
+  sessionCookieIsSecure,
   studentIdentifier,
   authenticate,
   teacherIdentifier,
@@ -155,5 +156,13 @@ describe("local password authentication", () => {
     expect(teacherIdentifier("schabc12", "t-01")).toBe("teacher:schabc12:t-01");
     expect(studentIdentifier("schabc12", "000123")).toBe("student:schabc12:000123");
     expect(hashSessionToken("secret")).toMatch(/^[a-f0-9]{64}$/u);
+  });
+
+  it("matches the session cookie transport to the configured public origin", () => {
+    expect(sessionCookieIsSecure("https://cdas.example.com", "production")).toBe(true);
+    expect(sessionCookieIsSecure("http://122.51.77.121", "production")).toBe(false);
+    expect(sessionCookieIsSecure(undefined, "production")).toBe(true);
+    expect(sessionCookieIsSecure("not a URL", "production")).toBe(true);
+    expect(sessionCookieIsSecure("ftp://cdas.example.com", "production")).toBe(true);
   });
 });
