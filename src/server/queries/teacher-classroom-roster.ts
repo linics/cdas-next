@@ -47,6 +47,7 @@ export const teacherClassroomRosterSchema = z
         id: z.uuid(),
         name: z.string().trim().min(1),
         version: z.int().positive(),
+        canDelete: z.boolean(),
       })
       .strict(),
     memberships: z.array(
@@ -138,6 +139,7 @@ async function requireManagedClassroom(
         version: true,
         managerId: true,
         schoolId: true,
+        _count: { select: { memberships: true, releases: true } },
       },
     }),
   ]);
@@ -189,6 +191,8 @@ export async function getTeacherClassroomRoster(
       id: classroom.id,
       name: classroom.name,
       version: classroom.version,
+      canDelete:
+        classroom._count.memberships === 0 && classroom._count.releases === 0,
     },
     memberships: memberships.map((membership) => ({
       id: membership.id,
