@@ -216,4 +216,17 @@ describe("teacher dashboard role guidance", () => {
     expect(markup).toContain("待重交 1");
     expect(markup).not.toContain("待评价");
   });
+  it("offers a way to create the first classroom when the teacher has none", async () => {
+    mocks.getTeacherActivityDashboard.mockResolvedValue({
+      actor: { displayName: "林老师" },
+      drafts: [],
+      classrooms: [],
+      releases: [],
+    });
+
+    const markup = await renderPage();
+    expect(markup).toContain('href="/teacher/classrooms/new"');
+    expect(markup).toContain("新建班级");
+    expect(markup).toContain("还没有班级");
+  });
 });
