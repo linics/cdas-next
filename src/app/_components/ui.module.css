@@ -48,6 +48,27 @@
 .alert[data-tone="danger"] { border-left-color: var(--stroke-heavy); }
 .alert[data-tone="success"] { border-left-color: var(--color-neutral-500); }
 
+/* 操作结果是低频的状态切换：轻微归位能让提示出现得不突兀，
+   但不把这种动效带进表格、阅读或日常导航。 */
+@media (prefers-reduced-motion: no-preference) {
+  .alert,
+  .emptyState {
+    animation: settle var(--motion-medium) cubic-bezier(0.23, 1, 0.32, 1) both;
+  }
+
+  @keyframes settle {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
 .emptyState {
   display: grid;
   max-width: 680px;

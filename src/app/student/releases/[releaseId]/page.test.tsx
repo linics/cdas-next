@@ -281,21 +281,23 @@ describe("student release page access boundary", () => {
     const markup = await renderPage();
 
     expect(markup).toContain("学生工作台当前没有开放");
-    expect(markup).toContain("返回首页");
+    expect(markup).toContain("返回 CDAS Next 首页");
     expect(markup).not.toContain('href="/student/login"');
     expect(markup).not.toContain("data-submission-editor");
     expect(mocks.getStudentFeedbackWorkspace).not.toHaveBeenCalled();
   });
 
-  it("offers the local student login only when unauthenticated", async () => {
+  it("renders the local student login form only when unauthenticated", async () => {
     mocks.createUiCommandContext.mockRejectedValue(
       new AuthenticationError("UNAUTHENTICATED"),
     );
 
     const markup = await renderPage();
 
-    expect(markup).toContain('href="/student/login"');
-    expect(markup).toContain("登录学生账号");
+    expect(markup).toContain('name="schoolCode"');
+    expect(markup).toContain('name="identifier"');
+    expect(markup).toContain('name="password"');
+    expect(markup).toContain("进入工作台");
     expect(markup).not.toContain("data-submission-editor");
     expect(mocks.getStudentFeedbackWorkspace).not.toHaveBeenCalled();
   });

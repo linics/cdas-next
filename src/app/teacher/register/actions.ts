@@ -12,12 +12,6 @@ export type RegisterTeacherActionState = {
   displayName: string;
 };
 
-export const idleRegisterTeacherState: RegisterTeacherActionState = {
-  schoolCode: "",
-  staffNo: "",
-  displayName: "",
-};
-
 export async function registerTeacherAction(
   _previous: RegisterTeacherActionState,
   formData: FormData,

@@ -876,6 +876,41 @@
 }
 .rosterPreview li[data-status="READY"] { color: var(--color-neutral-800); }
 .rosterPreview li:not([data-status="READY"]) { color: var(--stroke-heavy); }
+.importDisclosure {
+  grid-column: 1 / -1;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  padding: var(--space-3) var(--space-4);
+}
+.importDisclosure > summary {
+  cursor: pointer;
+  font-family: var(--font-heading);
+  font-size: var(--text-section);
+}
+.importDisclosure > summary:focus-visible { outline-offset: var(--space-1); }
+.importDisclosureBody { display: grid; gap: var(--space-3); padding-top: var(--space-3); }
+.importDisclosureBody > p {
+  margin: 0;
+  color: var(--color-neutral-700);
+  font-size: var(--text-meta);
+  line-height: 1.7;
+}
+.importDisclosureBody > a { width: fit-content; text-decoration: none; }
+.importForm { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+.importForm input[type="file"] { font-size: var(--text-meta); }
+.importReport { display: grid; margin: 0; padding: 0; list-style: none; }
+.importReport li {
+  display: grid;
+  grid-template-columns: 6rem minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: var(--space-3);
+  border-top: 1px solid var(--color-divider);
+  padding: var(--space-2) 0;
+  font-size: var(--text-meta);
+}
+.importReport li[data-tone="ready"] { color: var(--color-neutral-800); }
+.importReport li[data-tone="skip"] { color: var(--color-neutral-700); }
+.importReport li[data-tone="blocked"] { color: var(--stroke-heavy); }
 @media (max-width: 1023px) {
   .pageHeader,
   .dashboardBody,
@@ -935,4 +970,5 @@
   .dialogDetail dl { grid-template-columns: 1fr; }
   .gateMasthead { padding: 0 var(--space-4); }
   .rosterPreview li { display: grid; }
+  .importReport li { grid-template-columns: 1fr; gap: var(--space-1); }
 }

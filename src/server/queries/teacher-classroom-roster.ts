@@ -2,16 +2,39 @@ import "server-only";
 
 import { z } from "zod";
 import { rosterKeySchema } from "../../domain/classroom/roster-key";
+import {
+  MAX_ROSTER_IMPORT_ROWS,
+  studentRosterEntrySchema,
+} from "../../domain/classroom/student-roster-xlsx";
 import type { PrismaClient } from "../../generated/prisma/client";
 import {
   type CommandContext,
   resolveCommandContext,
 } from "../commands/command-context";
+import {
+  type ClassifiedImportRow,
+  classifyStudentImportRows,
+} from "../classroom/student-import-classification";
 import { assertActiveBusinessActor } from "../school/teacher-authorization";
 
 const classroomInputSchema = z.object({ classroomId: z.uuid() }).strict();
 const previewInputSchema = classroomInputSchema
   .extend({ rosterKeys: z.array(rosterKeySchema).min(1).max(50) })
+  .strict();
+
+const studentImportPreviewInputSchema = classroomInputSchema
+  .extend({
+    rows: z
+      .array(
+        z
+          .object({
+            rowNumber: z.int().positive(),
+            entry: studentRosterEntrySchema,
+          })
+          .strict(),
+      )
+      .max(MAX_ROSTER_IMPORT_ROWS),
+  })
   .strict();
 
 const isoDateSchema = z.iso.datetime({ offset: true });
@@ -245,4 +268,42 @@ export async function previewTeacherRosterImport(
       };
     }),
   });
+}
+
+export type StudentImportPreview = Readonly<{
+  classroom: Readonly<{ id: string; name: string; version: number }>;
+  rows: readonly ClassifiedImportRow[];
+}>;
+
+/**
+ * Read-only report of what a parsed roster file would do to this classroom.
+ * The upload action uses this report to show every row, including the ones an
+ * import must refuse, and prepares an intent only from the importable subset.
+ */
+export async function previewStudentImport(
+  database: PrismaClient,
+  commandContext: CommandContext,
+  rawInput: unknown,
+): Promise<StudentImportPreview> {
+  const input = studentImportPreviewInputSchema.parse(rawInput);
+  const context = resolveCommandContext(commandContext, ["UI"]);
+  const { classroom } = await requireManagedClassroom(
+    database,
+    context.actorId,
+    input.classroomId,
+  );
+  const rows = await classifyStudentImportRows(database, {
+    schoolId: classroom.schoolId,
+    classroomId: classroom.id,
+    now: context.now,
+    entries: input.rows,
+  });
+  return {
+    classroom: {
+      id: classroom.id,
+      name: classroom.name,
+      version: classroom.version,
+    },
+    rows,
+  };
 }

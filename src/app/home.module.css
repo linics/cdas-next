@@ -2,8 +2,10 @@
    右页是两扇门 —— 教师与学生工作台。与门禁页的整屏分栏同族。 */
 .home {
   display: grid;
+  height: 100svh;
   min-height: 100svh;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
   background: var(--color-bg);
 }
 
@@ -57,9 +59,10 @@
 /* ── 左页：序 ─────────────────────────────────────────────────────── */
 .preface {
   display: flex;
+  min-height: 0;
   flex-direction: column;
   justify-content: center;
-  padding: calc(var(--space-8) * 1.5) calc(var(--space-8) * 1.2);
+  padding: var(--space-8) calc(var(--space-8) * 1.2);
 }
 
 .prefaceBody {
@@ -130,6 +133,7 @@
 /* ── 中缝：书脊 ───────────────────────────────────────────────────── */
 .spine {
   display: flex;
+  min-height: 0;
   align-items: center;
   justify-content: center;
   border-inline: 1px solid var(--color-divider);
@@ -147,6 +151,7 @@
 /* ── 右页：工作台入口 ─────────────────────────────────────────────── */
 .doors {
   display: grid;
+  min-height: 0;
   grid-template-rows: repeat(3, minmax(0, 1fr));
 }
 
@@ -223,8 +228,21 @@
   }
 }
 
+/* 矮桌面仍保持一屏，但收紧纵向节奏，避免把内容藏到视口之外。 */
+@media (min-width: 881px) and (max-height: 700px) {
+  .preface { padding-block: var(--space-6); }
+  .lead { margin-bottom: var(--space-6); }
+  .loopList li { padding-block: var(--space-2); }
+  .door { padding-block: var(--space-4); }
+}
+
 /* ── 窄屏：合上书，按序—门堆叠 ─────────────────────────────────────── */
 @media (max-width: 880px) {
+  .home {
+    height: auto;
+    overflow: visible;
+  }
+
   .main { grid-template-columns: 1fr; }
   .spine { display: none; }
 
