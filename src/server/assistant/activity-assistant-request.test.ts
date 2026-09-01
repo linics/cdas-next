@@ -102,6 +102,49 @@ describe("activity assistant request validation", () => {
     ).resolves.toMatchObject([{ role: "user" }]);
   });
 
+  it.each([
+    {
+      state: "input-streaming",
+      part: {
+        type: "tool-create_activity_draft",
+        toolCallId: "interrupted_draft_stream",
+        state: "input-streaming",
+        input: { content: { title: "尚未完成" } },
+      },
+    },
+    {
+      state: "output-error",
+      part: {
+        type: "tool-create_activity_draft",
+        toolCallId: "failed_draft_input",
+        state: "output-error",
+        errorText: "Invalid input for tool create_activity_draft",
+      },
+    },
+  ])("discards a recoverable $state draft call before a later retry", async ({ part }) => {
+    const parsed = await parseActivityAssistantRequest(
+      request({
+        messages: [
+          {
+            id: "message_1",
+            role: "user",
+            parts: [{ type: "text", text: "设计一个跨学科活动" }],
+          },
+          { id: "assistant_1", role: "assistant", parts: [part] },
+          {
+            id: "message_2",
+            role: "user",
+            parts: [{ type: "text", text: "请重新创建草稿" }],
+          },
+        ],
+      }),
+    );
+
+    expect(parsed).toHaveLength(3);
+    expect(parsed[1]?.parts).toEqual([]);
+    expect(parsed.at(-1)).toMatchObject({ role: "user" });
+  });
+
   it("accepts only allowlisted page context fields", async () => {
     const parsed = await parseActivityAssistantRequestEnvelope(
       request({
@@ -279,38 +322,38 @@ describe("activity assistant request validation", () => {
     expect(JSON.stringify(canonical)).toContain("NOT_FOUND");
   });
 
-  it("rejects a quoted draft read that never produced an output", async () => {
-    await expect(
-      parseActivityAssistantRequestEnvelope(
-        request({
-          messages: [
-            {
-              id: "message_1",
-              role: "user",
-              parts: [{ type: "text", text: "帮我看看这份草稿" }],
-            },
-            {
-              id: "assistant_1",
-              role: "assistant",
-              parts: [
-                {
-                  type: "tool-get_activity_draft",
-                  toolCallId: "draft_read_1",
-                  state: "input-available",
-                  input: { draftId: "30000000-0000-4000-8000-000000000003" },
-                },
-              ],
-            },
-            {
-              id: "message_2",
-              role: "user",
-              parts: [{ type: "text", text: "继续" }],
-            },
-          ],
-          pageContext: { kind: "TEACHER_DASHBOARD" },
-        }),
-      ),
-    ).rejects.toEqual(new ActivityAssistantRequestError("INVALID_MESSAGES"));
+  it("discards a quoted draft read that never produced an output", async () => {
+    const parsed = await parseActivityAssistantRequestEnvelope(
+      request({
+        messages: [
+          {
+            id: "message_1",
+            role: "user",
+            parts: [{ type: "text", text: "帮我看看这份草稿" }],
+          },
+          {
+            id: "assistant_1",
+            role: "assistant",
+            parts: [
+              {
+                type: "tool-get_activity_draft",
+                toolCallId: "draft_read_1",
+                state: "input-available",
+                input: { draftId: "30000000-0000-4000-8000-000000000003" },
+              },
+            ],
+          },
+          {
+            id: "message_2",
+            role: "user",
+            parts: [{ type: "text", text: "继续" }],
+          },
+        ],
+        pageContext: { kind: "TEACHER_DASHBOARD" },
+      }),
+    );
+
+    expect(parsed.messages[1]?.parts).toEqual([]);
   });
 
   it("replaces a stale draft title in history, not only its identifier", async () => {

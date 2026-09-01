@@ -8,6 +8,7 @@ import {
 import Link from "next/link";
 import { LocalLoginForm } from "../../auth/local-login-form";
 import gateStyles from "../../_components/access-gate.module.css";
+import { isDevelopmentQuickLoginEnabled } from "../../../server/auth/development-quick-login";
 
 const adminNavigation = [
   { href: "/admin", label: "概览" },
@@ -102,7 +103,7 @@ export function AdminAccessGate({
           <h2>{copy.title}</h2>
         </div>
         {code === "UNAUTHENTICATED" || code === "USER_NOT_PROVISIONED" ? (
-          <LocalLoginForm role="ADMIN" />
+          <LocalLoginForm role="ADMIN" quickLogin={isDevelopmentQuickLoginEnabled()} />
         ) : null}
       </main>
     </div>

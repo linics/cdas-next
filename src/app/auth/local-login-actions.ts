@@ -10,6 +10,7 @@ import {
   studentIdentifier,
   teacherIdentifier,
 } from "../../server/auth/local-auth";
+import { createDevelopmentQuickSession } from "../../server/auth/development-quick-login";
 import { getDatabaseClient } from "../../server/db/client";
 
 function rolePath(role: "ADMIN" | "TEACHER" | "STUDENT"): string {
@@ -77,6 +78,83 @@ export async function studentLoginAction(
   formData: FormData,
 ): Promise<LoginActionState> {
   return loginForRole(formData, "STUDENT");
+}
+
+async function developmentQuickLoginForRole(
+  role: "ADMIN" | "TEACHER" | "STUDENT",
+): Promise<LoginActionState> {
+  const result = await createDevelopmentQuickSession(
+    getDatabaseClient(),
+    role,
+  );
+  if (!result.ok) {
+    return {
+      error:
+        result.code === "DEFAULT_ACCOUNT_UNAVAILABLE"
+          ? "默认账号尚未准备。请先运行演示数据初始化，或创建一个已启用且无需改密的账号。"
+          : "当前环境未启用快捷登录。",
+      schoolCode: "",
+      account: "",
+    };
+  }
+  (await cookies()).set(SESSION_COOKIE, result.token, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: false,
+    path: "/",
+    maxAge: 43200,
+    expires: result.expiresAt,
+  });
+  redirect(rolePath(role), RedirectType.replace);
+}
+
+export async function developmentQuickAdminLoginAction(
+  _state: LoginActionState,
+  _formData: FormData,
+): Promise<LoginActionState> {
+  void _state;
+  void _formData;
+  return developmentQuickLoginForRole("ADMIN");
+}
+
+export async function developmentQuickTeacherLoginAction(
+  _state: LoginActionState,
+  _formData: FormData,
+): Promise<LoginActionState> {
+  void _state;
+  void _formData;
+  return developmentQuickLoginForRole("TEACHER");
+}
+
+export async function developmentQuickStudentLoginAction(
+  _state: LoginActionState,
+  _formData: FormData,
+): Promise<LoginActionState> {
+  void _state;
+  void _formData;
+  return developmentQuickLoginForRole("STUDENT");
+}
+
+/** One-argument variants are used by the compact identity switcher in the shell. */
+export async function developmentQuickAdminEntryAction(
+  _formData: FormData,
+): Promise<void> {
+  void _formData;
+  await developmentQuickLoginForRole("ADMIN");
+}
+
+export async function developmentQuickTeacherEntryAction(
+  _formData: FormData,
+): Promise<void> {
+  void _formData;
+  await developmentQuickLoginForRole("TEACHER");
+}
+
+export async function developmentQuickStudentEntryAction(
+  _formData: FormData,
+): Promise<void> {
+  void _formData;
+  await developmentQuickLoginForRole("STUDENT");
 }
 
 export async function logoutAction(): Promise<void> {

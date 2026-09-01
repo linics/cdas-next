@@ -7,6 +7,7 @@ import {
 } from "../../_components/workspace-shell";
 import { LocalLoginForm } from "../../auth/local-login-form";
 import gateStyles from "../../_components/access-gate.module.css";
+import { isDevelopmentQuickLoginEnabled } from "../../../server/auth/development-quick-login";
 
 const teacherNavigation = [
   { href: "/teacher", label: "工作台" },
@@ -117,7 +118,7 @@ export function TeacherAccessGate({
           <h2>{copy.title}</h2>
         </div>
         {code === "UNAUTHENTICATED" || code === "USER_NOT_PROVISIONED" ? (
-          <LocalLoginForm role="TEACHER">
+          <LocalLoginForm role="TEACHER" quickLogin={isDevelopmentQuickLoginEnabled()}>
             <Link className={gateStyles.backLink} href="/teacher/register">
               使用邀请码开通教师账号
             </Link>

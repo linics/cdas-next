@@ -1,6 +1,12 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { logoutAction } from "../auth/local-login-actions";
+import {
+  developmentQuickAdminEntryAction,
+  developmentQuickStudentEntryAction,
+  developmentQuickTeacherEntryAction,
+  logoutAction,
+} from "../auth/local-login-actions";
+import { isDevelopmentQuickLoginEnabled } from "../../server/auth/development-quick-login";
 import { WorkspaceNavigation } from "./workspace-navigation";
 import styles from "./workspace-shell.module.css";
 
@@ -73,6 +79,7 @@ export function WorkspaceShell({
   const workspaceHref =
     audience === "教师" ? "/teacher" : audience === "学生" ? "/student" : "/admin";
   const showNavigation = navigation.length > 0;
+  const showDevelopmentSwitcher = isDevelopmentQuickLoginEnabled();
   const crumbs =
     breadcrumb && breadcrumb.length > 0
       ? breadcrumb
@@ -120,6 +127,31 @@ export function WorkspaceShell({
                 : `${audience}工作台`}
             </span>
             {toolbarAction}
+            {actorName && showDevelopmentSwitcher ? (
+              <>
+                {actorAudience !== "教师" ? (
+                  <form action={developmentQuickTeacherEntryAction}>
+                    <button className={styles.signOutButton} type="submit">
+                      切换默认教师
+                    </button>
+                  </form>
+                ) : null}
+                {actorAudience !== "学生" ? (
+                  <form action={developmentQuickStudentEntryAction}>
+                    <button className={styles.signOutButton} type="submit">
+                      切换默认学生
+                    </button>
+                  </form>
+                ) : null}
+                {actorAudience !== "管理员" ? (
+                  <form action={developmentQuickAdminEntryAction}>
+                    <button className={styles.signOutButton} type="submit">
+                      切换默认管理员
+                    </button>
+                  </form>
+                ) : null}
+              </>
+            ) : null}
             {actorName ? (
               <form action={logoutAction}>
                 <button className={styles.signOutButton} type="submit">退出登录</button>
