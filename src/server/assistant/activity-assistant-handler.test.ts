@@ -9,7 +9,7 @@ import {
   inquiryDepths,
   submissionModes,
 } from "../../domain/activity/activity-content";
-import { waterConservationTaskBook } from "../../fixtures/water-conservation";
+import { waterConservationTaskBookV3 } from "../../fixtures/water-conservation-v3";
 import type { AppUser, PrismaClient } from "../../generated/prisma/client";
 
 vi.mock("server-only", () => ({}));
@@ -54,7 +54,7 @@ const approvalRunId = "80000000-0000-4000-8000-000000000008";
 const executionRunId = "90000000-0000-4000-8000-000000000009";
 const replayRunId = "a0000000-0000-4000-8000-00000000000a";
 const now = new Date("2026-08-20T04:00:00.000Z");
-const content = waterConservationTaskBook;
+const content = waterConservationTaskBookV3;
 const proposal: ActivityDraftProposal = {
   taskUnderstandingSummary: {
     realWorldContext: "学校准备开展节水行动。",
@@ -64,15 +64,6 @@ const proposal: ActivityDraftProposal = {
   },
   teacherRequirements: ["七年级", "校园节水", "有证据的改善建议"],
   assumptions: [],
-  integratedDisciplineContributions: [
-    { disciplineCode: "math", necessaryContribution: "整理和解释调查数据。" },
-    { disciplineCode: "chinese", necessaryContribution: "公开表达有依据的建议。" },
-  ],
-  alignmentChains: [
-    { objectiveKind: "knowledge", objective: content.objectiveKnowledge, task: content.phases[0].action, evidence: content.phases[0].evidence[0].description, assessment: content.phases[0].evaluationFocus },
-    { objectiveKind: "process", objective: content.objectiveProcess, task: content.phases[1].action, evidence: content.phases[1].evidence[0].description, assessment: content.phases[1].evaluationFocus },
-    { objectiveKind: "emotion", objective: content.objectiveEmotion, task: content.phases[2].action, evidence: content.phases[2].evidence[0].description, assessment: content.phases[2].evaluationFocus },
-  ],
   sourceReferences: searchOfficialKnowledge({
     query: "初中跨学科实践 数据分析 评价",
     schoolStage: "MIDDLE",
@@ -1148,10 +1139,13 @@ describe("activity assistant route handler", () => {
   it("repairs one invalid proposal payload and still requires approval", async () => {
     const invalidProposal = {
       ...proposal,
-      integratedDisciplineContributions: [
-        ...proposal.integratedDisciplineContributions,
-        ...proposal.integratedDisciplineContributions,
-      ],
+      content: {
+        ...proposal.content,
+        disciplineContributions: [
+          ...proposal.content.disciplineContributions,
+          ...proposal.content.disciplineContributions,
+        ],
+      },
     };
     const repairModel = new MockLanguageModelV4({
       doStream: retrievalProposalSteps(invalidProposal),
@@ -1194,10 +1188,13 @@ describe("activity assistant route handler", () => {
   it("attempts repair at most once and fails closed when it does not help", async () => {
     const invalidProposal = {
       ...proposal,
-      integratedDisciplineContributions: [
-        ...proposal.integratedDisciplineContributions,
-        ...proposal.integratedDisciplineContributions,
-      ],
+      content: {
+        ...proposal.content,
+        disciplineContributions: [
+          ...proposal.content.disciplineContributions,
+          ...proposal.content.disciplineContributions,
+        ],
+      },
     };
     const stubbornModel = new MockLanguageModelV4({
       doStream: retrievalProposalSteps(invalidProposal),
