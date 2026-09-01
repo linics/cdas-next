@@ -39,28 +39,11 @@ export function generateSyntheticPasswords(): Readonly<Record<SyntheticPasswordN
   return Object.freeze(passwords);
 }
 
-export const syntheticExternalIds = {
-  teacher: "cdas-staging-synthetic-teacher",
-  student: "cdas-staging-synthetic-student",
-  otherStudent: "cdas-staging-synthetic-other-student",
-  otherTeacher: "cdas-staging-synthetic-other-teacher",
-} as const;
-export const syntheticUsernames = {
-  teacher: "cdas_staging_synthetic_teacher",
-  student: "cdas_staging_synthetic_student",
-  otherStudent: "cdas_staging_synthetic_other_student",
-  otherTeacher: "cdas_staging_synthetic_other_teacher",
-} as const;
-
 export type DevelopmentInfrastructureConfig = Readonly<{
   masterSecret: string;
   vercelToken: string;
   neonApiKey: string;
   neonProjectId: string;
-  /** @deprecated retained only for the not-yet-migrated Agent acceptance path. */
-  clerkSecretKey: string;
-  /** @deprecated retained only for the not-yet-migrated Agent acceptance path. */
-  clerkPublishableKey: string;
   vercelTeamId?: string;
   vercelProjectName: string;
   neonBranchName: string;
@@ -75,8 +58,6 @@ const required = [
   "NEON_API_KEY",
   "NEON_PROJECT_ID",
 ] as const;
-// These two provider keys remain parseable solely so the next-slice Agent
-// operator keeps compiling; the synthetic workflow never reads or writes them.
 const allowed = new Set([
   ...required,
   "VERCEL_TEAM_ID",
@@ -84,8 +65,6 @@ const allowed = new Set([
   "NEON_STAGING_BRANCH_NAME",
   "NEON_STAGING_DATABASE_NAME",
   "NEON_STAGING_ROLE_NAME",
-  "CLERK_SECRET_KEY",
-  "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
 ]);
 
 function requiredValue(values: Readonly<Record<string, string>>, name: string): string {
@@ -153,9 +132,6 @@ export function validateConfig(values: Readonly<Record<string, string>>): Develo
     vercelToken: requiredValue(values, "VERCEL_TOKEN"),
     neonApiKey: requiredValue(values, "NEON_API_KEY"),
     neonProjectId: requiredValue(values, "NEON_PROJECT_ID"),
-    // Deprecated compatibility fields are deliberately empty when omitted.
-    clerkSecretKey: values.CLERK_SECRET_KEY?.trim() ?? "",
-    clerkPublishableKey: values.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.trim() ?? "",
     vercelTeamId: values.VERCEL_TEAM_ID?.trim() || undefined,
     vercelProjectName: projectName,
     neonBranchName: branchName,
@@ -178,6 +154,6 @@ export function stableInfrastructureErrorCode(error: unknown): string {
 export function redactInfrastructureText(value: string): string {
   return value
     .replace(/postgres(?:ql)?:\/\/[^\s"']+/giu, "[REDACTED_DATABASE_URL]")
-    .replace(/\b(?:pk|sk)_(?:test|live)_[A-Za-z0-9_-]+\b/gu, "[REDACTED_CLERK_KEY]")
+    .replace(/\b(?:pk|sk)_(?:test|live)_[A-Za-z0-9_-]+\b/gu, "[REDACTED_PROVIDER_KEY]")
     .replace(/\b(?:Bearer|token|secret|ticket|cookie)\s*[:=]?\s*[^\s"']+/giu, "$1=[REDACTED]");
 }

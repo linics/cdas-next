@@ -7,7 +7,6 @@ import path from "node:path";
 import type { DevelopmentInfrastructureConfig } from "./contracts";
 
 export type RepositoryTarget = Readonly<{ owner: string; name: string; branch: string; sha: string; repositoryId: number }>;
-export type ClerkIdentity = Readonly<{ id: string; externalId: string }>;
 export type NeonConnection = Readonly<{ pooledUrl: string; directUrl: string }>;
 export type PreviewDeployment = Readonly<{ url: string; sha: string }>;
 export type WorkflowRun = Readonly<{ id: string; attempt: number; url: string; headSha: string }>;
@@ -51,10 +50,6 @@ export function minimalCommandEnvironment(options: Readonly<{ github?: boolean; 
   return base;
 }
 
-export interface ClerkProvider {
-  assertDevelopmentInstance(): Promise<void>;
-  ensureSyntheticIdentity(externalId: string, username: string, firstName: string, lastName: string): Promise<ClerkIdentity>;
-}
 export interface NeonProvider {
   ensureIsolatedDatabase(): Promise<NeonConnection>;
 }
@@ -78,8 +73,6 @@ export interface GitHubProvider {
 }
 
 export interface InfrastructureProviders {
-  /** The synthetic orchestrator does not use this next-slice compatibility provider. */
-  clerk?: ClerkProvider;
   neon: NeonProvider;
   vercel: VercelProvider;
   github: GitHubProvider;
@@ -117,7 +110,7 @@ type Fetcher = typeof fetch;
 async function json(fetcher: Fetcher, url: string, init: RequestInit): Promise<unknown> {
   let response: Response;
   const target = new URL(url);
-  if (target.protocol !== "https:" || !["api.clerk.com", "console.neon.tech"].includes(target.hostname)) throw new Error("DEVELOPMENT_INFRA_PROVIDER_ORIGIN_UNSAFE");
+  if (target.protocol !== "https:" || target.hostname !== "console.neon.tech") throw new Error("DEVELOPMENT_INFRA_PROVIDER_ORIGIN_UNSAFE");
   try { response = await fetcher(target, { ...init, redirect: "error", signal: AbortSignal.timeout(30_000) }); } catch { throw new Error("DEVELOPMENT_INFRA_PROVIDER_NETWORK_FAILED"); }
   if (!response.ok) throw new Error(`DEVELOPMENT_INFRA_PROVIDER_REQUEST_${response.status}`);
   return response.json().catch(() => { throw new Error("DEVELOPMENT_INFRA_PROVIDER_SCHEMA_INVALID"); });
@@ -125,25 +118,6 @@ async function json(fetcher: Fetcher, url: string, init: RequestInit): Promise<u
 function object(value: unknown): Record<string, unknown> { if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("DEVELOPMENT_INFRA_PROVIDER_SCHEMA_INVALID"); return value as Record<string, unknown>; }
 function text(value: unknown): string { return typeof value === "string" && value.length > 0 ? value : (() => { throw new Error("DEVELOPMENT_INFRA_PROVIDER_SCHEMA_INVALID"); })(); }
 function headers(token: string): HeadersInit { return { authorization: `Bearer ${token}`, "content-type": "application/json" }; }
-
-export class ClerkApiProvider implements ClerkProvider {
-  constructor(private readonly secretKey: string, private readonly fetcher: Fetcher = fetch) {}
-  async assertDevelopmentInstance(): Promise<void> {
-    const payload = object(await json(this.fetcher, "https://api.clerk.com/v1/instance", { headers: headers(this.secretKey) }));
-    if (payload.environment_type !== "development") throw new Error("DEVELOPMENT_INFRA_CLERK_INSTANCE_NOT_DEVELOPMENT");
-  }
-  async ensureSyntheticIdentity(externalId: string, username: string, firstName: string, lastName: string): Promise<ClerkIdentity> {
-    const query = new URLSearchParams({ external_id: externalId, limit: "2" });
-    const listed = await json(this.fetcher, `https://api.clerk.com/v1/users?${query}`, { headers: headers(this.secretKey) });
-    if (!Array.isArray(listed)) throw new Error("DEVELOPMENT_INFRA_PROVIDER_SCHEMA_INVALID");
-    if (listed.length > 1) throw new Error("DEVELOPMENT_INFRA_CLERK_IDENTITY_AMBIGUOUS");
-    const user = listed[0] ?? object(await json(this.fetcher, "https://api.clerk.com/v1/users", { method: "POST", headers: headers(this.secretKey), body: JSON.stringify({ external_id: externalId, username, first_name: firstName, last_name: lastName, skip_password_requirement: true }) }));
-    const target = object(user);
-    const id = text(target.id);
-    if (!/^user_[A-Za-z0-9]+$/u.test(id) || target.external_id !== externalId || target.username !== username || target.first_name !== firstName || target.last_name !== lastName) throw new Error("DEVELOPMENT_INFRA_CLERK_IDENTITY_CONFLICT");
-    return { id, externalId };
-  }
-}
 
 /** Deliberately validates every return shape; no unknown Neon branch is ever reused. */
 export class NeonApiProvider implements NeonProvider {

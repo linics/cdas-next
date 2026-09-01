@@ -23,6 +23,9 @@ describe("development infrastructure config", () => {
     expect(config.neonDatabaseName).toBe("cdas_next_staging");
     expect(config.vercelProjectName).toBe("cdas-next");
   });
+  it.each(["CLERK_SECRET_KEY=sk_test_legacy", "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_legacy"])("rejects retired provider keys: %s", (line) => {
+    expect(() => parseStagingEnvironmentFile(`${source}${line}\n`)).toThrow("DEVELOPMENT_INFRA_CONFIG_UNKNOWN_KEY");
+  });
   it.each(["", "CDAS_DEVELOPMENT_INFRA_MANAGED=false", "NEON_STAGING_DATABASE_NAME=cdas_next_production", "NEON_PROJECT_ID=production-project"])("rejects unsafe or incomplete input: %s", (line) => {
     const mutated = line ? source.replace(/^.*(?:CDAS_DEVELOPMENT_INFRA_MANAGED|NEON_STAGING_DATABASE_NAME|NEON_PROJECT_ID).*$/mu, line).concat(line.startsWith("NEON_") ? line + "\n" : "") : "";
     expect(() => validateConfig(parseStagingEnvironmentFile(mutated))).toThrow(/DEVELOPMENT_INFRA_/u);
@@ -41,6 +44,7 @@ describe("development infrastructure config", () => {
     expect(secrets.healthProofSecret).toMatch(/^[a-f0-9]{64}$/u);
     expect(secrets.vercelBypassSecret).toMatch(/^[A-Za-z0-9]{32}$/u);
     expect(secrets.vercelBypassSecret).not.toBe(secrets.healthProofSecret.slice(0, 32));
+    expect(redactInfrastructureText("postgresql://x:y@db/z sk_test_abcdefghijk Bearer abc")).toContain("[REDACTED_PROVIDER_KEY]");
     expect(redactInfrastructureText("postgresql://x:y@db/z sk_test_abcdefghijk Bearer abc")).not.toContain("abcdefghijk");
     expect(stableInfrastructureErrorCode(new Error("postgresql://secret"))).toBe("DEVELOPMENT_INFRA_INTERNAL_ERROR");
   });

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { mkdir, mkdtemp, realpath, rm, symlink, unlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { ClerkApiProvider, deployMigrationsWithMinimalEnvironment, minimalCommandEnvironment, NeonApiProvider, verifyDownloadedAcceptanceArtifact } from "./providers";
+import { deployMigrationsWithMinimalEnvironment, minimalCommandEnvironment, NeonApiProvider, verifyDownloadedAcceptanceArtifact } from "./providers";
 import { VercelApiProvider } from "./remote-providers";
 import { parseStagingEnvironmentFile, validateConfig } from "./contracts";
 
@@ -11,8 +11,6 @@ CDAS_INFRA_MASTER_SECRET=${"a".repeat(32)}
 VERCEL_TOKEN=t
 NEON_API_KEY=n
 NEON_PROJECT_ID=project_123
-CLERK_SECRET_KEY=sk_test_abcdefghijk
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_abcdefghijk
 `));
 function response(body: unknown, status = 200): Response { return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } }); }
 function queuedFetch(responses: readonly Response[], requests: Request[]): typeof fetch { let index = 0; return (async (input: RequestInfo | URL, init?: RequestInit) => { requests.push(new Request(input, init)); const next = responses[index++]; if (!next) throw new Error("unexpected request"); return next; }) as typeof fetch; }
@@ -50,21 +48,6 @@ describe("provider fail-closed contracts", () => {
     } finally {
       await rm(sandbox, { recursive: true, force: true });
     }
-  });
-  it("creates a zero-result Clerk identity and validates the created response", async () => {
-    const calls: Request[] = [];
-    const client = new ClerkApiProvider(config.clerkSecretKey, queuedFetch([response([]), response({ id: "user_one", external_id: "x", username: "synthetic_x", first_name: "A", last_name: "B" })], calls));
-    await expect(client.ensureSyntheticIdentity("x", "synthetic_x", "A", "B")).resolves.toEqual({ id: "user_one", externalId: "x" });
-    expect(calls.map((request) => request.method)).toEqual(["GET", "POST"]);
-    expect(calls[1]?.headers.get("authorization")).toMatch(/^Bearer /u);
-    await expect(calls[1]?.json()).resolves.toMatchObject({ external_id: "x", username: "synthetic_x", skip_password_requirement: true });
-  });
-  it("reuses exactly one matching Clerk identity and rejects conflict/multiple/api error", async () => {
-    const existing = { id: "user_one", external_id: "x", username: "synthetic_x", first_name: "A", last_name: "B" };
-    await expect(new ClerkApiProvider(config.clerkSecretKey, queuedFetch([response([existing])], [])).ensureSyntheticIdentity("x", "synthetic_x", "A", "B")).resolves.toEqual({ id: "user_one", externalId: "x" });
-    await expect(new ClerkApiProvider(config.clerkSecretKey, queuedFetch([response([{ ...existing, username: "wrong" }])], [])).ensureSyntheticIdentity("x", "synthetic_x", "A", "B")).rejects.toThrow("DEVELOPMENT_INFRA_CLERK_IDENTITY_CONFLICT");
-    await expect(new ClerkApiProvider(config.clerkSecretKey, queuedFetch([response([existing, existing])], [])).ensureSyntheticIdentity("x", "synthetic_x", "A", "B")).rejects.toThrow("DEVELOPMENT_INFRA_CLERK_IDENTITY_AMBIGUOUS");
-    await expect(new ClerkApiProvider(config.clerkSecretKey, queuedFetch([response({}, 403)], [])).ensureSyntheticIdentity("x", "synthetic_x", "A", "B")).rejects.toThrow("DEVELOPMENT_INFRA_PROVIDER_REQUEST_403");
   });
   it("refuses a non schema-only Neon branch before migrations or connections", async () => {
     const fetcher: typeof fetch = (async () => response({ branches: [{ id: "b", name: "cdas-next-development", branch_type: "copy-on-write", parent_id: null }] })) as typeof fetch;
