@@ -47,5 +47,17 @@ export function studentIdentifier(schoolCode: string, studentNo: string): string
   if (!/^\d{6,32}$/u.test(number)) throw new Error("INVALID_IDENTIFIER");
   return `student:${normalizeSchoolCode(schoolCode).toLowerCase()}:${number}`;
 }
+/**
+ * Initial password for an account created by a roster import. It is derived
+ * from the student number on purpose: the teacher can tell a whole class the
+ * rule instead of handing out a password list. It satisfies the password
+ * policy (>= 10 characters, letters and digits) and is only ever stored with
+ * `mustChangePassword`, so it stops working after the first sign-in.
+ */
+export function initialStudentPassword(studentNo: string): string {
+  const number = studentNo.normalize("NFKC").trim();
+  if (!/^\d{6,32}$/u.test(number)) throw new Error("INVALID_IDENTIFIER");
+  return `cdas${number}`;
+}
 export function createSessionToken(): string { return randomBytes(32).toString("base64url"); }
 export function hashSessionToken(token: string): string { return createHash("sha256").update(token).digest("hex"); }

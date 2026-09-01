@@ -211,11 +211,13 @@ export default async function TeacherDashboardPage() {
                   <p className={styles.eyebrow}>任教班级</p>
                   <h2>班级</h2>
                 </div>
-                <span>{dashboard.classrooms.length} 个</span>
+                <Link className={styles.rowLink} href="/teacher/classrooms/new">
+                  新建班级（{dashboard.classrooms.length} 个）
+                </Link>
               </header>
               {dashboard.classrooms.length === 0 ? (
                 <p className={styles.emptyState}>
-                  暂无分配给你的班级。你仍可保存活动草稿，待管理员完成班级配置后即可发布。
+                  还没有班级。新建一个班级后即可导入学生名单，再向该班级发布活动。
                 </p>
               ) : (
                 <div className={styles.classroomCardList}>

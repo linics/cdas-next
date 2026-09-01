@@ -3,15 +3,23 @@
 import Link from "next/link";
 import { useActionState } from "react";
 import {
-  idleRegisterTeacherState,
   registerTeacherAction,
+  type RegisterTeacherActionState,
 } from "./actions";
 import styles from "../../_components/access-gate.module.css";
+
+// A "use server" module may only export async functions, so the idle state
+// lives with the form that owns it.
+const idleState: RegisterTeacherActionState = {
+  schoolCode: "",
+  staffNo: "",
+  displayName: "",
+};
 
 export default function TeacherRegisterPage() {
   const [state, formAction, pending] = useActionState(
     registerTeacherAction,
-    idleRegisterTeacherState,
+    idleState,
   );
   return (
     <main className={styles.accessGate}>
