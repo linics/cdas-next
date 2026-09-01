@@ -1,7 +1,10 @@
 import { createHash } from "node:crypto";
 import canonicalize from "canonicalize";
 import { z } from "zod";
-import { activityContentSchema } from "../../domain/activity/activity-content";
+import {
+  activityContentSchema,
+  isStructuredContent,
+} from "../../domain/activity/activity-content";
 import {
   createTeacherEvaluationPayload,
   hashTeacherEvaluationPayload,
@@ -220,7 +223,7 @@ async function runTransaction(
         }
         throw error;
       }
-      if (content.schemaVersion !== 2) {
+      if (!isStructuredContent(content)) {
         throw new PrepareTeacherEvaluationIntentError("RUBRIC_UNAVAILABLE");
       }
 

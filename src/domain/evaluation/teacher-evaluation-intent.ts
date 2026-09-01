@@ -1,7 +1,10 @@
 import { createHash } from "node:crypto";
 import canonicalize from "canonicalize";
 import { z } from "zod";
-import type { ActivityContent } from "../activity/activity-content";
+import {
+  isStructuredContent,
+  type ActivityContent,
+} from "../activity/activity-content";
 import {
   hasMeaningfulTextEvidence,
   normalizeTextEvidence,
@@ -160,12 +163,12 @@ export function createTeacherEvaluationPayload(
   evidence: TeacherEvaluationEvidence,
 ): TeacherEvaluationPayload {
   const input = payloadInputSchema.parse(rawInput);
-  if (evidence.content.schemaVersion !== 2) {
+  if (!isStructuredContent(evidence.content)) {
     throw new z.ZodError([
       {
         code: "custom",
         path: ["outcomes"],
-        message: "Evidence-bound evaluation requires a schema v2 rubric",
+        message: "Evidence-bound evaluation requires a structured rubric",
       },
     ]);
   }

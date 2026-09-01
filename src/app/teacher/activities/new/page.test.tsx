@@ -51,8 +51,8 @@ vi.mock("../../_components/teacher-shell", () => ({
   teacherHomeCrumb: { href: "/teacher", label: "教师工作台" },
   activityStudioCrumb: { href: "/teacher/activities", label: "活动设计" },
 }));
-vi.mock("../activity-draft-form", () => ({
-  ActivityDraftForm: () => <form data-manual-draft="true" />,
+vi.mock("../activity-draft-v3-form", () => ({
+  ActivityDraftV3Form: () => <form data-manual-draft="true" />,
 }));
 
 import { AuthenticationError } from "../../../../server/auth/current-actor";

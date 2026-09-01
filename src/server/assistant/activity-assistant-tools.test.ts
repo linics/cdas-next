@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { ActivityContentV2 } from "../../domain/activity/activity-content";
+import type { ActivityContentV3 } from "../../domain/activity/activity-content";
+import { waterConservationTaskBook } from "../../fixtures/water-conservation";
 import type { PrismaClient } from "../../generated/prisma/client";
 import { DecideActionIntentError } from "../commands/decide-action-intent";
 import { PreparePublishActivityIntentError } from "../commands/prepare-publish-activity-intent";
@@ -70,13 +71,52 @@ const approvalContext: CommandContext = {
   traceId: "approval-tool-trace",
   clock: () => now,
 };
-const content: ActivityContentV2 = {
-  schemaVersion: 2, title: "校園節水行動", topic: "校園節水", summary: "記錄水表並提出改善建議", schoolStage: "MIDDLE", grade: 7, mainDisciplineCode: "physics", integratedDisciplineCodes: ["math"], crossDisciplinaryConceptCodes: [], assignmentType: "inquiry", assignmentSubtype: "survey", inquiryDepth: "intermediate", submissionMode: "once", durationWeeks: 2, backgroundSetting: "學校要改善用水，同學們以真實場景完成調查。", objectiveKnowledge: "理解用水資料。", objectiveProcess: "使用資料支持結論。", objectiveEmotion: "願意參與校園節水。", learningObjectives: ["理解用水資料。", "使用資料支持結論。", "願意參與校園節水。"], taskInstructions: "記錄兩次水表讀數並解釋差異。", evidenceRequirements: ["時間與讀數", "分析結論", "改善建議"], feedbackCriteria: ["問題意識", "證據品質", "跨學科連結", "方案表達"], phases: [
-    { name: "觀察", action: "記錄用水。", context: "在校園觀察。", support: "使用記錄表。", evidence: [{ type: "text", description: "時間與讀數" }], evaluationFocus: "資料完整。", suggestedLessons: 1 },
-    { name: "分析", action: "整理資料。", context: "比較讀數。", support: "使用表格。", evidence: [{ type: "document", description: "分析表" }], evaluationFocus: "結論有據。", suggestedLessons: 1 },
-    { name: "建議", action: "提出建議。", context: "面向校園。", support: "使用建議模板。", evidence: [{ type: "text", description: "建議稿" }], evaluationFocus: "方案可行。", suggestedLessons: 1 },
-  ], rubricDimensions: [
-    { name: "問題意識", excellent: "清楚", good: "較清楚", pass: "基本", improve: "需補充" }, { name: "證據品質", excellent: "完整", good: "較完整", pass: "基本", improve: "需補充" }, { name: "跨學科連結", excellent: "清楚", good: "較清楚", pass: "基本", improve: "需補充" }, { name: "方案表達", excellent: "可行", good: "較可行", pass: "基本", improve: "需補充" },
+const content: ActivityContentV3 = {
+  schemaVersion: 3,
+  title: "校園節水行動",
+  topic: "校園節水",
+  summary: "記錄水表並提出改善建議",
+  schoolStage: "MIDDLE",
+  grade: 7,
+  mainDisciplineCode: "physics",
+  integratedDisciplineCodes: ["math"],
+  disciplineContributions: [
+    { disciplineCode: "physics", contribution: "解釋用水裝置與流量。", necessity: "沒有物理解釋，建議說不清機理。" },
+    { disciplineCode: "math", contribution: "整理與比較水表讀數。", necessity: "沒有數據分析，判斷無法核驗。" },
+  ],
+  assignmentType: "inquiry",
+  assignmentSubtype: "survey",
+  inquiryDepth: "intermediate",
+  submissionMode: "once",
+  durationWeeks: 2,
+  backgroundSetting: "學校要改善用水，同學們以真實場景完成調查。",
+  taskInstructions: "記錄兩次水表讀數並解釋差異。",
+  learningGoals: [
+    {
+      id: "goal-physics",
+      description: "能說明一個用水問題及其可能機理。",
+      competencyReferences: [
+        { disciplineCode: "physics", competencyCode: "physical_concept" },
+      ],
+    },
+    {
+      id: "goal-math",
+      description: "能整理並解釋調查數據以支持判斷。",
+      competencyReferences: [
+        { disciplineCode: "math", competencyCode: "data_concept" },
+      ],
+    },
+  ],
+  phases: [
+    { name: "觀察", action: "記錄用水。", context: "在校園觀察。", support: "使用記錄表。", learningGoalIds: ["goal-physics"], evidence: [{ type: "text", description: "時間與讀數" }], evaluationFocus: "資料完整。", suggestedLessons: 1 },
+    { name: "分析", action: "整理資料。", context: "比較讀數。", support: "使用表格。", learningGoalIds: ["goal-math"], evidence: [{ type: "document", description: "分析表" }], evaluationFocus: "結論有據。", suggestedLessons: 1 },
+    { name: "建議", action: "提出建議。", context: "面向校園。", support: "使用建議模板。", learningGoalIds: ["goal-physics", "goal-math"], evidence: [{ type: "text", description: "建議稿" }], evaluationFocus: "方案可行。", suggestedLessons: 1 },
+  ],
+  rubricDimensions: [
+    { name: "問題意識", excellent: "清楚", good: "較清楚", pass: "基本", improve: "需補充", learningGoalIds: ["goal-physics"] },
+    { name: "證據品質", excellent: "完整", good: "較完整", pass: "基本", improve: "需補充", learningGoalIds: ["goal-math"] },
+    { name: "跨學科連結", excellent: "清楚", good: "較清楚", pass: "基本", improve: "需補充", learningGoalIds: ["goal-physics", "goal-math"] },
+    { name: "方案表達", excellent: "可行", good: "較可行", pass: "基本", improve: "需補充", learningGoalIds: ["goal-math"] },
   ],
 };
 
@@ -89,14 +129,6 @@ const proposal: ActivityDraftProposal = {
   },
   teacherRequirements: ["七年級", "校園節水", "記錄兩次水表讀數"],
   assumptions: [],
-  integratedDisciplineContributions: [
-    { disciplineCode: "math", necessaryContribution: "整理與比較水表讀數。" },
-  ],
-  alignmentChains: [
-    { objectiveKind: "knowledge", objective: "理解用水資料。", task: "辨識讀數差異。", evidence: "讀數紀錄。", assessment: "資料完整。" },
-    { objectiveKind: "process", objective: "使用資料支持結論。", task: "整理資料。", evidence: "分析表。", assessment: "結論有據。" },
-    { objectiveKind: "emotion", objective: "願意參與校園節水。", task: "提出建議。", evidence: "建議稿。", assessment: "方案可行。" },
-  ],
   sourceReferences: searchOfficialKnowledge({
     query: "初中跨学科实践 数据分析 评价",
     schoolStage: "MIDDLE",
@@ -372,20 +404,25 @@ describe("activity assistant tools", () => {
     expect(
       activityDraftProposalSchema.safeParse({
         ...proposal,
-        integratedDisciplineContributions: [
-          { disciplineCode: "math", necessaryContribution: "整理数据。" },
-          { disciplineCode: "math", necessaryContribution: "重复。" },
-        ],
+        content: {
+          ...proposal.content,
+          disciplineContributions: [
+            proposal.content.disciplineContributions[0]!,
+            proposal.content.disciplineContributions[0]!,
+          ],
+        },
       }).success,
     ).toBe(false);
     expect(
       activityDraftProposalSchema.safeParse({
         ...proposal,
-        alignmentChains: [
-          proposal.alignmentChains[0],
-          proposal.alignmentChains[0],
-          proposal.alignmentChains[2],
-        ],
+        content: {
+          ...proposal.content,
+          phases: proposal.content.phases.map((phase) => ({
+            ...phase,
+            learningGoalIds: ["goal-physics"],
+          })),
+        },
       }).success,
     ).toBe(false);
     expect(
@@ -429,11 +466,11 @@ describe("activity assistant tools", () => {
     });
 
     expect(parsed.success).toBe(true);
-    expect(parsed.data?.content.schemaVersion).toBe(2);
+    expect(parsed.data?.content.schemaVersion).toBe(3);
     expect(parsed.data?.content.integratedDisciplineCodes).toEqual(
-      proposal.integratedDisciplineContributions.map(
-        (item) => item.disciplineCode,
-      ),
+      proposal.content.disciplineContributions
+        .map((item) => item.disciplineCode)
+        .filter((code) => code !== proposal.content.mainDisciplineCode),
     );
   });
 
@@ -449,19 +486,22 @@ describe("activity assistant tools", () => {
 
     expect(parsed.success).toBe(true);
     expect(parsed.data?.content.integratedDisciplineCodes).toEqual(
-      proposal.integratedDisciplineContributions.map(
-        (item) => item.disciplineCode,
-      ),
+      proposal.content.disciplineContributions
+        .map((item) => item.disciplineCode)
+        .filter((code) => code !== proposal.content.mainDisciplineCode),
     );
   });
 
   it("adds a discipline the model contributed for, rather than refusing the draft", async () => {
     const parsed = activityDraftProposalSchema.safeParse({
       ...proposal,
-      integratedDisciplineContributions: [
-        ...proposal.integratedDisciplineContributions,
-        { disciplineCode: "chinese", necessaryContribution: "公开表达建议。" },
-      ],
+      content: {
+        ...proposal.content,
+        disciplineContributions: [
+          ...proposal.content.disciplineContributions,
+          { disciplineCode: "chinese", contribution: "公开表达建议。", necessity: "没有公共表达，方案无法被采纳。" },
+        ],
+      },
     });
 
     expect(parsed.success).toBe(true);
@@ -475,10 +515,13 @@ describe("activity assistant tools", () => {
     expect(
       activityDraftProposalSchema.safeParse({
         ...proposal,
-        integratedDisciplineContributions: [
-          ...proposal.integratedDisciplineContributions,
-          { disciplineCode: "math", necessaryContribution: "重复的学科贡献。" },
-        ],
+        content: {
+          ...proposal.content,
+          disciplineContributions: [
+            ...proposal.content.disciplineContributions,
+            { disciplineCode: "math", contribution: "重复的学科贡献。", necessity: "重复。" },
+          ],
+        },
       }).success,
     ).toBe(false);
     expect(
@@ -834,6 +877,58 @@ describe("activity assistant draft revision", () => {
       }),
     );
     expect(mocks.onBusinessWriteSuccess).toHaveBeenCalledWith("DRAFT_UPDATED");
+  });
+
+  it("keeps existing v2 drafts editable without upgrading their schema", async () => {
+    mocks.readDraftDetail.mockResolvedValue({
+      ...currentDraftDetail,
+      content: waterConservationTaskBook,
+    });
+    const registry = tools();
+    await registry.get_activity_draft.execute!(
+      { draftId },
+      options("read_v2_before_revise"),
+    );
+    const revised = {
+      ...waterConservationTaskBook,
+      summary: `${waterConservationTaskBook.summary} 补充校园真实情境。`,
+    };
+
+    await expect(
+      registry.update_activity_draft.execute!(
+        {
+          draftId,
+          expectedVersion: 3,
+          changes: [
+            {
+              area: "BASIC_SETTINGS" as const,
+              change: "补充校园真实情境。",
+              reason: "教师要求说明任务发生地点。",
+            },
+          ],
+          content: revised,
+        },
+        options("revise_v2"),
+      ),
+    ).resolves.toMatchObject({ version: 4 });
+    expect(mocks.saveDraft).toHaveBeenCalledWith(
+      expect.anything(),
+      agentContext,
+      expect.objectContaining({ content: revised }),
+    );
+  });
+
+  it("rejects a revision that changes the task-book schema version", async () => {
+    mocks.readDraftDetail.mockResolvedValue({
+      ...currentDraftDetail,
+      content: waterConservationTaskBook,
+    });
+    const registry = tools({ draftReads: new Map([[draftId, 3]]) });
+
+    await expect(
+      registry.update_activity_draft.execute!(revision(), options("revise_schema")),
+    ).rejects.toThrow("ACTIVITY_REVISE_SCHEMA_VERSION_CHANGED");
+    expect(mocks.saveDraft).not.toHaveBeenCalled();
   });
 
   it("refuses to revise a draft that was never read in this conversation", async () => {

@@ -1,7 +1,10 @@
 import "server-only";
 
 import { z } from "zod";
-import { activityContentSchema } from "../../domain/activity/activity-content";
+import {
+  activityContentSchema,
+  isStructuredContent,
+} from "../../domain/activity/activity-content";
 import { teacherEvaluationCitationSchema } from "../../domain/evaluation/teacher-evaluation-intent";
 import { teacherEvaluationLevels } from "../../domain/evaluation/teacher-evaluation-policy";
 import {
@@ -459,7 +462,7 @@ function mapSubmissionHistory(
     phaseName:
       submission.phaseIndex === 0
         ? null
-        : content.schemaVersion === 2
+        : isStructuredContent(content)
           ? (content.phases[submission.phaseIndex - 1]?.name ?? null)
           : null,
     latestRevisionNumber: submission.latestRevisionNumber,

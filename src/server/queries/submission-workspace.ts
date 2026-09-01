@@ -1,7 +1,10 @@
 import "server-only";
 
 import { z } from "zod";
-import { activityContentSchema } from "../../domain/activity/activity-content";
+import {
+  activityContentSchema,
+  isStructuredContent,
+} from "../../domain/activity/activity-content";
 import type { PrismaClient } from "../../generated/prisma/client";
 import {
   type CommandContext,
@@ -369,11 +372,11 @@ export async function getStudentReleaseWorkspace(
   }
   const content = activityContentSchema.parse(release.snapshot.content);
   const phaseCount =
-    release.executionVersion === 1 && content.schemaVersion === 2
+    release.executionVersion === 1 && isStructuredContent(content)
       ? content.phases.length
       : 0;
   const submissionMode =
-    release.executionVersion === 1 && content.schemaVersion === 2
+    release.executionVersion === 1 && isStructuredContent(content)
       ? content.submissionMode
       : "once";
   const submissionByPhase = new Map(
@@ -568,15 +571,15 @@ export async function getTeacherReleaseSubmissions(
 
   const content = activityContentSchema.parse(release.snapshot.content);
   const submissionMode =
-    release.executionVersion === 1 && content.schemaVersion === 2
+    release.executionVersion === 1 && isStructuredContent(content)
       ? content.submissionMode
       : "once";
   const phaseCount =
-    release.executionVersion === 1 && content.schemaVersion === 2
+    release.executionVersion === 1 && isStructuredContent(content)
       ? content.phases.length
       : 0;
 
-  const rubricAvailable = content.schemaVersion === 2;
+  const rubricAvailable = isStructuredContent(content);
   const submissions: TeacherReleaseSubmissions["submissions"] =
     release.submissions
       .filter((submission) => submission.latestRevisionNumber > 0)
@@ -611,7 +614,7 @@ export async function getTeacherReleaseSubmissions(
           ? release.executionVersion === 1
             ? "整项终稿"
             : null
-          : content.schemaVersion === 2
+          : isStructuredContent(content)
             ? (content.phases[submission.phaseIndex - 1]?.name ?? null)
             : null,
       student: submission.student ?? {

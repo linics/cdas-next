@@ -126,7 +126,9 @@ describeWithDatabase("local classroom bootstrap", () => {
         data: {
           id: sessionId,
           userId: first.teacher.id,
-          tokenHash: hashSessionToken("a".repeat(43)),
+          // token_hash is unique, and this database keeps fixtures between runs.
+          // Derive the token from this run's session id so a rerun cannot collide.
+          tokenHash: hashSessionToken(sessionId.replaceAll("-", "").padEnd(43, "a")),
           expiresAt: new Date("2026-09-02T00:00:00.000Z"),
           createdAt: firstRunAt,
         },

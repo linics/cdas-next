@@ -1,7 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { notFound } from "next/navigation";
 import { ZodError } from "zod";
-import { evidenceTypeLabel } from "../../../../domain/activity/activity-content";
+import {
+  evidenceTypeLabel,
+  isStructuredContent,
+  type ActivityTaskPhase,
+} from "../../../../domain/activity/activity-content";
 import { hasMeaningfulTextEvidence } from "../../../../domain/submission/text-evidence";
 import {
   teacherFeedbackNextStepLabels,
@@ -206,10 +210,7 @@ function SubmissionRevision({
 }: {
   revision: FormalRevision;
   current: boolean;
-  phase: Extract<
-    TeacherFeedbackWorkspace["submission"]["release"]["snapshot"]["content"],
-    { schemaVersion: 2 }
-  >["phases"][number] | null;
+  phase: ActivityTaskPhase | null;
 }) {
   return (
     <article
@@ -322,7 +323,7 @@ export default async function TeacherSubmissionPage({
   const content = submission.release.snapshot.content;
   const assistantEnabled = isActivityAssistantEnabled();
   const phase =
-    content.schemaVersion === 2 && submission.phaseIndex > 0
+    isStructuredContent(content) && submission.phaseIndex > 0
       ? (content.phases[submission.phaseIndex - 1] ?? null)
       : null;
   const revisions = [...submission.revisions].reverse();
@@ -335,7 +336,7 @@ export default async function TeacherSubmissionPage({
       : `已确认 v${latestFeedbackRevision.version}`
     : "尚无反馈";
   const evaluationStatus =
-    content.schemaVersion !== 2
+    !isStructuredContent(content)
       ? "旧版任务书无量规"
       : latestEvaluationRevision
         ? `已确认 v${latestEvaluationRevision.version}`
@@ -457,7 +458,7 @@ export default async function TeacherSubmissionPage({
             <details className={styles.historyDisclosure}>
               <summary>已确认记录</summary>
               <FeedbackHistory revision={currentRevision} />
-              {content.schemaVersion === 2 ? (
+              {isStructuredContent(content) ? (
                 <EvaluationHistory revision={currentRevision} />
               ) : null}
             </details>
@@ -473,7 +474,7 @@ export default async function TeacherSubmissionPage({
               prepareIdempotencySeed={`prepare_teacher_feedback_${randomUUID()}`}
               assistantEnabled={assistantEnabled}
             />
-            {content.schemaVersion === 2 ? (
+            {isStructuredContent(content) ? (
               <EvaluationComposer
                 key={`evaluation:${currentRevision.id}:${currentRevision.evaluation?.currentVersion ?? 0}`}
                 submissionId={submission.id}

@@ -16,6 +16,7 @@ import {
   teacherHomeCrumb,
 } from "../../_components/teacher-shell";
 import { ActivityDraftForm } from "../activity-draft-form";
+import { ActivityDraftV3Form } from "../activity-draft-v3-form";
 import { structuredTaskBookValues } from "../activity-draft-action-state";
 import styles from "../../teacher-workspace.module.css";
 
@@ -87,17 +88,31 @@ export default async function TeacherActivityPage({
             <section><h3>反馈标准</h3><ul>{content.feedbackCriteria.map((item) => <li key={item}>{item}</li>)}</ul></section>
           </article>
         ) : null}
-        <ActivityDraftForm
-          initialState={{
-            status: "idle",
-            message: "",
-            values: structuredTaskBookValues(content),
-            draftId: draft.id,
-            expectedVersion: draft.version,
-            persistedStatus: draft.status,
-            nextIdempotencyKey: `save_activity_draft_${randomUUID()}`,
-          }}
-        />
+        {content.schemaVersion === 3 ? (
+          <ActivityDraftV3Form
+            initialState={{
+              status: "idle",
+              message: "",
+              values: content,
+              draftId: draft.id,
+              expectedVersion: draft.version,
+              persistedStatus: draft.status,
+              nextIdempotencyKey: `save_activity_draft_${randomUUID()}`,
+            }}
+          />
+        ) : (
+          <ActivityDraftForm
+            initialState={{
+              status: "idle",
+              message: "",
+              values: structuredTaskBookValues(content),
+              draftId: draft.id,
+              expectedVersion: draft.version,
+              persistedStatus: draft.status,
+              nextIdempotencyKey: `save_activity_draft_${randomUUID()}`,
+            }}
+          />
+        )}
       </div>
     </TeacherPage>
   );

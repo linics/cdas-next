@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ConfirmDialog, InlineAlert } from "../../../_components/ui";
 import {
   evidenceTypeLabel,
-  type ActivityContentV2,
+  type ActivityTaskPhase,
 } from "../../../../domain/activity/activity-content";
 import {
   hasMeaningfulTextEvidence,
@@ -30,7 +30,7 @@ type Submission = StudentReleaseWorkspace["submission"];
 type SubmissionEditorProps = Readonly<{
   releaseId: string;
   phaseIndex: number;
-  phase: ActivityContentV2["phases"][number] | null;
+  phase: ActivityTaskPhase | null;
   submission: Submission;
   canWrite: boolean;
   isPastDue: boolean;

@@ -1,6 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
-import type { ActivityContentV2 } from "../../domain/activity/activity-content";
+import {
+  v3ProjectionColumns,
+  type ActivityContentV2,
+} from "../../domain/activity/activity-content";
+import { Prisma } from "../../generated/prisma/client";
+import { waterConservationTaskBookV3 } from "../../fixtures/water-conservation-v3";
 import {
   waterConservationActivity,
   waterConservationTaskBook,
@@ -202,6 +207,140 @@ describeWithDatabase("activity draft write commands", () => {
       summary: draft.summary,
       agentRunId: null,
     });
+  });
+
+  it("stores a v3 task book and derives its summary columns", async () => {
+    const { teacherId } = await createActors();
+    const created = await saveActivityDraft(database!, commandContext(teacherId), {
+      draftId: null,
+      expectedVersion: null,
+      desiredStatus: "EDITING",
+      content: waterConservationTaskBookV3,
+      agentRunId: null,
+      idempotencyKey: `draft_${randomUUID()}`,
+    });
+
+    const draft = await database!.activityDraft.findUniqueOrThrow({
+      where: { id: created.draftId },
+      include: { revisions: true },
+    });
+    const projection = v3ProjectionColumns(waterConservationTaskBookV3);
+
+    // The row only exists if the database's own re-derivation agreed with
+    // ours; a v3 draft that cannot be stored is the failure this guards.
+    expect(draft.schemaVersion).toBe(3);
+    expect(draft.learningObjectives).toEqual(projection.learningObjectives);
+    expect(draft.evidenceRequirements).toEqual(projection.evidenceRequirements);
+    expect(draft.feedbackCriteria).toEqual(projection.feedbackCriteria);
+    expect(draft.revisions).toHaveLength(1);
+    expect(draft.revisions[0]?.schemaVersion).toBe(3);
+  });
+
+  it("keeps an existing structured draft on its original schema version", async () => {
+    const { teacherId } = await createActors();
+    const v2 = await saveNewDraft(teacherId);
+    const v3 = await saveActivityDraft(database!, commandContext(teacherId), {
+      draftId: null,
+      expectedVersion: null,
+      desiredStatus: "EDITING",
+      content: waterConservationTaskBookV3,
+      agentRunId: null,
+      idempotencyKey: `draft_${randomUUID()}`,
+    });
+
+    await expect(
+      saveActivityDraft(database!, commandContext(teacherId), {
+        draftId: v2.draftId,
+        expectedVersion: v2.version,
+        desiredStatus: "EDITING",
+        content: waterConservationTaskBookV3,
+        agentRunId: null,
+        idempotencyKey: `draft_${randomUUID()}`,
+      }),
+    ).rejects.toEqual(new SaveActivityDraftError("SCHEMA_VERSION_CHANGED"));
+    await expect(
+      saveActivityDraft(database!, commandContext(teacherId), {
+        draftId: v3.draftId,
+        expectedVersion: v3.version,
+        desiredStatus: "EDITING",
+        content: content(),
+        agentRunId: null,
+        idempotencyKey: `draft_${randomUUID()}`,
+      }),
+    ).rejects.toEqual(new SaveActivityDraftError("SCHEMA_VERSION_CHANGED"));
+
+    expect(
+      await database!.activityDraftRevision.count({
+        where: { draftId: { in: [v2.draftId, v3.draftId] } },
+      }),
+    ).toBe(2);
+  });
+
+  it("rejects a v3 task book whose goals no phase serves", async () => {
+    const { teacherId } = await createActors();
+    const orphaned = {
+      ...waterConservationTaskBookV3,
+      phases: waterConservationTaskBookV3.phases.map((phase) => ({
+        ...phase,
+        learningGoalIds: [waterConservationTaskBookV3.learningGoals[0]!.id],
+      })),
+    };
+
+    await expect(
+      saveActivityDraft(database!, commandContext(teacherId), {
+        draftId: null,
+        expectedVersion: null,
+        desiredStatus: "EDITING",
+        content: orphaned,
+        agentRunId: null,
+        idempotencyKey: `draft_${randomUUID()}`,
+      }),
+    ).rejects.toThrow();
+  });
+
+  it("rejects an unknown v3 competency without creating draft history", async () => {
+    const { teacherId } = await createActors();
+    const invalid = {
+      ...waterConservationTaskBookV3,
+      learningGoals: waterConservationTaskBookV3.learningGoals.map((goal, index) =>
+        index === 0
+          ? {
+              ...goal,
+              competencyReferences: [
+                {
+                  disciplineCode: "physics" as const,
+                  competencyCode: "invented_competency",
+                },
+              ],
+            }
+          : goal,
+      ),
+    };
+    const before = await database!.activityDraft.count({ where: { ownerId: teacherId } });
+
+    await expect(
+      saveActivityDraft(database!, commandContext(teacherId), {
+        draftId: null,
+        expectedVersion: null,
+        desiredStatus: "EDITING",
+        content: invalid,
+        agentRunId: null,
+        idempotencyKey: `draft_${randomUUID()}`,
+      }),
+    ).rejects.toThrow();
+
+    expect(
+      await database!.activityDraft.count({ where: { ownerId: teacherId } }),
+    ).toBe(before);
+
+    const [databaseValidation] = await database!.$queryRaw<
+      Array<{ valid: boolean }>
+    >(Prisma.sql`
+      SELECT "cdas_activity_task_book_v3_is_valid"(
+        ${JSON.stringify(invalid)}::jsonb
+      ) AS valid
+    `);
+    expect(databaseValidation?.valid).toBe(false);
   });
 
   it("rechecks role, ownership, version, and sealed state", async () => {

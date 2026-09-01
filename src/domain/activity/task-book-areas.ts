@@ -1,5 +1,9 @@
 import { z } from "zod";
-import type { ActivityContentV2 } from "./activity-content";
+import type {
+  ActivityContentStructured,
+  ActivityContentV2,
+  ActivityContentV3,
+} from "./activity-content";
 
 /**
  * The teacher-facing regions of a v2 task book. They exist so a proposed
@@ -66,7 +70,7 @@ const fieldArea = new Map<ContentField, TaskBookArea>(
 export const taskBookAreaLabels: Readonly<Record<TaskBookArea, string>> = {
   BASIC_SETTINGS: "基本设置",
   BACKGROUND: "背景设定",
-  OBJECTIVES: "三维目标",
+  OBJECTIVES: "学习目标",
   TASK_INSTRUCTIONS: "总体任务",
   PHASES: "任务链阶段",
   EVIDENCE: "证据要求",
@@ -78,15 +82,66 @@ export const taskBookAreaLabels: Readonly<Record<TaskBookArea, string>> = {
  * canonical JSON of each field, so reordering an array counts as a change:
  * phase order and rubric order are meaning, not presentation.
  */
+type V3ContentField = Exclude<keyof ActivityContentV3, "schemaVersion">;
+
+/**
+ * The same teacher-facing regions for a v3 task book. v3 has no standalone
+ * evidence field — evidence lives inside the phase that collects it — so a
+ * changed requirement reports as PHASES. EVIDENCE therefore never appears for
+ * a v3 revision, and a proposal that declares it is correctly rejected for
+ * describing a change it did not make.
+ */
+const v3AreaFields: Readonly<Record<TaskBookArea, readonly V3ContentField[]>> = {
+  BASIC_SETTINGS: [
+    "title",
+    "topic",
+    "summary",
+    "schoolStage",
+    "grade",
+    "mainDisciplineCode",
+    "integratedDisciplineCodes",
+    "assignmentType",
+    "assignmentSubtype",
+    "inquiryDepth",
+    "submissionMode",
+    "durationWeeks",
+  ],
+  BACKGROUND: ["backgroundSetting"],
+  OBJECTIVES: ["learningGoals", "disciplineContributions"],
+  TASK_INSTRUCTIONS: ["taskInstructions"],
+  PHASES: ["phases"],
+  EVIDENCE: [],
+  RUBRIC: ["rubricDimensions"],
+};
+
+const v3FieldArea = new Map<V3ContentField, TaskBookArea>(
+  taskBookAreas.flatMap((area) =>
+    v3AreaFields[area].map((field) => [field, area] as const),
+  ),
+);
+
 export function changedTaskBookAreas(
-  before: ActivityContentV2,
-  after: ActivityContentV2,
+  before: ActivityContentStructured,
+  after: ActivityContentStructured,
 ): TaskBookArea[] {
   const changed = new Set<TaskBookArea>();
-  for (const [field, area] of fieldArea) {
-    if (JSON.stringify(before[field]) !== JSON.stringify(after[field])) {
-      changed.add(area);
+  if (before.schemaVersion === 3 && after.schemaVersion === 3) {
+    for (const [field, area] of v3FieldArea) {
+      if (JSON.stringify(before[field]) !== JSON.stringify(after[field])) {
+        changed.add(area);
+      }
     }
+    return taskBookAreas.filter((area) => changed.has(area));
   }
-  return taskBookAreas.filter((area) => changed.has(area));
+  if (before.schemaVersion === 2 && after.schemaVersion === 2) {
+    for (const [field, area] of fieldArea) {
+      if (JSON.stringify(before[field]) !== JSON.stringify(after[field])) {
+        changed.add(area);
+      }
+    }
+    return taskBookAreas.filter((area) => changed.has(area));
+  }
+  // A revision may not change the task book's version. Reporting every area
+  // makes the scope check reject it rather than letting it through unnoticed.
+  return [...taskBookAreas];
 }
