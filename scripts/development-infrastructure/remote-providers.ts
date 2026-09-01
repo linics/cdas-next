@@ -72,6 +72,59 @@ export class VercelApiProvider implements VercelProvider {
       if ((!match[0] && (!Array.isArray(response.failed) || response.failed.length !== 0)) || configured.key !== key || configured.type !== "encrypted" || configured.gitBranch !== this.branch || !isSinglePreviewTarget(configured.target)) throw new Error("DEVELOPMENT_INFRA_VERCEL_ENV_RESPONSE_UNSAFE");
     }
   }
+
+  /** Removes only the three obsolete local-preview Clerk entries for this branch. */
+  async removeLegacyPreviewEnvironment(): Promise<void> {
+    if (!this.branch) throw new Error("DEVELOPMENT_INFRA_VERCEL_PROJECT_NOT_ASSERTED");
+    const legacyKeys = new Set([
+      "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
+      "CLERK_SECRET_KEY",
+      "NEXT_PUBLIC_CLERK_KEYLESS_DISABLED",
+    ]);
+    const list = async () => {
+      const value = object(await this.request(this.endpoint(`/v10/projects/${encodeURIComponent(this.projectName)}/env`)));
+      if (!Array.isArray(value.envs)) throw new Error("DEVELOPMENT_INFRA_PROVIDER_SCHEMA_INVALID");
+      return value.envs.map(object);
+    };
+    const previewEntries = (await list()).filter((entry) => {
+      if (!legacyKeys.has(String(entry.key))) return false;
+      return entry.target === "preview" ||
+        (Array.isArray(entry.target) && entry.target.includes("preview"));
+    });
+    const unsafeScope = previewEntries.some((entry) => {
+      if (!Array.isArray(entry.target) || entry.target.length !== 1 || entry.target[0] !== "preview") {
+        return true;
+      }
+      if (entry.gitBranch === undefined || entry.gitBranch === null || entry.gitBranch === "") {
+        return true;
+      }
+      return typeof entry.gitBranch !== "string" ||
+        !/^codex\/[a-z0-9._/-]+$/u.test(entry.gitBranch);
+    });
+    if (unsafeScope) {
+      throw new Error("DEVELOPMENT_INFRA_VERCEL_LEGACY_ENV_SCOPE_UNSAFE");
+    }
+    const matches = previewEntries.filter((entry) => entry.gitBranch === this.branch);
+    for (const key of legacyKeys) {
+      if (matches.filter((entry) => entry.key === key).length > 1) {
+        throw new Error("DEVELOPMENT_INFRA_VERCEL_LEGACY_ENV_AMBIGUOUS");
+      }
+    }
+    for (const entry of matches) {
+      await this.request(
+        this.endpoint(`/v9/projects/${encodeURIComponent(this.projectName)}/env/${encodeURIComponent(string(entry.id))}`),
+        "DELETE",
+      );
+    }
+    const remaining = (await list()).filter((entry) =>
+      legacyKeys.has(String(entry.key)) &&
+      entry.gitBranch === this.branch &&
+      isSinglePreviewTarget(entry.target),
+    );
+    if (remaining.length !== 0) {
+      throw new Error("DEVELOPMENT_INFRA_VERCEL_LEGACY_ENV_NOT_REMOVED");
+    }
+  }
   async removePaidPreviewEnvironment(): Promise<void> {
     if (!this.branch) throw new Error("DEVELOPMENT_INFRA_VERCEL_PROJECT_NOT_ASSERTED");
     const paidKeys = new Set(["DEEPSEEK_API_KEY", "AI_TOOL_APPROVAL_SECRET"]);
@@ -177,7 +230,28 @@ export class GitHubCliProvider implements GitHubProvider {
     if (finalPolicies.length !== 1 || finalPolicies[0]?.name !== repository.branch || !/^(?:\d+|[A-Za-z0-9_-]+)$/u.test(String(finalPolicies[0]?.id ?? ""))) throw new Error("DEVELOPMENT_INFRA_GITHUB_POLICY_UNSAFE");
   }
   async setVariable(name: string, value: string): Promise<void> {
-    const allowed = new Set(["STAGING_VERCEL_PROJECT_NAME", "STAGING_DATABASE_NAME", "STAGING_SYNTHETIC_ONLY_ATTESTED", "STAGING_CLERK_INSTANCE_ATTESTED", "STAGING_DATABASE_ISOLATION_ATTESTED", "STAGING_HOSTING_ACCESS_ATTESTED", "STAGING_ROLLBACK_OWNER_ATTESTED", "STAGING_RETENTION_ATTESTED", "STAGING_ACCEPTANCE_WRITES_ATTESTED", "STAGING_ACCEPTANCE_CLERK_TOKENS_ATTESTED", "STAGING_ACCEPTANCE_RETENTION_ATTESTED"]);
+    const allowed = new Set([
+      "STAGING_VERCEL_PROJECT_NAME",
+      "STAGING_DATABASE_NAME",
+      "STAGING_SYNTHETIC_ONLY_ATTESTED",
+      "STAGING_LOCAL_AUTH_ATTESTED",
+      "STAGING_DATABASE_ISOLATION_ATTESTED",
+      "STAGING_HOSTING_ACCESS_ATTESTED",
+      "STAGING_ROLLBACK_OWNER_ATTESTED",
+      "STAGING_RETENTION_ATTESTED",
+      "STAGING_ACCEPTANCE_WRITES_ATTESTED",
+      "STAGING_ACCEPTANCE_LOCAL_AUTH_ATTESTED",
+      "STAGING_ACCEPTANCE_RETENTION_ATTESTED",
+      "STAGING_TEST_PRIMARY_SCHOOL_CODE",
+      "STAGING_TEST_SECONDARY_SCHOOL_CODE",
+      "STAGING_TEST_TEACHER_STAFF_NO",
+      "STAGING_TEST_STUDENT_NO",
+      "STAGING_TEST_OTHER_STUDENT_NO",
+      "STAGING_TEST_OTHER_TEACHER_STAFF_NO",
+      "STAGING_TEST_DISABLED_ACCOUNT_STUDENT_NO",
+      "STAGING_TEST_DISABLED_SCHOOL_CODE",
+      "STAGING_TEST_DISABLED_SCHOOL_TEACHER_STAFF_NO",
+    ]);
     if (!allowed.has(name)) throw new Error("DEVELOPMENT_INFRA_GITHUB_VARIABLE_UNSAFE");
     const listed = await this.gh(["variable", "list", "--env", infrastructureEnvironment, "--json", "name,value"]);
     const variables = JSON.parse(listed.stdout) as unknown;
@@ -186,8 +260,22 @@ export class GitHubCliProvider implements GitHubProvider {
     await this.gh(["variable", "set", name, "--env", infrastructureEnvironment, "--body", value]);
   }
   async setSecret(name: string, value: string): Promise<void> {
-    const allowed = /^STAGING_(?:BASE_URL|DATABASE_URL|DIRECT_URL|NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY|CLERK_SECRET_KEY|TEST_(?:TEACHER|STUDENT|OTHER_STUDENT|OTHER_TEACHER)_CLERK_ID|HEALTH_PROOF_SECRET|VERCEL_AUTOMATION_BYPASS_SECRET)$/u;
-    if (!allowed.test(name)) throw new Error("DEVELOPMENT_INFRA_GITHUB_SECRET_UNSAFE");
+    const allowed = new Set([
+      "STAGING_BASE_URL",
+      "STAGING_DATABASE_URL",
+      "STAGING_DIRECT_URL",
+      ...[
+        "TEACHER",
+        "STUDENT",
+        "OTHER_STUDENT",
+        "OTHER_TEACHER",
+        "DISABLED_ACCOUNT",
+        "DISABLED_SCHOOL_TEACHER",
+      ].map((fixture) => `STAGING_TEST_${fixture}_PASSWORD`),
+      "STAGING_HEALTH_PROOF_SECRET",
+      "STAGING_VERCEL_AUTOMATION_BYPASS_SECRET",
+    ]);
+    if (!allowed.has(name)) throw new Error("DEVELOPMENT_INFRA_GITHUB_SECRET_UNSAFE");
     const run = () =>
       this.runner.run("gh", ["secret", "set", name, "--env", infrastructureEnvironment], {
         env: minimalCommandEnvironment({ github: true }),
@@ -199,6 +287,50 @@ export class GitHubCliProvider implements GitHubProvider {
       if (!(error instanceof Error) || error.message !== "DEVELOPMENT_INFRA_COMMAND_FAILED") throw error;
       await this.sleep(2_000);
       await run();
+    }
+  }
+
+  async deleteVariable(name: string): Promise<void> {
+    const allowed = new Set([
+      "STAGING_CLERK_INSTANCE_ATTESTED",
+      "STAGING_ACCEPTANCE_CLERK_TOKENS_ATTESTED",
+    ]);
+    if (!allowed.has(name)) throw new Error("DEVELOPMENT_INFRA_GITHUB_VARIABLE_DELETE_UNSAFE");
+    const list = async () => {
+      const response = await this.gh(["variable", "list", "--env", infrastructureEnvironment, "--json", "name,value"]);
+      const variables = JSON.parse(response.stdout) as unknown;
+      if (!Array.isArray(variables)) throw new Error("DEVELOPMENT_INFRA_GITHUB_VARIABLE_SCHEMA_INVALID");
+      return variables.map(object);
+    };
+    if ((await list()).some((item) => item.name === name)) {
+      await this.gh(["variable", "delete", name, "--env", infrastructureEnvironment]);
+    }
+    if ((await list()).some((item) => item.name === name)) {
+      throw new Error("DEVELOPMENT_INFRA_GITHUB_VARIABLE_NOT_REMOVED");
+    }
+  }
+
+  async deleteSecret(name: string): Promise<void> {
+    const allowed = new Set([
+      "STAGING_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
+      "STAGING_CLERK_SECRET_KEY",
+      "STAGING_TEST_TEACHER_CLERK_ID",
+      "STAGING_TEST_STUDENT_CLERK_ID",
+      "STAGING_TEST_OTHER_STUDENT_CLERK_ID",
+      "STAGING_TEST_OTHER_TEACHER_CLERK_ID",
+    ]);
+    if (!allowed.has(name)) throw new Error("DEVELOPMENT_INFRA_GITHUB_SECRET_DELETE_UNSAFE");
+    const list = async () => {
+      const response = await this.gh(["secret", "list", "--env", infrastructureEnvironment, "--json", "name"]);
+      const secrets = JSON.parse(response.stdout) as unknown;
+      if (!Array.isArray(secrets)) throw new Error("DEVELOPMENT_INFRA_GITHUB_SECRET_SCHEMA_INVALID");
+      return secrets.map(object);
+    };
+    if ((await list()).some((item) => item.name === name)) {
+      await this.gh(["secret", "delete", name, "--env", infrastructureEnvironment]);
+    }
+    if ((await list()).some((item) => item.name === name)) {
+      throw new Error("DEVELOPMENT_INFRA_GITHUB_SECRET_NOT_REMOVED");
     }
   }
   async dispatchAndVerify(repository: RepositoryTarget): Promise<WorkflowRun> {

@@ -62,6 +62,7 @@ export interface VercelProvider {
   assertProject(repository: RepositoryTarget): Promise<void>;
   assertPrivateBlobConnection(): Promise<void>;
   ensurePreviewEnvironment(values: Readonly<Record<string, string>>): Promise<void>;
+  removeLegacyPreviewEnvironment(): Promise<void>;
   ensureProtectionBypass(secret: string): Promise<void>;
   deployPreview(repository: RepositoryTarget): Promise<PreviewDeployment>;
 }
@@ -70,11 +71,29 @@ export interface GitHubProvider {
   ensureEnvironment(repository: RepositoryTarget): Promise<void>;
   setVariable(name: string, value: string): Promise<void>;
   setSecret(name: string, value: string): Promise<void>;
+  deleteVariable(name: string): Promise<void>;
+  deleteSecret(name: string): Promise<void>;
   dispatchAndVerify(repository: RepositoryTarget): Promise<WorkflowRun>;
   verifyDownloadedArtifact(run: WorkflowRun, context: ArtifactValidationContext): Promise<void>;
 }
 
-export interface InfrastructureProviders { clerk: ClerkProvider; neon: NeonProvider; vercel: VercelProvider; github: GitHubProvider; deployMigrations(connection: NeonConnection): Promise<void>; verifyApplication(input: Readonly<{ baseUrl: string; projectName: string; databaseUrl: string; clerkPublishableKey: string; clerkSecretKey: string; healthProofSecret: string; bypassSecret: string; deploymentSha: string }>): Promise<void>; }
+export interface InfrastructureProviders {
+  /** The synthetic orchestrator does not use this next-slice compatibility provider. */
+  clerk?: ClerkProvider;
+  neon: NeonProvider;
+  vercel: VercelProvider;
+  github: GitHubProvider;
+  deployMigrations(connection: NeonConnection): Promise<void>;
+  verifyApplication(input: Readonly<{
+    baseUrl: string;
+    projectName: string;
+    databaseUrl: string;
+    authMode: "postgres-local-v1";
+    healthProofSecret: string;
+    bypassSecret: string;
+    deploymentSha: string;
+  }>): Promise<void>;
+}
 
 export class SafeCommandRunner implements CommandRunner {
   async run(command: string, args: readonly string[], options: Readonly<{ env?: Readonly<Record<string, string>>; cwd?: string; input?: string; timeoutMs?: number }> = {}): Promise<Readonly<{ stdout: string; stderr: string }>> {
@@ -294,7 +313,27 @@ export async function verifyDownloadedAcceptanceArtifact(
     const final = object(JSON.parse(await readFile(path.join(candidate, entries[0].name, "final.json"), "utf8")));
     if (final.schema !== "staging-synthetic-acceptance-final.v1" || final.status !== "PASS" || final.realStudentDataAllowed !== false || final.productionDecision !== "NO_GO") throw new Error("DEVELOPMENT_INFRA_ARTIFACT_NOT_PASS");
     const tsxLoader = import.meta.resolve("tsx");
-    await runner.run("node", ["--import", tsxLoader, path.join(process.cwd(), "scripts", "staging", "acceptance", "assert-final.ts")], { cwd: directory, env: { ...minimalCommandEnvironment(), ...context.environment, STAGING_RUN_MARKER: marker } });
+    const verifierEnvironment = Object.fromEntries(
+      Object.entries(context.environment).filter(
+        ([name]) => !/^STAGING_TEST_[A-Z0-9_]+_PASSWORD$/u.test(name),
+      ),
+    );
+    await runner.run(
+      "node",
+      [
+        "--import",
+        tsxLoader,
+        path.join(process.cwd(), "scripts", "staging", "acceptance", "assert-final.ts"),
+      ],
+      {
+        cwd: directory,
+        env: {
+          ...minimalCommandEnvironment(),
+          ...verifierEnvironment,
+          STAGING_RUN_MARKER: marker,
+        },
+      },
+    );
   } catch (error) {
     if (error instanceof Error && error.message.startsWith("DEVELOPMENT_INFRA_")) throw error;
     throw new Error("DEVELOPMENT_INFRA_ARTIFACT_INVALID");

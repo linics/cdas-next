@@ -323,6 +323,59 @@ describe("provider fail-closed contracts", () => {
       "https://api.vercel.com/v9/projects/cdas-next/env/approval",
     ]);
   });
+  it("removes only obsolete Clerk entries from the exact Preview branch", async () => {
+    const requests: Request[] = [];
+    const project = { name: "cdas-next", link: { type: "github", repoId: 1 }, buildCommand: null, ssoProtection: { deploymentType: "preview" }, targets: hobbyTargets, protectionBypass: {} };
+    const legacy = [
+      { id: "publishable", key: "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY", type: "encrypted", target: ["preview"], gitBranch: "codex/x" },
+      { id: "secret", key: "CLERK_SECRET_KEY", type: "encrypted", target: ["preview"], gitBranch: "codex/x" },
+      { id: "keyless", key: "NEXT_PUBLIC_CLERK_KEYLESS_DISABLED", type: "encrypted", target: ["preview"], gitBranch: "codex/x" },
+    ];
+    const retained = [
+      { id: "production", key: "CLERK_SECRET_KEY", type: "encrypted", target: ["production"], gitBranch: "codex/x" },
+      { id: "other-branch", key: "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY", type: "encrypted", target: ["preview"], gitBranch: "codex/other" },
+    ];
+    const client = new VercelApiProvider("t", "cdas-next", undefined, queuedFetch([
+      response(project),
+      response({ envs: [...legacy, ...retained] }),
+      response({}), response({}), response({}),
+      response({ envs: retained }),
+    ], requests));
+    await client.assertProject({ owner: "o", name: "r", branch: "codex/x", sha: "a".repeat(40), repositoryId: 1 });
+    await expect(client.removeLegacyPreviewEnvironment()).resolves.toBeUndefined();
+    expect(requests.filter((request) => request.method === "DELETE").map((request) => request.url)).toEqual([
+      "https://api.vercel.com/v9/projects/cdas-next/env/publishable",
+      "https://api.vercel.com/v9/projects/cdas-next/env/secret",
+      "https://api.vercel.com/v9/projects/cdas-next/env/keyless",
+    ]);
+    expect(requests.some((request) => request.url.endsWith("/production"))).toBe(false);
+    expect(requests.some((request) => request.url.endsWith("/other-branch"))).toBe(false);
+  });
+  it("fails closed on a global Preview legacy entry before any deletion", async () => {
+    const requests: Request[] = [];
+    const project = { name: "cdas-next", link: { type: "github", repoId: 1 }, buildCommand: null, ssoProtection: { deploymentType: "preview" }, targets: hobbyTargets, protectionBypass: {} };
+    const globalLegacy = { id: "global", key: "CLERK_SECRET_KEY", type: "encrypted", target: ["preview"] };
+    const currentLegacy = { id: "current", key: "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY", type: "encrypted", target: ["preview"], gitBranch: "codex/x" };
+    const client = new VercelApiProvider("t", "cdas-next", undefined, queuedFetch([
+      response(project),
+      response({ envs: [globalLegacy, currentLegacy] }),
+    ], requests));
+    await client.assertProject({ owner: "o", name: "r", branch: "codex/x", sha: "a".repeat(40), repositoryId: 1 });
+    await expect(client.removeLegacyPreviewEnvironment()).rejects.toThrow("DEVELOPMENT_INFRA_VERCEL_LEGACY_ENV_SCOPE_UNSAFE");
+    expect(requests.filter((request) => request.method === "DELETE")).toEqual([]);
+  });
+  it("fails closed on a mixed Preview and production legacy target", async () => {
+    const requests: Request[] = [];
+    const project = { name: "cdas-next", link: { type: "github", repoId: 1 }, buildCommand: null, ssoProtection: { deploymentType: "preview" }, targets: hobbyTargets, protectionBypass: {} };
+    const mixedLegacy = { id: "mixed", key: "CLERK_SECRET_KEY", type: "encrypted", target: ["preview", "production"], gitBranch: "codex/x" };
+    const client = new VercelApiProvider("t", "cdas-next", undefined, queuedFetch([
+      response(project),
+      response({ envs: [mixedLegacy] }),
+    ], requests));
+    await client.assertProject({ owner: "o", name: "r", branch: "codex/x", sha: "a".repeat(40), repositoryId: 1 });
+    await expect(client.removeLegacyPreviewEnvironment()).rejects.toThrow("DEVELOPMENT_INFRA_VERCEL_LEGACY_ENV_SCOPE_UNSAFE");
+    expect(requests.filter((request) => request.method === "DELETE")).toEqual([]);
+  });
   it("accepts Vercel bypass only when the derived secret is a protectionBypass map key", async () => {
     const secret = "B".repeat(32);
     const project = { name: "cdas-next", link: { type: "github", repoId: 1 }, buildCommand: null, ssoProtection: { deploymentType: "preview" }, targets: hobbyTargets, protectionBypass: {} };
@@ -371,6 +424,42 @@ describe("provider fail-closed contracts", () => {
     expect(calls[0]).toContain("staging-synthetic-acceptance-123-2");
     expect(calls[0]?.[calls[0].indexOf("--dir") + 1]).toMatch(/output\/staging-acceptance$/u);
     expect(calls[1]?.[1]).toMatch(/^file:/u);
+  });
+  it("does not pass local-auth passwords to the artifact verifier child", async () => {
+    const run = { id: "123", attempt: 2, url: "https://github.com/o/r/actions/runs/123", headSha: "a".repeat(40) };
+    let verifierEnvironment: Readonly<Record<string, string>> | undefined;
+    const runner = {
+      run: async (_command: string, args: readonly string[], options?: Readonly<{ env?: Readonly<Record<string, string>> }>) => {
+        if (args[0] === "run") {
+          const directory = args[args.indexOf("--dir") + 1] as string;
+          const marker = path.join(directory, "cdas-staging-123-2");
+          await mkdir(marker, { recursive: true });
+          await writeFile(
+            path.join(marker, "final.json"),
+            JSON.stringify({
+              schema: "staging-synthetic-acceptance-final.v1",
+              status: "PASS",
+              realStudentDataAllowed: false,
+              productionDecision: "NO_GO",
+            }),
+          );
+        } else {
+          verifierEnvironment = options?.env;
+        }
+        return { stdout: "", stderr: "" };
+      },
+    };
+    const environment = Object.fromEntries([
+      "TEACHER",
+      "STUDENT",
+      "OTHER_STUDENT",
+      "OTHER_TEACHER",
+      "DISABLED_ACCOUNT",
+      "DISABLED_SCHOOL_TEACHER",
+    ].map((name) => [`STAGING_TEST_${name}_PASSWORD`, "must-not-cross-boundary"]));
+    await expect(verifyDownloadedAcceptanceArtifact(run, runner, { environment })).resolves.toBeUndefined();
+    expect(Object.keys(verifierEnvironment ?? {}).filter((name) => name.endsWith("_PASSWORD"))).toEqual([]);
+    expect(verifierEnvironment).not.toHaveProperty("STAGING_TEST_TEACHER_PASSWORD");
   });
   it("briefly retries the exact artifact when GitHub has completed before download propagation", async () => {
     const run = { id: "123", attempt: 2, url: "https://github.com/o/r/actions/runs/123", headSha: "a".repeat(40) };
