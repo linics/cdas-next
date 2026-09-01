@@ -919,6 +919,14 @@ export function ActivityDraftV3Form({
             打开最新版本核对
           </Link>
         ) : null}
+        {state.draftId && state.persistedStatus === "READY_FOR_PREVIEW" ? (
+          <Link
+            className={styles.primaryLink}
+            href={`/teacher/activities/${state.draftId}/preview`}
+          >
+            查看发布预览 <span aria-hidden="true">→</span>
+          </Link>
+        ) : null}
         <Link className={styles.primaryLink} href="/teacher/activities">
           返回跨学科任务
         </Link>

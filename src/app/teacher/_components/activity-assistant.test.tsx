@@ -362,7 +362,7 @@ describe("ActivityAssistant", () => {
 
     const markup = renderAssistant();
     expect(markup).toContain(
-      "草稿未创建。你可以补一句&quot;请重新创建草稿&quot;让助手重试，或改用手动表单。",
+      "草稿未创建。这次失败不会影响后续对话；你可以补充要求后重试，或改用手动表单。",
     );
     expect(markup).not.toContain("正在整理任务理解与设计建议…");
   });
@@ -387,7 +387,7 @@ describe("ActivityAssistant", () => {
 
     const markup = renderAssistant();
     expect(markup).toContain(
-      "草稿未创建。你可以补一句&quot;请重新创建草稿&quot;让助手重试，或改用手动表单。",
+      "草稿未创建。这次失败不会影响后续对话；你可以补充要求后重试，或改用手动表单。",
     );
     expect(markup).not.toContain("正在整理任务理解与设计建议…");
   });

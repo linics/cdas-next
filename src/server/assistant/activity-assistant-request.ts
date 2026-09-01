@@ -61,6 +61,38 @@ export class ActivityAssistantRequestError extends Error {
   }
 }
 
+/**
+ * A call that never reached approval or a successful output has no business
+ * meaning. Keep it visible in the browser as an honest failure, but remove it
+ * from the next server-side conversation so one interrupted stream cannot
+ * poison every retry.
+ */
+function isRecoverableInterruptedToolPart(
+  part: ActivityAssistantMessage["parts"][number],
+): boolean {
+  return (
+    part.type.startsWith("tool-") &&
+    "state" in part &&
+    (part.state === "input-streaming" ||
+      part.state === "input-available" ||
+      part.state === "output-error")
+  );
+}
+
+function discardRecoverableInterruptedToolParts(
+  messages: ActivityAssistantMessage[],
+): ActivityAssistantMessage[] {
+  return messages.map((message) => {
+    if (message.role !== "assistant") return message;
+    return {
+      ...message,
+      parts: message.parts.filter(
+        (part) => !isRecoverableInterruptedToolPart(part),
+      ),
+    };
+  });
+}
+
 function assertSafeMessageHistory(
   messages: ActivityAssistantMessage[],
 ): void {
@@ -140,6 +172,10 @@ function assertSafeMessageHistory(
         throw new ActivityAssistantRequestError("INVALID_MESSAGES");
       }
       toolCallIds.add(part.toolCallId);
+
+      if (isRecoverableInterruptedToolPart(part)) {
+        continue;
+      }
 
       if (
         (part.type === "tool-get_current_context" ||
@@ -452,7 +488,7 @@ export async function parseActivityAssistantRequestEnvelope(
   }
   assertSafeMessageHistory(messages);
   return {
-    messages,
+    messages: discardRecoverableInterruptedToolParts(messages),
     pageContext: body.data.pageContext ?? {
       kind: "UNKNOWN_TEACHER_PAGE",
     },

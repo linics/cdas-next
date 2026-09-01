@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { AuthenticationError } from "../../../server/auth/current-actor";
 import { LocalLoginForm } from "../../auth/local-login-form";
 import gateStyles from "../../_components/access-gate.module.css";
+import { isDevelopmentQuickLoginEnabled } from "../../../server/auth/development-quick-login";
 
 export function StudentAccessGate({
   code,
@@ -71,7 +72,7 @@ export function StudentAccessGate({
           <h2>{copy.title}</h2>
         </div>
         {code === "UNAUTHENTICATED" || code === "USER_NOT_PROVISIONED" ? (
-          <LocalLoginForm role="STUDENT" />
+          <LocalLoginForm role="STUDENT" quickLogin={isDevelopmentQuickLoginEnabled()} />
         ) : code === "PASSWORD_CHANGE_REQUIRED" ? (
           <div className={gateStyles.actions}>
             <Link className={gateStyles.primaryButton} href="/student/password">修改密码后继续</Link>
