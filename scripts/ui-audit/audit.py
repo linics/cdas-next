@@ -1,6 +1,5 @@
 """跨全部路由的界面审查：字号层级、对比度、溢出、点击区、行长、状态样式。"""
 import json
-import os
 import sys
 from urllib.parse import urlparse
 
@@ -10,6 +9,8 @@ BASE = "http://localhost:3000"
 DEMO_SCHOOL_CODE = "SCHARCHX"
 DEMO_TEACHER_ACCOUNT = "T-DEMO"
 DEMO_STUDENT_ACCOUNT = "700001"
+DEMO_TEACHER_PASSWORD = "Teacher2026demo"
+DEMO_STUDENT_PASSWORD = "Student2026demo"
 
 TEACHER_ROUTES = [
     ("首页", "/"),
@@ -109,18 +110,11 @@ def login(page, role: str, password: str) -> None:
             pass
 
 
-def required_password(role: str) -> str:
-    variable = f"DEV_TEST_DEMO_{role}_PASSWORD"
-    value = os.environ.get(variable, "")
-    if not value:
-        raise RuntimeError(f"UI_AUDIT_{role}_PASSWORD_REQUIRED")
-    return value
-
 def run(widths):
     findings = {}
     passwords = {
-        "TEACHER": required_password("TEACHER"),
-        "STUDENT": required_password("STUDENT_1"),
+        "TEACHER": DEMO_TEACHER_PASSWORD,
+        "STUDENT": DEMO_STUDENT_PASSWORD,
     }
     with sync_playwright() as pw:
         browser = pw.chromium.launch()

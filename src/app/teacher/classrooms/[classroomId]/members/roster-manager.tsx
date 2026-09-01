@@ -9,6 +9,7 @@ import { StudentImportPanel } from "./student-import-panel";
 import styles from "../../../teacher-workspace.module.css";
 import {
   decideRosterChangeAction,
+  deleteClassroomAction,
   prepareEndMembershipAction,
   prepareRosterImportAction,
   previewRosterImportAction,
@@ -36,6 +37,7 @@ export function RosterManager({
   const [prepared, setPrepared] = useState<Prepared | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
   const currentMemberships = roster.memberships.filter((membership) => membership.status === "CURRENT");
   const historicalMemberships = roster.memberships.filter((membership) => membership.status !== "CURRENT");
   const readyKeys = useMemo(
@@ -106,6 +108,19 @@ export function RosterManager({
     setBusy(false);
   }
 
+  async function deleteClassroom() {
+    setBusy(true);
+    setMessage(null);
+    const result = await deleteClassroomAction({
+      classroomId: roster.classroom.id,
+      idempotencyKey: `delete_classroom_${crypto.randomUUID()}`,
+    });
+    setDeleteConfirmationOpen(false);
+    setMessage(result.message);
+    if (result.ok) router.push("/teacher");
+    setBusy(false);
+  }
+
   const confirmation = prepared?.confirmation;
   const confirmationStudents = confirmation?.operation === "ADD"
     ? confirmation.students.map((student) => student.displayName).join("、")
@@ -117,7 +132,7 @@ export function RosterManager({
       data-hydrated={hydrated ? "true" : "false"}
       id="classroom-roster-manager"
     >
-      <section className={styles.dashboardSection} aria-labelledby="current-roster-title">
+      <section className={`${styles.dashboardSection} ${styles.rosterCurrentSection}`} aria-labelledby="current-roster-title">
         <header className={styles.sectionHeader}>
           <div>
             <p className={styles.eyebrow}>当前名单</p>
@@ -149,10 +164,12 @@ export function RosterManager({
         )}
       </section>
 
-      <section className={styles.rosterImportPanel} aria-labelledby="roster-import-title">
-        <p className={styles.eyebrow}>受控批量加入</p>
-        <h2 id="roster-import-title">粘贴学生名单码</h2>
-        <p>每行一个或用逗号分隔，最多 50 个；仅匹配已由管理员配置的学生账号。</p>
+      <aside className={styles.rosterImportPanel} aria-labelledby="roster-import-title">
+        <header className={styles.rosterPanelHeader}>
+          <p className={styles.eyebrow}>受控批量加入</p>
+          <h2 id="roster-import-title">用名单码加入</h2>
+        </header>
+        <p>每行一个或用逗号分隔，最多 50 个。只会匹配已由管理员配置的学生账号。</p>
         <textarea
           aria-label="学生名单码"
           disabled={busy}
@@ -197,7 +214,7 @@ export function RosterManager({
           </div>
         ) : null}
         {message ? <InlineAlert tone={message.includes("已") ? "info" : "warning"}>{message}</InlineAlert> : null}
-      </section>
+      </aside>
 
       {historicalMemberships.length > 0 ? (
         <section className={styles.dashboardSection} aria-labelledby="historical-roster-title">
@@ -226,6 +243,28 @@ export function RosterManager({
 
       <StudentImportPanel classroomId={roster.classroom.id} />
 
+      <section className={styles.classroomCleanup} aria-labelledby="classroom-cleanup-title">
+        <header>
+          <p className={styles.eyebrow}>班级维护</p>
+          <h2 id="classroom-cleanup-title">删除班级</h2>
+        </header>
+        {roster.classroom.canDelete ? (
+          <>
+            <p>这是一个从未加入成员、从未发布活动的空班级。确认后将删除该空班级。</p>
+            <button
+              className={styles.dangerButton}
+              disabled={busy}
+              onClick={() => setDeleteConfirmationOpen(true)}
+              type="button"
+            >
+              删除空班级
+            </button>
+          </>
+        ) : (
+          <p>已有成员区间或发布记录的班级必须保留，不能删除。</p>
+        )}
+      </section>
+
       <ConfirmDialog
         open={Boolean(confirmation)}
         title={confirmation?.operation === "ADD" ? "确认加入班级成员" : "确认结束成员关系"}
@@ -244,6 +283,18 @@ export function RosterManager({
         disabled={busy}
         onCancel={() => decide("REJECT")}
         onConfirm={() => decide("CONFIRM")}
+      />
+
+      <ConfirmDialog
+        confirmLabel="确认删除空班级"
+        detail="此操作只会删除从未加入成员、从未发布活动的空班级；一旦班级状态已变化，系统会拒绝删除。"
+        disabled={busy}
+        onCancel={() => setDeleteConfirmationOpen(false)}
+        onConfirm={deleteClassroom}
+        open={deleteConfirmationOpen}
+        pending={busy}
+        title={`删除「${roster.classroom.name}」？`}
+        tone="danger"
       />
     </div>
   );
