@@ -1,10 +1,201 @@
 import nextEnvironment from "@next/env";
-import { bootstrapAdditionalClerkClassroomStudent, bootstrapClerkClassroom, bootstrapStandaloneClerkTeacher } from "../../../src/server/bootstrap/bootstrap-clerk-classroom";
+
+import {
+  bootstrapLocalStaging,
+  stagingLocalIdentifier,
+} from "../../../src/server/bootstrap/bootstrap-local-staging";
 import { createDatabaseClient } from "../../../src/server/db/client";
-import { agentAcceptanceNamespace, agentAcceptanceOtherStudentDisplayName, agentAcceptanceOtherTeacherDisplayName, agentAcceptanceStudentDisplayName, agentAcceptanceTeacherDisplayName, evaluateAgentAcceptanceReadiness, stableAgentAcceptanceError } from "./contracts";
-import { assertNoAgentBusinessHistory, probeAgentNamespace } from "./fixture";
+import {
+  agentAcceptanceNamespace,
+  agentAcceptanceOtherStudentDisplayName,
+  agentAcceptanceOtherTeacherDisplayName,
+  agentAcceptanceStudentDisplayName,
+  agentAcceptanceTeacherDisplayName,
+  stableAgentAcceptanceError,
+} from "./contracts";
+import {
+  assertNoAgentBusinessHistory,
+  probeAgentNamespace,
+} from "./fixture";
 import { writeAgentArtifact } from "./output";
 import { assertAgentBootstrapPrerequisites } from "./prerequisites";
-const required=(key:string)=>{const value=process.env[key]?.trim();if(!value)throw new Error(`${key}_REQUIRED`);return value;};
-async function main(){nextEnvironment.loadEnvConfig(process.cwd());const marker=required("STAGING_RUN_MARKER");if(evaluateAgentAcceptanceReadiness(process.env).status!=="PASS")throw new Error("STAGING_AGENT_ACCEPTANCE_READINESS_FAILED");await assertAgentBootstrapPrerequisites(process.env);const ns=agentAcceptanceNamespace(marker);const db=createDatabaseClient(required("DIRECT_URL"));try{await assertNoAgentBusinessHistory(db,required("STAGING_TEST_TEACHER_CLERK_ID"),ns.activityTitle);const probe=await probeAgentNamespace(db,ns.classroomId,ns.classroomName,required("STAGING_TEST_TEACHER_CLERK_ID"),required("STAGING_TEST_STUDENT_CLERK_ID"),required("STAGING_TEST_OTHER_STUDENT_CLERK_ID"));if(probe==="COLLISION")throw new Error("STAGING_AGENT_ACCEPTANCE_NAMESPACE_COLLISION");const result=await bootstrapClerkClassroom(db,{teacherAuthSubject:required("STAGING_TEST_TEACHER_CLERK_ID"),teacherDisplayName:agentAcceptanceTeacherDisplayName,studentAuthSubject:required("STAGING_TEST_STUDENT_CLERK_ID"),studentDisplayName:agentAcceptanceStudentDisplayName,classroomId:ns.classroomId,classroomName:ns.classroomName});const otherStudent=await bootstrapAdditionalClerkClassroomStudent(db,{teacherAuthSubject:required("STAGING_TEST_TEACHER_CLERK_ID"),classroomId:ns.classroomId,classroomName:ns.classroomName,additionalStudentAuthSubject:required("STAGING_TEST_OTHER_STUDENT_CLERK_ID"),additionalStudentDisplayName:agentAcceptanceOtherStudentDisplayName});const otherTeacher=await bootstrapStandaloneClerkTeacher(db,{teacherAuthSubject:required("STAGING_TEST_OTHER_TEACHER_CLERK_ID"),teacherDisplayName:agentAcceptanceOtherTeacherDisplayName});await writeAgentArtifact(marker,"bootstrap.json",{schema:"staging-agent-acceptance-bootstrap.v1",status:"PASS",namespace:{marker,classroomDerived:true},collisionProbe:probe,resources:{teacher:result.teacher.status,student:result.student.status,otherStudent:otherStudent.additionalStudent.status,otherTeacher:otherTeacher.teacher.status,classroom:result.classroom.status,membership:result.membership.status,otherMembership:otherStudent.membership.status},realStudentDataAllowed:false,productionDecision:"NO_GO"});process.stdout.write('{"schema":"staging-agent-acceptance-bootstrap.v1","status":"PASS"}\n');}finally{await db.$disconnect();}}
-void main().catch(async error=>{try{await writeAgentArtifact(process.env.STAGING_RUN_MARKER?.trim()??"","bootstrap.json",{schema:"staging-agent-acceptance-bootstrap.v1",status:"FAIL",checks:[{code:stableAgentAcceptanceError(error),status:"FAIL"}],realStudentDataAllowed:false,productionDecision:"NO_GO"});}catch{}process.stdout.write('{"schema":"staging-agent-acceptance-bootstrap.v1","status":"FAIL"}\n');process.exitCode=1;});
+
+function required(key: string): string {
+  const value = process.env[key]?.trim();
+  if (!value) throw new Error(`${key}_REQUIRED`);
+  return value;
+}
+
+type StagingIdentity = {
+  schoolCode: string;
+  identifier: string;
+  password: string;
+  displayName: string;
+  role: "TEACHER" | "STUDENT";
+  staffNo?: string;
+  studentNo?: string;
+  accountStatus?: "ACTIVE" | "DISABLED";
+};
+
+async function main(): Promise<void> {
+  nextEnvironment.loadEnvConfig(process.cwd());
+  const marker = required("STAGING_RUN_MARKER");
+  await assertAgentBootstrapPrerequisites(process.env);
+  const namespace = agentAcceptanceNamespace(marker);
+  const primary = required("STAGING_TEST_PRIMARY_SCHOOL_CODE");
+  const secondary = required("STAGING_TEST_SECONDARY_SCHOOL_CODE");
+  const disabledSchool = required("STAGING_TEST_DISABLED_SCHOOL_CODE");
+  const teacherIdentifier = stagingLocalIdentifier({
+    schoolCode: primary,
+    role: "TEACHER",
+    staffNo: required("STAGING_TEST_TEACHER_STAFF_NO"),
+  });
+  const studentIdentifier = stagingLocalIdentifier({
+    schoolCode: primary,
+    role: "STUDENT",
+    studentNo: required("STAGING_TEST_STUDENT_NO"),
+  });
+  const otherStudentIdentifier = stagingLocalIdentifier({
+    schoolCode: primary,
+    role: "STUDENT",
+    studentNo: required("STAGING_TEST_OTHER_STUDENT_NO"),
+  });
+  const otherTeacherIdentifier = stagingLocalIdentifier({
+    schoolCode: secondary,
+    role: "TEACHER",
+    staffNo: required("STAGING_TEST_OTHER_TEACHER_STAFF_NO"),
+  });
+  const identities: StagingIdentity[] = [
+    {
+      schoolCode: primary,
+      identifier: teacherIdentifier,
+      password: required("STAGING_TEST_TEACHER_PASSWORD"),
+      displayName: agentAcceptanceTeacherDisplayName,
+      role: "TEACHER",
+      staffNo: required("STAGING_TEST_TEACHER_STAFF_NO"),
+    },
+    {
+      schoolCode: primary,
+      identifier: studentIdentifier,
+      password: required("STAGING_TEST_STUDENT_PASSWORD"),
+      displayName: agentAcceptanceStudentDisplayName,
+      role: "STUDENT",
+      studentNo: required("STAGING_TEST_STUDENT_NO"),
+    },
+    {
+      schoolCode: primary,
+      identifier: otherStudentIdentifier,
+      password: required("STAGING_TEST_OTHER_STUDENT_PASSWORD"),
+      displayName: agentAcceptanceOtherStudentDisplayName,
+      role: "STUDENT",
+      studentNo: required("STAGING_TEST_OTHER_STUDENT_NO"),
+    },
+    {
+      schoolCode: secondary,
+      identifier: otherTeacherIdentifier,
+      password: required("STAGING_TEST_OTHER_TEACHER_PASSWORD"),
+      displayName: agentAcceptanceOtherTeacherDisplayName,
+      role: "TEACHER",
+      staffNo: required("STAGING_TEST_OTHER_TEACHER_STAFF_NO"),
+    },
+    {
+      schoolCode: primary,
+      identifier: stagingLocalIdentifier({
+        schoolCode: primary,
+        role: "STUDENT",
+        studentNo: required("STAGING_TEST_DISABLED_ACCOUNT_STUDENT_NO"),
+      }),
+      password: required("STAGING_TEST_DISABLED_ACCOUNT_PASSWORD"),
+      displayName: "CDAS Staging Synthetic Disabled Account",
+      role: "STUDENT",
+      studentNo: required("STAGING_TEST_DISABLED_ACCOUNT_STUDENT_NO"),
+      accountStatus: "DISABLED",
+    },
+    {
+      schoolCode: disabledSchool,
+      identifier: stagingLocalIdentifier({
+        schoolCode: disabledSchool,
+        role: "TEACHER",
+        staffNo: required("STAGING_TEST_DISABLED_SCHOOL_TEACHER_STAFF_NO"),
+      }),
+      password: required("STAGING_TEST_DISABLED_SCHOOL_TEACHER_PASSWORD"),
+      displayName: "CDAS Staging Synthetic Disabled School Teacher",
+      role: "TEACHER",
+      staffNo: required("STAGING_TEST_DISABLED_SCHOOL_TEACHER_STAFF_NO"),
+    },
+  ];
+  const database = createDatabaseClient(required("DIRECT_URL"));
+  try {
+    await assertNoAgentBusinessHistory(database, teacherIdentifier, namespace.activityTitle);
+    const probe = await probeAgentNamespace(
+      database,
+      namespace.classroomId,
+      namespace.classroomName,
+      teacherIdentifier,
+      studentIdentifier,
+      otherStudentIdentifier,
+    );
+    if (probe === "COLLISION") {
+      throw new Error("STAGING_AGENT_ACCEPTANCE_NAMESPACE_COLLISION");
+    }
+    const result = await bootstrapLocalStaging(database, {
+      schools: [
+        { code: primary, name: "CDAS Staging Synthetic School A", status: "ACTIVE" },
+        { code: secondary, name: "CDAS Staging Synthetic School B", status: "ACTIVE" },
+        { code: disabledSchool, name: "CDAS Staging Synthetic School C", status: "DISABLED" },
+      ],
+      identities,
+      classroom: {
+        id: namespace.classroomId,
+        name: namespace.classroomName,
+        teacherIdentifier,
+        studentIdentifiers: [studentIdentifier, otherStudentIdentifier],
+      },
+    });
+    await writeAgentArtifact(marker, "bootstrap.json", {
+      schema: "staging-agent-acceptance-bootstrap.v1",
+      status: "PASS",
+      namespace: { marker, classroomDerived: true },
+      collisionProbe: probe,
+      resources: {
+        teacher: result.identities[teacherIdentifier],
+        student: result.identities[studentIdentifier],
+        otherStudent: result.identities[otherStudentIdentifier],
+        otherTeacher: result.identities[otherTeacherIdentifier],
+        classroom: result.classroom,
+        membership: result.memberships > 0 ? "CREATED" : "EXISTING",
+        otherMembership: result.memberships > 1 ? "CREATED" : "EXISTING",
+      },
+      realStudentDataAllowed: false,
+      productionDecision: "NO_GO",
+    });
+    process.stdout.write(
+      '{"schema":"staging-agent-acceptance-bootstrap.v1","status":"PASS"}\n',
+    );
+  } finally {
+    for (const identity of identities) identity.password = "";
+    await database.$disconnect();
+  }
+}
+
+void main().catch(async (error: unknown) => {
+  try {
+    await writeAgentArtifact(
+      process.env.STAGING_RUN_MARKER?.trim() ?? "",
+      "bootstrap.json",
+      {
+        schema: "staging-agent-acceptance-bootstrap.v1",
+        status: "FAIL",
+        checks: [{ code: stableAgentAcceptanceError(error), status: "FAIL" }],
+        realStudentDataAllowed: false,
+        productionDecision: "NO_GO",
+      },
+    );
+  } catch {
+    // The safe output path is intentionally fail-closed.
+  }
+  process.stdout.write(
+    '{"schema":"staging-agent-acceptance-bootstrap.v1","status":"FAIL"}\n',
+  );
+  process.exitCode = 1;
+});

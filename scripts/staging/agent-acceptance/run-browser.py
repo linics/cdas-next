@@ -86,17 +86,6 @@ def exact_origin(candidate: str, expected: str) -> bool:
         return False
 
 
-def canonical_origin(value: str) -> str:
-    parsed = urlsplit(value)
-    port = parsed.port or (443 if parsed.scheme.lower() == "https" else 80)
-    hostname = parsed.hostname or ""
-    rendered_host = f"[{hostname}]" if ":" in hostname else hostname
-    default_port = (parsed.scheme.lower() == "https" and port == 443) or (
-        parsed.scheme.lower() == "http" and port == 80
-    )
-    return f"{parsed.scheme.lower()}://{rendered_host}{'' if default_port else f':{port}'}"
-
-
 def assert_origin(candidate: str, expected: str) -> None:
     if not exact_origin(candidate, expected):
         raise AcceptanceFailure("STAGING_AGENT_ACCEPTANCE_ORIGIN_MISMATCH")
@@ -199,48 +188,71 @@ def run(command: list[str], capture: bool = False) -> str:
     return result.stdout
 
 
-def issue_ticket(role: str) -> str:
-    ticket = run(["pnpm", "staging:agent:issue-teacher-ticket", role], True).strip()
-    if not ticket or len(ticket) > 16_384 or "\n" in ticket:
-        raise AcceptanceFailure("STAGING_AGENT_ACCEPTANCE_TICKET_INVALID")
-    return ticket
-
-
 def sign_in(page, base: str, role: str) -> None:
     destination = "teacher" if role in ("TEACHER", "OTHER_TEACHER") else "student"
-    ticket = ""
+    if role == "TEACHER":
+        school_code = required("STAGING_TEST_PRIMARY_SCHOOL_CODE")
+        account = required("STAGING_TEST_TEACHER_STAFF_NO")
+        password = required("STAGING_TEST_TEACHER_PASSWORD")
+    elif role == "STUDENT":
+        school_code = required("STAGING_TEST_PRIMARY_SCHOOL_CODE")
+        account = required("STAGING_TEST_STUDENT_NO")
+        password = required("STAGING_TEST_STUDENT_PASSWORD")
+    elif role == "OTHER_STUDENT":
+        school_code = required("STAGING_TEST_PRIMARY_SCHOOL_CODE")
+        account = required("STAGING_TEST_OTHER_STUDENT_NO")
+        password = required("STAGING_TEST_OTHER_STUDENT_PASSWORD")
+    elif role == "OTHER_TEACHER":
+        school_code = required("STAGING_TEST_SECONDARY_SCHOOL_CODE")
+        account = required("STAGING_TEST_OTHER_TEACHER_STAFF_NO")
+        password = required("STAGING_TEST_OTHER_TEACHER_PASSWORD")
+    else:
+        raise AcceptanceFailure("STAGING_AGENT_ACCEPTANCE_LOGIN_ROLE_INVALID")
+    password_field = None
     try:
-        response = page.goto(base, wait_until="domcontentloaded")
+        response = page.goto(f"{base}/{destination}/login", wait_until="domcontentloaded")
         assert_origin(page.url, base)
         if not response or response.status != 200:
-            raise AcceptanceFailure("STAGING_AGENT_ACCEPTANCE_INITIAL_REQUEST_FAILED")
-        page.wait_for_function(
-            "() => Boolean(window.Clerk?.loaded && window.Clerk.status === 'ready' && window.Clerk.client)",
-            timeout=60_000,
-        )
-        assert_origin(page.url, base)
-        ticket = issue_ticket(role)
-        signed_in = page.evaluate(
-            """async ({ticket, expectedOrigin}) => {
-              if (window.top !== window || window.location.origin !== expectedOrigin) return false;
-              const clerk = window.Clerk;
-              if (!clerk?.loaded || clerk.status !== 'ready' || !clerk.client) return false;
-              await clerk.signOut();
-              const result = await clerk.client.signIn.create({ strategy: 'ticket', ticket });
-              if (result.status !== 'complete' || !result.createdSessionId) return false;
-              await clerk.setActive({ session: result.createdSessionId });
-              return true;
-            }""",
-            {"ticket": ticket, "expectedOrigin": canonical_origin(base)},
-        )
-        if not signed_in:
-            raise AcceptanceFailure("STAGING_AGENT_ACCEPTANCE_SIGN_IN_FAILED")
-        page.goto(f"{base}/{destination}", wait_until="domcontentloaded")
+            raise AcceptanceFailure("STAGING_AGENT_ACCEPTANCE_LOGIN_PAGE_FAILED")
+        page.get_by_label("学校代码", exact=True).fill(school_code)
+        account_label = "工号" if destination == "teacher" else "学号"
+        page.get_by_label(account_label, exact=True).fill(account)
+        password_field = page.get_by_label("密码", exact=True)
+        password_field.fill(password)
+        page.get_by_role("button", name="登录", exact=True).click()
+        page.wait_for_url(f"{base}/{destination}", timeout=30_000)
         assert_origin(page.url, base)
         if urlsplit(page.url).path != f"/{destination}":
             raise AcceptanceFailure("STAGING_AGENT_ACCEPTANCE_SIGN_IN_REDIRECT")
+        session = next(
+            (
+                cookie
+                for cookie in page.context.cookies([base])
+                if cookie.get("name") == "cdas_session"
+            ),
+            None,
+        )
+        if (
+            not session
+            or not session.get("value")
+            or session.get("httpOnly") is not True
+            or session.get("sameSite") != "Lax"
+            or session.get("secure") is not True
+            or session.get("path") != "/"
+            or float(session.get("expires", 0)) <= 0
+        ):
+            raise AcceptanceFailure("STAGING_AGENT_ACCEPTANCE_SESSION_COOKIE_INVALID")
+    except Exception as error:
+        if isinstance(error, AcceptanceFailure):
+            raise
+        raise AcceptanceFailure("STAGING_AGENT_ACCEPTANCE_SIGN_IN_FAILED") from error
     finally:
-        ticket = ""
+        if password_field is not None:
+            try:
+                password_field.fill("")
+            except Exception:
+                pass
+        password = ""
 
 
 def wait_text(page, value: str) -> None:

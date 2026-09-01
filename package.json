@@ -42,7 +42,7 @@
     "staging:agent:record-immediate-health": "node --import tsx scripts/staging/agent-acceptance/immediate-health.ts",
     "staging:agent:bootstrap": "node --import tsx scripts/staging/agent-acceptance/bootstrap.ts",
     "staging:agent:assert-browser-prerequisites": "node --import tsx scripts/staging/agent-acceptance/assert-browser-prerequisites.ts",
-    "staging:agent:issue-teacher-ticket": "node --import tsx scripts/staging/agent-acceptance/issue-teacher-ticket.ts",
+    "staging:agent:cleanup": "node --import tsx scripts/staging/agent-acceptance/cleanup.ts",
     "staging:agent:browser": "PYTHONDONTWRITEBYTECODE=1 python3 -B scripts/staging/agent-acceptance/run-browser.py",
     "staging:agent:verify": "node --import tsx scripts/staging/agent-acceptance/verify.ts",
     "staging:agent:assert-final": "node --import tsx scripts/staging/agent-acceptance/assert-final.ts",

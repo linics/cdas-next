@@ -8,10 +8,9 @@ import {
   startActivityAssistantRun,
 } from "../../src/server/assistant/agent-run-lifecycle";
 import {
-  bootstrapAdditionalClerkClassroomStudent,
-  bootstrapClerkClassroom,
-  bootstrapStandaloneClerkTeacher,
-} from "../../src/server/bootstrap/bootstrap-clerk-classroom";
+  bootstrapLocalStaging,
+  stagingLocalIdentifier,
+} from "../../src/server/bootstrap/bootstrap-local-staging";
 import type {
   CommandContext,
   CommandSource,
@@ -41,6 +40,7 @@ import {
   agentAcceptanceStudentDisplayName,
   agentAcceptanceTeacherDisplayName,
 } from "./agent-acceptance/contracts";
+import { cleanupAgentSessions } from "./agent-acceptance/cleanup";
 import {
   evaluateAgentVerification,
   fullLoopVerificationSql,
@@ -151,41 +151,101 @@ describeWithDatabase("staging Agent acceptance read-only verifier", () => {
     const marker = `cdas-staging-agent-${randomUUID().replaceAll("-", "")}`;
     const namespace = agentAcceptanceNamespace(marker);
     const suffix = randomUUID().replaceAll("-", "");
-    const teacherSubject = `user_agentteacher${suffix}`;
-    const studentSubject = `user_agentstudent${suffix}`;
-    const otherStudentSubject = `user_agentotherstudent${suffix}`;
-    const otherTeacherSubject = `user_agentotherteacher${suffix}`;
-    const resources = await bootstrapClerkClassroom(
-      database,
-      {
-        teacherAuthSubject: teacherSubject,
-        teacherDisplayName: agentAcceptanceTeacherDisplayName,
-        studentAuthSubject: studentSubject,
-        studentDisplayName: agentAcceptanceStudentDisplayName,
-        classroomId: namespace.classroomId,
-        classroomName: namespace.classroomName,
+    const primarySchoolCode = "SCHABC23";
+    const secondarySchoolCode = "SCHDEF45";
+    const teacherStaffNo = `T-${suffix.slice(0, 8)}`;
+    const numericSuffix = [...suffix]
+      .map((character) => character.charCodeAt(0) % 10)
+      .join("")
+      .slice(0, 7);
+    const studentNo = `1${numericSuffix}`;
+    const otherStudentNo = `2${numericSuffix}`;
+    const otherTeacherStaffNo = `U-${suffix.slice(0, 8)}`;
+    const teacherSubject = stagingLocalIdentifier({
+      schoolCode: primarySchoolCode,
+      role: "TEACHER",
+      staffNo: teacherStaffNo,
+    });
+    const studentSubject = stagingLocalIdentifier({
+      schoolCode: primarySchoolCode,
+      role: "STUDENT",
+      studentNo,
+    });
+    const otherStudentSubject = stagingLocalIdentifier({
+      schoolCode: primarySchoolCode,
+      role: "STUDENT",
+      studentNo: otherStudentNo,
+    });
+    const otherTeacherSubject = stagingLocalIdentifier({
+      schoolCode: secondarySchoolCode,
+      role: "TEACHER",
+      staffNo: otherTeacherStaffNo,
+    });
+    const stagingPassword = `agent-${suffix}-password`;
+    await bootstrapLocalStaging(database, {
+      schools: [
+        { code: primarySchoolCode, name: "Agent integration school A", status: "ACTIVE" },
+        { code: secondarySchoolCode, name: "Agent integration school B", status: "ACTIVE" },
+      ],
+      identities: [
+        {
+          schoolCode: primarySchoolCode,
+          identifier: teacherSubject,
+          password: stagingPassword,
+          displayName: agentAcceptanceTeacherDisplayName,
+          role: "TEACHER",
+          staffNo: teacherStaffNo,
+        },
+        {
+          schoolCode: primarySchoolCode,
+          identifier: studentSubject,
+          password: stagingPassword,
+          displayName: agentAcceptanceStudentDisplayName,
+          role: "STUDENT",
+          studentNo,
+        },
+        {
+          schoolCode: primarySchoolCode,
+          identifier: otherStudentSubject,
+          password: stagingPassword,
+          displayName: agentAcceptanceOtherStudentDisplayName,
+          role: "STUDENT",
+          studentNo: otherStudentNo,
+        },
+        {
+          schoolCode: secondarySchoolCode,
+          identifier: otherTeacherSubject,
+          password: stagingPassword,
+          displayName: agentAcceptanceOtherTeacherDisplayName,
+          role: "TEACHER",
+          staffNo: otherTeacherStaffNo,
+        },
+      ],
+      classroom: {
+        id: namespace.classroomId,
+        name: namespace.classroomName,
+        teacherIdentifier: teacherSubject,
+        studentIdentifiers: [studentSubject, otherStudentSubject],
       },
-      () => windowStartedAt,
+    }, () => windowStartedAt);
+    const ids = await Promise.all(
+      [teacherSubject, studentSubject, otherStudentSubject, otherTeacherSubject].map(
+        async (identifier) => {
+          const credential = await database.localCredential.findUnique({
+            where: { identifier },
+            select: { userId: true },
+          });
+          if (!credential) throw new Error("AGENT_LOCAL_CREDENTIAL_REQUIRED");
+          return credential.userId;
+        },
+      ),
     );
-    await bootstrapAdditionalClerkClassroomStudent(
-      database,
-      {
-        teacherAuthSubject: teacherSubject,
-        classroomId: namespace.classroomId,
-        classroomName: namespace.classroomName,
-        additionalStudentAuthSubject: otherStudentSubject,
-        additionalStudentDisplayName: agentAcceptanceOtherStudentDisplayName,
-      },
-      () => windowStartedAt,
-    );
-    await bootstrapStandaloneClerkTeacher(
-      database,
-      {
-        teacherAuthSubject: otherTeacherSubject,
-        teacherDisplayName: agentAcceptanceOtherTeacherDisplayName,
-      },
-      () => windowStartedAt,
-    );
+    const resources = {
+      teacher: { id: ids[0] as string },
+      student: { id: ids[1] as string },
+      otherStudent: { id: ids[2] as string },
+      otherTeacher: { id: ids[3] as string },
+    };
 
     const run1 = await startActivityAssistantRun(
       database,
@@ -518,5 +578,177 @@ describeWithDatabase("staging Agent acceptance read-only verifier", () => {
       code: "EXACT_FOUR_AGENT_RUNS",
       status: "FAIL",
     });
+  });
+
+  it("atomically revokes exactly six configured synthetic identities", async () => {
+    if (!database) throw new Error("TEST_DATABASE_URL is required");
+    const marker = randomUUID().replaceAll("-", "");
+    const schoolAlphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    const schoolChars = [...marker]
+      .map(
+        (character) =>
+          schoolAlphabet[character.charCodeAt(0) % schoolAlphabet.length],
+      )
+      .join("");
+    const schoolA = `SCH${schoolChars.slice(0, 5)}`;
+    const schoolB = `SCH${schoolChars.slice(5, 10)}`;
+    const disabledSchool = `SCH${schoolChars.slice(10, 15)}`;
+    const digits = [...marker]
+      .map((character) => character.charCodeAt(0) % 10)
+      .join("");
+    const teacherNo = `T-${digits.slice(0, 6)}`;
+    const otherTeacherNo = `U-${digits.slice(6, 12)}`;
+    const disabledTeacherNo = `V-${digits.slice(12, 18)}`;
+    const studentNo = `1${digits.slice(0, 7)}`;
+    const otherStudentNo = `2${digits.slice(7, 14)}`;
+    const disabledStudentNo = `3${digits.slice(14, 21)}`;
+    const teacher = stagingLocalIdentifier({
+      schoolCode: schoolA,
+      role: "TEACHER",
+      staffNo: teacherNo,
+    });
+    const student = stagingLocalIdentifier({
+      schoolCode: schoolA,
+      role: "STUDENT",
+      studentNo,
+    });
+    const otherStudent = stagingLocalIdentifier({
+      schoolCode: schoolA,
+      role: "STUDENT",
+      studentNo: otherStudentNo,
+    });
+    const otherTeacher = stagingLocalIdentifier({
+      schoolCode: schoolB,
+      role: "TEACHER",
+      staffNo: otherTeacherNo,
+    });
+    const disabledStudent = stagingLocalIdentifier({
+      schoolCode: schoolB,
+      role: "STUDENT",
+      studentNo: disabledStudentNo,
+    });
+    const disabledTeacher = stagingLocalIdentifier({
+      schoolCode: disabledSchool,
+      role: "TEACHER",
+      staffNo: disabledTeacherNo,
+    });
+    const configured = [
+      teacher,
+      student,
+      otherStudent,
+      otherTeacher,
+      disabledStudent,
+      disabledTeacher,
+    ];
+    const password = `cleanup-${marker}-password`;
+    await bootstrapLocalStaging(
+      database,
+      {
+        schools: [
+          { code: schoolA, name: `Cleanup A ${marker}`, status: "ACTIVE" },
+          { code: schoolB, name: `Cleanup B ${marker}`, status: "ACTIVE" },
+          {
+            code: disabledSchool,
+            name: `Cleanup C ${marker}`,
+            status: "DISABLED",
+          },
+        ],
+        identities: [
+          {
+            schoolCode: schoolA,
+            identifier: teacher,
+            password,
+            displayName: `Cleanup teacher ${marker}`,
+            role: "TEACHER",
+            staffNo: teacherNo,
+          },
+          {
+            schoolCode: schoolA,
+            identifier: student,
+            password,
+            displayName: `Cleanup student ${marker}`,
+            role: "STUDENT",
+            studentNo,
+          },
+          {
+            schoolCode: schoolA,
+            identifier: otherStudent,
+            password,
+            displayName: `Cleanup other student ${marker}`,
+            role: "STUDENT",
+            studentNo: otherStudentNo,
+          },
+          {
+            schoolCode: schoolB,
+            identifier: otherTeacher,
+            password,
+            displayName: `Cleanup other teacher ${marker}`,
+            role: "TEACHER",
+            staffNo: otherTeacherNo,
+          },
+          {
+            schoolCode: schoolB,
+            identifier: disabledStudent,
+            password,
+            displayName: `Cleanup disabled student ${marker}`,
+            role: "STUDENT",
+            studentNo: disabledStudentNo,
+          },
+          {
+            schoolCode: disabledSchool,
+            identifier: disabledTeacher,
+            password,
+            displayName: `Cleanup disabled teacher ${marker}`,
+            role: "TEACHER",
+            staffNo: disabledTeacherNo,
+          },
+        ],
+        classroom: {
+          id: randomUUID(),
+          name: `Cleanup classroom ${marker}`,
+          teacherIdentifier: teacher,
+          studentIdentifiers: [student, otherStudent],
+        },
+      },
+      () => windowStartedAt,
+    );
+    const users = await database.localCredential.findMany({
+      where: { identifier: { in: configured } },
+      select: { userId: true },
+    });
+    for (const user of users) {
+      await database.authSession.create({
+        data: {
+          userId: user.userId,
+          tokenHash: createHash("sha256")
+            .update(randomUUID())
+            .digest("hex"),
+          expiresAt: new Date("2026-08-23T06:00:00.000Z"),
+          createdAt: windowStartedAt,
+        },
+      });
+    }
+    const client = new Client({ connectionString: databaseUrl });
+    await client.connect();
+    try {
+      await expect(
+        cleanupAgentSessions(client, [...configured.slice(0, 5), "missing:identity"]),
+      ).rejects.toThrow("STAGING_AGENT_ACCEPTANCE_CLEANUP_IDENTITIES_MISSING");
+      const unchanged = await database.authSession.count({
+        where: { userId: { in: users.map((user) => user.userId) }, revokedAt: null },
+      });
+      expect(unchanged).toBe(6);
+      await expect(cleanupAgentSessions(client, configured)).resolves.toEqual({
+        targetCount: 6,
+        revokedCount: 6,
+        remainingCount: 0,
+      });
+      const remaining = await database.authSession.count({
+        where: { userId: { in: users.map((user) => user.userId) }, revokedAt: null },
+      });
+      expect(remaining).toBe(0);
+    } finally {
+      await client.end();
+    }
   });
 });
