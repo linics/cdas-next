@@ -531,3 +531,54 @@ export function assignmentSubtypeLabel(
 export function evidenceTypeLabel(code: ActivityContentV2["phases"][number]["evidence"][number]["type"]): string {
   return evidenceTypes.find((type) => type.code === code)?.label ?? code;
 }
+
+/**
+ * The legacy scalar columns are derived from a v3 task book, never typed a
+ * second time by the teacher. The database re-derives them in
+ * `cdas_activity_task_book_v3_projection_matches` and rejects the row when the
+ * two disagree, so this must stay byte-identical to that function: goal
+ * descriptions in order, evidence descriptions deduplicated by first
+ * appearance, rubric dimension names in order.
+ */
+export function v3ProjectionColumns(content: ActivityContentV3): {
+  learningObjectives: string[];
+  evidenceRequirements: string[];
+  feedbackCriteria: string[];
+  taskInstructions: string;
+} {
+  const evidenceRequirements: string[] = [];
+  const seenEvidence = new Set<string>();
+  for (const phase of content.phases) {
+    for (const evidence of phase.evidence) {
+      if (seenEvidence.has(evidence.description)) {
+        continue;
+      }
+      seenEvidence.add(evidence.description);
+      evidenceRequirements.push(evidence.description);
+    }
+  }
+  return {
+    learningObjectives: content.learningGoals.map((goal) => goal.description),
+    evidenceRequirements,
+    feedbackCriteria: content.rubricDimensions.map((dimension) => dimension.name),
+    taskInstructions: content.taskInstructions,
+  };
+}
+
+/** Scalar summary columns for any stored task book version. */
+export function projectionColumns(content: ActivityContent): {
+  learningObjectives: string[];
+  evidenceRequirements: string[];
+  feedbackCriteria: string[];
+  taskInstructions: string;
+} {
+  if (content.schemaVersion === 3) {
+    return v3ProjectionColumns(content);
+  }
+  return {
+    learningObjectives: [...content.learningObjectives],
+    evidenceRequirements: [...content.evidenceRequirements],
+    feedbackCriteria: [...content.feedbackCriteria],
+    taskInstructions: content.taskInstructions,
+  };
+}

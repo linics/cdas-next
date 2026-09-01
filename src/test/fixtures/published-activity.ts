@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { ActivityContent } from "../../domain/activity/activity-content";
+import { projectionColumns, type ActivityContent } from "../../domain/activity/activity-content";
 import { waterConservationTaskBook } from "../../fixtures/water-conservation";
 import type { PrismaClient } from "../../generated/prisma/client";
 import type { CommandContext } from "../../server/commands/command-context";
@@ -34,19 +34,20 @@ function context(actorId: string, now: Date): CommandContext {
 
 function writableFixtureContent(content: ActivityContent): ActivityContent {
   if (content.schemaVersion === 2) return content;
+  const projection = projectionColumns(content);
   return {
     ...waterConservationTaskBook,
     submissionMode: "once",
     title: content.title,
     topic: content.title,
     summary: content.summary,
-    objectiveKnowledge: content.learningObjectives[0] ?? waterConservationTaskBook.objectiveKnowledge,
-    objectiveProcess: content.learningObjectives[1] ?? waterConservationTaskBook.objectiveProcess,
-    objectiveEmotion: content.learningObjectives[2] ?? waterConservationTaskBook.objectiveEmotion,
-    learningObjectives: content.learningObjectives,
-    taskInstructions: content.taskInstructions,
-    evidenceRequirements: content.evidenceRequirements,
-    feedbackCriteria: content.feedbackCriteria,
+    objectiveKnowledge: projection.learningObjectives[0] ?? waterConservationTaskBook.objectiveKnowledge,
+    objectiveProcess: projection.learningObjectives[1] ?? waterConservationTaskBook.objectiveProcess,
+    objectiveEmotion: projection.learningObjectives[2] ?? waterConservationTaskBook.objectiveEmotion,
+    learningObjectives: projection.learningObjectives,
+    taskInstructions: projection.taskInstructions,
+    evidenceRequirements: projection.evidenceRequirements,
+    feedbackCriteria: projection.feedbackCriteria,
   };
 }
 
