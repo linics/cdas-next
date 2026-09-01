@@ -6,7 +6,6 @@
 # Optional:
 #   CDAS_VPS_HOST             default 122.51.77.121
 #   CDAS_VPS_USER             default ubuntu
-#   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY / CLERK_SECRET_KEY
 #   DEEPSEEK_API_KEY / AI_TOOL_APPROVAL_SECRET / AI_MODEL / AI_PROVIDER_DISABLED
 set -euo pipefail
 
@@ -127,8 +126,6 @@ rsync -az --delete "${LINK_DEST[@]}" -e "$RSYNC_RSH" "$STAGING_DIR/app/" "$REMOT
 echo "==> Merging runtime env overrides"
 OVERRIDES="$(mktemp)"
 {
-  [[ -n "${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:-}" ]] && printf 'NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=%s\n' "$NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY"
-  [[ -n "${CLERK_SECRET_KEY:-}" ]] && printf 'CLERK_SECRET_KEY=%s\n' "$CLERK_SECRET_KEY"
   [[ -n "${DEEPSEEK_API_KEY:-}" ]] && printf 'DEEPSEEK_API_KEY=%s\n' "$DEEPSEEK_API_KEY"
   [[ -n "${AI_TOOL_APPROVAL_SECRET:-}" ]] && printf 'AI_TOOL_APPROVAL_SECRET=%s\n' "$AI_TOOL_APPROVAL_SECRET"
   [[ -n "${AI_MODEL:-}" ]] && printf 'AI_MODEL=%s\n' "$AI_MODEL"
@@ -148,6 +145,7 @@ env_path = Path("/opt/cdas-next/shared/.env")
 sidecar = Path("/tmp/cdas-env-overrides.env")
 text = env_path.read_text() if env_path.exists() else ""
 overrides = {}
+retired = {"NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY", "CLERK_SECRET_KEY"}
 for line in sidecar.read_text().splitlines():
     if not line or line.startswith("#") or "=" not in line:
         continue
@@ -159,6 +157,8 @@ seen = set()
 for line in text.splitlines():
     if "=" in line and not line.strip().startswith("#"):
         key = line.split("=", 1)[0]
+        if key in retired:
+            continue
         if key in overrides:
             lines.append(f"{key}={overrides[key]}")
             seen.add(key)

@@ -6,11 +6,24 @@
 python3 scripts/ui-audit/audit.py 1280 768 390
 ```
 
-需要 dev server 在 :3000，直接 `pnpm dev` 即可 —— 脚本靠 `.env.local` 里的
-`DEV_CLICKTHROUGH_AUTH=1` 免登录访问 `/teacher` 与 `/student`。
+需要先用同一组演示凭据运行种子、dev server 和审查脚本。密码只从进程环境读取，
+不会写入输出、发现结果或截图：
 
-**不要**给 dev server 设 `E2E_RUN_MARKER`：`isClickthroughAuthEnabled` 见到它
-就会关掉免登录通道，页面会全部落到门禁页，审查结果随之失真。
+```bash
+DEV_TEST_DEMO_TEACHER_PASSWORD='…' \
+DEV_TEST_DEMO_STUDENT_1_PASSWORD='…' \
+  pnpm demo:seed -- --confirm-database '<database-name>'
+DEV_TEST_DEMO_TEACHER_PASSWORD='…' \
+DEV_TEST_DEMO_STUDENT_1_PASSWORD='…' \
+  pnpm dev
+DEV_TEST_DEMO_TEACHER_PASSWORD='…' \
+DEV_TEST_DEMO_STUDENT_1_PASSWORD='…' \
+  python3 scripts/ui-audit/audit.py 1280 768 390
+```
+
+实际使用时，三个进程必须使用相同的两个密码；上面的 `…` 只是 shell 占位符，
+不要把真实密码提交到仓库。脚本分别在独立的浏览器上下文中登录
+`SCHARCHX/T-DEMO` 教师账号和 `SCHARCHX/700001` 学生账号，然后审查各自路由。
 
 ## 检查项
 
