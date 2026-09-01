@@ -159,15 +159,17 @@ describe("teacher release submissions page boundary", () => {
     expect(mocks.getTeacherReleaseSubmissions).not.toHaveBeenCalled();
   });
 
-  it("does not render a close write entrypoint for an unauthorized actor", async () => {
+  it("offers an in-place account switch without release write controls", async () => {
     mocks.createUiCommandContext.mockRejectedValue(
       new AuthenticationError("USER_NOT_PROVISIONED"),
     );
 
     const markup = await renderPage();
 
-    expect(markup).toContain('href="/teacher/login"');
-    expect(markup).toContain("切换教师账号");
+    expect(markup).toContain('name="schoolCode"');
+    expect(markup).toContain('name="identifier"');
+    expect(markup).toContain('name="password"');
+    expect(markup).toContain("进入工作台");
     expect(markup).not.toContain("准备关闭活动");
     expect(markup).not.toContain("确认并关闭活动");
     expect(markup).not.toContain("导出评阅名册");

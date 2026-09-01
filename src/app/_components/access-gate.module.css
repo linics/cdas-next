@@ -157,6 +157,27 @@
   line-height: 1.7;
 }
 
+/* 与首页入口相同的开场：两页依次从静止处轻起，不把动效带入已登录工作台。 */
+@media (prefers-reduced-motion: no-preference) {
+  .gateAside,
+  .accessGate {
+    animation: rise 480ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
+  }
+
+  .accessGate { animation-delay: 90ms; }
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
 @media (max-width: 860px) {
   .gate { grid-template-columns: 1fr; }
   .gateAside {
