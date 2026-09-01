@@ -22,7 +22,11 @@ import {
   formatDateTimeInstant,
   LocalizedDateTime,
 } from "../../_components/localized-date-time";
-import type { ActivityContentV2 } from "../../../domain/activity/activity-content";
+import {
+  disciplineLabel,
+  type ActivityContentStructured,
+  type ActivityContentV3,
+} from "../../../domain/activity/activity-content";
 import {
   taskBookAreaLabels,
   type TaskBookArea,
@@ -112,7 +116,7 @@ type TeacherDraftDetailOutput =
       published: boolean;
       editHref: string;
       previewHref: string;
-      content: ActivityContentV2;
+      content: ActivityContentStructured;
     }
   | {
       status: "LEGACY_SNAPSHOT";
@@ -127,7 +131,7 @@ type ActivityDraftRevisionProposal = {
   draftId: string;
   expectedVersion: number;
   changes: Array<{ area: TaskBookArea; change: string; reason: string }>;
-  content: ActivityContentV2;
+  content: ActivityContentV3;
 };
 
 type ReleaseInsightsOutput =
@@ -253,23 +257,12 @@ type ActivityDraftProposal = {
   };
   teacherRequirements: string[];
   assumptions: string[];
-  integratedDisciplineContributions: Array<{
-    disciplineCode: string;
-    necessaryContribution: string;
-  }>;
-  alignmentChains: Array<{
-    objectiveKind: "knowledge" | "process" | "emotion";
-    objective: string;
-    task: string;
-    evidence: string;
-    assessment: string;
-  }>;
   sourceReferences: Array<{
     sourceId: string;
     sectionId: string;
     reason: string;
   }>;
-  content: ActivityContentV2;
+  content: ActivityContentV3;
 };
 
 type ActivityAssistantMessage = UIMessage<
@@ -425,12 +418,6 @@ function DueAtLabel({ dueAt }: { dueAt: string | null }) {
   return <LocalizedDateTime dateTime={dueAt} />;
 }
 
-const objectiveKindLabel = {
-  knowledge: "知识与技能",
-  process: "过程与方法",
-  emotion: "情感态度",
-} as const;
-
 const readOnlyDraftStatusLabel = {
   EDITING: "编辑中",
   READY_FOR_PREVIEW: "可预览",
@@ -517,10 +504,13 @@ function ActivityDraftProposalCard({
       <section className={styles.proposalSection} aria-label="跨学科必要性">
         <h3>跨学科必要性</h3>
         <dl>
-          {proposal.integratedDisciplineContributions.map((item) => (
+          {proposal.content.disciplineContributions.map((item) => (
             <div key={item.disciplineCode}>
-              <dt>{item.disciplineCode}</dt>
-              <dd>{item.necessaryContribution}</dd>
+              <dt>{disciplineLabel(item.disciplineCode)}</dt>
+              <dd>
+                贡献：{item.contribution}<br />
+                不可替代性：{item.necessity}
+              </dd>
             </div>
           ))}
         </dl>
@@ -528,14 +518,14 @@ function ActivityDraftProposalCard({
       <section className={styles.proposalSection} aria-label="目标任务证据评价一致性链">
         <h3>目标—任务—证据—评价一致性链</h3>
         <dl>
-          {proposal.alignmentChains.map((chain) => (
-            <div key={chain.objectiveKind}>
-              <dt>{objectiveKindLabel[chain.objectiveKind]}</dt>
+          {proposal.content.learningGoals.map((goal, index) => (
+            <div key={goal.id}>
+              <dt>目标 {index + 1}</dt>
               <dd>
-                目标：{chain.objective}<br />
-                任务：{chain.task}<br />
-                证据：{chain.evidence}<br />
-                评价：{chain.assessment}
+                {goal.description}<br />
+                课程依据：{goal.competencyReferences.map((reference) => `${disciplineLabel(reference.disciplineCode)}·${reference.competencyCode}`).join("；")}<br />
+                承担阶段：{proposal.content.phases.filter((phase) => phase.learningGoalIds.includes(goal.id)).map((phase) => phase.name).join("、")}<br />
+                评价维度：{proposal.content.rubricDimensions.filter((dimension) => dimension.learningGoalIds.includes(goal.id)).map((dimension) => dimension.name).join("、")}
               </dd>
             </div>
           ))}
@@ -579,8 +569,7 @@ function ActivityDraftProposalCard({
           </ul>
         ) : (
           <p>
-            语料中未找到依据。首版语料只收教育部课程方案与语文、数学、物理、信息科技
-            四科课程标准；本次设计未引用任何官方来源，请在确认前自行核对。
+            语料中未找到依据。当前语料只收教育部课程方案与 14 门 2022 年课程标准；综合实践活动暂无独立课标。本次设计未引用任何官方来源，请在确认前自行核对。
           </p>
         )}
         <p className={styles.referenceCaveat}>
@@ -1086,7 +1075,7 @@ export function ActivityAssistant({
                       if (part.output.status === "NO_MATCH") {
                         return (
                           <p className={styles.toolProgress} key={part.toolCallId}>
-                            语料中未找到依据（首版只收课程方案与语文、数学、物理、信息科技）。
+                            语料中未找到依据（当前只收课程方案与 14 门 2022 年课程标准；不含综合实践活动独立课标）。
                           </p>
                         );
                       }

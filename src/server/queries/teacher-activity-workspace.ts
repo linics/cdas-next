@@ -3,6 +3,7 @@ import "server-only";
 import { z } from "zod";
 import {
   activityContentSchema,
+  isStructuredContent,
   type ActivityContent,
 } from "../../domain/activity/activity-content";
 import {
@@ -172,7 +173,7 @@ function contentFromColumns(value: {
   evidenceRequirements: string[];
   feedbackCriteria: string[];
 }): ActivityContent {
-  if (value.schemaVersion === 2) {
+  if (value.schemaVersion === 2 || value.schemaVersion === 3) {
     return activityContentSchema.parse(value.taskBook);
   }
   return activityContentSchema.parse({
@@ -275,7 +276,13 @@ async function requireTeacher(
 ): Promise<TeacherIdentity> {
   const actor = await database.appUser.findUnique({
     where: { id: actorId },
-    select: { role: true, displayName: true },
+    select: {
+      role: true,
+      displayName: true,
+      accountStatus: true,
+      schoolId: true,
+      school: { select: { status: true } },
+    },
   });
   if (!actor) {
     throw new TeacherActivityQueryError("NOT_FOUND");
@@ -285,6 +292,9 @@ async function requireTeacher(
       wrongRoleCode,
       wrongRoleCode === "WRONG_ROLE" ? actor.displayName : undefined,
     );
+  }
+  if (actor.accountStatus !== "ACTIVE" || actor.school?.status !== "ACTIVE") {
+    throw new TeacherActivityQueryError("NOT_FOUND");
   }
   return teacherIdentitySchema.parse({ displayName: actor.displayName });
 }
@@ -426,7 +436,7 @@ export async function getTeacherActivityDashboard(
         attention: canViewSubmissions
           ? releaseAttention(
               release.id,
-              content.schemaVersion === 2,
+              isStructuredContent(content),
               release.submissions,
             )
           : null,

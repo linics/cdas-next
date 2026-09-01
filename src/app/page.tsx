@@ -99,6 +99,17 @@ export default function HomePage() {
               <DoorArrow />
             </span>
           </Link>
+          <Link className={styles.door} href="/admin/login">
+            <p className={styles.doorEyebrow}>管理员</p>
+            <h2>学校管理</h2>
+            <p className={styles.doorDetail}>
+              建校、启停学校与教师，登记尚未开通登录的本校教师。
+            </p>
+            <span className={styles.doorAction}>
+              进入管理员工作台
+              <DoorArrow />
+            </span>
+          </Link>
         </section>
       </main>
     </div>

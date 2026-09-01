@@ -1,7 +1,10 @@
 import "server-only";
 
 import { z } from "zod";
-import { activityContentSchema } from "../../domain/activity/activity-content";
+import {
+  activityContentSchema,
+  isStructuredContent,
+} from "../../domain/activity/activity-content";
 import { teacherEvaluationCitationSchema } from "../../domain/evaluation/teacher-evaluation-intent";
 import { teacherEvaluationLevels } from "../../domain/evaluation/teacher-evaluation-policy";
 import {
@@ -15,6 +18,7 @@ import {
   resolveCommandContext,
 } from "../commands/command-context";
 import { isSubmissionAudienceMemberWhere } from "../submissions/submission-audience";
+import { isActiveSchoolMember } from "../school/teacher-authorization";
 
 const queryInputSchema = z
   .object({
@@ -458,7 +462,7 @@ function mapSubmissionHistory(
     phaseName:
       submission.phaseIndex === 0
         ? null
-        : content.schemaVersion === 2
+        : isStructuredContent(content)
           ? (content.phases[submission.phaseIndex - 1]?.name ?? null)
           : null,
     latestRevisionNumber: submission.latestRevisionNumber,
@@ -548,6 +552,10 @@ export async function getTeacherFeedbackWorkspace(
   const input = queryInputSchema.parse(rawInput);
   const context = resolveCommandContext(commandContext, ["UI", "AGENT"]);
 
+  if (!(await isActiveSchoolMember(database, context.actorId))) {
+    throw new FeedbackWorkspaceQueryError("NOT_FOUND");
+  }
+
   const [actor, submission] = await Promise.all([
     database.appUser.findFirst({
       where: { id: context.actorId, role: "TEACHER" },
@@ -608,6 +616,10 @@ export async function getStudentFeedbackWorkspace(
 ): Promise<StudentFeedbackWorkspace> {
   const input = queryInputSchema.parse(rawInput);
   const context = resolveCommandContext(commandContext, ["UI", "AGENT"]);
+
+  if (!(await isActiveSchoolMember(database, context.actorId))) {
+    throw new FeedbackWorkspaceQueryError("NOT_FOUND");
+  }
 
   const [actor, submission] = await Promise.all([
     database.appUser.findFirst({

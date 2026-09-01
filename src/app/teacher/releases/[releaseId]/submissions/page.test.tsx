@@ -13,14 +13,6 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("server-only", () => ({}));
-vi.mock("@clerk/nextjs", () => ({
-  SignInButton: ({ children }: { children: ReactNode }) => (
-    <span data-clerk-sign-in="true">{children}</span>
-  ),
-  SignOutButton: ({ children }: { children: ReactNode }) => (
-    <span data-clerk-sign-out="true">{children}</span>
-  ),
-}));
 vi.mock("next/link", () => ({
   default: ({
     children,
@@ -167,15 +159,17 @@ describe("teacher release submissions page boundary", () => {
     expect(mocks.getTeacherReleaseSubmissions).not.toHaveBeenCalled();
   });
 
-  it("does not render a close write entrypoint for an unauthorized actor", async () => {
+  it("offers an in-place account switch without release write controls", async () => {
     mocks.createUiCommandContext.mockRejectedValue(
       new AuthenticationError("USER_NOT_PROVISIONED"),
     );
 
     const markup = await renderPage();
 
-    expect(markup).toContain('data-clerk-sign-out="true"');
-    expect(markup).toContain("退出当前账号");
+    expect(markup).toContain('name="schoolCode"');
+    expect(markup).toContain('name="identifier"');
+    expect(markup).toContain('name="password"');
+    expect(markup).toContain("进入工作台");
     expect(markup).not.toContain("准备关闭活动");
     expect(markup).not.toContain("确认并关闭活动");
     expect(markup).not.toContain("导出评阅名册");
@@ -214,7 +208,7 @@ describe("teacher release submissions page boundary", () => {
     expect(markup).not.toContain("尚未正式提交");
     expect(markup).not.toContain("学生正式提交正文");
     expect(markup).not.toContain("教师正式反馈正文");
-    expect(markup).not.toContain("clerk_auth_subject");
+    expect(markup).not.toContain("auth_subject");
     expect(markup).toContain("准备关闭活动");
     expect(markup).not.toContain("确认并关闭活动");
   });

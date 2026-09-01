@@ -42,7 +42,9 @@ const protectedDatabaseNames = new Set([
   "cdas_next_test",
   "cdas_next_e2e",
 ]);
-const clerkUserIdPattern = /^user_[A-Za-z0-9]+$/u;
+const schoolCodePattern = /^SCH[A-HJ-NP-Z2-9]{5}$/u;
+const staffNoPattern = /^[A-Z0-9][A-Z0-9-]{0,31}$/u;
+const studentNoPattern = /^\d{6,32}$/u;
 const modelPattern = /^deepseek-[a-z0-9][a-z0-9._:-]*$/u;
 const stagingRunMarkerPattern = /^cdas-staging-[a-z0-9-]{8,80}$/u;
 
@@ -170,8 +172,15 @@ export function evaluateStagingPreflight(
   const directUrl = value(environment, "DIRECT_URL");
   const runtimeTarget = parseDatabaseTarget(runtimeUrl);
   const directTarget = parseDatabaseTarget(directUrl);
-  const teacherId = value(environment, "STAGING_TEST_TEACHER_CLERK_ID");
-  const studentId = value(environment, "STAGING_TEST_STUDENT_CLERK_ID");
+  const primarySchoolCode = value(environment, "STAGING_TEST_PRIMARY_SCHOOL_CODE");
+  const secondarySchoolCode = value(environment, "STAGING_TEST_SECONDARY_SCHOOL_CODE");
+  const teacherStaffNo = value(environment, "STAGING_TEST_TEACHER_STAFF_NO");
+  const studentNo = value(environment, "STAGING_TEST_STUDENT_NO");
+  const otherStudentNo = value(environment, "STAGING_TEST_OTHER_STUDENT_NO");
+  const otherTeacherStaffNo = value(
+    environment,
+    "STAGING_TEST_OTHER_TEACHER_STAFF_NO",
+  );
   const aiDisabled = value(environment, "AI_PROVIDER_DISABLED") === "1";
   const aiEnabled = value(environment, "AI_PROVIDER_DISABLED") === "0";
   const deepseekKey = value(environment, "DEEPSEEK_API_KEY");
@@ -185,14 +194,9 @@ export function evaluateStagingPreflight(
       value(environment, "STAGING_DATA_ACK") === stagingDataAcknowledgement,
     ),
     check("NODE_ENV_PRODUCTION", value(environment, "NODE_ENV") === "production"),
-    // The local clickthrough sign-in bypass keys off these two ids. It already
-    // refuses to run outside NODE_ENV=development, but a deployed environment
-    // has no reason to carry them at all: staging authenticates through real
-    // Clerk. Their presence is a configuration mistake, not a fallback.
     check(
-      "NO_CLICKTHROUGH_AUTH_IDENTITIES",
-      value(environment, "DEV_TEST_TEACHER_CLERK_ID") === "" &&
-        value(environment, "DEV_TEST_STUDENT_CLERK_ID") === "",
+      "POSTGRES_LOCAL_AUTH_MODE",
+      value(environment, "STAGING_AUTH_MODE") === "postgres-local-v1",
     ),
   ];
 
@@ -269,27 +273,31 @@ export function evaluateStagingPreflight(
     ),
   );
 
-  const publishableKey = value(environment, "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY");
-  const secretKey = value(environment, "CLERK_SECRET_KEY");
   const healthProofSecret = value(environment, "STAGING_HEALTH_PROOF_SECRET");
   checks.push(
-    check("CLERK_TEST_PUBLISHABLE_KEY", /^pk_test_[A-Za-z0-9_-]{10,}$/u.test(publishableKey), {
-      present: Boolean(publishableKey),
+    check("STAGING_TEST_PRIMARY_SCHOOL_CODE", schoolCodePattern.test(primarySchoolCode), {
+      present: Boolean(primarySchoolCode),
     }),
-    check("CLERK_TEST_SECRET_KEY", /^sk_test_[A-Za-z0-9_-]{10,}$/u.test(secretKey), {
-      present: Boolean(secretKey),
+    check("STAGING_TEST_SECONDARY_SCHOOL_CODE", schoolCodePattern.test(secondarySchoolCode), {
+      present: Boolean(secondarySchoolCode),
     }),
-    check("STAGING_TEST_TEACHER_CLERK_ID", clerkUserIdPattern.test(teacherId), {
-      present: Boolean(teacherId),
+    check("STAGING_TEST_TEACHER_STAFF_NO", staffNoPattern.test(teacherStaffNo), {
+      present: Boolean(teacherStaffNo),
     }),
-    check("STAGING_TEST_STUDENT_CLERK_ID", clerkUserIdPattern.test(studentId), {
-      present: Boolean(studentId),
+    check("STAGING_TEST_STUDENT_NO", studentNoPattern.test(studentNo), {
+      present: Boolean(studentNo),
+    }),
+    check("STAGING_TEST_OTHER_STUDENT_NO", studentNoPattern.test(otherStudentNo), {
+      present: Boolean(otherStudentNo),
+    }),
+    check("STAGING_TEST_OTHER_TEACHER_STAFF_NO", staffNoPattern.test(otherTeacherStaffNo), {
+      present: Boolean(otherTeacherStaffNo),
     }),
     check(
-      "STAGING_TEST_CLERK_IDS_DISTINCT",
-      clerkUserIdPattern.test(teacherId) &&
-        clerkUserIdPattern.test(studentId) &&
-        teacherId !== studentId,
+      "STAGING_TEST_LOCAL_IDENTITIES_DISTINCT",
+      primarySchoolCode !== secondarySchoolCode &&
+        studentNo !== otherStudentNo &&
+        teacherStaffNo !== otherTeacherStaffNo,
     ),
     check(
       "CDAS_DEPLOYMENT_ID",

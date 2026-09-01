@@ -14,14 +14,6 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("server-only", () => ({}));
-vi.mock("@clerk/nextjs", () => ({
-  SignInButton: ({ children }: { children: ReactNode }) => (
-    <span data-clerk-sign-in="true">{children}</span>
-  ),
-  SignOutButton: ({ children }: { children: ReactNode }) => (
-    <span data-clerk-sign-out="true">{children}</span>
-  ),
-}));
 vi.mock("next/link", () => ({
   default: ({
     children,
@@ -281,7 +273,7 @@ describe("student release page access boundary", () => {
     );
   });
 
-  it("does not render Clerk or a write entry when auth is not configured", async () => {
+  it("does not render a local login or write entry when auth is not configured", async () => {
     mocks.createUiCommandContext.mockRejectedValue(
       new AuthenticationError("AUTH_NOT_CONFIGURED"),
     );
@@ -289,21 +281,23 @@ describe("student release page access boundary", () => {
     const markup = await renderPage();
 
     expect(markup).toContain("学生工作台当前没有开放");
-    expect(markup).toContain("返回首页");
-    expect(markup).not.toContain("data-clerk-sign-in");
+    expect(markup).toContain("返回 CDAS Next 首页");
+    expect(markup).not.toContain('href="/student/login"');
     expect(markup).not.toContain("data-submission-editor");
     expect(mocks.getStudentFeedbackWorkspace).not.toHaveBeenCalled();
   });
 
-  it("offers the official Clerk sign-in control only when unauthenticated", async () => {
+  it("renders the local student login form only when unauthenticated", async () => {
     mocks.createUiCommandContext.mockRejectedValue(
       new AuthenticationError("UNAUTHENTICATED"),
     );
 
     const markup = await renderPage();
 
-    expect(markup).toContain('data-clerk-sign-in="true"');
-    expect(markup).toContain("登录学生账号");
+    expect(markup).toContain('name="schoolCode"');
+    expect(markup).toContain('name="identifier"');
+    expect(markup).toContain('name="password"');
+    expect(markup).toContain("进入工作台");
     expect(markup).not.toContain("data-submission-editor");
     expect(mocks.getStudentFeedbackWorkspace).not.toHaveBeenCalled();
   });

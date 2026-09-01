@@ -390,6 +390,42 @@ function proximityBoost(content: string, phrases: readonly string[]): number {
   return 0.8;
 }
 
+function distinctivePhraseBoost(content: string, phrases: readonly string[]): number {
+  const haystack = canonicalText(content);
+  let boost = 0;
+  for (const phrase of phrases) {
+    if (phrase.length < 4) continue;
+    if (haystack.includes(phrase)) boost += 8;
+  }
+  return boost;
+}
+
+function selectDiversified<T extends { source: { id: string }; section: { id: string } }>(
+  scored: readonly T[],
+  limit: number,
+  maxPerSource: number,
+): T[] {
+  const selected: T[] = [];
+  const selectedIds = new Set<string>();
+  const perSource = new Map<string, number>();
+
+  const takeUpTo = (sourceCap: number) => {
+    for (const candidate of scored) {
+      if (selected.length >= limit) return;
+      if (selectedIds.has(candidate.section.id)) continue;
+      const count = perSource.get(candidate.source.id) ?? 0;
+      if (count >= sourceCap || count >= maxPerSource) continue;
+      selected.push(candidate);
+      selectedIds.add(candidate.section.id);
+      perSource.set(candidate.source.id, count + 1);
+    }
+  };
+
+  takeUpTo(1);
+  takeUpTo(maxPerSource);
+  return selected;
+}
+
 function sourceSupportsFilters(
   source: CorpusSource,
   schoolStage: SchoolStage | undefined,
@@ -450,7 +486,9 @@ export function searchOfficialKnowledge(
       );
     }
     if (terms.length > 0 && matchedTerms === 0) continue;
-    score += proximityBoost(document.section.content, queryPhrases(parsed.query));
+    const phrases = queryPhrases(parsed.query);
+    score += proximityBoost(document.section.content, phrases);
+    score += distinctivePhraseBoost(document.section.content, phrases);
     if (score > 0) {
       scored.push({ score, source: document.source, section: document.section });
     }
@@ -463,17 +501,7 @@ export function searchOfficialKnowledge(
       left.section.id.localeCompare(right.section.id),
   );
 
-  const selected: typeof scored = [];
-  const perSource = new Map<string, number>();
-  for (const candidate of scored) {
-    if ((perSource.get(candidate.source.id) ?? 0) >= 2) continue;
-    selected.push(candidate);
-    perSource.set(
-      candidate.source.id,
-      (perSource.get(candidate.source.id) ?? 0) + 1,
-    );
-    if (selected.length >= parsed.limit) break;
-  }
+  const selected = selectDiversified(scored, parsed.limit, 2);
 
   const results = selected.map(({ source, section }) => ({
     ...citationFor(source, section),
@@ -530,6 +558,10 @@ export function listOfficialKnowledgeSources() {
     sourceHash: source.sourceHash,
     sectionCount: source.sections.length,
   }));
+}
+
+export function officialKnowledgeCoversDiscipline(code: DisciplineCode): boolean {
+  return corpus.sources.some((source) => source.disciplineCodes.includes(code));
 }
 
 export function officialKnowledgeDisciplineLabel(code: DisciplineCode): string {

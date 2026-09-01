@@ -97,6 +97,8 @@ function teacherDraftDatabaseDouble(ownerId: string) {
       findUnique: vi.fn().mockResolvedValue({
         role: "TEACHER",
         displayName: "林老师",
+        accountStatus: "ACTIVE",
+        school: { status: "ACTIVE" },
       }),
     },
     activityDraft: { findUnique: activityDraftFindUnique },

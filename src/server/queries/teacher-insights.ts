@@ -1,7 +1,10 @@
 import "server-only";
 
 import { z } from "zod";
-import { activityContentSchema } from "../../domain/activity/activity-content";
+import {
+  activityContentSchema,
+  isStructuredContent,
+} from "../../domain/activity/activity-content";
 import { teacherEvaluationOutcomeSchema } from "../../domain/evaluation/teacher-evaluation-intent";
 import {
   buildTeacherInsightsView,
@@ -138,13 +141,21 @@ async function requireTeacher(
 ): Promise<TeacherIdentity> {
   const actor = await database.appUser.findUnique({
     where: { id: actorId },
-    select: { role: true, displayName: true },
+    select: {
+      role: true,
+      displayName: true,
+      accountStatus: true,
+      school: { select: { status: true } },
+    },
   });
   if (!actor) {
     throw new TeacherActivityQueryError("NOT_FOUND");
   }
   if (actor.role !== "TEACHER") {
     throw new TeacherActivityQueryError("WRONG_ROLE", actor.displayName);
+  }
+  if (actor.accountStatus !== "ACTIVE" || actor.school?.status !== "ACTIVE") {
+    throw new TeacherActivityQueryError("NOT_FOUND");
   }
   return teacherIdentitySchema.parse({ displayName: actor.displayName });
 }
@@ -266,15 +277,15 @@ export async function getTeacherInsights(
     const content = activityContentSchema.parse(row.snapshot.content);
     const executionVersion = row.executionVersion === 1 ? 1 : 0;
     const submissionMode =
-      executionVersion === 1 && content.schemaVersion === 2
+      executionVersion === 1 && isStructuredContent(content)
         ? content.submissionMode
         : "once";
     const phases =
-      executionVersion === 1 && content.schemaVersion === 2
+      executionVersion === 1 && isStructuredContent(content)
         ? content.phases.map((phase) => ({ name: phase.name }))
         : [];
     const rubricDimensions =
-      content.schemaVersion === 2
+      isStructuredContent(content)
         ? content.rubricDimensions.map((dimension) => ({ name: dimension.name }))
         : null;
     return [

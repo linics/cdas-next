@@ -13,14 +13,6 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("server-only", () => ({}));
-vi.mock("@clerk/nextjs", () => ({
-  SignInButton: ({ children }: { children: ReactNode }) => (
-    <span data-clerk-sign-in="true">{children}</span>
-  ),
-  SignOutButton: ({ children }: { children: ReactNode }) => (
-    <span data-clerk-sign-out="true">{children}</span>
-  ),
-}));
 vi.mock("next/link", () => ({
   default: ({
     children,
@@ -223,5 +215,18 @@ describe("teacher dashboard role guidance", () => {
     expect(markup).toContain("待反馈 2");
     expect(markup).toContain("待重交 1");
     expect(markup).not.toContain("待评价");
+  });
+  it("offers a way to create the first classroom when the teacher has none", async () => {
+    mocks.getTeacherActivityDashboard.mockResolvedValue({
+      actor: { displayName: "林老师" },
+      drafts: [],
+      classrooms: [],
+      releases: [],
+    });
+
+    const markup = await renderPage();
+    expect(markup).toContain('href="/teacher/classrooms/new"');
+    expect(markup).toContain("新建班级");
+    expect(markup).toContain("还没有班级");
   });
 });

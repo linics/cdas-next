@@ -1,7 +1,10 @@
 import "server-only";
 
 import { z } from "zod";
-import { activityContentSchema } from "../../domain/activity/activity-content";
+import {
+  activityContentSchema,
+  isStructuredContent,
+} from "../../domain/activity/activity-content";
 import type { PrismaClient } from "../../generated/prisma/client";
 import {
   type CommandContext,
@@ -13,6 +16,7 @@ import {
 } from "./release-membership-visibility";
 import { reviewFollowUp } from "../../domain/feedback/review-follow-up";
 import { isSubmissionAudienceMemberWhere } from "../submissions/submission-audience";
+import { isActiveSchoolMember } from "../school/teacher-authorization";
 
 const queryInputSchema = z
   .object({
@@ -235,6 +239,10 @@ export async function getStudentReleaseWorkspace(
   const input = queryInputSchema.parse(rawInput);
   const context = resolveCommandContext(commandContext, ["UI", "AGENT"]);
 
+  if (!(await isActiveSchoolMember(database, context.actorId))) {
+    throw new SubmissionWorkspaceQueryError("NOT_FOUND");
+  }
+
   const [actor, release] = await Promise.all([
     database.appUser.findUnique({
       where: { id: context.actorId },
@@ -364,11 +372,11 @@ export async function getStudentReleaseWorkspace(
   }
   const content = activityContentSchema.parse(release.snapshot.content);
   const phaseCount =
-    release.executionVersion === 1 && content.schemaVersion === 2
+    release.executionVersion === 1 && isStructuredContent(content)
       ? content.phases.length
       : 0;
   const submissionMode =
-    release.executionVersion === 1 && content.schemaVersion === 2
+    release.executionVersion === 1 && isStructuredContent(content)
       ? content.submissionMode
       : "once";
   const submissionByPhase = new Map(
@@ -473,6 +481,10 @@ export async function getTeacherReleaseSubmissions(
   const input = queryInputSchema.parse(rawInput);
   const context = resolveCommandContext(commandContext, ["UI", "AGENT"]);
 
+  if (!(await isActiveSchoolMember(database, context.actorId))) {
+    throw new SubmissionWorkspaceQueryError("NOT_FOUND");
+  }
+
   const release = await database.activityRelease.findUnique({
     where: { id: input.releaseId },
     select: {
@@ -559,15 +571,15 @@ export async function getTeacherReleaseSubmissions(
 
   const content = activityContentSchema.parse(release.snapshot.content);
   const submissionMode =
-    release.executionVersion === 1 && content.schemaVersion === 2
+    release.executionVersion === 1 && isStructuredContent(content)
       ? content.submissionMode
       : "once";
   const phaseCount =
-    release.executionVersion === 1 && content.schemaVersion === 2
+    release.executionVersion === 1 && isStructuredContent(content)
       ? content.phases.length
       : 0;
 
-  const rubricAvailable = content.schemaVersion === 2;
+  const rubricAvailable = isStructuredContent(content);
   const submissions: TeacherReleaseSubmissions["submissions"] =
     release.submissions
       .filter((submission) => submission.latestRevisionNumber > 0)
@@ -602,7 +614,7 @@ export async function getTeacherReleaseSubmissions(
           ? release.executionVersion === 1
             ? "整项终稿"
             : null
-          : content.schemaVersion === 2
+          : isStructuredContent(content)
             ? (content.phases[submission.phaseIndex - 1]?.name ?? null)
             : null,
       student: submission.student ?? {

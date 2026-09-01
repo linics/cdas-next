@@ -5,6 +5,7 @@ import { useMemo, useState, useSyncExternalStore } from "react";
 import { LocalizedDateTime } from "../../../../_components/localized-date-time";
 import { ConfirmDialog, InlineAlert } from "../../../../_components/ui";
 import type { TeacherClassroomRoster } from "../../../../../server/queries/teacher-classroom-roster";
+import { StudentImportPanel } from "./student-import-panel";
 import styles from "../../../teacher-workspace.module.css";
 import {
   decideRosterChangeAction,
@@ -125,7 +126,7 @@ export function RosterManager({
           <span>{currentMemberships.length} 名</span>
         </header>
         {currentMemberships.length === 0 ? (
-          <p className={styles.emptyState}>当前没有有效成员，可通过右侧名单码导入。</p>
+          <p className={styles.emptyState}>当前没有有效成员，可用下方 Excel 名单导入，或用右侧名单码加入。</p>
         ) : (
           <div className={styles.rosterList}>
             {currentMemberships.map((membership) => (
@@ -222,6 +223,8 @@ export function RosterManager({
           </div>
         </section>
       ) : null}
+
+      <StudentImportPanel classroomId={roster.classroom.id} />
 
       <ConfirmDialog
         open={Boolean(confirmation)}

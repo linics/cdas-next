@@ -1,6 +1,7 @@
-import type {
-  ActivityContent,
-  ActivityContentV2,
+import {
+  projectionColumns,
+  type ActivityContent,
+  type ActivityContentV2,
 } from "../../../domain/activity/activity-content";
 
 export type ActivityDraftFormValues = ActivityContentV2;
@@ -59,14 +60,17 @@ export const emptyActivityDraftValues: ActivityDraftFormValues = {
 
 export function structuredTaskBookValues(content: ActivityContent): ActivityDraftFormValues {
   if (content.schemaVersion === 2) return content;
+  // v1 and v3 both fall back to the v2 form shape here. v3 has its own editor;
+  // this path only supplies the scalar summary a legacy form can still show.
+  const projection = projectionColumns(content);
   return {
     ...emptyActivityDraftValues,
     title: content.title,
     summary: content.summary,
-    learningObjectives: content.learningObjectives,
-    taskInstructions: content.taskInstructions,
-    evidenceRequirements: content.evidenceRequirements,
-    feedbackCriteria: content.feedbackCriteria,
+    learningObjectives: projection.learningObjectives,
+    taskInstructions: projection.taskInstructions,
+    evidenceRequirements: projection.evidenceRequirements,
+    feedbackCriteria: projection.feedbackCriteria,
   };
 }
 

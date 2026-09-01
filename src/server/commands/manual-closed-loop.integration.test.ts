@@ -1,7 +1,7 @@
-import { randomUUID } from "node:crypto";
+import { randomInt, randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
 import { waterConservationTaskBook } from "../../fixtures/water-conservation";
-import { bootstrapClerkClassroom } from "../bootstrap/bootstrap-clerk-classroom";
+import { bootstrapLocalClassroom } from "../bootstrap/bootstrap-local-classroom";
 import { createDatabaseClient } from "../db/client";
 import { getStudentFeedbackWorkspace } from "../queries/feedback-workspace";
 import {
@@ -63,12 +63,14 @@ describeWithDatabase("AI-disabled manual first-phase closed loop", () => {
     process.env.AI_PROVIDER_DISABLED = "1";
 
     try {
-      const provisioned = await bootstrapClerkClassroom(
+      const provisioned = await bootstrapLocalClassroom(
         database,
         {
-          teacherAuthSubject: `user_teacher${suffix}`,
+          teacherStaffNo: `T-${suffix.slice(0, 8)}`,
+          teacherPassword: `Teacher-${suffix.slice(0, 18)}!`,
+          studentNo: String(randomInt(100000, 999999)),
+          studentPassword: `Student-${suffix.slice(0, 18)}!`,
           teacherDisplayName: "闭环测试教师",
-          studentAuthSubject: `user_student${suffix}`,
           studentDisplayName: "闭环测试学生",
           classroomId,
           classroomName: "闭环测试班级",

@@ -5,6 +5,7 @@ import type { AcceptanceEnvironment } from "./contracts";
 import { isAcceptanceGate, isCoreAcceptanceGate } from "./gate";
 import { isPassingImmediateHealthEvidence } from "./immediate-health";
 import { isPassingBrowserEvidence } from "./browser-evidence-contract";
+import { isPassingSessionCleanupEvidence } from "./cleanup";
 
 function exactObject(value: unknown, keys: readonly string[]): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value) &&
@@ -14,18 +15,17 @@ function exactObject(value: unknown, keys: readonly string[]): value is Record<s
 
 export function isPassingIdentityEvidence(value: unknown): boolean {
   const codes = [
-    "TEACHER_IDENTITY_EXISTS",
-    "STUDENT_IDENTITY_EXISTS",
-    "OTHER_STUDENT_IDENTITY_EXISTS",
-    "OTHER_TEACHER_IDENTITY_EXISTS",
-    "TEACHER_TICKET_CAPABILITY",
-    "STUDENT_TICKET_CAPABILITY",
-    "OTHER_STUDENT_TICKET_CAPABILITY",
-    "OTHER_TEACHER_TICKET_CAPABILITY",
+    "TEACHER_LOCAL_AUTHENTICATES",
+    "STUDENT_LOCAL_AUTHENTICATES",
+    "OTHER_STUDENT_LOCAL_AUTHENTICATES",
+    "OTHER_TEACHER_LOCAL_AUTHENTICATES",
+    "WRONG_SCHOOL_INVALID_CREDENTIALS",
+    "DISABLED_ACCOUNT_ACCOUNT_DISABLED",
+    "DISABLED_SCHOOL_SCHOOL_DISABLED",
   ];
-  if (!exactObject(value, ["schema", "status", "checks", "ticketsRevoked", "realStudentDataAllowed", "productionDecision"]) ||
+  if (!exactObject(value, ["schema", "status", "checks", "directSessionsRevoked", "realStudentDataAllowed", "productionDecision"]) ||
     value.schema !== "staging-synthetic-acceptance-identity.v1" || value.status !== "PASS" ||
-    value.ticketsRevoked !== true || value.realStudentDataAllowed !== false ||
+    value.directSessionsRevoked !== true || value.realStudentDataAllowed !== false ||
     value.productionDecision !== "NO_GO" || !Array.isArray(value.checks)) {
     return false;
   }
@@ -74,37 +74,7 @@ export async function assertPreWritePrerequisites(
   }
 }
 
-/** Identity lookup/ticket-revoke has no database write. It is intentionally
- * allowed after the same-run gate but before the final deployment proof, so
- * the last health proof is immediately adjacent to the first database write. */
 export async function assertIdentityPrerequisites(
-  environment: AcceptanceEnvironment,
-): Promise<void> {
-  const marker = environment.STAGING_RUN_MARKER?.trim() ?? "";
-  const gate = await readArtifact(
-    path.join(process.cwd(), "output", "staging-acceptance", marker),
-    "gate.json",
-  );
-  if (!isCoreAcceptanceGate(gate, environment)) {
-    throw new Error("STAGING_ACCEPTANCE_GATE_NOT_GO");
-  }
-}
-
-export async function assertBootstrapPrerequisites(
-  environment: AcceptanceEnvironment,
-): Promise<void> {
-  await assertPreWritePrerequisites(environment);
-  const marker = environment.STAGING_RUN_MARKER?.trim() ?? "";
-  const identity = await readArtifact(
-    path.join(process.cwd(), "output", "staging-acceptance", marker),
-    "identity.json",
-  );
-  if (!isPassingIdentityEvidence(identity)) {
-    throw new Error("STAGING_ACCEPTANCE_IDENTITY_NOT_VERIFIED");
-  }
-}
-
-export async function assertBrowserPrerequisites(
   environment: AcceptanceEnvironment,
 ): Promise<void> {
   await assertBootstrapPrerequisites(environment);
@@ -115,6 +85,26 @@ export async function assertBrowserPrerequisites(
   );
   if (!isPassingBootstrapEvidence(bootstrap, environment)) {
     throw new Error("STAGING_ACCEPTANCE_BOOTSTRAP_NOT_VERIFIED");
+  }
+}
+
+export async function assertBootstrapPrerequisites(
+  environment: AcceptanceEnvironment,
+): Promise<void> {
+  await assertPreWritePrerequisites(environment);
+}
+
+export async function assertBrowserPrerequisites(
+  environment: AcceptanceEnvironment,
+): Promise<void> {
+  await assertIdentityPrerequisites(environment);
+  const marker = environment.STAGING_RUN_MARKER?.trim() ?? "";
+  const identity = await readArtifact(
+    path.join(process.cwd(), "output", "staging-acceptance", marker),
+    "identity.json",
+  );
+  if (!isPassingIdentityEvidence(identity)) {
+    throw new Error("STAGING_ACCEPTANCE_IDENTITY_NOT_VERIFIED");
   }
   const gate = await readArtifact(
     path.join(process.cwd(), "output", "staging-acceptance", marker),
@@ -131,14 +121,16 @@ export async function assertPostBrowserPrerequisites(
   await assertBootstrapPrerequisites(environment);
   const marker = environment.STAGING_RUN_MARKER?.trim() ?? "";
   const directory = path.join(process.cwd(), "output", "staging-acceptance", marker);
-  const [gate, bootstrap, browser] = await Promise.all([
+  const [gate, bootstrap, browser, sessions] = await Promise.all([
     readArtifact(directory, "gate.json"),
     readArtifact(directory, "bootstrap.json"),
     readArtifact(directory, "evidence.json"),
+    readArtifact(directory, "sessions.json"),
   ]);
   if (!isCoreAcceptanceGate(gate, environment) ||
     !isPassingBootstrapEvidence(bootstrap, environment) ||
-    !(await isPassingBrowserEvidence(browser, marker, directory, environment))) {
+    !(await isPassingBrowserEvidence(browser, marker, directory, environment)) ||
+    !isPassingSessionCleanupEvidence(sessions)) {
     throw new Error("STAGING_ACCEPTANCE_POST_BROWSER_NOT_GO");
   }
 }

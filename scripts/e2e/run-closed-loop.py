@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the real-Clerk, isolated-PostgreSQL CDAS browser closed loop."""
+"""Run the local-auth, isolated-PostgreSQL CDAS browser closed loop."""
 
 from __future__ import annotations
 
@@ -35,6 +35,13 @@ class E2eFailure(RuntimeError):
     """A stable, credential-free browser-gate failure."""
 
 
+def assert_origin(page: Page, base_url: str) -> None:
+    expected = urlparse(base_url)
+    actual = urlparse(page.url)
+    if actual.scheme != expected.scheme or actual.netloc != expected.netloc:
+        raise E2eFailure("E2E_ORIGIN_CHANGED")
+
+
 def redact_sensitive_text(value: str) -> str:
     value = re.sub(
         r"(?i)(token=)[^&\s\"\\]+",
@@ -43,7 +50,7 @@ def redact_sensitive_text(value: str) -> str:
     )
     value = re.sub(
         r"\b(?:pk|sk)_(?:test|live)_[A-Za-z0-9_-]+\b",
-        "[REDACTED_CLERK_KEY]",
+        "[REDACTED_PROVIDER_KEY]",
         value,
     )
     return value
@@ -141,105 +148,50 @@ def confirm_dialog(page: Page, title: str, confirmation_label: str) -> None:
     dialog.wait_for(state="hidden", timeout=30_000)
 
 
-def request_clerk_ticket(page: Page, role: str, broker_secret: str) -> str:
-    try:
-        payload = page.evaluate(
-            """async ({ role, secret }) => {
-              const response = await fetch('/api/dev/e2e-clerk-ticket', {
-                method: 'POST',
-                headers: {
-                  Authorization: `Bearer ${secret}`,
-                  'X-CDAS-E2E-Role': role,
-                },
-                cache: 'no-store',
-                credentials: 'same-origin',
-              });
-              return {
-                status: response.status,
-                body: response.status === 200 ? await response.json() : null,
-              };
-            }""",
-            {"role": role, "secret": broker_secret},
-        )
-        if payload.get("status") != 200:
-            raise E2eFailure(f"CLERK_TICKET_BROKER_{payload.get('status')}")
-        body = payload.get("body")
-        if not isinstance(body, dict):
-            raise E2eFailure("CLERK_TICKET_BROKER_INVALID_RESPONSE")
-        ticket = body.get("ticket")
-        expected_path = "/teacher" if role == "TEACHER" else "/student"
-        if (
-            body.get("ok") is not True
-            or not isinstance(ticket, str)
-            or not ticket
-            or body.get("returnPath") != expected_path
-        ):
-            raise E2eFailure("CLERK_TICKET_BROKER_INVALID_RESPONSE")
-        return ticket
-    except PlaywrightError as error:
-        raise E2eFailure("CLERK_TICKET_BROKER_UNAVAILABLE") from error
-
-
 def switch_account(
     page: Page,
     base_url: str,
     role: str,
-    broker_secret: str,
+    credentials: dict[str, dict[str, str]],
 ) -> None:
     destination = "teacher" if role == "teacher" else "student"
-    broker_role = role.upper()
-    for attempt in range(1, 4):
-        page.goto(base_url, wait_until="domcontentloaded")
-        page.wait_for_function(
-            """() =>
-              Boolean(window.Clerk?.loaded && window.Clerk.status === 'ready')
-            """,
-            timeout=60_000,
+    identity = credentials[role]
+    page.context.clear_cookies()
+    page.goto(f"{base_url}/{destination}/login", wait_until="domcontentloaded")
+    assert_origin(page, base_url)
+    try:
+        page.get_by_label("学校代码", exact=True).fill(identity["schoolCode"])
+        field = "工号" if role == "teacher" else "学号"
+        page.get_by_label(field, exact=True).fill(identity["account"])
+        page.get_by_label("密码", exact=True).fill(identity["password"])
+        page.get_by_role("button", name="登录", exact=True).click()
+        page.wait_for_url(f"{base_url}/{destination}", timeout=30_000)
+        assert_origin(page, base_url)
+        session = next(
+            (cookie for cookie in page.context.cookies() if cookie["name"] == "cdas_session"),
+            None,
         )
+        if not session or not session.get("value"):
+            raise E2eFailure("LOCAL_SESSION_COOKIE_MISSING")
+        if session.get("httpOnly") is not True:
+            raise E2eFailure("LOCAL_SESSION_COOKIE_NOT_HTTP_ONLY")
+        if session.get("sameSite") != "Lax":
+            raise E2eFailure("LOCAL_SESSION_COOKIE_SAMESITE_INVALID")
+        if session.get("secure") is not False:
+            raise E2eFailure("LOCAL_SESSION_COOKIE_SECURE_INVALID")
+    except Exception:
         try:
-            ticket = request_clerk_ticket(page, broker_role, broker_secret)
-            page.evaluate(
-                """async ticket => {
-                  const clerk = window.Clerk;
-                  if (!clerk?.loaded) throw new Error('CLERK_NOT_READY');
-                  await clerk.signOut();
-                  let signIn = clerk.client?.signIn;
-                  for (let attempt = 0; !signIn && attempt < 50; attempt += 1) {
-                    await new Promise((resolve) => window.setTimeout(resolve, 100));
-                    signIn = clerk.client?.signIn;
-                  }
-                  if (!signIn) throw new Error('CLERK_CLIENT_NOT_READY');
-                  const signInAttempt = await signIn.create({
-                    strategy: 'ticket',
-                    ticket,
-                  });
-                  if (
-                    signInAttempt.status !== 'complete' ||
-                    !signInAttempt.createdSessionId
-                  ) {
-                    throw new Error('CLERK_TICKET_INCOMPLETE');
-                  }
-                  await clerk.setActive({
-                    session: signInAttempt.createdSessionId,
-                  });
-                }""",
-                ticket,
-            )
-            page.goto(
-                f"{base_url}/{destination}",
-                wait_until="domcontentloaded",
-            )
-        except (E2eFailure, PlaywrightError):
-            if attempt < 3:
-                page.wait_for_timeout(1_000)
-                continue
-            raise E2eFailure("CLERK_SWITCH_RETRY_EXHAUSTED")
+            page.get_by_label("密码", exact=True).fill("")
+        except PlaywrightError:
+            pass
+        raise
 
-        if urlparse(page.url).path == f"/{destination}":
-            page.wait_for_load_state("domcontentloaded")
-            return
 
-    raise E2eFailure("CLERK_SWITCH_RETRY_EXHAUSTED")
+def open_confirmed_records(page: Page) -> None:
+    summary = page.locator("summary").filter(has_text="已确认记录")
+    summary.wait_for(state="visible", timeout=30_000)
+    if not summary.evaluate("element => element.parentElement.open"):
+        summary.click()
 
 
 def assert_stop_control_exists(page: Page) -> None:
@@ -395,7 +347,7 @@ def run_browser_flow(
     marker: str,
     artifacts: Path,
     environment: dict[str, str],
-    broker_secret: str,
+    credentials: dict[str, dict[str, str]],
 ) -> None:
     title = f"E2E 闭环 {marker}"
     first_evidence = f"{marker} 第一版证据：观察记录与解释。"
@@ -415,7 +367,7 @@ def run_browser_flow(
         page.set_default_timeout(30_000)
 
         try:
-            switch_account(page, base_url, "teacher", broker_secret)
+            switch_account(page, base_url, "teacher", credentials)
             foreign_response = page.goto(
                 f"{base_url}/teacher/activities/{FOREIGN_DRAFT_ID}",
                 wait_until="domcontentloaded",
@@ -467,7 +419,7 @@ def run_browser_flow(
                 raise E2eFailure("RELEASE_LINK_MISSING")
             screenshot(page, artifacts, "02-published")
 
-            switch_account(page, base_url, "student", broker_secret)
+            switch_account(page, base_url, "student", credentials)
             student_release_link = page.get_by_role(
                 "link", name=f"打开活动：{title}", exact=True
             )
@@ -491,7 +443,7 @@ def run_browser_flow(
             if page.get_by_role("button", name="准备关闭活动", exact=True).count() != 0:
                 raise E2eFailure("STUDENT_ACCESSED_TEACHER_RELEASE_CONTROL")
 
-            switch_account(page, base_url, "teacher", broker_secret)
+            switch_account(page, base_url, "teacher", credentials)
             page.goto(f"{base_url}{release_href}", wait_until="domcontentloaded")
             submission_link = page.get_by_role(
                 "link", name=re.compile("查看反馈与评价")
@@ -503,11 +455,10 @@ def run_browser_flow(
             fill_feedback_when_ready(page, first_feedback)
             page.get_by_role("button", name="准备确认", exact=True).click()
             confirm_dialog(page, "确认并保存最终反馈", "确认并保存最终反馈")
-            page.get_by_label("第 1 版正式提交").get_by_text(
-                first_feedback, exact=True
-            ).wait_for(state="visible")
+            open_confirmed_records(page)
+            page.get_by_text(first_feedback, exact=True).last.wait_for(state="visible")
 
-            switch_account(page, base_url, "student", broker_secret)
+            switch_account(page, base_url, "student", credentials)
             page.goto(f"{base_url}{student_release_href}", wait_until="domcontentloaded")
             wait_for_text(page, first_feedback)
             page.get_by_role("button", name="开始重交", exact=True).click()
@@ -520,16 +471,15 @@ def run_browser_flow(
             wait_for_text(page, "第 2 版已正式提交")
             screenshot(page, artifacts, "04-student-resubmitted-v2")
 
-            switch_account(page, base_url, "teacher", broker_secret)
+            switch_account(page, base_url, "teacher", credentials)
             page.goto(f"{base_url}{submission_href}", wait_until="domcontentloaded")
             fill_feedback_when_ready(page, second_feedback)
             page.get_by_role("button", name="准备确认", exact=True).click()
             confirm_dialog(page, "确认并保存最终反馈", "确认并保存最终反馈")
-            page.get_by_label("第 2 版正式提交").get_by_text(
-                second_feedback, exact=True
-            ).wait_for(state="visible")
+            open_confirmed_records(page)
+            page.get_by_text(second_feedback, exact=True).last.wait_for(state="visible")
 
-            switch_account(page, base_url, "student", broker_secret)
+            switch_account(page, base_url, "student", credentials)
             page.goto(
                 f"{base_url}{student_release_href}",
                 wait_until="domcontentloaded",
@@ -585,7 +535,7 @@ def run_browser_flow(
             wait_for_text(page, second_feedback)
             screenshot(page, artifacts, "05-historical-member-readonly")
 
-            switch_account(page, base_url, "teacher", broker_secret)
+            switch_account(page, base_url, "teacher", credentials)
             page.goto(f"{base_url}{release_href}", wait_until="domcontentloaded")
             page.get_by_role("button", name="准备关闭活动", exact=True).click()
             confirm_dialog(page, "确认关闭这个活动", "确认并关闭活动")
@@ -594,7 +544,7 @@ def run_browser_flow(
             ).wait_for(state="detached")
             screenshot(page, artifacts, "06-closed-by-teacher")
 
-            switch_account(page, base_url, "student", broker_secret)
+            switch_account(page, base_url, "student", credentials)
             page.goto(f"{base_url}{student_release_href}", wait_until="domcontentloaded")
             wait_for_text(page, "已关闭 · 只读")
             wait_for_text(page, "活动已关闭，草稿与已提交内容仍可查看")
@@ -618,7 +568,7 @@ def run_browser_flow(
             wait_for_text(page, second_feedback)
             screenshot(page, artifacts, "07-closed-student-history-readonly")
 
-            switch_account(page, base_url, "teacher", broker_secret)
+            switch_account(page, base_url, "teacher", credentials)
             page.goto(
                 f"{base_url}/teacher/activities/new",
                 wait_until="domcontentloaded",
@@ -689,7 +639,7 @@ def run_real_model_browser_flow(
     base_url: str,
     marker: str,
     artifacts: Path,
-    broker_secret: str,
+    credentials: dict[str, dict[str, str]],
 ) -> None:
     title = f"E2E AI 草稿 {marker}"
     attachment_fixture = (
@@ -716,7 +666,7 @@ def run_real_model_browser_flow(
         page.set_default_timeout(30_000)
 
         try:
-            switch_account(page, base_url, "teacher", broker_secret)
+            switch_account(page, base_url, "teacher", credentials)
 
             # D-047 is verified against a draft the teacher wrote by hand, so
             # the read-back evidence does not depend on the model's ability to
@@ -884,7 +834,7 @@ def run_real_model_browser_flow(
             if not release_href:
                 raise E2eFailure("REAL_MODEL_RELEASE_LINK_MISSING")
 
-            switch_account(page, base_url, "student", broker_secret)
+            switch_account(page, base_url, "student", credentials)
             # Read the name the roster must never show, from the page itself.
             student_display_name = ""
             account_label = page.get_by_text(
@@ -920,7 +870,7 @@ def run_real_model_browser_flow(
             confirm_dialog(page, "确认正式提交？", "确认正式提交")
             wait_for_text(page, "第 1 版已正式提交")
 
-            switch_account(page, base_url, "teacher", broker_secret)
+            switch_account(page, base_url, "teacher", credentials)
             page.goto(f"{base_url}{release_href}", wait_until="domcontentloaded")
             page.get_by_role(
                 "link", name=re.compile("查看反馈与评价")
@@ -1082,7 +1032,18 @@ def run_real_model_browser_flow(
 def main() -> int:
     real_model_smoke = use_real_model_smoke()
     marker = run_marker(real_model_smoke=real_model_smoke)
-    broker_secret = secrets.token_urlsafe(32)
+    credentials = {
+        "teacher": {
+            "schoolCode": "SCHARCHX",
+            "account": os.environ.get("E2E_TEACHER_STAFF_NO", "E2E-T1"),
+            "password": secrets.token_urlsafe(18) + "A1",
+        },
+        "student": {
+            "schoolCode": "SCHARCHX",
+            "account": os.environ.get("E2E_STUDENT_NO", "100001"),
+            "password": secrets.token_urlsafe(18) + "A1",
+        },
+    }
     artifacts = REPOSITORY_ROOT / "output" / "e2e" / marker
     artifacts.mkdir(parents=True, exist_ok=False)
     environment = dict(os.environ)
@@ -1098,13 +1059,22 @@ def main() -> int:
             "CDAS_E2E_POSTGRES_PORT": str(e2e_port),
         }
     )
+    bootstrap_environment = dict(environment)
+    bootstrap_environment.update(
+        {
+            "AI_PROVIDER_DISABLED": "0" if real_model_smoke else "1",
+            "E2E_TEACHER_STAFF_NO": credentials["teacher"]["account"],
+            "E2E_STUDENT_NO": credentials["student"]["account"],
+            "E2E_TEACHER_PASSWORD": credentials["teacher"]["password"],
+            "E2E_STUDENT_PASSWORD": credentials["student"]["password"],
+        }
+    )
     runtime_environment = dict(environment)
     runtime_environment.update(
         {
             "DATABASE_URL": e2e_database_url,
             "DIRECT_URL": e2e_database_url,
             "AI_PROVIDER_DISABLED": "0" if real_model_smoke else "1",
-            "E2E_CLERK_TICKET_SECRET": broker_secret,
         }
     )
     if real_model_smoke:
@@ -1133,7 +1103,7 @@ def main() -> int:
                     "tsx",
                     "scripts/e2e/preflight-real-model.ts",
                 ],
-                environment=environment,
+                environment=bootstrap_environment,
                 capture_output=True,
             )
         run_command(
@@ -1150,8 +1120,10 @@ def main() -> int:
         )
         run_command(
             ["pnpm", "exec", "tsx", "scripts/e2e/bootstrap.ts"],
-            environment=environment,
+            environment=bootstrap_environment,
         )
+        bootstrap_environment.pop("E2E_TEACHER_PASSWORD", None)
+        bootstrap_environment.pop("E2E_STUDENT_PASSWORD", None)
 
         with server_log_path.open("w", encoding="utf-8") as server_log:
             server_process = subprocess.Popen(
@@ -1178,7 +1150,7 @@ def main() -> int:
                     base_url,
                     marker,
                     artifacts,
-                    broker_secret,
+                    credentials,
                 )
             else:
                 run_browser_flow(
@@ -1186,9 +1158,16 @@ def main() -> int:
                     marker,
                     artifacts,
                     environment,
-                    broker_secret,
+                    credentials,
                 )
 
+        verification_environment = dict(environment)
+        existing_node_options = verification_environment.get("NODE_OPTIONS", "").strip()
+        verification_environment["NODE_OPTIONS"] = " ".join(
+            part
+            for part in (existing_node_options, "--conditions=react-server")
+            if part
+        )
         verification = run_command(
             [
                 "pnpm",
@@ -1200,7 +1179,7 @@ def main() -> int:
                     else "scripts/e2e/verify-closed-loop.ts"
                 ),
             ],
-            environment=environment,
+            environment=verification_environment,
             capture_output=True,
         )
         evidence = json.loads(verification.stdout)
@@ -1208,7 +1187,7 @@ def main() -> int:
             "ok": True,
             "marker": marker,
             "browser": "chromium-headless",
-            "authentication": "clerk-development-session-ticket",
+            "authentication": "postgres-local-session",
             "database": "dedicated-local-postgresql",
             "aiProviderDisabled": not real_model_smoke,
             "gate": (
@@ -1261,6 +1240,8 @@ def main() -> int:
         if server_process is not None:
             stop_server(server_process)
         sanitize_server_log(server_log_path)
+        for identity in credentials.values():
+            identity["password"] = ""
 
 
 if __name__ == "__main__":

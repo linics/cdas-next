@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
 import { createDatabaseClient } from "../db/client";
+import { generateSchoolCode } from "../../domain/school/identity";
 import {
   getTeacherClassroomRoster,
   previewTeacherRosterImport,
@@ -291,6 +292,80 @@ describeWithDatabase("teacher classroom membership changes", () => {
         where: { classroomId: value.classroomId, studentId: value.candidateStudentId },
       }),
     ).toBe(0);
+  });
+
+  it("treats another school's roster key as nonexistent and rejects disabled teachers", async () => {
+    const value = await fixture();
+    const foreignSchool = await database!.school.create({
+      data: {
+        name: "外校",
+        code: generateSchoolCode(),
+        teacherInviteCodeHash: "a".repeat(64),
+      },
+      select: { id: true },
+    });
+    const foreignRosterKey = rosterKey();
+    const foreignStudent = await database!.appUser.create({
+      data: {
+        authSubject: `student_${randomUUID()}`,
+        role: "STUDENT",
+        displayName: "外校学生",
+        rosterKey: foreignRosterKey,
+        schoolId: foreignSchool.id,
+      },
+      select: { id: true },
+    });
+
+    const preview = await previewTeacherRosterImport(
+      database!,
+      context(value.teacherId, value.now),
+      {
+        classroomId: value.classroomId,
+        rosterKeys: [foreignRosterKey],
+      },
+    );
+    expect(preview.entries).toEqual([
+      { rosterKey: foreignRosterKey, status: "NOT_FOUND" },
+    ]);
+    expect(JSON.stringify(preview)).not.toContain(foreignStudent.id);
+    expect(JSON.stringify(preview)).not.toContain("外校学生");
+    await expect(
+      prepareClassroomMembershipChange(
+        database!,
+        context(value.teacherId, value.now),
+        {
+          operation: "ADD",
+          classroomId: value.classroomId,
+          rosterKeys: [foreignRosterKey],
+          idempotencyKey: `cross_school_${randomUUID()}`,
+        },
+      ),
+    ).rejects.toEqual(
+      new PrepareClassroomMembershipChangeError("ROSTER_NOT_FOUND"),
+    );
+
+    await database!.appUser.update({
+      where: { id: value.teacherId },
+      data: { accountStatus: "DISABLED" },
+    });
+    await expect(
+      previewTeacherRosterImport(database!, context(value.teacherId, value.now), {
+        classroomId: value.classroomId,
+        rosterKeys: [value.candidateRosterKey],
+      }),
+    ).rejects.toEqual(new TeacherClassroomRosterQueryError("NOT_FOUND"));
+    await expect(
+      prepareClassroomMembershipChange(
+        database!,
+        context(value.teacherId, value.now),
+        {
+          operation: "ADD",
+          classroomId: value.classroomId,
+          rosterKeys: [value.candidateRosterKey],
+          idempotencyKey: `disabled_${randomUUID()}`,
+        },
+      ),
+    ).rejects.toEqual(new PrepareClassroomMembershipChangeError("NOT_FOUND"));
   });
 
   it("lets PostgreSQL reject roster-key rewrites and membership history deletion", async () => {

@@ -1,9 +1,43 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../../generated/prisma/client";
+import {
+  applyLegacySchoolToClassroomData,
+  applyLegacySchoolToUserData,
+} from "../../domain/school/legacy-school";
 
 export function createDatabaseClient(connectionString: string): PrismaClient {
   const adapter = new PrismaPg({ connectionString });
-  return new PrismaClient({ adapter });
+  const prisma = new PrismaClient({ adapter });
+  return prisma.$extends({
+    query: {
+      appUser: {
+        async create({ args, query }) {
+          args.data = applyLegacySchoolToUserData(args.data);
+          return query(args);
+        },
+        async createMany({ args, query }) {
+          const data = args.data;
+          args.data = Array.isArray(data)
+            ? data.map((row) => applyLegacySchoolToUserData(row))
+            : applyLegacySchoolToUserData(data);
+          return query(args);
+        },
+      },
+      classroom: {
+        async create({ args, query }) {
+          args.data = applyLegacySchoolToClassroomData(args.data);
+          return query(args);
+        },
+        async createMany({ args, query }) {
+          const data = args.data;
+          args.data = Array.isArray(data)
+            ? data.map((row) => applyLegacySchoolToClassroomData(row))
+            : applyLegacySchoolToClassroomData(data);
+          return query(args);
+        },
+      },
+    },
+  }) as unknown as PrismaClient;
 }
 
 const globalDatabase = globalThis as typeof globalThis & {

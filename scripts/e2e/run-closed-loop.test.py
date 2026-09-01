@@ -11,11 +11,11 @@ class RealModelSmokeContractTests(unittest.TestCase):
         self.assertIn("D-033 結構化任務理解與設計建議", flow)
         self.assertIn('aria-label="任务理解确认"', flow)
         self.assertIn("确认理解并创建草稿", flow)
-        self.assertIn("01-real-model-draft-proposal", flow)
-        self.assertIn("02-real-model-draft-preview", flow)
+        self.assertIn("03-real-model-draft-proposal", flow)
+        self.assertIn("04-real-model-draft-preview", flow)
         self.assertLess(
-            flow.index("01-real-model-draft-proposal"),
-            flow.index("page.wait_for_url("),
+            flow.index("03-real-model-draft-proposal"),
+            flow.index("04-real-model-draft-preview"),
         )
 
 

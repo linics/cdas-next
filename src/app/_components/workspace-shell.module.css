@@ -252,6 +252,26 @@
 
 .main { min-width: 0; }
 
+/* 页面主体只在进入新工作台页面时轻微落位。它不作用于列表项、字段或
+   锁定视口的评阅工作台，避免把阅读与高频操作做成表演。 */
+@media (prefers-reduced-motion: no-preference) {
+  .shell:not([data-fill-viewport]) .main > :first-child {
+    animation: workspaceArrival var(--motion-medium) cubic-bezier(0.23, 1, 0.32, 1) both;
+  }
+
+  @keyframes workspaceArrival {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
 .roleGate {
   width: min(720px, calc(100% - 32px));
   margin: clamp(calc(var(--space-8) * 1.3), 10vw, calc(var(--space-8) * 3.26)) auto;

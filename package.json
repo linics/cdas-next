@@ -8,7 +8,7 @@
   },
   "scripts": {
     "postinstall": "prisma generate",
-    "bootstrap:clerk": "node --import tsx scripts/bootstrap-clerk-classroom.ts",
+    "bootstrap:admin": "node --import tsx scripts/bootstrap-admin.ts",
     "demo:seed": "node --import ./scripts/demo/register-server-only.mjs --import tsx scripts/demo/seed.ts",
     "development:infra": "node --import tsx scripts/development-infrastructure/index.ts",
     "development:agent-acceptance": "node --import tsx scripts/development-agent-acceptance/index.ts",
@@ -31,6 +31,7 @@
     "staging:acceptance:record-immediate-health": "node --import tsx scripts/staging/acceptance/immediate-health.ts",
     "staging:acceptance:verify-identities": "node --import tsx scripts/staging/acceptance/verify-identities.ts",
     "staging:acceptance:bootstrap": "node --import tsx scripts/staging/acceptance/bootstrap.ts",
+    "staging:acceptance:cleanup": "node --import tsx scripts/staging/acceptance/cleanup.ts",
     "staging:acceptance:assert-browser-prerequisites": "node --import tsx scripts/staging/acceptance/assert-browser-prerequisites.ts",
     "staging:acceptance:browser": "python3 scripts/staging/acceptance/run-browser.py",
     "staging:acceptance:verify": "node --import tsx scripts/staging/acceptance/verify.ts",
@@ -41,11 +42,12 @@
     "staging:agent:record-immediate-health": "node --import tsx scripts/staging/agent-acceptance/immediate-health.ts",
     "staging:agent:bootstrap": "node --import tsx scripts/staging/agent-acceptance/bootstrap.ts",
     "staging:agent:assert-browser-prerequisites": "node --import tsx scripts/staging/agent-acceptance/assert-browser-prerequisites.ts",
-    "staging:agent:issue-teacher-ticket": "node --import tsx scripts/staging/agent-acceptance/issue-teacher-ticket.ts",
+    "staging:agent:cleanup": "node --import tsx scripts/staging/agent-acceptance/cleanup.ts",
     "staging:agent:browser": "PYTHONDONTWRITEBYTECODE=1 python3 -B scripts/staging/agent-acceptance/run-browser.py",
     "staging:agent:verify": "node --import tsx scripts/staging/agent-acceptance/verify.ts",
     "staging:agent:assert-final": "node --import tsx scripts/staging/agent-acceptance/assert-final.ts",
     "test:agent-acceptance-python": "PYTHONDONTWRITEBYTECODE=1 python3 -B scripts/staging/agent-acceptance/run-browser.test.py",
+    "knowledge:extract": "node --import tsx scripts/knowledge/extract-official-docx.ts",
     "knowledge:build": "node --import tsx scripts/knowledge/build-official-corpus.ts",
     "knowledge:check": "node --import tsx scripts/knowledge/build-official-corpus.ts --check",
     "dev": "next dev",
@@ -71,7 +73,6 @@
   "dependencies": {
     "@ai-sdk/openai-compatible": "3.0.35",
     "@ai-sdk/react": "4.0.69",
-    "@clerk/nextjs": "7.7.7",
     "@next/env": "16.3.1",
     "@prisma/adapter-pg": "7.9.1",
     "@prisma/client": "7.9.1",
@@ -84,6 +85,7 @@
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "server-only": "0.0.1",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
     "zod": "4.4.3"
   },
   "devDependencies": {

@@ -13,14 +13,6 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("server-only", () => ({}));
-vi.mock("@clerk/nextjs", () => ({
-  SignInButton: ({ children }: { children: ReactNode }) => (
-    <span data-clerk-sign-in="true">{children}</span>
-  ),
-  SignOutButton: ({ children }: { children: ReactNode }) => (
-    <span data-clerk-sign-out="true">{children}</span>
-  ),
-}));
 vi.mock("next/link", () => ({
   default: ({
     children,
@@ -191,7 +183,7 @@ describe("student dashboard page", () => {
     mocks.listStudentReleases.mockResolvedValue(releaseList);
   });
 
-  it("does not touch the database or render Clerk when auth is unconfigured", async () => {
+  it("does not touch the database or render a login action when auth is unconfigured", async () => {
     mocks.createUiCommandContext.mockRejectedValue(
       new AuthenticationError("AUTH_NOT_CONFIGURED"),
     );
@@ -200,37 +192,40 @@ describe("student dashboard page", () => {
 
     expect(markup).toContain("学生工作台当前没有开放");
     expect(markup).toContain("查看活动、提交证据、获得教师反馈");
-    expect(markup).toContain("返回首页");
+    expect(markup).toContain("返回 CDAS Next 首页");
     expect(markup).not.toContain("学生工作台导航");
-    expect(markup).not.toContain("data-clerk-sign-in");
+    expect(markup).not.toContain('href="/student/login"');
     expect(mocks.getDatabaseClient).not.toHaveBeenCalled();
     expect(mocks.listStudentReleases).not.toHaveBeenCalled();
   });
 
-  it("renders the official Clerk sign-in control only when unauthenticated", async () => {
+  it("renders the local student login form only when unauthenticated", async () => {
     mocks.createUiCommandContext.mockRejectedValue(
       new AuthenticationError("UNAUTHENTICATED"),
     );
 
     const markup = await renderPage();
 
-    expect(markup).toContain('data-clerk-sign-in="true"');
-    expect(markup).toContain("登录学生账号");
+    expect(markup).toContain('name="schoolCode"');
+    expect(markup).toContain('name="identifier"');
+    expect(markup).toContain('name="password"');
+    expect(markup).toContain("进入工作台");
     expect(markup).toContain("先确认学生身份");
     expect(markup).toContain("查看活动");
     expect(mocks.listStudentReleases).not.toHaveBeenCalled();
   });
 
-  it("lets an unbound user sign out and switch to a test account", async () => {
+  it("lets an unbound user switch accounts in the student workspace", async () => {
     mocks.createUiCommandContext.mockRejectedValue(
       new AuthenticationError("USER_NOT_PROVISIONED"),
     );
 
     const markup = await renderPage();
 
-    expect(markup).toContain('data-clerk-sign-out="true"');
-    expect(markup).toContain("退出当前账号");
-    expect(markup).not.toContain('data-clerk-sign-in="true"');
+    expect(markup).toContain('name="schoolCode"');
+    expect(markup).toContain('name="identifier"');
+    expect(markup).toContain('name="password"');
+    expect(markup).toContain("找不到对应的学生身份");
   });
 
   it("groups real release links by progress without placeholder buttons", async () => {
@@ -255,7 +250,7 @@ describe("student dashboard page", () => {
     expect(markup).toContain("我的活动");
     expect(markup).toContain("当前账号：测试学生 · 学生");
     expect(markup).toContain("退出登录");
-    expect(markup).toContain('data-clerk-sign-out="true"');
+    expect(markup).toContain("<form");
     expect(mocks.listStudentReleases).toHaveBeenCalledWith(
       mocks.database,
       trustedContext,

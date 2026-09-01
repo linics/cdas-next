@@ -7,6 +7,7 @@ import {
   type LanguageModel,
 } from "ai";
 import { z } from "zod";
+import { isStructuredContent } from "../../domain/activity/activity-content";
 import { createTeacherFeedbackPayload } from "../../domain/feedback/teacher-feedback-intent";
 import {
   teacherFeedbackNextSteps,
@@ -210,7 +211,7 @@ function modelInput(
 ): SuggestionModelInput {
   const content = workspace.submission.release.snapshot.content;
   const phase =
-    content.schemaVersion === 2 && workspace.submission.phaseIndex > 0
+    isStructuredContent(content) && workspace.submission.phaseIndex > 0
       ? (content.phases[workspace.submission.phaseIndex - 1] ?? null)
       : null;
   return {

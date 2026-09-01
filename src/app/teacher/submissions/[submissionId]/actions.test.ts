@@ -290,7 +290,7 @@ describe("teacher feedback server actions", () => {
     },
   );
 
-  it("does not prepare when the Clerk session is unavailable", async () => {
+  it("does not prepare when the local session is unavailable", async () => {
     mocks.createUiCommandContext.mockRejectedValue(
       new AuthenticationError("UNAUTHENTICATED"),
     );

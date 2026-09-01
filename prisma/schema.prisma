@@ -10,6 +10,23 @@ datasource db {
 enum UserRole {
   TEACHER
   STUDENT
+  ADMIN
+}
+
+enum AccountStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum SchoolStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum TeacherProvisioningStatus {
+  PENDING
+  COMPLETED
+  FAILED
 }
 
 enum DraftStatus {
@@ -87,14 +104,55 @@ enum AttachmentStatus {
   REJECTED
 }
 
+model School {
+  id                     String                 @id @default(uuid()) @db.Uuid
+  name                   String
+  code                   String                 @unique @db.VarChar(16)
+  teacherInviteCodeHash  String                 @map("teacher_invite_code_hash") @db.Char(64)
+  status                 SchoolStatus           @default(ACTIVE)
+  createdAt              DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt              DateTime               @updatedAt @map("updated_at") @db.Timestamptz(3)
+  users                  AppUser[]
+  classrooms             Classroom[]
+  teacherProvisionings   TeacherProvisioning[]
+
+  @@map("schools")
+}
+
+model TeacherProvisioning {
+  id           String                     @id @default(uuid()) @db.Uuid
+  schoolId     String                     @map("school_id") @db.Uuid
+  staffNo      String                     @map("staff_no") @db.VarChar(32)
+  displayName  String                     @map("display_name")
+  appUserId    String                     @unique @map("app_user_id") @db.Uuid
+  status       TeacherProvisioningStatus  @default(PENDING)
+  failureCode  String?                    @map("failure_code") @db.VarChar(120)
+  createdAt    DateTime                   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime                   @updatedAt @map("updated_at") @db.Timestamptz(3)
+  completedAt  DateTime?                  @map("completed_at") @db.Timestamptz(3)
+  school       School                     @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  appUser      AppUser                    @relation(fields: [appUserId], references: [id], onDelete: Restrict)
+
+  @@unique([schoolId, staffNo])
+  @@index([schoolId, status, createdAt])
+  @@map("teacher_provisionings")
+}
+
 model AppUser {
   id                    String                    @id @default(uuid()) @db.Uuid
   authSubject           String                    @unique @map("auth_subject")
   role                  UserRole
   displayName           String                    @map("display_name")
   rosterKey             String?                   @unique @map("roster_key") @db.VarChar(32)
+  schoolId              String?                   @map("school_id") @db.Uuid
+  staffNo               String?                   @map("staff_no") @db.VarChar(32)
+  studentNo             String?                   @map("student_no") @db.VarChar(32)
+  accountStatus         AccountStatus             @default(ACTIVE) @map("account_status")
+  legacyProfile         Boolean                   @default(false) @map("legacy_profile")
   createdAt             DateTime                  @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt             DateTime                  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  school                School?                   @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  teacherProvisioning   TeacherProvisioning?
   classrooms            Classroom[]               @relation("ClassroomManager")
   memberships           ClassroomMembership[]     @relation("StudentMemberships")
   drafts                ActivityDraft[]           @relation("DraftOwner")
@@ -111,22 +169,61 @@ model AppUser {
   feedbackConfirmations    TeacherFeedbackRevision[]   @relation("TeacherFeedbackConfirmer")
   evaluations              TeacherEvaluation[]         @relation("TeacherEvaluationTeacher")
   evaluationConfirmations  TeacherEvaluationRevision[] @relation("TeacherEvaluationConfirmer")
+  localCredential         LocalCredential?
+  authSessions            AuthSession[]
 
+  @@unique([schoolId, staffNo])
+  @@unique([schoolId, studentNo])
+  @@index([schoolId, role, accountStatus])
   @@map("app_users")
+}
+
+model LocalCredential {
+  id                 String   @id @default(uuid()) @db.Uuid
+  userId             String   @unique @map("user_id") @db.Uuid
+  identifier         String   @unique @db.VarChar(96)
+  passwordHash       String   @map("password_hash") @db.VarChar(256)
+  mustChangePassword Boolean  @default(false) @map("must_change_password")
+  passwordChangedAt  DateTime? @map("password_changed_at") @db.Timestamptz(3)
+  failedLoginCount   Int      @default(0) @map("failed_login_count")
+  lockedUntil        DateTime? @map("locked_until") @db.Timestamptz(3)
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  user               AppUser  @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([lockedUntil])
+  @@map("local_credentials")
+}
+
+model AuthSession {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  tokenHash String   @unique @map("token_hash") @db.Char(64)
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(3)
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz(3)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  user      AppUser  @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([userId, revokedAt, expiresAt])
+  @@index([expiresAt])
+  @@map("auth_sessions")
 }
 
 model Classroom {
   id          String                @id @default(uuid()) @db.Uuid
   name        String
   managerId   String                @map("manager_id") @db.Uuid
+  schoolId    String                @default(dbgenerated("'c0de0000-0000-4000-8000-00000000c0de'::uuid")) @map("school_id") @db.Uuid
   version     Int                   @default(1)
   createdAt   DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt   DateTime              @updatedAt @map("updated_at") @db.Timestamptz(3)
   manager     AppUser               @relation("ClassroomManager", fields: [managerId], references: [id], onDelete: Restrict)
+  school      School                @relation(fields: [schoolId], references: [id], onDelete: Restrict)
   memberships ClassroomMembership[]
   releases    ActivityRelease[]
 
   @@index([managerId])
+  @@index([schoolId, managerId])
   @@map("classrooms")
 }
 

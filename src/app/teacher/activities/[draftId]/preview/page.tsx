@@ -26,6 +26,7 @@ import {
 } from "../../../_components/teacher-shell";
 import styles from "../../../teacher-workspace.module.css";
 import { PublishPanel } from "./publish-panel";
+import { TaskBookV3View } from "../../../../_components/task-book-v3-view";
 
 export default async function TeacherActivityPreviewPage({
   params,
@@ -118,7 +119,7 @@ export default async function TeacherActivityPreviewPage({
               <section><h3>总体任务</h3><p>{content.taskInstructions}</p></section>
               <section><h3>任务链</h3><ol>{content.phases.map((phase) => <li key={phase.name}><strong>{phase.name}</strong><br />行动：{phase.action}<br />情境：{phase.context}<br />支架：{phase.support}<br />证据：{phase.evidence.map((evidence) => `${evidenceTypeLabel(evidence.type)}：${evidence.description}`).join("；")}<br />评价要点：{phase.evaluationFocus}</li>)}</ol></section>
               <section><h3>评价标准</h3><ul>{content.rubricDimensions.map((dimension) => <li key={dimension.name}><strong>{dimension.name}</strong>：优秀 {dimension.excellent}；良好 {dimension.good}；合格 {dimension.pass}；需改进 {dimension.improve}</li>)}</ul></section>
-            </> : <>
+            </> : content.schemaVersion === 3 ? <TaskBookV3View content={content} /> : <>
               <section><h3>学习目标</h3><ol>{content.learningObjectives.map((item) => <li key={item}>{item}</li>)}</ol></section>
               <section><h3>任务说明</h3><p>{content.taskInstructions}</p></section>
               <section><h3>提交证据</h3><ul>{content.evidenceRequirements.map((item) => <li key={item}>{item}</li>)}</ul></section>

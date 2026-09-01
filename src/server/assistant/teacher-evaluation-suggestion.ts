@@ -7,7 +7,10 @@ import {
   type LanguageModel,
 } from "ai";
 import { z } from "zod";
-import type { ActivityContentV2 } from "../../domain/activity/activity-content";
+import {
+  isStructuredContent,
+  type ActivityRubricDimension,
+} from "../../domain/activity/activity-content";
 import {
   createTeacherEvaluationPayload,
   type TeacherEvaluationOutcome,
@@ -100,7 +103,7 @@ type SuggestionModelOutput = z.infer<
 >;
 
 type SuggestionModelInput = Readonly<{
-  rubricDimensions: ActivityContentV2["rubricDimensions"];
+  rubricDimensions: readonly ActivityRubricDimension[];
   textEvidence: string | null;
   checkpoints: ReadonlyArray<{
     evidenceIndex: number;
@@ -220,7 +223,7 @@ function assertCurrentRevision(
       "STALE_SUBMISSION_REVISION",
     );
   }
-  if (workspace.submission.release.snapshot.content.schemaVersion !== 2) {
+  if (!isStructuredContent(workspace.submission.release.snapshot.content)) {
     throw new TeacherEvaluationSuggestionError("RUBRIC_UNAVAILABLE");
   }
   return revision;
@@ -232,7 +235,7 @@ function modelInput(
   attachments: readonly SubmissionAttachmentReading[],
 ): SuggestionModelInput {
   const content = workspace.submission.release.snapshot.content;
-  if (content.schemaVersion !== 2) {
+  if (!isStructuredContent(content)) {
     throw new TeacherEvaluationSuggestionError("RUBRIC_UNAVAILABLE");
   }
   const phase =

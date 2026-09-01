@@ -1,16 +1,19 @@
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import nextEnvironment from "@next/env";
-import type { ActivityContent } from "../../src/domain/activity/activity-content";
-import { classroomDaylightTaskBook } from "../../src/fixtures/classroom-daylight";
-import { waterConservationTaskBook } from "../../src/fixtures/water-conservation";
+import type { ActivityContentV3 } from "../../src/domain/activity/activity-content";
+import { demoActivitiesV3 } from "../../src/fixtures/demo-activities";
 import type { TeacherEvaluationOutcome } from "../../src/domain/evaluation/teacher-evaluation-intent";
 import type { PrismaClient } from "../../src/generated/prisma/client";
 import { createDatabaseClient } from "../../src/server/db/client";
-import { bootstrapClerkClassroom } from "../../src/server/bootstrap/bootstrap-clerk-classroom";
+import {
+  bootstrapLocalStaging,
+  stagingLocalIdentifier,
+} from "../../src/server/bootstrap/bootstrap-local-staging";
 import {
   resolveBootstrapDatabaseTarget,
-  serializeBootstrapClerkCliError,
-} from "../../src/server/bootstrap/bootstrap-clerk-cli";
+  serializeBootstrapAdminCliError,
+} from "../../src/server/bootstrap/bootstrap-admin-cli";
+import { legacySchoolCode, legacySchoolId } from "../../src/domain/school/legacy-school";
 import type { CommandContext } from "../../src/server/commands/command-context";
 import { decideActionIntent } from "../../src/server/commands/decide-action-intent";
 import { saveActivityDraft } from "../../src/server/commands/save-activity-draft";
@@ -50,21 +53,28 @@ const DEMO_LOGIN_STUDENT_NAME = "陈同学";
 
 const extraStudents = [
   {
-    authSubject: "user_demoLiMing",
+    studentNo: "700002",
     displayName: "李明",
     rosterKey: "DEMOSTU02",
   },
   {
-    authSubject: "user_demoWangFang",
+    studentNo: "700003",
     displayName: "王芳",
     rosterKey: "DEMOSTU03",
   },
   {
-    authSubject: "user_demoZhaoQiang",
+    studentNo: "700004",
     displayName: "赵强",
     rosterKey: "DEMOSTU04",
   },
 ] as const;
+
+const DEMO_TEACHER_STAFF_NO = "T-DEMO";
+const DEMO_LOGIN_STUDENT_NO = "700001";
+
+function processOnlyPassword(name: string): string {
+  return process.env[name]?.trim() || randomBytes(32).toString("base64url");
+}
 
 function context(actorId: string, now: Date): CommandContext {
   return {
@@ -73,14 +83,6 @@ function context(actorId: string, now: Date): CommandContext {
     traceId: `demo-seed-${randomUUID()}`,
     clock: () => now,
   };
-}
-
-function requireEnv(name: string): string {
-  const value = process.env[name]?.trim();
-  if (!value) {
-    throw new Error(`${name}_REQUIRED`);
-  }
-  return value;
 }
 
 function parseSeedArgs(argv: readonly string[]): {
@@ -99,49 +101,28 @@ function parseSeedArgs(argv: readonly string[]): {
   };
 }
 
-// 每个演示活动都得有自己的情境，不能是同一份任务书换个标题、再拼一句
-// `${title}主题` 了事 —— SPRINT-0901 第 4 步要求种子活动本身就是第 1.5 步的范例。
-const demoNarratives: Record<string, { topic: string; summary: string }> = {
-  [COMPLETE_TITLE]: {
-    topic: "生态与可持续发展",
-    summary:
-      "你们是七年级节水观察员：查清校园哪一处用水最浪费，交出一份能贴上公示栏的《校园节水建议书》。",
-  },
-  [LIVE_TITLE]: {
-    topic: "校园用水的现场证据",
-    summary:
-      "总务处只剩一周就要公布节水措施。这一轮先把现场证据拿到手：哪个用水点在漏、漏了多少、谁能改。",
-  },
-  [CLOSED_TITLE]: {
-    topic: "把证据讲给全校听",
-    summary:
-      "节水建议已经被采纳。这一轮你们要把调查过程讲成全校听得懂的展示，让别的班也照着做。",
-  },
-  [EDITING_TITLE]: {
-    topic: "饮水区的用水记录",
-    summary:
-      "饮水区每天接水的人最多，也最难说清浪费在哪。先从连续一周的定点记录做起。",
-  },
-};
-
-function taskBook(title: string, submissionMode: "phased" | "once"): ActivityContent {
-  if (title === READY_TITLE) {
-    return { ...classroomDaylightTaskBook, title, submissionMode };
+/**
+ * The demo task books live in `src/fixtures/demo-activities.ts`, one design per
+ * activity rather than one design retitled five times. Submission mode is part
+ * of each design, not a seeding argument: a one-shot showcase and a three-phase
+ * investigation are different activities, not the same activity configured
+ * differently.
+ */
+function taskBook(title: string): ActivityContentV3 {
+  const found = demoActivitiesV3.find((activity) => activity.title === title);
+  if (!found) {
+    throw new Error(`DEMO_TASK_BOOK_MISSING:${title}`);
   }
-  const narrative = demoNarratives[title];
-  return {
-    ...waterConservationTaskBook,
-    title,
-    submissionMode,
-    topic: narrative?.topic ?? waterConservationTaskBook.topic,
-    summary: narrative?.summary ?? waterConservationTaskBook.summary,
-  };
+  return found;
 }
 
 function covering(
+  title: string,
   levels: Array<"excellent" | "good" | "pass" | "improve" | "insufficient">,
 ): TeacherEvaluationOutcome[] {
-  return waterConservationTaskBook.rubricDimensions.map((dimension, index) => {
+  // Outcomes are bound to the published snapshot's own rubric, so a demo
+  // evaluation cannot drift from the task book it is evaluating.
+  return taskBook(title).rubricDimensions.map((dimension, index) => {
     const level = levels[index] ?? "pass";
     if (level === "insufficient") {
       return {
@@ -171,40 +152,50 @@ class Clock {
   }
 }
 
-async function ensureStudent(
+async function findLocalIdentityId(
   database: PrismaClient,
-  input: {
-    authSubject: string;
-    displayName: string;
-    rosterKey: string;
-  },
+  identifier: string,
 ): Promise<string> {
-  const existing = await database.appUser.findUnique({
-    where: { authSubject: input.authSubject },
-    select: { id: true, role: true, rosterKey: true },
+  const credential = await database.localCredential.findUnique({
+    where: { identifier },
+    select: { user: { select: { id: true, schoolId: true } } },
   });
-  if (existing) {
-    if (existing.role !== "STUDENT") {
-      throw new Error(`DEMO_STUDENT_ROLE_CONFLICT:${input.displayName}`);
-    }
-    if (!existing.rosterKey) {
-      await database.appUser.update({
-        where: { id: existing.id },
-        data: { rosterKey: input.rosterKey },
-      });
-    }
-    return existing.id;
+  if (!credential || credential.user.schoolId !== legacySchoolId) {
+    throw new Error("DEMO_LOCAL_IDENTITY_NOT_FOUND");
   }
-  const created = await database.appUser.create({
-    data: {
-      authSubject: input.authSubject,
-      role: "STUDENT",
-      displayName: input.displayName,
-      rosterKey: input.rosterKey,
-    },
-    select: { id: true },
+  return credential.user.id;
+}
+
+async function setStudentRosterKeys(
+  database: PrismaClient,
+  students: readonly { identifier: string; rosterKey: string }[],
+): Promise<void> {
+  await database.$transaction(async (transaction) => {
+    for (const student of students) {
+      const credential = await transaction.localCredential.findUnique({
+        where: { identifier: student.identifier },
+        select: {
+          user: { select: { id: true, role: true, schoolId: true, rosterKey: true } },
+        },
+      });
+      if (
+        !credential ||
+        credential.user.role !== "STUDENT" ||
+        credential.user.schoolId !== legacySchoolId
+      ) {
+        throw new Error("DEMO_STUDENT_PROFILE_CONFLICT");
+      }
+      if (credential.user.rosterKey && credential.user.rosterKey !== student.rosterKey) {
+        throw new Error("DEMO_STUDENT_ROSTER_KEY_CONFLICT");
+      }
+      if (!credential.user.rosterKey) {
+        await transaction.appUser.update({
+          where: { id: credential.user.id },
+          data: { rosterKey: student.rosterKey },
+        });
+      }
+    }
   });
-  return created.id;
 }
 
 async function ensureMembership(
@@ -257,8 +248,11 @@ async function demoContentIsStale(
     where: { releaseId },
     select: { content: true },
   });
-  const snapshotText = JSON.stringify(snapshot?.content ?? {});
-  if (!snapshotText.includes("总务处请你们先去现场看。")) {
+  // Anything published before the v3 demo task books is stale by definition:
+  // the seeded instance exists to show what v3 states, and a v2 snapshot
+  // cannot show it.
+  const content = snapshot?.content as { schemaVersion?: number } | null;
+  if (content?.schemaVersion !== 3) {
     return true;
   }
   const oldRevision = await database.submissionRevision.findFirst({
@@ -485,7 +479,6 @@ async function publishDemoActivity(
     teacherId: string;
     classroomId: string;
     title: string;
-    submissionMode: "phased" | "once";
     existing: Awaited<ReturnType<typeof findDraftRelease>>;
     clock: Clock;
   },
@@ -504,7 +497,7 @@ async function publishDemoActivity(
     teacherId: input.teacherId,
     classroomId: input.classroomId,
     publishedAt: input.clock.tick(),
-    content: taskBook(input.title, input.submissionMode),
+    content: taskBook(input.title),
     draft,
   });
 }
@@ -628,25 +621,101 @@ async function main(): Promise<void> {
   const clock = new Clock();
 
   try {
-    const bootstrapped = await bootstrapClerkClassroom(database, {
-      teacherAuthSubject: requireEnv("DEV_TEST_TEACHER_CLERK_ID"),
-      teacherDisplayName: DEMO_TEACHER_NAME,
-      studentAuthSubject: requireEnv("DEV_TEST_STUDENT_CLERK_ID"),
-      studentDisplayName: DEMO_LOGIN_STUDENT_NAME,
-      studentRosterKey: "DEMOSTU01",
-      classroomId: DEMO_CLASSROOM_ID,
-      classroomName: DEMO_CLASSROOM_NAME,
+    const loginStudentIdentifier = stagingLocalIdentifier({
+      schoolCode: legacySchoolCode,
+      role: "STUDENT",
+      studentNo: DEMO_LOGIN_STUDENT_NO,
     });
+    const extraStudentIdentities = extraStudents.map((student, index) => ({
+      ...student,
+      identifier: stagingLocalIdentifier({
+        schoolCode: legacySchoolCode,
+        role: "STUDENT",
+        studentNo: student.studentNo,
+      }),
+      password: processOnlyPassword(`DEV_TEST_DEMO_STUDENT_${index + 2}_PASSWORD`),
+    }));
+    await bootstrapLocalStaging(database, {
+      schools: [
+        { code: legacySchoolCode, name: "历史迁移学校", status: "ACTIVE" },
+      ],
+      identities: [
+        {
+          schoolCode: legacySchoolCode,
+          identifier: stagingLocalIdentifier({
+            schoolCode: legacySchoolCode,
+            role: "TEACHER",
+            staffNo: DEMO_TEACHER_STAFF_NO,
+          }),
+          password: processOnlyPassword("DEV_TEST_DEMO_TEACHER_PASSWORD"),
+          displayName: DEMO_TEACHER_NAME,
+          role: "TEACHER",
+          staffNo: DEMO_TEACHER_STAFF_NO,
+        },
+        {
+          schoolCode: legacySchoolCode,
+          identifier: loginStudentIdentifier,
+          password: processOnlyPassword("DEV_TEST_DEMO_STUDENT_1_PASSWORD"),
+          displayName: DEMO_LOGIN_STUDENT_NAME,
+          role: "STUDENT",
+          studentNo: DEMO_LOGIN_STUDENT_NO,
+        },
+        ...extraStudentIdentities.map((student) => ({
+          schoolCode: legacySchoolCode,
+          identifier: student.identifier,
+          password: student.password,
+          displayName: student.displayName,
+          role: "STUDENT" as const,
+          studentNo: student.studentNo,
+        })),
+      ],
+      classroom: {
+        id: DEMO_CLASSROOM_ID,
+        name: DEMO_CLASSROOM_NAME,
+        teacherIdentifier: stagingLocalIdentifier({
+          schoolCode: legacySchoolCode,
+          role: "TEACHER",
+          staffNo: DEMO_TEACHER_STAFF_NO,
+        }),
+        studentIdentifiers: [
+          loginStudentIdentifier,
+          ...extraStudentIdentities.map((student) => student.identifier),
+        ],
+      },
+    });
+    const teacherIdentifier = stagingLocalIdentifier({
+      schoolCode: legacySchoolCode,
+      role: "TEACHER",
+      staffNo: DEMO_TEACHER_STAFF_NO,
+    });
+    const teacherId = await findLocalIdentityId(database, teacherIdentifier);
+    const loginStudentId = await findLocalIdentityId(
+      database,
+      loginStudentIdentifier,
+    );
+    const extraStudentIds = await Promise.all(
+      extraStudentIdentities.map((student) =>
+        findLocalIdentityId(database, student.identifier),
+      ),
+    );
+    const [liMingId, wangFangId, zhaoQiangId] = extraStudentIds;
+    await setStudentRosterKeys(database, [
+      { identifier: loginStudentIdentifier, rosterKey: "DEMOSTU01" },
+      ...extraStudentIdentities.map((student) => ({
+        identifier: student.identifier,
+        rosterKey: student.rosterKey,
+      })),
+    ]);
     const teacher = await database.appUser.findUniqueOrThrow({
-      where: { id: bootstrapped.teacher.id },
+      where: { id: teacherId },
       select: { id: true, displayName: true, role: true },
     });
     const loginStudent = await database.appUser.findUniqueOrThrow({
-      where: { id: bootstrapped.student.id },
+      where: { id: loginStudentId },
       select: { id: true, displayName: true, role: true },
     });
     const classroom = {
-      id: bootstrapped.classroom.id,
+      id: DEMO_CLASSROOM_ID,
       name: DEMO_CLASSROOM_NAME,
     };
 
@@ -705,15 +774,10 @@ async function main(): Promise<void> {
       return;
     }
 
-    const liMingId = await ensureStudent(database, extraStudents[0]);
-    const wangFangId = await ensureStudent(database, extraStudents[1]);
-    const zhaoQiangId = await ensureStudent(database, extraStudents[2]);
     const membershipJoinedAt = clock.now();
     for (const studentId of [
       loginStudent.id,
-      liMingId,
-      wangFangId,
-      zhaoQiangId,
+      ...extraStudentIds,
     ]) {
       await ensureMembership(
         database,
@@ -728,7 +792,7 @@ async function main(): Promise<void> {
         draftId: null,
         expectedVersion: null,
         desiredStatus: "EDITING",
-        content: taskBook(EDITING_TITLE, "phased"),
+        content: taskBook(EDITING_TITLE),
         agentRunId: null,
         idempotencyKey: `demo_draft_editing_${randomUUID()}`,
       });
@@ -738,7 +802,7 @@ async function main(): Promise<void> {
         draftId: null,
         expectedVersion: null,
         desiredStatus: "READY_FOR_PREVIEW",
-        content: taskBook(READY_TITLE, "phased"),
+        content: taskBook(READY_TITLE),
         agentRunId: null,
         idempotencyKey: `demo_draft_ready_${randomUUID()}`,
       });
@@ -750,7 +814,7 @@ async function main(): Promise<void> {
           teacherId: teacher.id,
           classroomId: classroom.id,
           publishedAt: clock.tick(),
-          content: taskBook(COMPLETE_TITLE, "phased"),
+          content: taskBook(COMPLETE_TITLE),
         });
 
     if ((existingComplete?.release?._count.submissions ?? 0) === 0) {
@@ -777,7 +841,7 @@ async function main(): Promise<void> {
       teacher.id,
       chenP1,
       "问题来自真实洗手间场景。现在的记录还不够支撑总务处做决定。",
-      covering(["good", "pass", "good", "pass"]),
+      covering(COMPLETE_TITLE, ["good", "pass", "good", "pass"]),
       clock,
     );
 
@@ -803,7 +867,7 @@ async function main(): Promise<void> {
       teacher.id,
       chenP2v1,
       "问题清楚，但还说服不了总务处。",
-      covering(["good", "improve", "pass", "improve"]),
+      covering(COMPLETE_TITLE, ["good", "improve", "pass", "improve"]),
       clock,
     );
     const resubmit = await startSubmissionResubmission(
@@ -855,7 +919,7 @@ async function main(): Promise<void> {
       teacher.id,
       chenP2v2,
       "重交后证据明显增强。跨学科连接还可以写得更清楚，方便公示。",
-      covering(["good", "good", "pass", "good"]),
+      covering(COMPLETE_TITLE, ["good", "good", "pass", "good"]),
       clock,
     );
 
@@ -881,7 +945,7 @@ async function main(): Promise<void> {
       teacher.id,
       chenP3,
       "建议具体可执行，能贴到公示栏。",
-      covering(["excellent", "good", "good", "excellent"]),
+      covering(COMPLETE_TITLE, ["excellent", "good", "good", "excellent"]),
       clock,
     );
 
@@ -907,7 +971,7 @@ async function main(): Promise<void> {
       teacher.id,
       liP1,
       "问题钉在浇灌区，证据还可以更量化。",
-      covering(["excellent", "good", "good", "good"]),
+      covering(COMPLETE_TITLE, ["excellent", "good", "good", "good"]),
       clock,
     );
     const liP2 = await submitPhase(
@@ -932,7 +996,7 @@ async function main(): Promise<void> {
       teacher.id,
       liP2,
       "证据充分，总务处能看懂浪费发生在超时喷灌。",
-      covering(["excellent", "excellent", "good", "good"]),
+      covering(COMPLETE_TITLE, ["excellent", "excellent", "good", "good"]),
       clock,
     );
     const liP3 = await submitPhase(
@@ -975,7 +1039,7 @@ async function main(): Promise<void> {
       teacher.id,
       wangP1,
       "问题与饮水区有关，证据还不足。",
-      covering(["pass", "improve", "pass", "improve"]),
+      covering(COMPLETE_TITLE, ["pass", "improve", "pass", "improve"]),
       clock,
     );
     const wangPhase2 = await database.submission.findUnique({
@@ -1007,7 +1071,6 @@ async function main(): Promise<void> {
       teacherId: teacher.id,
       classroomId: classroom.id,
       title: LIVE_TITLE,
-      submissionMode: "phased",
       existing: existingLive,
       clock,
     });
@@ -1053,7 +1116,6 @@ async function main(): Promise<void> {
       teacherId: teacher.id,
       classroomId: classroom.id,
       title: CLOSED_TITLE,
-      submissionMode: "once",
       existing: existingClosed,
       clock,
     });
@@ -1080,7 +1142,7 @@ async function main(): Promise<void> {
       teacher.id,
       closedSubmission,
       "整项成果达到合格以上。",
-      covering(["good", "pass", "good", "pass"]),
+      covering(CLOSED_TITLE, ["good", "pass", "good", "pass"]),
       clock,
     );
     await closePublishedActivity(database, {
@@ -1101,7 +1163,7 @@ async function main(): Promise<void> {
             teacher: teacher.displayName,
             student: loginStudent.displayName,
             extraStudents: extraStudents.map((student) => student.displayName),
-            note: "李明、王芳、赵强只能在教师端看到，没有对应 Clerk 登录。",
+            note: "李明、王芳、赵强用于演示花名册，登录凭据只存在于进程内。",
           },
           seeded: {
             drafts: [EDITING_TITLE, READY_TITLE],
@@ -1118,7 +1180,7 @@ async function main(): Promise<void> {
 }
 
 main().catch((error: unknown) => {
-  process.stderr.write(`${serializeBootstrapClerkCliError(error)}\n`);
+  process.stderr.write(`${serializeBootstrapAdminCliError(error)}\n`);
   if (error instanceof Error && error.message === "CONFIRM_DATABASE_REQUIRED") {
     process.stderr.write(
       "Usage: pnpm demo:seed -- --confirm-database <database-name> [--reset]\n",

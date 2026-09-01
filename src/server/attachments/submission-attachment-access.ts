@@ -7,6 +7,7 @@ import {
   resolveCommandContext,
 } from "../commands/command-context";
 import { isSubmissionAudienceMemberWhere } from "../submissions/submission-audience";
+import { isActiveSchoolMember } from "../school/teacher-authorization";
 
 const inputSchema = z.strictObject({ attachmentId: z.uuid() });
 const currentRevisionInputSchema = z.strictObject({
@@ -30,6 +31,9 @@ export async function getWritableSubmissionAttachmentStorageRecord(
 ) {
   const input = inputSchema.parse(rawInput);
   const context = resolveCommandContext(commandContext, ["UI"]);
+  if (!(await isActiveSchoolMember(database, context.actorId))) {
+    throw new SubmissionAttachmentAccessError("NOT_FOUND");
+  }
   const actor = await database.appUser.findUnique({
     where: { id: context.actorId },
     select: { role: true },
@@ -84,6 +88,9 @@ export async function getAuthorizedSubmissionAttachmentDownload(
 ) {
   const input = inputSchema.parse(rawInput);
   const context = resolveCommandContext(commandContext, ["UI"]);
+  if (!(await isActiveSchoolMember(database, context.actorId))) {
+    throw new SubmissionAttachmentAccessError("NOT_FOUND");
+  }
   const actor = await database.appUser.findUnique({
     where: { id: context.actorId },
     select: { role: true },
@@ -147,6 +154,9 @@ export async function getAuthorizedCurrentRevisionAttachmentDownload(
 ) {
   const input = currentRevisionInputSchema.parse(rawInput);
   const context = resolveCommandContext(commandContext, ["UI"]);
+  if (!(await isActiveSchoolMember(database, context.actorId))) {
+    throw new SubmissionAttachmentAccessError("NOT_FOUND");
+  }
   const actor = await database.appUser.findUnique({
     where: { id: context.actorId },
     select: { role: true },

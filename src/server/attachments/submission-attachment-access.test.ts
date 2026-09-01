@@ -29,7 +29,12 @@ function databaseFor(role: "TEACHER" | "STUDENT") {
   }));
   const database = {
     appUser: {
-      findUnique: vi.fn(async () => ({ role })),
+      findUnique: vi.fn(async () => ({
+        role,
+        accountStatus: "ACTIVE",
+        schoolId: "50000000-0000-4000-8000-000000000005",
+        school: { status: "ACTIVE" },
+      })),
     },
     submissionAttachment: { findFirst },
   } as unknown as PrismaClient;

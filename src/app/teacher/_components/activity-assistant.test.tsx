@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { waterConservationTaskBookV3 } from "../../../fixtures/water-conservation-v3";
 
 const mocks = vi.hoisted(() => ({
   useChat: vi.fn(),
@@ -53,14 +54,6 @@ const draftProposal = {
   },
   teacherRequirements: ["七年级", "校园节水"],
   assumptions: [],
-  integratedDisciplineContributions: [
-    { disciplineCode: "math", necessaryContribution: "整理水表读数。" },
-  ],
-  alignmentChains: [
-    { objectiveKind: "knowledge", objective: "理解数据。", task: "观察。", evidence: "记录。", assessment: "完整。" },
-    { objectiveKind: "process", objective: "分析数据。", task: "比较。", evidence: "表格。", assessment: "有据。" },
-    { objectiveKind: "emotion", objective: "承担责任。", task: "建议。", evidence: "建议稿。", assessment: "可行。" },
-  ],
   sourceReferences: [
     {
       sourceId: "course-plan-2022",
@@ -70,7 +63,7 @@ const draftProposal = {
       reason: "用于校准跨学科任务的真实情境与实践要求。",
     },
   ],
-  content: {},
+  content: waterConservationTaskBookV3,
 };
 
 function helpers(

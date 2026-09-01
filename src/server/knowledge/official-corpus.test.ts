@@ -5,6 +5,7 @@ vi.mock("server-only", () => ({}));
 import {
   getOfficialKnowledgeReference,
   listOfficialKnowledgeSources,
+  officialKnowledgeCoversDiscipline,
   readOfficialKnowledgeSection,
   searchOfficialKnowledge,
   type OfficialKnowledgeSearchInput,
@@ -12,16 +13,26 @@ import {
 import corpusJson from "./generated/official-standards.json";
 
 describe("official curriculum knowledge corpus", () => {
-  it("contains only the five approved official 2022 sources", () => {
+  it("contains the course plan and all fourteen approved official 2022 subject standards", () => {
     const sources = listOfficialKnowledgeSources();
 
-    expect(sources).toHaveLength(5);
+    expect(sources).toHaveLength(15);
     expect(sources.map((source) => source.id)).toEqual([
       "course-plan-2022",
+      "politics-standard-2022",
       "chinese-standard-2022",
+      "history-standard-2022",
+      "english-standard-2022",
+      "geography-standard-2022",
+      "science-standard-2022",
       "physics-standard-2022",
+      "biology-standard-2022",
       "info-tech-standard-2022",
+      "sports-standard-2022",
+      "arts-standard-2022",
+      "labor-standard-2022",
       "math-standard-2022",
+      "chemistry-standard-2022",
     ]);
     expect(sources.every((source) => source.publisher === "中华人民共和国教育部")).toBe(
       true,
@@ -182,7 +193,7 @@ describe("official curriculum knowledge corpus", () => {
       );
       expect(section.content).not.toMatch(/北京师范大学|出版集团/u);
       expect(section.content).not.toMatch(
-        /(?:^|\n)(?:目录|前言|义务教育(?:课程方案|(?:语文|数学|物理|信息科技)课程标准)\(?2022年版\)?)(?:\n|$)/u,
+        /(?:^|\n)(?:目录|前言|义务教育(?:课程方案|(?:道德与法治|语文|数学|英语|科学|历史|地理|物理|化学|生物学|信息科技|劳动|艺术|体育与健康)课程标准)\(?2022年版\)?)(?:\n|$)/u,
       );
     }
   });
@@ -255,5 +266,32 @@ describe("official curriculum knowledge corpus", () => {
     expect(infoTechLocators?.some((locator) => locator === "四、课程内容 > （三）跨学科主题")).toBe(
       true,
     );
+  });
+
+  it("keeps distinctive course-plan clauses findable after the 14-subject expansion", () => {
+    const search = searchOfficialKnowledge({
+      query: "跨学科主题学习 课时",
+      limit: 8,
+    });
+    expect(search.status).toBe("FOUND");
+    expect(
+      search.results.some((result) => result.sourceId === "course-plan-2022"),
+    ).toBe(true);
+  });
+
+  it("indexes expanded subjects and does not treat 综合实践活动 as covered", () => {
+    const chemistry = searchOfficialKnowledge({
+      query: "化学 跨学科实践",
+      schoolStage: "MIDDLE",
+      disciplineCodes: ["chemistry"],
+      limit: 4,
+    });
+    expect(chemistry.status).toBe("FOUND");
+    expect(chemistry.results.every((result) =>
+      ["course-plan-2022", "chemistry-standard-2022"].includes(result.sourceId),
+    )).toBe(true);
+
+    expect(officialKnowledgeCoversDiscipline("chemistry")).toBe(true);
+    expect(officialKnowledgeCoversDiscipline("integrated")).toBe(false);
   });
 });

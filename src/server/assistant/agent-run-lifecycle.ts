@@ -6,6 +6,7 @@ import {
   type CommandContext,
   resolveCommandContext,
 } from "../commands/command-context";
+import { assertActiveBusinessActor } from "../school/teacher-authorization";
 
 const startInputSchema = z
   .object({
@@ -86,10 +87,20 @@ export async function startActivityAssistantRun(
   const context = resolveCommandContext(commandContext, ["UI"]);
   const actor = await database.appUser.findUnique({
     where: { id: context.actorId },
-    select: { role: true },
+    select: {
+      role: true,
+      accountStatus: true,
+      schoolId: true,
+      school: { select: { status: true } },
+    },
   });
 
   if (!actor) {
+    throw new AgentRunLifecycleError("NOT_FOUND");
+  }
+  try {
+    assertActiveBusinessActor(actor);
+  } catch {
     throw new AgentRunLifecycleError("NOT_FOUND");
   }
   if (actor.role !== "TEACHER") {
@@ -131,6 +142,10 @@ export async function finishActivityAssistantRun(
 ): Promise<FinishedAgentRun> {
   const input = finishInputSchema.parse(rawInput);
   const context = resolveCommandContext(commandContext, ["AGENT"]);
+  // Terminalizing an already-started run is audit cleanup, not new business
+  // access. Keep this available after a concurrent disable so RUNNING rows do
+  // not become false history; every command that can create business state is
+  // independently gated before its write.
   const updated = await database.agentRun.updateMany({
     where: {
       id: input.agentRunId,

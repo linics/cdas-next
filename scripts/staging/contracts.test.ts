@@ -19,10 +19,13 @@ const validEnvironment = {
   DIRECT_URL:
     "postgresql://direct:secret@project.example.com:5432/cdas_next_staging?sslmode=require",
   STAGING_DATABASE_NAME: "cdas_next_staging",
-  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_abcdefghijklmnopqrstuv",
-  CLERK_SECRET_KEY: "sk_test_abcdefghijklmnopqrstuv",
-  STAGING_TEST_TEACHER_CLERK_ID: "user_teacher012345",
-  STAGING_TEST_STUDENT_CLERK_ID: "user_student012345",
+  STAGING_AUTH_MODE: "postgres-local-v1",
+  STAGING_TEST_PRIMARY_SCHOOL_CODE: "SCHABC23",
+  STAGING_TEST_SECONDARY_SCHOOL_CODE: "SCHDEF45",
+  STAGING_TEST_TEACHER_STAFF_NO: "T-001",
+  STAGING_TEST_STUDENT_NO: "000001",
+  STAGING_TEST_OTHER_STUDENT_NO: "000002",
+  STAGING_TEST_OTHER_TEACHER_STAFF_NO: "T-002",
   AI_PROVIDER_DISABLED: "1",
   CDAS_DEPLOYMENT_ID: "a".repeat(40),
   STAGING_HEALTH_PROOF_SECRET: "h".repeat(32),
@@ -43,9 +46,9 @@ describe("evaluateStagingPreflight", () => {
     ["http URL", { STAGING_BASE_URL: "http://staging.cdas.example" }, "STAGING_BASE_URL_HTTPS_REMOTE"],
     ["loopback URL", { STAGING_BASE_URL: "https://localhost" }, "STAGING_BASE_URL_HTTPS_REMOTE"],
     ["URL query", { STAGING_BASE_URL: "https://staging.cdas.example/?debug=1" }, "STAGING_BASE_URL_HTTPS_REMOTE"],
-    ["live clerk", { NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_live_abcdefghijklmnopqrstuv" }, "CLERK_TEST_PUBLISHABLE_KEY"],
-    ["missing Clerk key", { CLERK_SECRET_KEY: "" }, "CLERK_TEST_SECRET_KEY"],
-    ["same Clerk identity", { STAGING_TEST_STUDENT_CLERK_ID: "user_teacher012345" }, "STAGING_TEST_CLERK_IDS_DISTINCT"],
+    ["wrong auth mode", { STAGING_AUTH_MODE: "external" }, "POSTGRES_LOCAL_AUTH_MODE"],
+    ["invalid school code", { STAGING_TEST_PRIMARY_SCHOOL_CODE: "school-a" }, "STAGING_TEST_PRIMARY_SCHOOL_CODE"],
+    ["same student number", { STAGING_TEST_OTHER_STUDENT_NO: "000001" }, "STAGING_TEST_LOCAL_IDENTITIES_DISTINCT"],
     ["local runtime database", { DATABASE_URL: "postgresql://runtime:secret@localhost:5432/cdas_next_staging?pgbouncer=true" }, "DATABASE_URL_REMOTE_POOLED"],
     ["reserved database", { STAGING_DATABASE_NAME: "postgres", DATABASE_URL: "postgresql://runtime:secret@project-pooler.example.com:5432/postgres?pgbouncer=true", DIRECT_URL: "postgresql://direct:secret@project.example.com:5432/postgres" }, "STAGING_DATABASE_NAME_ACKNOWLEDGED"],
     ["test overlap", { TEST_DATABASE_URL: "postgresql://test:secret@project-pooler.example.com:5432/cdas_next_staging?pgbouncer=true" }, "DATABASE_URL_ISOLATED_FROM_TEST_AND_E2E"],
@@ -62,8 +65,6 @@ describe("evaluateStagingPreflight", () => {
     ["custom staging domain in protected mode", { STAGING_DEPLOYMENT_PROTECTION_REQUIRED: "1" }, "STAGING_BASE_URL_HTTPS_REMOTE"],
     ["wrong Vercel project in protected mode", { STAGING_DEPLOYMENT_PROTECTION_REQUIRED: "1", STAGING_VERCEL_PROJECT_NAME: "cdas-next", STAGING_BASE_URL: "https://other-preview.vercel.app" }, "STAGING_BASE_URL_HTTPS_REMOTE"],
     ["invalid deployment protection mode", { STAGING_DEPLOYMENT_PROTECTION_REQUIRED: "true" }, "STAGING_DEPLOYMENT_PROTECTION_REQUIRED"],
-    ["a clickthrough teacher identity", { DEV_TEST_TEACHER_CLERK_ID: "user_devteacher" }, "NO_CLICKTHROUGH_AUTH_IDENTITIES"],
-    ["a clickthrough student identity", { DEV_TEST_STUDENT_CLERK_ID: "user_devstudent" }, "NO_CLICKTHROUGH_AUTH_IDENTITIES"],
   ])("fails closed for %s", (_name, override, code) => {
     const result = evaluateStagingPreflight({ ...validEnvironment, ...override });
 
@@ -98,13 +99,13 @@ describe("evaluateStagingPreflight", () => {
     expect(enabled.status).toBe("PASS");
   });
 
-  it("does not serialize URLs, secrets, or Clerk user IDs into preflight evidence", () => {
+  it("does not serialize URLs, secrets, or local identifiers into preflight evidence", () => {
     const result = evaluateStagingPreflight(validEnvironment);
     const serialized = JSON.stringify(result);
 
     expect(serialized).not.toContain("project-pooler.example.com");
     expect(serialized).not.toContain("secret");
-    expect(serialized).not.toContain("user_teacher012345");
+    expect(serialized).not.toContain("T-001");
   });
 
   it("requires the Vercel allowlist only when protected mode is explicitly enabled", () => {
@@ -124,10 +125,48 @@ describe("evaluateStagingPreflight", () => {
     );
   });
 
-  it("keeps generic Go/No-Go free of protected-mode secrets while Agent acceptance binds them", () => {
+  it("keeps generic Go/No-Go local-auth-only and Agent acceptance binds protected mode", () => {
     const generic = readFileSync(".github/workflows/staging-go-no-go.yml", "utf8");
+    const realE2e = readFileSync(".github/workflows/e2e-real.yml", "utf8");
+    expect(generic).not.toMatch(/clerk/iu);
+    expect(realE2e).not.toMatch(/clerk/iu);
+    expect(generic).toContain(
+      "STAGING_LOCAL_AUTH_ATTESTED: ${{ vars.STAGING_LOCAL_AUTH_ATTESTED }}",
+    );
+    expect(generic).toContain("STAGING_AUTH_MODE: postgres-local-v1");
+    for (const variable of [
+      "STAGING_TEST_PRIMARY_SCHOOL_CODE",
+      "STAGING_TEST_SECONDARY_SCHOOL_CODE",
+      "STAGING_TEST_TEACHER_STAFF_NO",
+      "STAGING_TEST_STUDENT_NO",
+      "STAGING_TEST_OTHER_STUDENT_NO",
+      "STAGING_TEST_OTHER_TEACHER_STAFF_NO",
+    ]) {
+      expect(generic).toContain(
+        variable + ": ${{ vars." + variable + " }}",
+      );
+    }
     expect(generic).not.toContain("STAGING_DEPLOYMENT_PROTECTION_REQUIRED");
     expect(generic).not.toContain("STAGING_VERCEL_AUTOMATION_BYPASS_SECRET");
+    expect(realE2e).toContain(
+      "E2E_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5434/cdas_next_e2e",
+    );
+    for (const identitySecret of [
+      "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
+      "CLERK_SECRET_KEY",
+      "DEV_TEST_TEACHER_CLERK_ID",
+      "DEV_TEST_STUDENT_CLERK_ID",
+    ]) {
+      expect(realE2e).not.toContain(identitySecret);
+    }
+    for (const realModelSecret of [
+      "DEEPSEEK_API_KEY",
+      "AI_TOOL_APPROVAL_SECRET",
+      "AI_MODEL",
+      "E2E_REAL_MODEL_ACK",
+    ]) {
+      expect(realE2e).toContain(realModelSecret);
+    }
     const agent = readFileSync(".github/workflows/staging-agent-acceptance.yml", "utf8");
     expect(agent).toContain('STAGING_DEPLOYMENT_PROTECTION_REQUIRED: "1"');
     expect(agent).toContain("STAGING_VERCEL_AUTOMATION_BYPASS_SECRET");

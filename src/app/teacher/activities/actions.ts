@@ -51,7 +51,7 @@ function failureState(previous: ActivityDraftActionState, values: ActivityDraftF
     return state(previous, { status: "unauthorized", message: error.code === "AUTH_NOT_CONFIGURED" ? "登录服务尚未设置，当前不会写入草稿。页面输入已保留。" : "登录状态已失效或教师账号尚未创建。页面输入已保留。", values });
   }
   if (error instanceof SaveActivityDraftError) {
-    if (["STALE_VERSION", "CONCURRENT_WRITE", "IDEMPOTENCY_MISMATCH", "DRAFT_SEALED"].includes(error.code)) {
+    if (["STALE_VERSION", "CONCURRENT_WRITE", "IDEMPOTENCY_MISMATCH", "DRAFT_SEALED", "SCHEMA_VERSION_CHANGED"].includes(error.code)) {
       return state(previous, { status: "conflict", message: "草稿已有较新版本或已封存，系统没有覆盖它。当前页面输入仍然保留，请另开最新版本核对。", values, nextIdempotencyKey: error.code === "IDEMPOTENCY_MISMATCH" ? createIdempotencyKey() : previous.nextIdempotencyKey });
     }
     if (error.code === "FORBIDDEN" || error.code === "NOT_FOUND") {

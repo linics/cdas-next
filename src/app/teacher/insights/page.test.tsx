@@ -37,11 +37,6 @@ vi.mock("next/navigation", () => ({
   notFound: mocks.notFound,
   usePathname: () => "/teacher/insights",
 }));
-vi.mock("@clerk/nextjs", () => ({
-  SignOutButton: ({ children }: { children: ReactNode }) => (
-    <span data-clerk-sign-out="true">{children}</span>
-  ),
-}));
 vi.mock("../../../server/db/client", () => ({
   getDatabaseClient: mocks.getDatabaseClient,
 }));

@@ -25,13 +25,23 @@ export function resolveE2eDatabaseUrl(): string {
   });
 }
 
-export function requireNonProductionClerkForE2e(): void {
+export function requireSafeE2eTarget(): void {
   loadE2eEnvironment();
+  resolveE2eDatabaseUrl();
+  const baseUrl = process.env.E2E_BASE_URL ?? "http://localhost:3100";
+  const parsed = new URL(baseUrl);
   if (
-    process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.startsWith("pk_live_") ||
-    process.env.CLERK_SECRET_KEY?.startsWith("sk_live_")
+    parsed.protocol !== "http:" ||
+    !parsed.hostname ||
+    !["localhost", "127.0.0.1", "::1"].includes(parsed.hostname) ||
+    parsed.port !== "3100" ||
+    (parsed.pathname !== "" && parsed.pathname !== "/") ||
+    parsed.username ||
+    parsed.password ||
+    parsed.search ||
+    parsed.hash
   ) {
-    throw new Error("E2E_CLERK_PRODUCTION_INSTANCE_FORBIDDEN");
+    throw new Error("E2E_BASE_URL_MUST_BE_LOOPBACK");
   }
 }
 

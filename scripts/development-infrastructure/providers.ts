@@ -7,7 +7,6 @@ import path from "node:path";
 import type { DevelopmentInfrastructureConfig } from "./contracts";
 
 export type RepositoryTarget = Readonly<{ owner: string; name: string; branch: string; sha: string; repositoryId: number }>;
-export type ClerkIdentity = Readonly<{ id: string; externalId: string }>;
 export type NeonConnection = Readonly<{ pooledUrl: string; directUrl: string }>;
 export type PreviewDeployment = Readonly<{ url: string; sha: string }>;
 export type WorkflowRun = Readonly<{ id: string; attempt: number; url: string; headSha: string }>;
@@ -51,10 +50,6 @@ export function minimalCommandEnvironment(options: Readonly<{ github?: boolean; 
   return base;
 }
 
-export interface ClerkProvider {
-  assertDevelopmentInstance(): Promise<void>;
-  ensureSyntheticIdentity(externalId: string, username: string, firstName: string, lastName: string): Promise<ClerkIdentity>;
-}
 export interface NeonProvider {
   ensureIsolatedDatabase(): Promise<NeonConnection>;
 }
@@ -62,6 +57,7 @@ export interface VercelProvider {
   assertProject(repository: RepositoryTarget): Promise<void>;
   assertPrivateBlobConnection(): Promise<void>;
   ensurePreviewEnvironment(values: Readonly<Record<string, string>>): Promise<void>;
+  removeLegacyPreviewEnvironment(): Promise<void>;
   ensureProtectionBypass(secret: string): Promise<void>;
   deployPreview(repository: RepositoryTarget): Promise<PreviewDeployment>;
 }
@@ -70,11 +66,27 @@ export interface GitHubProvider {
   ensureEnvironment(repository: RepositoryTarget): Promise<void>;
   setVariable(name: string, value: string): Promise<void>;
   setSecret(name: string, value: string): Promise<void>;
+  deleteVariable(name: string): Promise<void>;
+  deleteSecret(name: string): Promise<void>;
   dispatchAndVerify(repository: RepositoryTarget): Promise<WorkflowRun>;
   verifyDownloadedArtifact(run: WorkflowRun, context: ArtifactValidationContext): Promise<void>;
 }
 
-export interface InfrastructureProviders { clerk: ClerkProvider; neon: NeonProvider; vercel: VercelProvider; github: GitHubProvider; deployMigrations(connection: NeonConnection): Promise<void>; verifyApplication(input: Readonly<{ baseUrl: string; projectName: string; databaseUrl: string; clerkPublishableKey: string; clerkSecretKey: string; healthProofSecret: string; bypassSecret: string; deploymentSha: string }>): Promise<void>; }
+export interface InfrastructureProviders {
+  neon: NeonProvider;
+  vercel: VercelProvider;
+  github: GitHubProvider;
+  deployMigrations(connection: NeonConnection): Promise<void>;
+  verifyApplication(input: Readonly<{
+    baseUrl: string;
+    projectName: string;
+    databaseUrl: string;
+    authMode: "postgres-local-v1";
+    healthProofSecret: string;
+    bypassSecret: string;
+    deploymentSha: string;
+  }>): Promise<void>;
+}
 
 export class SafeCommandRunner implements CommandRunner {
   async run(command: string, args: readonly string[], options: Readonly<{ env?: Readonly<Record<string, string>>; cwd?: string; input?: string; timeoutMs?: number }> = {}): Promise<Readonly<{ stdout: string; stderr: string }>> {
@@ -98,7 +110,7 @@ type Fetcher = typeof fetch;
 async function json(fetcher: Fetcher, url: string, init: RequestInit): Promise<unknown> {
   let response: Response;
   const target = new URL(url);
-  if (target.protocol !== "https:" || !["api.clerk.com", "console.neon.tech"].includes(target.hostname)) throw new Error("DEVELOPMENT_INFRA_PROVIDER_ORIGIN_UNSAFE");
+  if (target.protocol !== "https:" || target.hostname !== "console.neon.tech") throw new Error("DEVELOPMENT_INFRA_PROVIDER_ORIGIN_UNSAFE");
   try { response = await fetcher(target, { ...init, redirect: "error", signal: AbortSignal.timeout(30_000) }); } catch { throw new Error("DEVELOPMENT_INFRA_PROVIDER_NETWORK_FAILED"); }
   if (!response.ok) throw new Error(`DEVELOPMENT_INFRA_PROVIDER_REQUEST_${response.status}`);
   return response.json().catch(() => { throw new Error("DEVELOPMENT_INFRA_PROVIDER_SCHEMA_INVALID"); });
@@ -106,25 +118,6 @@ async function json(fetcher: Fetcher, url: string, init: RequestInit): Promise<u
 function object(value: unknown): Record<string, unknown> { if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("DEVELOPMENT_INFRA_PROVIDER_SCHEMA_INVALID"); return value as Record<string, unknown>; }
 function text(value: unknown): string { return typeof value === "string" && value.length > 0 ? value : (() => { throw new Error("DEVELOPMENT_INFRA_PROVIDER_SCHEMA_INVALID"); })(); }
 function headers(token: string): HeadersInit { return { authorization: `Bearer ${token}`, "content-type": "application/json" }; }
-
-export class ClerkApiProvider implements ClerkProvider {
-  constructor(private readonly secretKey: string, private readonly fetcher: Fetcher = fetch) {}
-  async assertDevelopmentInstance(): Promise<void> {
-    const payload = object(await json(this.fetcher, "https://api.clerk.com/v1/instance", { headers: headers(this.secretKey) }));
-    if (payload.environment_type !== "development") throw new Error("DEVELOPMENT_INFRA_CLERK_INSTANCE_NOT_DEVELOPMENT");
-  }
-  async ensureSyntheticIdentity(externalId: string, username: string, firstName: string, lastName: string): Promise<ClerkIdentity> {
-    const query = new URLSearchParams({ external_id: externalId, limit: "2" });
-    const listed = await json(this.fetcher, `https://api.clerk.com/v1/users?${query}`, { headers: headers(this.secretKey) });
-    if (!Array.isArray(listed)) throw new Error("DEVELOPMENT_INFRA_PROVIDER_SCHEMA_INVALID");
-    if (listed.length > 1) throw new Error("DEVELOPMENT_INFRA_CLERK_IDENTITY_AMBIGUOUS");
-    const user = listed[0] ?? object(await json(this.fetcher, "https://api.clerk.com/v1/users", { method: "POST", headers: headers(this.secretKey), body: JSON.stringify({ external_id: externalId, username, first_name: firstName, last_name: lastName, skip_password_requirement: true }) }));
-    const target = object(user);
-    const id = text(target.id);
-    if (!/^user_[A-Za-z0-9]+$/u.test(id) || target.external_id !== externalId || target.username !== username || target.first_name !== firstName || target.last_name !== lastName) throw new Error("DEVELOPMENT_INFRA_CLERK_IDENTITY_CONFLICT");
-    return { id, externalId };
-  }
-}
 
 /** Deliberately validates every return shape; no unknown Neon branch is ever reused. */
 export class NeonApiProvider implements NeonProvider {
@@ -294,7 +287,27 @@ export async function verifyDownloadedAcceptanceArtifact(
     const final = object(JSON.parse(await readFile(path.join(candidate, entries[0].name, "final.json"), "utf8")));
     if (final.schema !== "staging-synthetic-acceptance-final.v1" || final.status !== "PASS" || final.realStudentDataAllowed !== false || final.productionDecision !== "NO_GO") throw new Error("DEVELOPMENT_INFRA_ARTIFACT_NOT_PASS");
     const tsxLoader = import.meta.resolve("tsx");
-    await runner.run("node", ["--import", tsxLoader, path.join(process.cwd(), "scripts", "staging", "acceptance", "assert-final.ts")], { cwd: directory, env: { ...minimalCommandEnvironment(), ...context.environment, STAGING_RUN_MARKER: marker } });
+    const verifierEnvironment = Object.fromEntries(
+      Object.entries(context.environment).filter(
+        ([name]) => !/^STAGING_TEST_[A-Z0-9_]+_PASSWORD$/u.test(name),
+      ),
+    );
+    await runner.run(
+      "node",
+      [
+        "--import",
+        tsxLoader,
+        path.join(process.cwd(), "scripts", "staging", "acceptance", "assert-final.ts"),
+      ],
+      {
+        cwd: directory,
+        env: {
+          ...minimalCommandEnvironment(),
+          ...verifierEnvironment,
+          STAGING_RUN_MARKER: marker,
+        },
+      },
+    );
   } catch (error) {
     if (error instanceof Error && error.message.startsWith("DEVELOPMENT_INFRA_")) throw error;
     throw new Error("DEVELOPMENT_INFRA_ARTIFACT_INVALID");

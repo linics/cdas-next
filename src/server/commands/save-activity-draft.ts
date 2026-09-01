@@ -3,6 +3,7 @@ import canonicalize from "canonicalize";
 import { z } from "zod";
 import {
   activityContentSchema,
+  projectionColumns,
   type ActivityContent,
 } from "../../domain/activity/activity-content";
 import {
@@ -21,6 +22,7 @@ import {
   type ResolvedCommandContext,
   resolveCommandContext,
 } from "./command-context";
+import { isActiveSchoolMember } from "../school/teacher-authorization";
 
 const commandInputSchema = z
   .object({
@@ -62,6 +64,7 @@ export class SaveActivityDraftError extends Error {
       | "STALE_VERSION"
       | "DRAFT_SEALED"
       | "LEGACY_SCHEMA_READ_ONLY"
+      | "SCHEMA_VERSION_CHANGED"
       | "INVALID_AGENT_RUN"
       | "IDEMPOTENCY_MISMATCH"
       | "CONCURRENT_WRITE",
@@ -82,15 +85,15 @@ function hashValue(value: unknown): string {
 }
 
 function contentColumns(content: ActivityContent) {
+  // v3 keeps no second copy of goals, evidence or criteria: the scalar columns
+  // are derived, and the database rejects the row if they drift.
+  const projection = projectionColumns(content);
   return {
     schemaVersion: content.schemaVersion,
-    taskBook: content.schemaVersion === 2 ? content : Prisma.DbNull,
+    taskBook: content.schemaVersion === 1 ? Prisma.DbNull : content,
     title: content.title,
     summary: content.summary,
-    learningObjectives: content.learningObjectives,
-    taskInstructions: content.taskInstructions,
-    evidenceRequirements: content.evidenceRequirements,
-    feedbackCriteria: content.feedbackCriteria,
+    ...projection,
   };
 }
 
@@ -176,6 +179,10 @@ async function runTransaction(
         return response;
       }
 
+      if (!(await isActiveSchoolMember(transaction, context.actorId))) {
+        throw new SaveActivityDraftError("NOT_FOUND");
+      }
+
       const actor = await transaction.appUser.findUnique({
         where: { id: context.actorId },
         select: { role: true },
@@ -243,7 +250,12 @@ async function runTransaction(
       } else {
         const draft = await transaction.activityDraft.findUnique({
           where: { id: input.draftId },
-          select: { ownerId: true, status: true, version: true },
+          select: {
+            ownerId: true,
+            status: true,
+            version: true,
+            schemaVersion: true,
+          },
         });
         if (!draft || draft.ownerId !== context.actorId) {
           throw new SaveActivityDraftError("NOT_FOUND");
@@ -254,6 +266,9 @@ async function runTransaction(
         if (draft.version !== input.expectedVersion) {
           throw new SaveActivityDraftError("STALE_VERSION");
         }
+        if (draft.schemaVersion !== input.content.schemaVersion) {
+          throw new SaveActivityDraftError("SCHEMA_VERSION_CHANGED");
+        }
 
         version = draft.version + 1;
         beforeVersion = draft.version;
@@ -262,6 +277,7 @@ async function runTransaction(
             id: input.draftId,
             ownerId: context.actorId,
             version: draft.version,
+            schemaVersion: input.content.schemaVersion,
             status: { not: "SEALED" },
           },
           data: {

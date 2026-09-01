@@ -1,107 +1,90 @@
 # Self-host CDAS Next on a small China VPS
 
-Status: operator runbook for replacing Vercel/Neon with a single Ubuntu host.
-Default target: `122.51.77.121` (Tencent SA3.MEDIUM2, 2C/2G). The previous
-`score-my-lover` service is removed so this host only runs CDAS Next + PostgreSQL.
+Status: operator runbook for a single Ubuntu host running CDAS Next, PostgreSQL 17 and nginx.
 
-## Capacity
+The current default target is `122.51.77.121` (2C/2G). It is suitable only for a small demo or internal trial. Keep `AI_PROVIDER_DISABLED=1` on 2 GB RAM and never build on the VPS; build on a workstation or CI, then upload the standalone release.
 
-- Fits small-class demo / internal trial (about 1 teacher + 5–15 light students).
-- Keep `AI_PROVIDER_DISABLED=1` on 2GB RAM.
-- Attachments run on this box's own disk. Set both:
+## Storage
 
-  ```
-  ATTACHMENT_STORAGE_ENABLED=1
-  ATTACHMENT_STORAGE_DIR=/opt/cdas-next/shared/attachments
-  ```
+Self-hosted attachments use persistent local disk:
 
-  That path sits **outside** `releases/`, so the `--link-dest` rotation a deploy
-  performs never touches student files. Budget disk for 20MB x 5 per submission,
-  and back that directory up alongside the database — nothing else holds those
-  bytes.
+```dotenv
+ATTACHMENT_STORAGE_ENABLED=1
+ATTACHMENT_STORAGE_DIR=/opt/cdas-next/shared/attachments
+```
 
-  The guarantee matches the Vercel Blob path rather than weakening it: that one
-  never scanned for malware either. Both verify the declared media type against
-  the file's own signature, through the same shared check, and reject a file
-  renamed into a type it is not.
-- Never run `pnpm build` on the VPS; build on a workstation or CI, then upload the standalone release.
+The directory is outside `releases/`, so release rotation does not touch student files. Back it up together with PostgreSQL. The product verifies declared media type and file signature, but does not claim malware scanning.
 
-## Public entry (Tencent without ICP)
+## Public entry
 
-On this Tencent instance **without ICP备案**:
-
-| Path | Result |
-| --- | --- |
-| `http://122.51.77.121` | Works (nginx → app). **Use this.** |
-| Custom / sslip.io domain on :80 | DNSPod webblock redirect (unfiled domain) |
-| Inbound TLS on :443 / :8443 | Often TCP-accept then drop ClientHello before nginx |
-
-So the supported public origin today is:
+On the current Tencent host without ICP filing, the supported origin is:
 
 `http://122.51.77.121`
 
-Set Clerk **development** instance `development_origin` + `allowed_origins` to that URL
-(API: `PATCH https://api.clerk.com/v1/instance`). Do **not** set systemd
-`HOSTNAME=127.0.0.1` — that makes Clerk rewrite to `https://localhost:3000` and hang.
-
-When you have an ICP-filed domain pointing at this IP, issue Let's Encrypt, put
-TLS nginx in place, and point Clerk at `https://your.domain`.
+Custom HTTP domains may be redirected and inbound TLS may be filtered before nginx. After an ICP-filed domain is available, configure TLS and change `CDAS_PUBLIC_ORIGIN` to the final HTTPS origin. Local authentication has no external identity-provider origin or callback configuration.
 
 ## One-shot deploy
 
-From the repo root on a machine that can SSH to the VPS:
+From the repository root on a machine that can SSH to the VPS:
 
 ```bash
-export CDAS_VPS_SSH_KEY_FILE=~/.ssh/yunservice.pem
-# or: export CDAS_VPS_SSH_PRIVATE_KEY="$(cat ~/.ssh/yunservice.pem)"
-export NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_...
-export CLERK_SECRET_KEY=sk_...
+export CDAS_VPS_SSH_KEY_FILE=/absolute/path/to/yunservice.pem
 export CDAS_PUBLIC_ORIGIN=http://122.51.77.121
-# optional:
+
+# Optional; keep disabled on the 2 GB host unless capacity is reviewed.
 # export DEEPSEEK_API_KEY=...
 # export AI_TOOL_APPROVAL_SECRET=...
 # export AI_ATTACHMENT_VISION_MODEL=deepseek-v4-flash-vision-exp
 # export AI_PROVIDER_DISABLED=0
 
-chmod +x scripts/self-host/*.sh
-./scripts/self-host/deploy.sh
+pnpm self-host:deploy
 ```
 
-The script:
+The deploy script:
 
-1. Builds `output: "standalone"` locally
-2. Deletes `score-my-lover` on the VPS
-3. Installs PostgreSQL 17, nginx, and `cdas-next.service`
-4. Uploads the release under `/opt/cdas-next/releases/<id>`
-5. Runs `prisma migrate deploy`
-6. Restarts the app and curls `/api/health` + `/teacher`
+1. builds the Next.js standalone release locally;
+2. provisions PostgreSQL 17, nginx, persistent attachment storage and systemd;
+3. uploads a timestamped release under `/opt/cdas-next/releases/<id>`;
+4. runs `prisma migrate deploy`;
+5. switches `/opt/cdas-next/current`, restarts the app and checks health/routes;
+6. removes retired identity-provider keys from the existing remote `.env`.
 
-## Demo seed (after first deploy)
+The script replaces the previous `score-my-lover` service on this dedicated host. Do not run it against a shared or production host without first reviewing that destructive scope.
 
-From the laptop (SSH tunnel to Postgres):
+## Bootstrap the platform administrator
+
+After the first deploy, open an SSH tunnel to PostgreSQL and run the interactive bootstrap from the repository checkout:
 
 ```bash
-ssh -i ~/.ssh/yunservice.pem -N -L 15432:127.0.0.1:5432 ubuntu@122.51.77.121 &
-# DATABASE_URL from /opt/cdas-next/shared/.env with host 127.0.0.1:15432
-export DATABASE_URL=postgresql://cdas:...@127.0.0.1:15432/cdas_next
-export DIRECT_URL="$DATABASE_URL"
-# plus DEV_TEST_TEACHER_CLERK_ID / DEV_TEST_STUDENT_CLERK_ID from .env.local
-pnpm demo:seed -- --confirm-database cdas_next --reset
+ssh -i /absolute/path/to/yunservice.pem \
+  -N -L 15432:127.0.0.1:5432 ubuntu@122.51.77.121
 ```
 
-Open `http://122.51.77.121/teacher` or `/student` and sign in with the Clerk
-users that match those IDs.
+In another terminal, use the database password from `/opt/cdas-next/shared/.env` without printing it:
+
+```bash
+export DATABASE_URL='postgresql://cdas:<password>@127.0.0.1:15432/cdas_next'
+export DIRECT_URL="$DATABASE_URL"
+pnpm bootstrap:admin \
+  --admin-username operator \
+  --admin-name "平台管理员" \
+  --confirm-database cdas_next
+```
+
+The command prompts twice for a hidden password and never accepts a password argument. Log in at `/login/admin`, then create the school and provision teacher/student accounts through the product workflow. Do not seed production-shaped accounts with gate passwords.
 
 ## Layout on the VPS
 
 | Path | Role |
 | --- | --- |
-| `/opt/cdas-next/current` | Symlink to active release |
-| `/opt/cdas-next/shared/.env` | Runtime secrets (`0600`) |
-| `/opt/cdas-next/node` | Node 24 tree |
-| `/etc/systemd/system/cdas-next.service` | Process manager |
-| `/etc/nginx/sites-enabled/cdas-next` | HTTP reverse proxy to `127.0.0.1:3000` |
+| `/opt/cdas-next/current` | symlink to active release |
+| `/opt/cdas-next/releases/` | timestamped standalone releases |
+| `/opt/cdas-next/shared/.env` | runtime secrets, mode `0600` |
+| `/opt/cdas-next/shared/attachments` | persistent private attachments |
+| `/opt/cdas-next/node` | Node 24 runtime |
+| `/etc/systemd/system/cdas-next.service` | process manager |
+| `/etc/nginx/sites-enabled/cdas-next` | reverse proxy to `127.0.0.1:3000` |
 
 ## What stays on Vercel
 
-Development Preview, Neon staging, and the protected GitHub acceptance gates stay on Vercel/Neon. This VPS is a second runtime for China latency, not a replacement for those gates.
+Development Preview, isolated Neon staging and protected GitHub acceptance gates stay on Vercel/Neon. This VPS is a separate China-latency runtime and does not replace those gates or authorize real student data.

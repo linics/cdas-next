@@ -2,89 +2,115 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
-const auth = vi.fn();
-const headerStore = new Map<string, string>();
-
-vi.mock("@clerk/nextjs/server", () => ({
-  auth: (...args: unknown[]) => auth(...args),
-}));
+const cookieStore = new Map<string, string>();
 
 vi.mock("next/headers", () => ({
-  headers: async () => ({
-    get: (name: string) => headerStore.get(name) ?? null,
+  cookies: async () => ({
+    get: (name: string) => {
+      const value = cookieStore.get(name);
+      return value ? { name, value } : undefined;
+    },
+    set: vi.fn(),
   }),
 }));
 
+import { hashSessionToken } from "./local-auth";
 import { AuthenticationError, getCurrentActor } from "./current-actor";
 
-const teacher = {
+const token = "A".repeat(43);
+type ActorFixture = Readonly<{
+  id: string;
+  authSubject: string;
+  role: "TEACHER";
+  displayName: string;
+  accountStatus: "ACTIVE" | "DISABLED";
+  schoolId: string;
+  school: { status: "ACTIVE" | "DISABLED" };
+  localCredential: { mustChangePassword: boolean };
+}>;
+
+const teacher: ActorFixture = {
   id: "teacher-row",
-  authSubject: "user_teacher123",
+  authSubject: "local:teacher-row",
   role: "TEACHER" as const,
   displayName: "林老师",
-};
-const student = {
-  id: "student-row",
-  authSubject: "user_student123",
-  role: "STUDENT" as const,
-  displayName: "陈同学",
+  accountStatus: "ACTIVE" as const,
+  schoolId: "school-row",
+  school: { status: "ACTIVE" as const },
+  localCredential: { mustChangePassword: false },
 };
 
-function databaseDouble(users = [teacher, student]) {
+function databaseDouble(
+  session: typeof teacher | null = teacher,
+  options: Readonly<{ expiresAt?: Date; revokedAt?: Date | null }> = {},
+) {
   return {
-    appUser: {
-      findUnique: vi.fn(async ({ where }: { where: { authSubject: string } }) =>
-        users.find((user) => user.authSubject === where.authSubject) ?? null,
-      ),
+    authSession: {
+      findFirst: vi.fn(async ({ where }: {
+        where: {
+          tokenHash: string;
+          revokedAt: null;
+          expiresAt: { gt: Date };
+        };
+      }) => {
+        if (!session || where.tokenHash !== hashSessionToken(token)) return null;
+        const expiresAt = options.expiresAt ?? new Date("2099-01-01T00:00:00Z");
+        if (options.revokedAt || expiresAt <= where.expiresAt.gt) return null;
+        return { user: session, expiresAt, revokedAt: null };
+      }),
     },
   };
 }
 
-describe("getCurrentActor clickthrough", () => {
+describe("getCurrentActor local session", () => {
   beforeEach(() => {
-    headerStore.clear();
-    vi.stubEnv("NODE_ENV", "development");
-    vi.stubEnv("DEV_TEST_TEACHER_CLERK_ID", teacher.authSubject);
-    vi.stubEnv("DEV_TEST_STUDENT_CLERK_ID", student.authSubject);
-    vi.stubEnv("VERCEL_ENV", "");
+    cookieStore.clear();
   });
 
   afterEach(() => {
-    vi.unstubAllEnvs();
     vi.clearAllMocks();
   });
 
-  it("enters teacher and student workspaces without Clerk by default", async () => {
-    headerStore.set("x-cdas-pathname", "/teacher");
-    await expect(
-      getCurrentActor(databaseDouble() as never),
-    ).resolves.toMatchObject(teacher);
+  it("rejects a missing, forged, expired, or revoked cookie", async () => {
+    await expect(getCurrentActor(databaseDouble() as never)).rejects.toMatchObject({
+      code: "UNAUTHENTICATED",
+    } satisfies Pick<AuthenticationError, "code">);
 
-    headerStore.set("x-cdas-pathname", "/student");
-    await expect(
-      getCurrentActor(databaseDouble() as never),
-    ).resolves.toMatchObject(student);
-    expect(auth).not.toHaveBeenCalled();
+    cookieStore.set("cdas_session", "forged");
+    await expect(getCurrentActor(databaseDouble() as never)).rejects.toMatchObject({
+      code: "UNAUTHENTICATED",
+    });
+
+    cookieStore.set("cdas_session", token);
+    await expect(getCurrentActor(databaseDouble(teacher, {
+      expiresAt: new Date("2000-01-01T00:00:00Z"),
+    }) as never)).rejects.toMatchObject({ code: "UNAUTHENTICATED" });
+    await expect(getCurrentActor(databaseDouble(teacher, {
+      revokedAt: new Date(),
+    }) as never)).rejects.toMatchObject({ code: "UNAUTHENTICATED" });
   });
 
-  it("uses Clerk when clickthrough is explicitly turned off", async () => {
-    vi.stubEnv("DEV_CLICKTHROUGH_AUTH", "0");
-    vi.stubEnv("NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY", "pk_test_example");
-    vi.stubEnv("CLERK_SECRET_KEY", "sk_test_example");
-    headerStore.set("x-cdas-pathname", "/teacher");
-    auth.mockResolvedValue({ userId: teacher.authSubject });
-
-    await expect(
-      getCurrentActor(databaseDouble() as never),
-    ).resolves.toMatchObject(teacher);
-    expect(auth).toHaveBeenCalled();
+  it("returns an active actor for a valid local session", async () => {
+    cookieStore.set("cdas_session", token);
+    await expect(getCurrentActor(databaseDouble() as never)).resolves.toMatchObject({
+      id: teacher.id,
+      role: "TEACHER",
+    });
   });
 
-  it("rejects unknown paths instead of inventing an actor", async () => {
-    headerStore.set("x-cdas-pathname", "/");
-    await expect(getCurrentActor(databaseDouble() as never)).rejects.toMatchObject(
-      { code: "UNAUTHENTICATED" } satisfies Pick<AuthenticationError, "code">,
-    );
-    expect(auth).not.toHaveBeenCalled();
+  it("enforces account, school, and mandatory-password-change gates", async () => {
+    cookieStore.set("cdas_session", token);
+    await expect(getCurrentActor(databaseDouble({
+      ...teacher,
+      accountStatus: "DISABLED",
+    }) as never)).rejects.toMatchObject({ code: "ACCOUNT_DISABLED" });
+    await expect(getCurrentActor(databaseDouble({
+      ...teacher,
+      school: { status: "DISABLED" },
+    }) as never)).rejects.toMatchObject({ code: "SCHOOL_DISABLED" });
+    await expect(getCurrentActor(databaseDouble({
+      ...teacher,
+      localCredential: { mustChangePassword: true },
+    }) as never)).rejects.toMatchObject({ code: "PASSWORD_CHANGE_REQUIRED" });
   });
 });

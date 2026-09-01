@@ -19,15 +19,25 @@ jobs:
       STAGING_RUN_MARKER: cdas-staging-${{ github.run_id }}-${{ github.run_attempt }}
       STAGING_DEPLOYMENT_PROTECTION_REQUIRED: "1"
       STAGING_DATA_ACK: synthetic-data-only-approved
+      STAGING_AUTH_MODE: postgres-local-v1
       STAGING_SYNTHETIC_ONLY_ATTESTED: ${{ vars.STAGING_SYNTHETIC_ONLY_ATTESTED }}
-      STAGING_CLERK_INSTANCE_ATTESTED: ${{ vars.STAGING_CLERK_INSTANCE_ATTESTED }}
+      STAGING_LOCAL_AUTH_ATTESTED: ${{ vars.STAGING_LOCAL_AUTH_ATTESTED }}
       STAGING_DATABASE_ISOLATION_ATTESTED: ${{ vars.STAGING_DATABASE_ISOLATION_ATTESTED }}
       STAGING_HOSTING_ACCESS_ATTESTED: ${{ vars.STAGING_HOSTING_ACCESS_ATTESTED }}
       STAGING_ROLLBACK_OWNER_ATTESTED: ${{ vars.STAGING_ROLLBACK_OWNER_ATTESTED }}
       STAGING_RETENTION_ATTESTED: ${{ vars.STAGING_RETENTION_ATTESTED }}
       STAGING_ACCEPTANCE_WRITES_ATTESTED: ${{ vars.STAGING_ACCEPTANCE_WRITES_ATTESTED }}
-      STAGING_ACCEPTANCE_CLERK_TOKENS_ATTESTED: ${{ vars.STAGING_ACCEPTANCE_CLERK_TOKENS_ATTESTED }}
+      STAGING_ACCEPTANCE_LOCAL_AUTH_ATTESTED: ${{ vars.STAGING_ACCEPTANCE_LOCAL_AUTH_ATTESTED }}
       STAGING_ACCEPTANCE_RETENTION_ATTESTED: ${{ vars.STAGING_ACCEPTANCE_RETENTION_ATTESTED }}
+      STAGING_TEST_PRIMARY_SCHOOL_CODE: ${{ vars.STAGING_TEST_PRIMARY_SCHOOL_CODE }}
+      STAGING_TEST_SECONDARY_SCHOOL_CODE: ${{ vars.STAGING_TEST_SECONDARY_SCHOOL_CODE }}
+      STAGING_TEST_TEACHER_STAFF_NO: ${{ vars.STAGING_TEST_TEACHER_STAFF_NO }}
+      STAGING_TEST_STUDENT_NO: ${{ vars.STAGING_TEST_STUDENT_NO }}
+      STAGING_TEST_OTHER_STUDENT_NO: ${{ vars.STAGING_TEST_OTHER_STUDENT_NO }}
+      STAGING_TEST_OTHER_TEACHER_STAFF_NO: ${{ vars.STAGING_TEST_OTHER_TEACHER_STAFF_NO }}
+      STAGING_TEST_DISABLED_ACCOUNT_STUDENT_NO: ${{ vars.STAGING_TEST_DISABLED_ACCOUNT_STUDENT_NO }}
+      STAGING_TEST_DISABLED_SCHOOL_CODE: ${{ vars.STAGING_TEST_DISABLED_SCHOOL_CODE }}
+      STAGING_TEST_DISABLED_SCHOOL_TEACHER_STAFF_NO: ${{ vars.STAGING_TEST_DISABLED_SCHOOL_TEACHER_STAFF_NO }}
       STAGING_ACCEPTANCE_TEST_TEACHER_NAME: CDAS Staging Synthetic Teacher
       STAGING_ACCEPTANCE_TEST_STUDENT_NAME: CDAS Staging Synthetic Student
       STAGING_ACCEPTANCE_TEST_OTHER_STUDENT_NAME: CDAS Staging Synthetic Other Student
@@ -61,22 +71,23 @@ jobs:
           STAGING_DATABASE_NAME: ${{ vars.STAGING_DATABASE_NAME }}
           DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
           DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
-          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.STAGING_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
-          CLERK_SECRET_KEY: ${{ secrets.STAGING_CLERK_SECRET_KEY }}
-          STAGING_TEST_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_TEACHER_CLERK_ID }}
-          STAGING_TEST_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_STUDENT_CLERK_ID }}
           STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
+          STAGING_TEST_PRIMARY_SCHOOL_CODE: ${{ vars.STAGING_TEST_PRIMARY_SCHOOL_CODE }}
+          STAGING_TEST_SECONDARY_SCHOOL_CODE: ${{ vars.STAGING_TEST_SECONDARY_SCHOOL_CODE }}
+          STAGING_TEST_TEACHER_STAFF_NO: ${{ vars.STAGING_TEST_TEACHER_STAFF_NO }}
+          STAGING_TEST_STUDENT_NO: ${{ vars.STAGING_TEST_STUDENT_NO }}
+          STAGING_TEST_OTHER_STUDENT_NO: ${{ vars.STAGING_TEST_OTHER_STUDENT_NO }}
+          STAGING_TEST_OTHER_TEACHER_STAFF_NO: ${{ vars.STAGING_TEST_OTHER_TEACHER_STAFF_NO }}
         run: pnpm staging:preflight
-      - name: Build production application with the staging Clerk public key
+      - name: Build production application
         id: build
         if: ${{ steps.preflight.outcome == 'success' }}
         continue-on-error: true
         env:
           NODE_ENV: production
           AI_PROVIDER_DISABLED: "1"
-          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.STAGING_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
         run: pnpm build
-      - name: Verify external PostgreSQL metadata in explicit read-only transactions
+      - name: Verify external PostgreSQL metadata in read-only transactions
         id: database
         if: ${{ steps.preflight.outcome == 'success' }}
         continue-on-error: true
@@ -101,8 +112,6 @@ jobs:
           STAGING_BASE_URL: ${{ secrets.STAGING_BASE_URL }}
           STAGING_VERCEL_PROJECT_NAME: ${{ vars.STAGING_VERCEL_PROJECT_NAME }}
           DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
-          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.STAGING_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
-          CLERK_SECRET_KEY: ${{ secrets.STAGING_CLERK_SECRET_KEY }}
           STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
           STAGING_VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.STAGING_VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: pnpm staging:verify-application
@@ -121,17 +130,17 @@ jobs:
           AI_PROVIDER_DISABLED: "1"
           STAGING_BASE_URL: ${{ secrets.STAGING_BASE_URL }}
           STAGING_VERCEL_PROJECT_NAME: ${{ vars.STAGING_VERCEL_PROJECT_NAME }}
-          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.STAGING_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
-          CLERK_SECRET_KEY: ${{ secrets.STAGING_CLERK_SECRET_KEY }}
-          STAGING_TEST_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_TEACHER_CLERK_ID }}
-          STAGING_TEST_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_STUDENT_CLERK_ID }}
-          STAGING_TEST_OTHER_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_STUDENT_CLERK_ID }}
-          STAGING_TEST_OTHER_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_TEACHER_CLERK_ID }}
           DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
           DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
           STAGING_DATABASE_NAME: ${{ vars.STAGING_DATABASE_NAME }}
           STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
           STAGING_VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.STAGING_VERCEL_AUTOMATION_BYPASS_SECRET }}
+          STAGING_TEST_TEACHER_PASSWORD: ${{ secrets.STAGING_TEST_TEACHER_PASSWORD }}
+          STAGING_TEST_STUDENT_PASSWORD: ${{ secrets.STAGING_TEST_STUDENT_PASSWORD }}
+          STAGING_TEST_OTHER_STUDENT_PASSWORD: ${{ secrets.STAGING_TEST_OTHER_STUDENT_PASSWORD }}
+          STAGING_TEST_OTHER_TEACHER_PASSWORD: ${{ secrets.STAGING_TEST_OTHER_TEACHER_PASSWORD }}
+          STAGING_TEST_DISABLED_ACCOUNT_PASSWORD: ${{ secrets.STAGING_TEST_DISABLED_ACCOUNT_PASSWORD }}
+          STAGING_TEST_DISABLED_SCHOOL_TEACHER_PASSWORD: ${{ secrets.STAGING_TEST_DISABLED_SCHOOL_TEACHER_PASSWORD }}
         run: pnpm staging:acceptance:gate
       - name: Preserve sanitized staging readiness evidence
         if: always()
@@ -155,12 +164,6 @@ jobs:
           DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
           DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
           STAGING_DATABASE_NAME: ${{ vars.STAGING_DATABASE_NAME }}
-          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.STAGING_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
-          CLERK_SECRET_KEY: ${{ secrets.STAGING_CLERK_SECRET_KEY }}
-          STAGING_TEST_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_TEACHER_CLERK_ID }}
-          STAGING_TEST_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_STUDENT_CLERK_ID }}
-          STAGING_TEST_OTHER_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_STUDENT_CLERK_ID }}
-          STAGING_TEST_OTHER_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_TEACHER_CLERK_ID }}
           STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
           STAGING_VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.STAGING_VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: pnpm staging:acceptance:assert-gate
@@ -174,11 +177,21 @@ jobs:
     env:
       STAGING_RUN_MARKER: cdas-staging-${{ github.run_id }}-${{ github.run_attempt }}
       STAGING_DEPLOYMENT_PROTECTION_REQUIRED: "1"
+      STAGING_AUTH_MODE: postgres-local-v1
       CDAS_DEPLOYMENT_ID: ${{ github.sha }}
       AI_PROVIDER_DISABLED: "1"
       STAGING_ACCEPTANCE_WRITES_ATTESTED: ${{ vars.STAGING_ACCEPTANCE_WRITES_ATTESTED }}
-      STAGING_ACCEPTANCE_CLERK_TOKENS_ATTESTED: ${{ vars.STAGING_ACCEPTANCE_CLERK_TOKENS_ATTESTED }}
+      STAGING_ACCEPTANCE_LOCAL_AUTH_ATTESTED: ${{ vars.STAGING_ACCEPTANCE_LOCAL_AUTH_ATTESTED }}
       STAGING_ACCEPTANCE_RETENTION_ATTESTED: ${{ vars.STAGING_ACCEPTANCE_RETENTION_ATTESTED }}
+      STAGING_TEST_PRIMARY_SCHOOL_CODE: ${{ vars.STAGING_TEST_PRIMARY_SCHOOL_CODE }}
+      STAGING_TEST_SECONDARY_SCHOOL_CODE: ${{ vars.STAGING_TEST_SECONDARY_SCHOOL_CODE }}
+      STAGING_TEST_TEACHER_STAFF_NO: ${{ vars.STAGING_TEST_TEACHER_STAFF_NO }}
+      STAGING_TEST_STUDENT_NO: ${{ vars.STAGING_TEST_STUDENT_NO }}
+      STAGING_TEST_OTHER_STUDENT_NO: ${{ vars.STAGING_TEST_OTHER_STUDENT_NO }}
+      STAGING_TEST_OTHER_TEACHER_STAFF_NO: ${{ vars.STAGING_TEST_OTHER_TEACHER_STAFF_NO }}
+      STAGING_TEST_DISABLED_ACCOUNT_STUDENT_NO: ${{ vars.STAGING_TEST_DISABLED_ACCOUNT_STUDENT_NO }}
+      STAGING_TEST_DISABLED_SCHOOL_CODE: ${{ vars.STAGING_TEST_DISABLED_SCHOOL_CODE }}
+      STAGING_TEST_DISABLED_SCHOOL_TEACHER_STAFF_NO: ${{ vars.STAGING_TEST_DISABLED_SCHOOL_TEACHER_STAFF_NO }}
       STAGING_ACCEPTANCE_TEST_TEACHER_NAME: CDAS Staging Synthetic Teacher
       STAGING_ACCEPTANCE_TEST_STUDENT_NAME: CDAS Staging Synthetic Student
       STAGING_ACCEPTANCE_TEST_OTHER_STUDENT_NAME: CDAS Staging Synthetic Other Student
@@ -205,25 +218,19 @@ jobs:
         with:
           name: staging-synthetic-readiness-${{ github.run_id }}-${{ github.run_attempt }}
           path: output
-      - name: Assert downloaded evidence is same-run and GO before any external write
+      - name: Assert downloaded evidence is same-run and GO
         id: gate
         continue-on-error: true
         env:
           STAGING_BASE_URL: ${{ secrets.STAGING_BASE_URL }}
           STAGING_VERCEL_PROJECT_NAME: ${{ vars.STAGING_VERCEL_PROJECT_NAME }}
-          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.STAGING_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
-          CLERK_SECRET_KEY: ${{ secrets.STAGING_CLERK_SECRET_KEY }}
-          STAGING_TEST_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_TEACHER_CLERK_ID }}
-          STAGING_TEST_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_STUDENT_CLERK_ID }}
-          STAGING_TEST_OTHER_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_STUDENT_CLERK_ID }}
-          STAGING_TEST_OTHER_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_TEACHER_CLERK_ID }}
           STAGING_DATABASE_NAME: ${{ vars.STAGING_DATABASE_NAME }}
           STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
           DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
           DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
           STAGING_VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.STAGING_VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: pnpm staging:acceptance:assert-gate
-      - name: Install Chromium before the immediate pre-write checks
+      - name: Install Chromium before any browser work
         id: chromium
         if: ${{ steps.gate.outcome == 'success' }}
         run: |
@@ -231,84 +238,96 @@ jobs:
           .venv-staging-acceptance/bin/python -m pip install -r scripts/e2e/requirements.txt
           .venv-staging-acceptance/bin/python -m playwright install --with-deps chromium
           echo "$PWD/.venv-staging-acceptance/bin" >> "$GITHUB_PATH"
-      - name: Verify all four Clerk identities and ticket capability before database writes
-        id: identity
+      - name: Reverify the current remote deployment immediately before writes
+        id: immediate-health
         if: ${{ steps.chromium.outcome == 'success' }}
         continue-on-error: true
         env:
           STAGING_BASE_URL: ${{ secrets.STAGING_BASE_URL }}
           STAGING_VERCEL_PROJECT_NAME: ${{ vars.STAGING_VERCEL_PROJECT_NAME }}
           DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
-          DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
-          STAGING_DATABASE_NAME: ${{ vars.STAGING_DATABASE_NAME }}
-          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.STAGING_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
-          CLERK_SECRET_KEY: ${{ secrets.STAGING_CLERK_SECRET_KEY }}
-          STAGING_TEST_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_TEACHER_CLERK_ID }}
-          STAGING_TEST_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_STUDENT_CLERK_ID }}
-          STAGING_TEST_OTHER_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_STUDENT_CLERK_ID }}
-          STAGING_TEST_OTHER_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_TEACHER_CLERK_ID }}
           STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
+          STAGING_VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.STAGING_VERCEL_AUTOMATION_BYPASS_SECRET }}
+        run: pnpm staging:verify-application
+      - name: Record the final deployment proof before database writes
+        id: immediate-evidence
+        if: ${{ always() && steps.chromium.outcome == 'success' }}
+        continue-on-error: true
+        env:
+          STAGING_IMMEDIATE_HEALTH_OUTCOME: ${{ steps.immediate-health.outcome }}
+        run: pnpm staging:acceptance:record-immediate-health
+      - name: Append the local-auth synthetic namespace
+        id: bootstrap
+        if: ${{ steps.immediate-evidence.outcome == 'success' }}
+        continue-on-error: true
+        env:
+          DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
+          STAGING_BASE_URL: ${{ secrets.STAGING_BASE_URL }}
+          STAGING_VERCEL_PROJECT_NAME: ${{ vars.STAGING_VERCEL_PROJECT_NAME }}
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          STAGING_DATABASE_NAME: ${{ vars.STAGING_DATABASE_NAME }}
+          STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
+          STAGING_TEST_TEACHER_PASSWORD: ${{ secrets.STAGING_TEST_TEACHER_PASSWORD }}
+          STAGING_TEST_STUDENT_PASSWORD: ${{ secrets.STAGING_TEST_STUDENT_PASSWORD }}
+          STAGING_TEST_OTHER_STUDENT_PASSWORD: ${{ secrets.STAGING_TEST_OTHER_STUDENT_PASSWORD }}
+          STAGING_TEST_OTHER_TEACHER_PASSWORD: ${{ secrets.STAGING_TEST_OTHER_TEACHER_PASSWORD }}
+          STAGING_TEST_DISABLED_ACCOUNT_PASSWORD: ${{ secrets.STAGING_TEST_DISABLED_ACCOUNT_PASSWORD }}
+          STAGING_TEST_DISABLED_SCHOOL_TEACHER_PASSWORD: ${{ secrets.STAGING_TEST_DISABLED_SCHOOL_TEACHER_PASSWORD }}
+        run: pnpm staging:acceptance:bootstrap
+      - name: Verify active and disabled local identities after bootstrap
+        id: identity
+        if: ${{ steps.bootstrap.outcome == 'success' }}
+        continue-on-error: true
+        env:
+          DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
+          STAGING_BASE_URL: ${{ secrets.STAGING_BASE_URL }}
+          STAGING_VERCEL_PROJECT_NAME: ${{ vars.STAGING_VERCEL_PROJECT_NAME }}
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          STAGING_DATABASE_NAME: ${{ vars.STAGING_DATABASE_NAME }}
+          STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
+          STAGING_TEST_TEACHER_PASSWORD: ${{ secrets.STAGING_TEST_TEACHER_PASSWORD }}
+          STAGING_TEST_STUDENT_PASSWORD: ${{ secrets.STAGING_TEST_STUDENT_PASSWORD }}
+          STAGING_TEST_OTHER_STUDENT_PASSWORD: ${{ secrets.STAGING_TEST_OTHER_STUDENT_PASSWORD }}
+          STAGING_TEST_OTHER_TEACHER_PASSWORD: ${{ secrets.STAGING_TEST_OTHER_TEACHER_PASSWORD }}
+          STAGING_TEST_DISABLED_ACCOUNT_PASSWORD: ${{ secrets.STAGING_TEST_DISABLED_ACCOUNT_PASSWORD }}
+          STAGING_TEST_DISABLED_SCHOOL_TEACHER_PASSWORD: ${{ secrets.STAGING_TEST_DISABLED_SCHOOL_TEACHER_PASSWORD }}
         run: pnpm staging:acceptance:verify-identities
-      - name: Reverify the current remote deployment immediately after identity checks and before writes
-        id: immediate-health
+      - name: Run real browser synthetic manual loop with cross-school isolation
+        id: browser
         if: ${{ steps.identity.outcome == 'success' }}
         continue-on-error: true
         env:
           STAGING_BASE_URL: ${{ secrets.STAGING_BASE_URL }}
           STAGING_VERCEL_PROJECT_NAME: ${{ vars.STAGING_VERCEL_PROJECT_NAME }}
           DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
-          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.STAGING_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
-          CLERK_SECRET_KEY: ${{ secrets.STAGING_CLERK_SECRET_KEY }}
-          STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
-          STAGING_VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.STAGING_VERCEL_AUTOMATION_BYPASS_SECRET }}
-        run: pnpm staging:verify-application
-      - name: Record the final deployment proof before database writes
-        id: immediate-evidence
-        if: ${{ always() && steps.identity.outcome == 'success' }}
-        continue-on-error: true
-        env:
-          STAGING_IMMEDIATE_HEALTH_OUTCOME: ${{ steps.immediate-health.outcome }}
-        run: pnpm staging:acceptance:record-immediate-health
-      - name: Append synthetic namespace bootstrap only after all approvals
-        id: bootstrap
-        if: ${{ steps.immediate-evidence.outcome == 'success' }}
-        continue-on-error: true
-        env:
-          STAGING_BASE_URL: ${{ secrets.STAGING_BASE_URL }}
-          STAGING_VERCEL_PROJECT_NAME: ${{ vars.STAGING_VERCEL_PROJECT_NAME }}
-          DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
-          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.STAGING_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
-          CLERK_SECRET_KEY: ${{ secrets.STAGING_CLERK_SECRET_KEY }}
-          STAGING_TEST_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_TEACHER_CLERK_ID }}
-          STAGING_TEST_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_STUDENT_CLERK_ID }}
-          STAGING_TEST_OTHER_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_STUDENT_CLERK_ID }}
-          STAGING_TEST_OTHER_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_TEACHER_CLERK_ID }}
-          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
-          STAGING_DATABASE_NAME: ${{ vars.STAGING_DATABASE_NAME }}
-          STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
-        run: pnpm staging:acceptance:bootstrap
-      - name: Run real browser synthetic manual loop with unrelated teacher isolation
-        id: browser
-        if: ${{ steps.bootstrap.outcome == 'success' }}
-        continue-on-error: true
-        env:
-          STAGING_BASE_URL: ${{ secrets.STAGING_BASE_URL }}
-          STAGING_VERCEL_PROJECT_NAME: ${{ vars.STAGING_VERCEL_PROJECT_NAME }}
-          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
           DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
           STAGING_DATABASE_NAME: ${{ vars.STAGING_DATABASE_NAME }}
-          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.STAGING_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
-          CLERK_SECRET_KEY: ${{ secrets.STAGING_CLERK_SECRET_KEY }}
-          STAGING_TEST_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_TEACHER_CLERK_ID }}
-          STAGING_TEST_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_STUDENT_CLERK_ID }}
-          STAGING_TEST_OTHER_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_STUDENT_CLERK_ID }}
-          STAGING_TEST_OTHER_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_TEACHER_CLERK_ID }}
           STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
           STAGING_VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.STAGING_VERCEL_AUTOMATION_BYPASS_SECRET }}
+          STAGING_TEST_TEACHER_PASSWORD: ${{ secrets.STAGING_TEST_TEACHER_PASSWORD }}
+          STAGING_TEST_STUDENT_PASSWORD: ${{ secrets.STAGING_TEST_STUDENT_PASSWORD }}
+          STAGING_TEST_OTHER_STUDENT_PASSWORD: ${{ secrets.STAGING_TEST_OTHER_STUDENT_PASSWORD }}
+          STAGING_TEST_OTHER_TEACHER_PASSWORD: ${{ secrets.STAGING_TEST_OTHER_TEACHER_PASSWORD }}
         run: pnpm staging:acceptance:browser
+      - name: Revoke all synthetic local sessions after browser attempt
+        id: cleanup
+        if: ${{ always() && steps.bootstrap.outcome != 'skipped' }}
+        continue-on-error: true
+        env:
+          DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
+          STAGING_TEST_PRIMARY_SCHOOL_CODE: ${{ vars.STAGING_TEST_PRIMARY_SCHOOL_CODE }}
+          STAGING_TEST_SECONDARY_SCHOOL_CODE: ${{ vars.STAGING_TEST_SECONDARY_SCHOOL_CODE }}
+          STAGING_TEST_TEACHER_STAFF_NO: ${{ vars.STAGING_TEST_TEACHER_STAFF_NO }}
+          STAGING_TEST_STUDENT_NO: ${{ vars.STAGING_TEST_STUDENT_NO }}
+          STAGING_TEST_OTHER_STUDENT_NO: ${{ vars.STAGING_TEST_OTHER_STUDENT_NO }}
+          STAGING_TEST_OTHER_TEACHER_STAFF_NO: ${{ vars.STAGING_TEST_OTHER_TEACHER_STAFF_NO }}
+          STAGING_TEST_DISABLED_ACCOUNT_STUDENT_NO: ${{ vars.STAGING_TEST_DISABLED_ACCOUNT_STUDENT_NO }}
+          STAGING_TEST_DISABLED_SCHOOL_CODE: ${{ vars.STAGING_TEST_DISABLED_SCHOOL_CODE }}
+          STAGING_TEST_DISABLED_SCHOOL_TEACHER_STAFF_NO: ${{ vars.STAGING_TEST_DISABLED_SCHOOL_TEACHER_STAFF_NO }}
+        run: pnpm staging:acceptance:cleanup
       - name: Verify only the synthetic namespace in a read-only transaction
         id: verify
-        if: ${{ steps.browser.outcome == 'success' }}
+        if: ${{ steps.browser.outcome == 'success' && steps.cleanup.outcome == 'success' }}
         continue-on-error: true
         env:
           DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
@@ -316,12 +335,6 @@ jobs:
           STAGING_BASE_URL: ${{ secrets.STAGING_BASE_URL }}
           STAGING_VERCEL_PROJECT_NAME: ${{ vars.STAGING_VERCEL_PROJECT_NAME }}
           STAGING_DATABASE_NAME: ${{ vars.STAGING_DATABASE_NAME }}
-          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.STAGING_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
-          CLERK_SECRET_KEY: ${{ secrets.STAGING_CLERK_SECRET_KEY }}
-          STAGING_TEST_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_TEACHER_CLERK_ID }}
-          STAGING_TEST_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_STUDENT_CLERK_ID }}
-          STAGING_TEST_OTHER_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_STUDENT_CLERK_ID }}
-          STAGING_TEST_OTHER_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_TEACHER_CLERK_ID }}
           STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
         run: pnpm staging:acceptance:verify
       - name: Aggregate and assert complete synthetic acceptance evidence
@@ -334,12 +347,6 @@ jobs:
           DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
           DIRECT_URL: ${{ secrets.STAGING_DIRECT_URL }}
           STAGING_DATABASE_NAME: ${{ vars.STAGING_DATABASE_NAME }}
-          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.STAGING_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}
-          CLERK_SECRET_KEY: ${{ secrets.STAGING_CLERK_SECRET_KEY }}
-          STAGING_TEST_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_TEACHER_CLERK_ID }}
-          STAGING_TEST_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_STUDENT_CLERK_ID }}
-          STAGING_TEST_OTHER_STUDENT_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_STUDENT_CLERK_ID }}
-          STAGING_TEST_OTHER_TEACHER_CLERK_ID: ${{ secrets.STAGING_TEST_OTHER_TEACHER_CLERK_ID }}
           STAGING_HEALTH_PROOF_SECRET: ${{ secrets.STAGING_HEALTH_PROOF_SECRET }}
           STAGING_VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.STAGING_VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: pnpm staging:acceptance:assert-final
@@ -355,11 +362,12 @@ jobs:
         if: always()
         run: |
           test "${{ steps.gate.outcome }}" = success
+          test "${{ steps.chromium.outcome }}" = success
           test "${{ steps.immediate-health.outcome }}" = success
           test "${{ steps.immediate-evidence.outcome }}" = success
-          test "${{ steps.identity.outcome }}" = success
-          test "${{ steps.chromium.outcome }}" = success
           test "${{ steps.bootstrap.outcome }}" = success
+          test "${{ steps.identity.outcome }}" = success
           test "${{ steps.browser.outcome }}" = success
+          test "${{ steps.cleanup.outcome }}" = success
           test "${{ steps.verify.outcome }}" = success
           test "${{ steps.final.outcome }}" = success

@@ -6,6 +6,7 @@ import {
   type CommandContext,
   resolveCommandContext,
 } from "./command-context";
+import { isActiveSchoolMember } from "../school/teacher-authorization";
 
 const inputSchema = z.object({
   actionIntentId: z.uuid(),
@@ -58,6 +59,9 @@ export async function decideActionIntent(
     input.decision === "CONFIRM" ? "CONFIRMED" : "REJECTED";
 
   const outcome = await database.$transaction(async (transaction) => {
+    if (!(await isActiveSchoolMember(transaction, context.actorId))) {
+      return { ok: false as const, code: "NOT_FOUND" as const };
+    }
     const intent = await transaction.actionIntent.findUnique({
       where: { id: input.actionIntentId },
     });

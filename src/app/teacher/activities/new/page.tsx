@@ -15,8 +15,8 @@ import {
   activityStudioCrumb,
   teacherHomeCrumb,
 } from "../../_components/teacher-shell";
-import { ActivityDraftForm } from "../activity-draft-form";
-import { emptyActivityDraftValues } from "../activity-draft-action-state";
+import { ActivityDraftV3Form } from "../activity-draft-v3-form";
+import { emptyActivityDraftV3Values } from "../activity-draft-v3-state";
 import styles from "../../teacher-workspace.module.css";
 
 export default async function NewTeacherActivityPage() {
@@ -51,10 +51,10 @@ export default async function NewTeacherActivityPage() {
       <div className={styles.pageContent}>
         <header className={styles.pageHeader}>
           <div>
-            <p className={styles.eyebrow}>活动设计 / 新草稿</p>
-            <h1>新建学习活动</h1>
+            <p className={styles.eyebrow}>跨学科任务 / 新草稿</p>
+            <h1>新建跨学科任务</h1>
             <p>
-              填写基本设置、三维目标、任务链与评价量规后保存草稿；可先保持编辑中，也可直接标记为可预览。
+              每条学习目标关联官方课程标准的核心素养，并由某个阶段承担、某个评价维度评价。保存后可先保持编辑中，也可直接标记为可预览。
             </p>
           </div>
           <div className={styles.pageHeaderActions}>
@@ -63,11 +63,11 @@ export default async function NewTeacherActivityPage() {
             </Link>
           </div>
         </header>
-        <ActivityDraftForm
+        <ActivityDraftV3Form
           initialState={{
             status: "idle",
             message: "",
-            values: emptyActivityDraftValues,
+            values: emptyActivityDraftV3Values,
             draftId: null,
             expectedVersion: null,
             persistedStatus: null,

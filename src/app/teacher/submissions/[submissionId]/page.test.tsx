@@ -14,14 +14,6 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("server-only", () => ({}));
-vi.mock("@clerk/nextjs", () => ({
-  SignInButton: ({ children }: { children: ReactNode }) => (
-    <span data-clerk-sign-in="true">{children}</span>
-  ),
-  SignOutButton: ({ children }: { children: ReactNode }) => (
-    <span data-clerk-sign-out="true">{children}</span>
-  ),
-}));
 vi.mock("next/link", () => ({
   default: ({
     children,
@@ -215,20 +207,22 @@ describe("teacher feedback page access boundary", () => {
     expect(markup).toContain("教师工作台当前没有开放");
     expect(markup).not.toContain(secretSubmissionBody);
     expect(markup).not.toContain("data-feedback-composer");
-    expect(markup).not.toContain("data-clerk-sign-in");
+    expect(markup).not.toContain('href="/teacher/login"');
     expect(mocks.getDatabaseClient).not.toHaveBeenCalled();
     expect(mocks.getTeacherFeedbackWorkspace).not.toHaveBeenCalled();
   });
 
-  it("uses the official Clerk sign-in control only when unauthenticated", async () => {
+  it("renders the local teacher login form only when unauthenticated", async () => {
     mocks.createUiCommandContext.mockRejectedValue(
       new AuthenticationError("UNAUTHENTICATED"),
     );
 
     const markup = await renderPage();
 
-    expect(markup).toContain('data-clerk-sign-in="true"');
-    expect(markup).toContain("登录教师账号");
+    expect(markup).toContain('name="schoolCode"');
+    expect(markup).toContain('name="identifier"');
+    expect(markup).toContain('name="password"');
+    expect(markup).toContain("进入工作台");
     expect(markup).not.toContain(secretSubmissionBody);
     expect(markup).not.toContain("data-feedback-composer");
   });

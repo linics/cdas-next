@@ -1,6 +1,6 @@
 import {
   loadE2eEnvironment,
-  requireNonProductionClerkForE2e,
+  requireSafeE2eTarget,
   resolveE2eDatabaseUrl,
 } from "./environment";
 
@@ -18,7 +18,7 @@ function requireValue(name: string): string {
 
 function main(): void {
   loadE2eEnvironment();
-  requireNonProductionClerkForE2e();
+  requireSafeE2eTarget();
   resolveE2eDatabaseUrl();
 
   if (process.env.E2E_REAL_MODEL_ACK !== acknowledgement) {
@@ -31,8 +31,10 @@ function main(): void {
   const deepseekKey = requireValue("DEEPSEEK_API_KEY");
   const model = requireValue("AI_MODEL");
   const approvalSecret = process.env.AI_TOOL_APPROVAL_SECRET ?? "";
-  requireValue("DEV_TEST_TEACHER_CLERK_ID");
-  requireValue("DEV_TEST_STUDENT_CLERK_ID");
+  requireValue("E2E_TEACHER_STAFF_NO");
+  requireValue("E2E_STUDENT_NO");
+  requireValue("E2E_TEACHER_PASSWORD");
+  requireValue("E2E_STUDENT_PASSWORD");
 
   if (deepseekKey.length > 2_000) {
     throw new Error("DEEPSEEK_API_KEY_INVALID");

@@ -46,7 +46,12 @@ function database(): PrismaClient {
 describe("activity assistant AgentRun lifecycle", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.findActor.mockResolvedValue({ role: "TEACHER" });
+    mocks.findActor.mockResolvedValue({
+      role: "TEACHER",
+      accountStatus: "ACTIVE",
+      schoolId: "30000000-0000-4000-8000-000000000003",
+      school: { status: "ACTIVE" },
+    });
     mocks.createRun.mockResolvedValue({
       id: runId,
       actorId,
@@ -86,7 +91,12 @@ describe("activity assistant AgentRun lifecycle", () => {
   });
 
   it("rejects a student before creating provenance", async () => {
-    mocks.findActor.mockResolvedValue({ role: "STUDENT" });
+    mocks.findActor.mockResolvedValue({
+      role: "STUDENT",
+      accountStatus: "ACTIVE",
+      schoolId: "30000000-0000-4000-8000-000000000003",
+      school: { status: "ACTIVE" },
+    });
 
     await expect(
       startActivityAssistantRun(database(), uiContext, {

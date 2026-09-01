@@ -10,6 +10,7 @@ import {
   agentAcceptanceNamespace,
   stableAgentAcceptanceError,
 } from "./contracts";
+import { stagingLocalIdentifier } from "../../../src/server/bootstrap/bootstrap-local-staging";
 import { agentOutputDirectory, writeAgentArtifact } from "./output";
 import { assertAgentBrowserPrerequisites } from "./prerequisites";
 
@@ -101,23 +102,26 @@ async function readBrowserWindow(marker: string): Promise<{
  */
 export const verificationSql = `
 WITH teacher AS (
-  SELECT id
-  FROM app_users
-  WHERE auth_subject = $4
+  SELECT app_user.id
+  FROM app_users AS app_user
+  JOIN local_credentials AS credential ON credential.user_id = app_user.id
+  WHERE credential.identifier = $4
     AND role = 'TEACHER'
     AND display_name = 'CDAS Staging Synthetic Teacher'
 ),
 student AS (
-  SELECT id
-  FROM app_users
-  WHERE auth_subject = $5
+  SELECT app_user.id
+  FROM app_users AS app_user
+  JOIN local_credentials AS credential ON credential.user_id = app_user.id
+  WHERE credential.identifier = $5
     AND role = 'STUDENT'
     AND display_name = 'CDAS Staging Synthetic Student'
 ),
 other_student AS (
-  SELECT id
-  FROM app_users
-  WHERE auth_subject = $10
+  SELECT app_user.id
+  FROM app_users AS app_user
+  JOIN local_credentials AS credential ON credential.user_id = app_user.id
+  WHERE credential.identifier = $10
     AND role = 'STUDENT'
     AND display_name = 'CDAS Staging Synthetic Other Student'
 ),
@@ -557,26 +561,30 @@ SELECT
  */
 export const fullLoopVerificationSql = `
 WITH teacher AS (
-  SELECT id FROM app_users
-  WHERE auth_subject = $3
+  SELECT app_user.id FROM app_users AS app_user
+  JOIN local_credentials AS credential ON credential.user_id = app_user.id
+  WHERE credential.identifier = $3
     AND role = 'TEACHER'
     AND display_name = 'CDAS Staging Synthetic Teacher'
 ),
 student AS (
-  SELECT id FROM app_users
-  WHERE auth_subject = $4
+  SELECT app_user.id FROM app_users AS app_user
+  JOIN local_credentials AS credential ON credential.user_id = app_user.id
+  WHERE credential.identifier = $4
     AND role = 'STUDENT'
     AND display_name = 'CDAS Staging Synthetic Student'
 ),
 other_student AS (
-  SELECT id FROM app_users
-  WHERE auth_subject = $5
+  SELECT app_user.id FROM app_users AS app_user
+  JOIN local_credentials AS credential ON credential.user_id = app_user.id
+  WHERE credential.identifier = $5
     AND role = 'STUDENT'
     AND display_name = 'CDAS Staging Synthetic Other Student'
 ),
 other_teacher AS (
-  SELECT id FROM app_users
-  WHERE auth_subject = $6
+  SELECT app_user.id FROM app_users AS app_user
+  JOIN local_credentials AS credential ON credential.user_id = app_user.id
+  WHERE credential.identifier = $6
     AND role = 'TEACHER'
     AND display_name = 'CDAS Staging Synthetic Other Teacher'
 ),
@@ -783,6 +791,28 @@ async function main(): Promise<void> {
   const marker = required("STAGING_RUN_MARKER");
   await assertAgentBrowserPrerequisites(process.env);
   const namespace = agentAcceptanceNamespace(marker);
+  const primary = required("STAGING_TEST_PRIMARY_SCHOOL_CODE");
+  const secondary = required("STAGING_TEST_SECONDARY_SCHOOL_CODE");
+  const teacherIdentifier = stagingLocalIdentifier({
+    schoolCode: primary,
+    role: "TEACHER",
+    staffNo: required("STAGING_TEST_TEACHER_STAFF_NO"),
+  });
+  const studentIdentifier = stagingLocalIdentifier({
+    schoolCode: primary,
+    role: "STUDENT",
+    studentNo: required("STAGING_TEST_STUDENT_NO"),
+  });
+  const otherStudentIdentifier = stagingLocalIdentifier({
+    schoolCode: primary,
+    role: "STUDENT",
+    studentNo: required("STAGING_TEST_OTHER_STUDENT_NO"),
+  });
+  const otherTeacherIdentifier = stagingLocalIdentifier({
+    schoolCode: secondary,
+    role: "TEACHER",
+    staffNo: required("STAGING_TEST_OTHER_TEACHER_STAFF_NO"),
+  });
   const browserWindow = await readBrowserWindow(marker);
   const database = new Client({ connectionString: required("DIRECT_URL") });
   await database.connect();
@@ -792,23 +822,23 @@ async function main(): Promise<void> {
       namespace.classroomId,
       namespace.classroomName,
       namespace.activityTitle,
-      required("STAGING_TEST_TEACHER_CLERK_ID"),
-      required("STAGING_TEST_STUDENT_CLERK_ID"),
+      teacherIdentifier,
+      studentIdentifier,
       required("AI_MODEL"),
       browserWindow.startedAt,
       browserWindow.completedAt,
       agentAcceptanceEditedSummary,
-      required("STAGING_TEST_OTHER_STUDENT_CLERK_ID"),
+      otherStudentIdentifier,
     ]);
     const fullLoop = await database.query<VerificationRow>(
       fullLoopVerificationSql,
       [
         namespace.classroomId,
         namespace.activityTitle,
-        required("STAGING_TEST_TEACHER_CLERK_ID"),
-        required("STAGING_TEST_STUDENT_CLERK_ID"),
-        required("STAGING_TEST_OTHER_STUDENT_CLERK_ID"),
-        required("STAGING_TEST_OTHER_TEACHER_CLERK_ID"),
+        teacherIdentifier,
+        studentIdentifier,
+        otherStudentIdentifier,
+        otherTeacherIdentifier,
         agentAcceptanceEvidenceText,
         agentAcceptanceFeedbackText,
       ],
