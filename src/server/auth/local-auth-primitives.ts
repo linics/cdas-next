@@ -4,6 +4,13 @@ import { normalizeSchoolCode, normalizeStaffNo } from "../../domain/school/ident
 
 export const HASH_PREFIX = "$cdas$argon2id$v=1$m=19456,t=2,p=2$";
 
+// A credential miss still pays the same Argon2 cost as a real credential.
+// This fixed envelope is not an account secret and is never accepted.
+export const DUMMY_PASSWORD_HASH =
+  "$cdas$argon2id$v=1$m=19456,t=2,p=2$" +
+  "AAECAwQFBgcICQoLDA0ODw$" +
+  "LdTBhQ-o07vrwuSt48GTzYDtBH9Q1Bn9gA7Da0Q2JOY";
+
 function derive(password: string, salt: Buffer): Promise<Buffer> {
   return new Promise((resolve, reject) => argon2("argon2id", {
     message: Buffer.from(password), nonce: salt, memory: 19 * 1024,

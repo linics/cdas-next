@@ -192,6 +192,20 @@ describeWithDatabase("local authentication database boundary", () => {
     await expect(authenticate(
       database!,
       user.identifier,
+      "Cdas-wrong-password9",
+      "STUDENT",
+      new Date("2026-09-01T00:14:59.998Z"),
+    )).resolves.toMatchObject({ ok: false, code: "ACCOUNT_LOCKED" });
+    await expect(database!.localCredential.findUniqueOrThrow({
+      where: { userId: user.id },
+      select: { failedLoginCount: true, lockedUntil: true },
+    })).resolves.toEqual({
+      failedLoginCount: 5,
+      lockedUntil: new Date("2026-09-01T00:15:00.000Z"),
+    });
+    await expect(authenticate(
+      database!,
+      user.identifier,
       password,
       "STUDENT",
       new Date("2026-09-01T00:14:59.999Z"),

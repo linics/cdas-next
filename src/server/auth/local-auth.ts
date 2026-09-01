@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import type { PrismaClient } from "../../generated/prisma/client";
 import {
   createSessionToken,
+  DUMMY_PASSWORD_HASH,
   hashPassword,
   hashSessionToken,
   verifyPassword,
@@ -106,7 +107,13 @@ export async function authenticate(
       where: { identifier },
       include: { user: { include: { school: { select: { status: true } } } } },
     });
-    if (!credential || credential.user.role !== role) return { ok: false, code: "INVALID_CREDENTIALS" };
+    if (!credential || credential.user.role !== role) {
+      await verifyPassword(password, DUMMY_PASSWORD_HASH);
+      return { ok: false, code: "INVALID_CREDENTIALS" };
+    }
+    if (credential.lockedUntil && credential.lockedUntil > now) {
+      return { ok: false, code: "ACCOUNT_LOCKED" };
+    }
     const valid = await verifyPassword(password, credential.passwordHash);
     if (!valid) {
       const next = credential.failedLoginCount + 1;
@@ -122,7 +129,6 @@ export async function authenticate(
       if (updated.count !== 1) continue;
       return { ok: false, code: "INVALID_CREDENTIALS" };
     }
-    if (credential.lockedUntil && credential.lockedUntil > now) return { ok: false, code: "ACCOUNT_LOCKED" };
     if (credential.user.accountStatus !== "ACTIVE") return { ok: false, code: "ACCOUNT_DISABLED" };
     if (credential.user.role !== "ADMIN" && credential.user.school?.status !== "ACTIVE") return { ok: false, code: "SCHOOL_DISABLED" };
     const token = createSessionToken();

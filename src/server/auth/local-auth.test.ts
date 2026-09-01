@@ -1,5 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
+vi.mock("./local-auth-primitives", async (importOriginal) => {
+  const actual = await importOriginal<
+    typeof import("./local-auth-primitives")
+  >();
+  return {
+    ...actual,
+    verifyPassword: vi.fn(actual.verifyPassword),
+  };
+});
 import {
   adminIdentifier,
   hashPassword,
@@ -9,6 +18,7 @@ import {
   teacherIdentifier,
   verifyPassword,
 } from "./local-auth";
+import { DUMMY_PASSWORD_HASH } from "./local-auth-primitives";
 
 function fakeDatabase(passwordHash: string) {
   const credential = {
@@ -72,7 +82,7 @@ describe("local password authentication", () => {
     await expect(hashPassword(`a1${"😀".repeat(127)}`)).rejects.toThrow();
   });
 
-  it("locks on the fifth failed attempt and exposes lock only after valid password", async () => {
+  it("locks on the fifth failed attempt and unlocks at the exact boundary", async () => {
     const fixture = fakeDatabase(await hashPassword("valid password9"));
     const now = new Date("2026-09-01T00:00:00Z");
     for (let attempt = 1; attempt <= 5; attempt += 1) {
@@ -83,6 +93,61 @@ describe("local password authentication", () => {
     await expect(authenticate(fixture.database as never, "admin:operator", "valid password9", "ADMIN", new Date(now.getTime() + 15 * 60 * 1000))).resolves.toMatchObject({ ok: true });
     expect(fixture.credential.failedLoginCount).toBe(0);
     expect(fixture.sessions).toHaveLength(1);
+  });
+
+  it("uses one Argon2 derivation for missing and role-mismatched credentials", async () => {
+    const fixture = fakeDatabase(await hashPassword("valid password9"));
+    const passwordVerifier = vi.mocked(verifyPassword);
+    fixture.database.localCredential.findUnique = async () => null as never;
+    passwordVerifier.mockClear();
+
+    await expect(authenticate(
+      fixture.database as never,
+      "admin:missing",
+      "wrong password9",
+      "ADMIN",
+    )).resolves.toEqual({ ok: false, code: "INVALID_CREDENTIALS" });
+    expect(passwordVerifier).toHaveBeenCalledOnce();
+    expect(passwordVerifier).toHaveBeenLastCalledWith(
+      "wrong password9",
+      DUMMY_PASSWORD_HASH,
+    );
+
+    fixture.database.localCredential.findUnique = async () => fixture.credential;
+    passwordVerifier.mockClear();
+    await expect(authenticate(
+      fixture.database as never,
+      "admin:operator",
+      "wrong password9",
+      "TEACHER",
+    )).resolves.toEqual({ ok: false, code: "INVALID_CREDENTIALS" });
+    expect(passwordVerifier).toHaveBeenCalledOnce();
+    expect(passwordVerifier).toHaveBeenLastCalledWith(
+      "wrong password9",
+      DUMMY_PASSWORD_HASH,
+    );
+  });
+
+  it("rejects an active lock without deriving or extending it", async () => {
+    const fixture = fakeDatabase(await hashPassword("valid password9"));
+    const passwordVerifier = vi.mocked(verifyPassword);
+    const now = new Date("2026-09-01T00:00:00.000Z");
+    fixture.credential.failedLoginCount = 5;
+    fixture.credential.lockedUntil = new Date("2026-09-01T00:15:00.000Z");
+    passwordVerifier.mockClear();
+
+    await expect(authenticate(
+      fixture.database as never,
+      "admin:operator",
+      "wrong password9",
+      "ADMIN",
+      now,
+    )).resolves.toEqual({ ok: false, code: "ACCOUNT_LOCKED" });
+    expect(passwordVerifier).not.toHaveBeenCalled();
+    expect(fixture.credential.failedLoginCount).toBe(5);
+    expect(fixture.credential.lockedUntil).toEqual(
+      new Date("2026-09-01T00:15:00.000Z"),
+    );
   });
 
   it("uses canonical, role-scoped identifiers and hashes session tokens", () => {
