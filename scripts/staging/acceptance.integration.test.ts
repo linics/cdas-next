@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { Client } from "pg";
 
 import { afterAll, describe, expect, it } from "vitest";
 
@@ -18,6 +19,10 @@ import {
   assertNoAcceptanceBusinessHistory,
   probeAcceptanceNamespace,
 } from "./acceptance/fixture";
+import {
+  isPassingSessionCleanupEvidence,
+  revokeAcceptanceSessions,
+} from "./acceptance/cleanup";
 
 const databaseUrl = process.env.TEST_DATABASE_URL;
 const describeWithDatabase = databaseUrl ? describe : describe.skip;
@@ -131,6 +136,20 @@ describeWithDatabase("staging synthetic acceptance bootstrap", () => {
     )).resolves.toBe("ABSENT");
 
     const first = await bootstrapLocalStaging(database!, current.input);
+    const teacher = await database!.localCredential.findUniqueOrThrow({
+      where: { identifier: current.teacherIdentifier },
+      select: { userId: true },
+    });
+    const sessionId = randomUUID();
+    await database!.authSession.create({
+      data: {
+        id: sessionId,
+        userId: teacher.userId,
+        tokenHash: randomUUID().replaceAll("-", "").padEnd(64, "a"),
+        expiresAt: new Date("2026-09-02T00:00:00.000Z"),
+        createdAt: new Date("2026-09-01T00:00:00.000Z"),
+      },
+    });
     const repeated = await bootstrapLocalStaging(database!, current.input);
     expect(first.classroom).toBe("CREATED");
     expect(first.memberships).toBe(2);
@@ -142,6 +161,10 @@ describeWithDatabase("staging synthetic acceptance bootstrap", () => {
       "EXISTING",
       "EXISTING",
     ]);
+    await expect(database!.authSession.findUniqueOrThrow({
+      where: { id: sessionId },
+      select: { revokedAt: true },
+    })).resolves.toEqual({ revokedAt: expect.any(Date) });
     await expect(probeAcceptanceNamespace(
       database!,
       current.namespace.classroomId,
@@ -223,5 +246,94 @@ describeWithDatabase("staging synthetic acceptance bootstrap", () => {
       current.teacherIdentifier,
       current.namespace.activityTitle,
     )).rejects.toThrow("STAGING_ACCEPTANCE_BUSINESS_HISTORY_ALREADY_EXISTS");
+  });
+
+  it("revokes all six configured sessions and leaves a partial run unchanged", async () => {
+    const current = fixture();
+    const disabledAccountStudentNo = `9${randomUUID().replaceAll(/[^0-9]/gu, "7").slice(0, 11)}`;
+    const disabledSchoolCode = "SCHTST67";
+    const disabledSchoolTeacherStaffNo = `D-${randomUUID().replaceAll("-", "").slice(0, 10).toUpperCase()}`;
+    const disabledAccountIdentifier = stagingLocalIdentifier({
+      schoolCode: primarySchoolCode,
+      role: "STUDENT",
+      studentNo: disabledAccountStudentNo,
+    });
+    const disabledSchoolIdentifier = stagingLocalIdentifier({
+      schoolCode: disabledSchoolCode,
+      role: "TEACHER",
+      staffNo: disabledSchoolTeacherStaffNo,
+    });
+    const input = {
+      ...current.input,
+      schools: [
+        ...current.input.schools,
+        {
+          code: disabledSchoolCode,
+          name: "CDAS Acceptance Test Disabled School",
+          status: "DISABLED" as const,
+        },
+      ],
+      identities: [
+        ...current.input.identities,
+        {
+          schoolCode: primarySchoolCode,
+          identifier: disabledAccountIdentifier,
+          password,
+          displayName: "CDAS Acceptance Test Disabled Account",
+          role: "STUDENT" as const,
+          studentNo: disabledAccountStudentNo,
+          accountStatus: "DISABLED" as const,
+        },
+        {
+          schoolCode: disabledSchoolCode,
+          identifier: disabledSchoolIdentifier,
+          password,
+          displayName: "CDAS Acceptance Test Disabled School Teacher",
+          role: "TEACHER" as const,
+          staffNo: disabledSchoolTeacherStaffNo,
+        },
+      ],
+    };
+    await bootstrapLocalStaging(database!, input);
+    const identifiers = [
+      current.teacherIdentifier,
+      current.studentIdentifier,
+      current.otherStudentIdentifier,
+      current.input.identities[3].identifier,
+      disabledAccountIdentifier,
+      disabledSchoolIdentifier,
+    ];
+    const userIds = await Promise.all(identifiers.map(async (identifier) =>
+      (await database!.localCredential.findUniqueOrThrow({
+        where: { identifier },
+        select: { userId: true },
+      })).userId,
+    ));
+    await Promise.all(userIds.map((userId, index) => database!.authSession.create({
+      data: {
+        id: randomUUID(),
+        userId,
+        tokenHash: `${index}${randomUUID().replaceAll("-", "")}`.padEnd(64, "0"),
+        expiresAt: new Date("2026-09-02T00:00:00.000Z"),
+        createdAt: new Date("2026-09-01T00:00:00.000Z"),
+      },
+    })));
+    const cleanupClient = new Client({ connectionString: databaseUrl! });
+    await cleanupClient.connect();
+    try {
+      await expect(revokeAcceptanceSessions(cleanupClient, identifiers.slice(0, 5)))
+        .rejects.toThrow("STAGING_ACCEPTANCE_LOCAL_IDENTITIES_INCOMPLETE");
+      await expect(database!.authSession.count({
+        where: { userId: { in: userIds }, revokedAt: null },
+      })).resolves.toBe(6);
+      const evidence = await revokeAcceptanceSessions(cleanupClient, identifiers);
+      expect(isPassingSessionCleanupEvidence(evidence)).toBe(true);
+      expect(evidence.revokedCount).toBe(6);
+      await expect(database!.authSession.count({
+        where: { userId: { in: userIds }, revokedAt: null },
+      })).resolves.toBe(0);
+    } finally {
+      await cleanupClient.end();
+    }
   });
 });

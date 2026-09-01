@@ -41,6 +41,7 @@ function fixtureDatabase() {
   }>();
   let classroom: { id: string; managerId: string; name: string } | undefined;
   let membership: { id: string; classroomId: string; studentId: string } | undefined;
+  const revokedUserIds: string[] = [];
   const database = {} as {
     $transaction: (callback: (transaction: never) => Promise<unknown>) => Promise<unknown>;
     $queryRaw: () => Promise<never[]>;
@@ -52,6 +53,9 @@ function fixtureDatabase() {
       findUnique: (input: unknown) => Promise<unknown>;
       create: (input: unknown) => Promise<unknown>;
       update: (input: unknown) => Promise<unknown>;
+    };
+    authSession: {
+      updateMany: (input: unknown) => Promise<unknown>;
     };
     classroom: {
       findUnique: (input: unknown) => Promise<unknown>;
@@ -114,6 +118,12 @@ function fixtureDatabase() {
         return credential;
       },
     },
+    authSession: {
+      updateMany: async ({ where }: { where: { userId: string } }) => {
+        revokedUserIds.push(where.userId);
+        return { count: 1 };
+      },
+    },
     classroom: {
       findUnique: async () => classroom ?? null,
       create: async ({ data }: { data: { id: string; managerId: string; name: string } }) => {
@@ -132,7 +142,7 @@ function fixtureDatabase() {
       },
     },
   });
-  return { database, credentials };
+  return { database, credentials, revokedUserIds };
 }
 
 const input = {
@@ -165,6 +175,7 @@ describe("local classroom bootstrap", () => {
     expect([...fixture.credentials.values()].map((credential) => credential.passwordHash)).toEqual(
       expect.arrayContaining(["hash:teacher-password2", "hash:student-password2"]),
     );
+    expect(fixture.revokedUserIds).toEqual([first.teacher.id, first.student.id]);
     expect(bootstrapLocalClassroomResultSchema.parse(repeated)).toEqual(repeated);
   });
 });

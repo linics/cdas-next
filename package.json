@@ -31,6 +31,7 @@
     "staging:acceptance:record-immediate-health": "node --import tsx scripts/staging/acceptance/immediate-health.ts",
     "staging:acceptance:verify-identities": "node --import tsx scripts/staging/acceptance/verify-identities.ts",
     "staging:acceptance:bootstrap": "node --import tsx scripts/staging/acceptance/bootstrap.ts",
+    "staging:acceptance:cleanup": "node --import tsx scripts/staging/acceptance/cleanup.ts",
     "staging:acceptance:assert-browser-prerequisites": "node --import tsx scripts/staging/acceptance/assert-browser-prerequisites.ts",
     "staging:acceptance:browser": "python3 scripts/staging/acceptance/run-browser.py",
     "staging:acceptance:verify": "node --import tsx scripts/staging/acceptance/verify.ts",

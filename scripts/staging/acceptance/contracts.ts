@@ -133,6 +133,50 @@ export function evaluateAcceptanceReadiness(
     check("STAGING_ACCEPTANCE_OTHER_STUDENT_NO", /^\d{6,32}$/u.test(value(environment, "STAGING_TEST_OTHER_STUDENT_NO")), Boolean(value(environment, "STAGING_TEST_OTHER_STUDENT_NO"))),
     check("STAGING_ACCEPTANCE_OTHER_TEACHER_STAFF_NO", /^[A-Z0-9][A-Z0-9-]{0,31}$/u.test(value(environment, "STAGING_TEST_OTHER_TEACHER_STAFF_NO")), Boolean(value(environment, "STAGING_TEST_OTHER_TEACHER_STAFF_NO"))),
     check("STAGING_ACCEPTANCE_IDENTITY_FIELDS_DISTINCT", new Set([value(environment, "STAGING_TEST_TEACHER_STAFF_NO"), value(environment, "STAGING_TEST_STUDENT_NO"), value(environment, "STAGING_TEST_OTHER_STUDENT_NO"), value(environment, "STAGING_TEST_OTHER_TEACHER_STAFF_NO")]).size === 4),
+    check(
+      "STAGING_ACCEPTANCE_DISABLED_ACCOUNT_STUDENT_NO",
+      /^\d{6,32}$/u.test(
+        value(environment, "STAGING_TEST_DISABLED_ACCOUNT_STUDENT_NO"),
+      ),
+      Boolean(value(environment, "STAGING_TEST_DISABLED_ACCOUNT_STUDENT_NO")),
+    ),
+    check(
+      "STAGING_ACCEPTANCE_DISABLED_SCHOOL_CODE",
+      /^SCH[A-HJ-NP-Z2-9]{5}$/u.test(
+        value(environment, "STAGING_TEST_DISABLED_SCHOOL_CODE"),
+      ),
+      Boolean(value(environment, "STAGING_TEST_DISABLED_SCHOOL_CODE")),
+    ),
+    check(
+      "STAGING_ACCEPTANCE_DISABLED_SCHOOL_TEACHER_STAFF_NO",
+      /^[A-Z0-9][A-Z0-9-]{0,31}$/u.test(
+        value(environment, "STAGING_TEST_DISABLED_SCHOOL_TEACHER_STAFF_NO"),
+      ),
+      Boolean(value(environment, "STAGING_TEST_DISABLED_SCHOOL_TEACHER_STAFF_NO")),
+    ),
+    check(
+      "STAGING_ACCEPTANCE_NEGATIVE_FIXTURES_DISTINCT",
+      value(environment, "STAGING_TEST_DISABLED_ACCOUNT_STUDENT_NO") !==
+        value(environment, "STAGING_TEST_STUDENT_NO") &&
+        value(environment, "STAGING_TEST_DISABLED_ACCOUNT_STUDENT_NO") !==
+        value(environment, "STAGING_TEST_OTHER_STUDENT_NO") &&
+        ![
+          value(environment, "STAGING_TEST_PRIMARY_SCHOOL_CODE"),
+          value(environment, "STAGING_TEST_SECONDARY_SCHOOL_CODE"),
+        ].includes(value(environment, "STAGING_TEST_DISABLED_SCHOOL_CODE")),
+    ),
+    ...[
+      "STAGING_TEST_TEACHER_PASSWORD",
+      "STAGING_TEST_STUDENT_PASSWORD",
+      "STAGING_TEST_OTHER_STUDENT_PASSWORD",
+      "STAGING_TEST_OTHER_TEACHER_PASSWORD",
+      "STAGING_TEST_DISABLED_ACCOUNT_PASSWORD",
+      "STAGING_TEST_DISABLED_SCHOOL_TEACHER_PASSWORD",
+    ].map((name) => check(
+      `STAGING_ACCEPTANCE_${name}_PRESENT`,
+      value(environment, name).length >= 10,
+      Boolean(value(environment, name)),
+    )),
     check("STAGING_ACCEPTANCE_TEACHER_NAME", value(environment, "STAGING_ACCEPTANCE_TEST_TEACHER_NAME") === acceptanceTeacherDisplayName, Boolean(value(environment, "STAGING_ACCEPTANCE_TEST_TEACHER_NAME"))),
     check("STAGING_ACCEPTANCE_STUDENT_NAME", value(environment, "STAGING_ACCEPTANCE_TEST_STUDENT_NAME") === acceptanceStudentDisplayName, Boolean(value(environment, "STAGING_ACCEPTANCE_TEST_STUDENT_NAME"))),
     check("STAGING_ACCEPTANCE_OTHER_STUDENT_NAME", value(environment, "STAGING_ACCEPTANCE_TEST_OTHER_STUDENT_NAME") === acceptanceOtherStudentDisplayName, Boolean(value(environment, "STAGING_ACCEPTANCE_TEST_OTHER_STUDENT_NAME"))),

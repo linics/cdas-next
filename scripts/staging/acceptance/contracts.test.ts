@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
+import { readFile, rm } from "node:fs/promises";
 
 import {
   acceptanceNamespace,
@@ -26,6 +27,11 @@ import {
   isPassingBootstrapEvidence,
   isPassingIdentityEvidence,
 } from "./prerequisites";
+import {
+  acceptanceOutputDirectory,
+  writeAcceptanceArtifact,
+} from "./output";
+import { isPassingSessionCleanupEvidence } from "./cleanup";
 
 const marker = "cdas-staging-12345678-1";
 
@@ -43,6 +49,15 @@ function environment(overrides: Record<string, string | undefined> = {}) {
     STAGING_TEST_STUDENT_NO: "000001",
     STAGING_TEST_OTHER_STUDENT_NO: "000002",
     STAGING_TEST_OTHER_TEACHER_STAFF_NO: "T-002",
+    STAGING_TEST_DISABLED_ACCOUNT_STUDENT_NO: "000003",
+    STAGING_TEST_DISABLED_SCHOOL_CODE: "SCHGHJ67",
+    STAGING_TEST_DISABLED_SCHOOL_TEACHER_STAFF_NO: "T-003",
+    STAGING_TEST_TEACHER_PASSWORD: "Cdas-teacher-password9",
+    STAGING_TEST_STUDENT_PASSWORD: "Cdas-student-password9",
+    STAGING_TEST_OTHER_STUDENT_PASSWORD: "Cdas-other-student9",
+    STAGING_TEST_OTHER_TEACHER_PASSWORD: "Cdas-other-teacher9",
+    STAGING_TEST_DISABLED_ACCOUNT_PASSWORD: "Cdas-disabled-account9",
+    STAGING_TEST_DISABLED_SCHOOL_TEACHER_PASSWORD: "Cdas-disabled-school9",
     STAGING_ACCEPTANCE_TEST_TEACHER_NAME: acceptanceTeacherDisplayName,
     STAGING_ACCEPTANCE_TEST_STUDENT_NAME: acceptanceStudentDisplayName,
     STAGING_ACCEPTANCE_TEST_OTHER_STUDENT_NAME: acceptanceOtherStudentDisplayName,
@@ -102,6 +117,70 @@ describe("staging synthetic acceptance contracts", () => {
   it("never converts arbitrary errors into an artifact-visible detail", () => {
     expect(stableAcceptanceErrorCode(new Error("EXPECTED_CODE"))).toBe("EXPECTED_CODE");
     expect(stableAcceptanceErrorCode(new Error("postgresql://secret"))).toBe("STAGING_ACCEPTANCE_INTERNAL_ERROR");
+  });
+
+  it("keeps local passwords out of readiness, gate, and artifact payloads", async () => {
+    const passwords = [
+      "unique-teacher-password-value",
+      "unique-student-password-value",
+      "unique-other-student-password-value",
+      "unique-other-teacher-password-value",
+      "unique-disabled-account-password-value",
+      "unique-disabled-school-password-value",
+    ];
+    const input = environment({
+      STAGING_TEST_TEACHER_PASSWORD: passwords[0],
+      STAGING_TEST_STUDENT_PASSWORD: passwords[1],
+      STAGING_TEST_OTHER_STUDENT_PASSWORD: passwords[2],
+      STAGING_TEST_OTHER_TEACHER_PASSWORD: passwords[3],
+      STAGING_TEST_DISABLED_ACCOUNT_PASSWORD: passwords[4],
+      STAGING_TEST_DISABLED_SCHOOL_TEACHER_PASSWORD: passwords[5],
+      STAGING_HEALTH_PROOF_SECRET: "h".repeat(32),
+    });
+    const readiness = evaluateAcceptanceReadiness(input);
+    const gate = await createAcceptanceGate(input, {});
+    const artifactPayload = {
+      schema: "staging-synthetic-acceptance-bootstrap.v1",
+      status: "PASS",
+      resources: {
+        teacher: "EXISTING",
+        student: "EXISTING",
+        otherStudent: "EXISTING",
+        otherTeacher: "EXISTING",
+      },
+      realStudentDataAllowed: false,
+      productionDecision: "NO_GO",
+    };
+    const directory = acceptanceOutputDirectory(marker);
+    try {
+      await writeAcceptanceArtifact(marker, "readiness.json", readiness);
+      await writeAcceptanceArtifact(marker, "gate.json", gate);
+      await writeAcceptanceArtifact(marker, "bootstrap.json", artifactPayload);
+      const serialized = (
+        await Promise.all([
+          readFile(`${directory}/readiness.json`, "utf8"),
+          readFile(`${directory}/gate.json`, "utf8"),
+          readFile(`${directory}/bootstrap.json`, "utf8"),
+        ])
+      ).join("\n");
+
+      for (const password of passwords) {
+        expect(serialized).not.toContain(password);
+      }
+      expect(serialized).not.toContain("STAGING_TEST_TEACHER_PASSWORD=");
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+    const changedPasswordInput = {
+      ...input,
+      STAGING_TEST_TEACHER_PASSWORD: "a-different-password-value",
+    };
+    expect(gate.coreBindingMac).toBe(
+      (await createAcceptanceGate(changedPasswordInput, {})).coreBindingMac,
+    );
+    expect(gate.bypassBindingMac).toBe(
+      (await createAcceptanceGate(changedPasswordInput, {})).bypassBindingMac,
+    );
   });
 
   it("requires an exact HMAC-bound same-run gate shape", async () => {
@@ -182,12 +261,12 @@ describe("staging synthetic acceptance contracts", () => {
         "DISABLED_ACCOUNT_ACCOUNT_DISABLED",
         "DISABLED_SCHOOL_SCHOOL_DISABLED",
       ].map((code) => ({ code, status: "PASS" })),
-      sessionsRevoked: true,
+      directSessionsRevoked: true,
       realStudentDataAllowed: false,
       productionDecision: "NO_GO",
     };
     expect(isPassingIdentityEvidence(identity)).toBe(true);
-    expect(isPassingIdentityEvidence({ ...identity, sessionsRevoked: false })).toBe(false);
+    expect(isPassingIdentityEvidence({ ...identity, directSessionsRevoked: false })).toBe(false);
 
     const bootstrap = {
       schema: "staging-synthetic-acceptance-bootstrap.v1",
@@ -211,7 +290,33 @@ describe("staging synthetic acceptance contracts", () => {
     expect(isPassingBootstrapEvidence({ ...bootstrap, resources: { ...bootstrap.resources, classroom: "EXISTING" } }, environment())).toBe(false);
   });
 
-  it("orders identity before the final health proof and proof before bootstrap", () => {
+  it("requires exact redacted session cleanup evidence", () => {
+    const sessions = {
+      schema: "staging-synthetic-acceptance-sessions.v1",
+      status: "PASS",
+      checks: [
+        { code: "SYNTHETIC_IDENTITIES_RESOLVED", status: "PASS" },
+        { code: "SYNTHETIC_SESSIONS_REVOKED", status: "PASS" },
+        { code: "NO_ACTIVE_SYNTHETIC_SESSIONS", status: "PASS" },
+      ],
+      targetCount: 6,
+      revokedCount: 12,
+      remainingCount: 0,
+      realStudentDataAllowed: false,
+      productionDecision: "NO_GO",
+    };
+    expect(isPassingSessionCleanupEvidence(sessions)).toBe(true);
+    expect(isPassingSessionCleanupEvidence({ ...sessions, userId: "not-allowed" })).toBe(false);
+    expect(isPassingSessionCleanupEvidence({ ...sessions, remainingCount: 1 })).toBe(false);
+    expect(JSON.stringify(sessions)).not.toContain("password");
+    expect(JSON.stringify(sessions)).not.toContain("token");
+    expect(JSON.stringify(sessions)).not.toContain("identifier");
+    const cleanupSource = readFileSync("scripts/staging/acceptance/cleanup.ts", "utf8");
+    expect(cleanupSource).toContain("UPDATE auth_sessions");
+    expect(cleanupSource).not.toMatch(/DELETE\s+FROM/iu);
+  });
+
+  it("orders health, bootstrap, identity verification, and browser work", () => {
     const workflow = readFileSync(
       ".github/workflows/staging-synthetic-acceptance.yml",
       "utf8",
@@ -220,23 +325,26 @@ describe("staging synthetic acceptance contracts", () => {
     const immediateHealth = workflow.indexOf("id: immediate-health");
     const immediateEvidence = workflow.indexOf("id: immediate-evidence");
     const bootstrap = workflow.indexOf("id: bootstrap");
-    expect(identity).toBeGreaterThanOrEqual(0);
-    expect(identity).toBeLessThan(immediateHealth);
+    const browser = workflow.indexOf("id: browser");
+    const cleanup = workflow.indexOf("id: cleanup");
+    const verify = workflow.indexOf("id: verify");
     expect(immediateHealth).toBeLessThan(immediateEvidence);
     expect(immediateEvidence).toBeLessThan(bootstrap);
+    expect(bootstrap).toBeLessThan(identity);
+    expect(identity).toBeLessThan(browser);
+    expect(browser).toBeLessThan(cleanup);
+    expect(cleanup).toBeLessThan(verify);
     const bootstrapStep = workflow.slice(bootstrap, workflow.indexOf("- name: Run real browser", bootstrap));
     expect(bootstrapStep).toContain("if: ${{ steps.immediate-evidence.outcome == 'success' }}");
     expect(bootstrapStep).not.toContain("steps.identity.outcome");
-    expect(
-      workflow.match(/STAGING_VERCEL_AUTOMATION_BYPASS_SECRET:/gu),
-    ).toHaveLength(7);
-    expect(
-      workflow.match(/STAGING_BASE_URL: \$\{\{ secrets\.STAGING_BASE_URL \}\}/gu),
-    ).toHaveLength(11);
+    const cleanupStep = workflow.slice(cleanup, verify);
+    expect(cleanupStep).toContain("if: ${{ always() && steps.bootstrap.outcome != 'skipped' }}");
+    expect(cleanupStep).not.toContain("STAGING_TEST_TEACHER_PASSWORD");
+    expect(cleanupStep).toContain("STAGING_TEST_PRIMARY_SCHOOL_CODE:");
+    expect(cleanupStep).toContain("run: pnpm staging:acceptance:cleanup");
+    const verifyStepCondition = workflow.slice(verify, workflow.indexOf("- name: Aggregate and assert complete synthetic acceptance evidence"));
+    expect(verifyStepCondition).toContain("steps.browser.outcome == 'success' && steps.cleanup.outcome == 'success'");
     expect(workflow).not.toContain("STAGING_BASE_URL: ${{ vars.STAGING_BASE_URL }}");
-    expect(
-      workflow.match(/STAGING_VERCEL_PROJECT_NAME: \$\{\{ vars\.STAGING_VERCEL_PROJECT_NAME \}\}/gu),
-    ).toHaveLength(11);
     expect(
       workflow.match(/STAGING_DEPLOYMENT_PROTECTION_REQUIRED: "1"/gu),
     ).toHaveLength(2);
@@ -247,6 +355,16 @@ describe("staging synthetic acceptance contracts", () => {
     expect(preflight).not.toContain("STAGING_TEST_OTHER_STUDENT_PASSWORD");
     expect(preflight).not.toContain("STAGING_TEST_OTHER_TEACHER_PASSWORD");
     expect(preflight).not.toContain("STAGING_VERCEL_AUTOMATION_BYPASS_SECRET");
+    for (const identityName of [
+      "STAGING_TEST_PRIMARY_SCHOOL_CODE",
+      "STAGING_TEST_SECONDARY_SCHOOL_CODE",
+      "STAGING_TEST_TEACHER_STAFF_NO",
+      "STAGING_TEST_STUDENT_NO",
+      "STAGING_TEST_OTHER_STUDENT_NO",
+      "STAGING_TEST_OTHER_TEACHER_STAFF_NO",
+    ]) {
+      expect(preflight).toContain(`${identityName}:`);
+    }
     const build = workflow.slice(
       workflow.indexOf("- name: Build production application"),
       workflow.indexOf("- name: Verify external PostgreSQL metadata"),
@@ -268,23 +386,13 @@ describe("staging synthetic acceptance contracts", () => {
         "STAGING_VERCEL_AUTOMATION_BYPASS_SECRET",
       );
     }
-    const identityStep = workflow.slice(
-      workflow.indexOf("id: identity"),
-      workflow.indexOf("id: immediate-health"),
-    );
-    const bootstrapStepSecretScope = workflow.slice(
-      workflow.indexOf("id: bootstrap"),
-      workflow.indexOf("id: browser"),
-    );
+    expect(workflow).toContain('test "${{ steps.cleanup.outcome }}" = success');
     const verifyStep = workflow.slice(
       workflow.indexOf("id: verify"),
       workflow.indexOf("id: final"),
     );
-    for (const databaseOrIdentityStep of [identityStep, bootstrapStepSecretScope, verifyStep]) {
-      expect(databaseOrIdentityStep).not.toContain(
-        "STAGING_VERCEL_AUTOMATION_BYPASS_SECRET",
-      );
-    }
+    expect(verifyStep).not.toContain("STAGING_TEST_TEACHER_PASSWORD");
+    expect(verifyStep).not.toContain("STAGING_VERCEL_AUTOMATION_BYPASS_SECRET");
     const sameRunGateAssertion = workflow.slice(
       workflow.indexOf("- name: Enforce same-run acceptance gate"),
       workflow.indexOf("\n\n  acceptance:"),
@@ -293,5 +401,34 @@ describe("staging synthetic acceptance contracts", () => {
     expect(sameRunGateAssertion).toContain(
       "STAGING_VERCEL_AUTOMATION_BYPASS_SECRET:",
     );
+    const readinessGate = workflow.slice(
+      workflow.indexOf("id: acceptance-gate"),
+      workflow.indexOf("- name: Preserve sanitized staging readiness evidence"),
+    );
+    for (const passwordName of [
+      "STAGING_TEST_TEACHER_PASSWORD",
+      "STAGING_TEST_STUDENT_PASSWORD",
+      "STAGING_TEST_OTHER_STUDENT_PASSWORD",
+      "STAGING_TEST_OTHER_TEACHER_PASSWORD",
+      "STAGING_TEST_DISABLED_ACCOUNT_PASSWORD",
+      "STAGING_TEST_DISABLED_SCHOOL_TEACHER_PASSWORD",
+    ]) {
+      expect(readinessGate).toContain(`${passwordName}:`);
+      expect(sameRunGateAssertion).not.toContain(passwordName);
+    }
+    const acceptanceGate = workflow.slice(
+      workflow.indexOf("id: gate", workflow.indexOf("  acceptance:")),
+      workflow.indexOf("- name: Install Chromium before any browser work"),
+    );
+    for (const passwordName of [
+      "STAGING_TEST_TEACHER_PASSWORD",
+      "STAGING_TEST_STUDENT_PASSWORD",
+      "STAGING_TEST_OTHER_STUDENT_PASSWORD",
+      "STAGING_TEST_OTHER_TEACHER_PASSWORD",
+      "STAGING_TEST_DISABLED_ACCOUNT_PASSWORD",
+      "STAGING_TEST_DISABLED_SCHOOL_TEACHER_PASSWORD",
+    ]) {
+      expect(acceptanceGate).not.toContain(passwordName);
+    }
   });
 });

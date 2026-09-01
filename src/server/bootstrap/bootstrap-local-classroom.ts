@@ -118,6 +118,12 @@ async function ensureUser(
         passwordChangedAt: now,
       },
     });
+    // Re-entry rotates the synthetic password, so every session issued under
+    // the previous credential must become unusable in the same transaction.
+    await transaction.authSession.updateMany({
+      where: { userId: credential.user.id, revokedAt: null },
+      data: { revokedAt: now },
+    });
     return { id: credential.user.id, status: "EXISTING" };
   }
   const id = randomUUID();

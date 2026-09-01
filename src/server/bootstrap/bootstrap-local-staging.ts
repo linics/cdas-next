@@ -107,6 +107,12 @@ export async function bootstrapLocalStaging(
             userIds.set(identity.identifier, user.id);
             identityStatuses[identity.identifier] = "EXISTING";
             await transaction.localCredential.update({ where: { identifier: identity.identifier }, data: { passwordHash: hashes[index], mustChangePassword: false, passwordChangedAt: now, failedLoginCount: 0, lockedUntil: null } });
+            // Re-entry rotates the synthetic password, so every session issued
+            // under the previous credential must become unusable atomically.
+            await transaction.authSession.updateMany({
+              where: { userId: user.id, revokedAt: null },
+              data: { revokedAt: now },
+            });
           } else {
             const id = randomUUID();
             await transaction.appUser.create({ data: { id, authSubject: `local:${id}`, role: identity.role, displayName: identity.displayName, schoolId, accountStatus: identity.accountStatus, ...(identity.role === "TEACHER" ? { staffNo: identity.staffNo } : { studentNo: identity.studentNo }), createdAt: now, updatedAt: now } });
