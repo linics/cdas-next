@@ -2,9 +2,9 @@ import { randomBytes } from "node:crypto";
 import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 
 import {
-  ClerkApiProvider,
   downloadArtifactWithPropagationRetry,
   deployMigrationsWithMinimalEnvironment,
   minimalCommandEnvironment,
@@ -17,12 +17,14 @@ import {
 } from "../development-infrastructure/providers";
 import {
   deriveInfrastructureSecrets,
+  generateSyntheticPasswords,
+  syntheticFixtures,
+  syntheticPasswordNames,
   parseStagingEnvironmentFile,
   readValidatedStagingEnvironmentFile,
-  syntheticExternalIds,
-  syntheticUsernames,
   validateConfig,
   type DevelopmentInfrastructureConfig,
+  type SyntheticPasswordName,
 } from "../development-infrastructure/contracts";
 import {
   GitHubCliProvider,
@@ -48,7 +50,77 @@ const environmentName = "staging-agent-acceptance";
 const workflowName = "staging-agent-acceptance.yml";
 const model = "deepseek-v4-flash";
 
-type AgentIdentity = Readonly<{ id: string }>;
+const agentFixtureVariables = {
+  STAGING_TEST_PRIMARY_SCHOOL_CODE: syntheticFixtures.primarySchoolCode,
+  STAGING_TEST_SECONDARY_SCHOOL_CODE: syntheticFixtures.secondarySchoolCode,
+  STAGING_TEST_TEACHER_STAFF_NO: syntheticFixtures.teacherStaffNo,
+  STAGING_TEST_STUDENT_NO: syntheticFixtures.studentNo,
+  STAGING_TEST_OTHER_STUDENT_NO: syntheticFixtures.otherStudentNo,
+  STAGING_TEST_OTHER_TEACHER_STAFF_NO: syntheticFixtures.otherTeacherStaffNo,
+  STAGING_TEST_DISABLED_ACCOUNT_STUDENT_NO:
+    syntheticFixtures.disabledAccountStudentNo,
+  STAGING_TEST_DISABLED_SCHOOL_CODE: syntheticFixtures.disabledSchoolCode,
+  STAGING_TEST_DISABLED_SCHOOL_TEACHER_STAFF_NO:
+    syntheticFixtures.disabledSchoolTeacherStaffNo,
+} as const;
+
+const agentVariableNames = new Set([
+  "STAGING_BASE_URL",
+  "STAGING_VERCEL_PROJECT_NAME",
+  "STAGING_DATABASE_NAME",
+  "STAGING_AI_MODEL",
+  "STAGING_SYNTHETIC_ONLY_ATTESTED",
+  "STAGING_LOCAL_AUTH_ATTESTED",
+  "STAGING_DATABASE_ISOLATION_ATTESTED",
+  "STAGING_HOSTING_ACCESS_ATTESTED",
+  "STAGING_ROLLBACK_OWNER_ATTESTED",
+  "STAGING_RETENTION_ATTESTED",
+  "STAGING_AGENT_WRITES_ATTESTED",
+  "STAGING_AGENT_LOCAL_SESSIONS_ATTESTED",
+  "STAGING_AGENT_MODEL_COST_ATTESTED",
+  "STAGING_AGENT_RETENTION_ATTESTED",
+  "STAGING_AGENT_RUN_MODEL_ATTESTED",
+  "STAGING_AGENT_IDENTITIES_RESERVED_ATTESTED",
+  ...Object.keys(agentFixtureVariables),
+]);
+
+const agentSecretNames = new Set([
+  "STAGING_DATABASE_URL",
+  "STAGING_DIRECT_URL",
+  "STAGING_HEALTH_PROOF_SECRET",
+  "STAGING_VERCEL_AUTOMATION_BYPASS_SECRET",
+  "STAGING_DEEPSEEK_API_KEY",
+  "STAGING_AI_TOOL_APPROVAL_SECRET",
+  ...syntheticPasswordNames,
+]);
+
+const legacyAgentVariableNames = new Set([
+  "STAGING_CLERK_INSTANCE_ATTESTED",
+  "STAGING_AGENT_CLERK_TOKENS_ATTESTED",
+]);
+
+const legacyAgentSecretNames = new Set([
+  "STAGING_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
+  "STAGING_CLERK_SECRET_KEY",
+  "STAGING_TEST_TEACHER_CLERK_ID",
+  "STAGING_TEST_STUDENT_CLERK_ID",
+  "STAGING_TEST_OTHER_STUDENT_CLERK_ID",
+  "STAGING_TEST_OTHER_TEACHER_CLERK_ID",
+]);
+
+const paidAgentSecretNames = new Set([
+  "STAGING_DEEPSEEK_API_KEY",
+  "STAGING_AI_TOOL_APPROVAL_SECRET",
+]);
+
+const deletableAgentVariableNames = new Set([
+  ...legacyAgentVariableNames,
+  "STAGING_AGENT_MODEL_COST_ATTESTED",
+]);
+const deletableAgentSecretNames = new Set([
+  ...legacyAgentSecretNames,
+  ...paidAgentSecretNames,
+]);
 
 function object(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -57,7 +129,7 @@ function object(value: unknown): Record<string, unknown> {
   return value as Record<string, unknown>;
 }
 
-class AgentGitHubOperator {
+export class AgentGitHubOperator {
   constructor(
     private readonly runner: CommandRunner,
     private readonly sleep: (milliseconds: number) => Promise<void> =
@@ -193,6 +265,9 @@ class AgentGitHubOperator {
   }
 
   async setVariable(name: string, value: string): Promise<void> {
+    if (!agentVariableNames.has(name)) {
+      throw new Error("DEVELOPMENT_AGENT_GITHUB_VARIABLE_UNSAFE");
+    }
     await this.gh([
       "variable",
       "set",
@@ -205,55 +280,131 @@ class AgentGitHubOperator {
   }
 
   async setSecret(name: string, value: string): Promise<void> {
+    if (!agentSecretNames.has(name)) {
+      throw new Error("DEVELOPMENT_AGENT_GITHUB_SECRET_UNSAFE");
+    }
     await this.gh(["secret", "set", name, "--env", environmentName], value);
   }
 
   async deleteSecret(name: string): Promise<void> {
+    if (!deletableAgentSecretNames.has(name)) {
+      throw new Error("DEVELOPMENT_AGENT_GITHUB_SECRET_DELETE_UNSAFE");
+    }
     await this.gh(["secret", "delete", name, "--env", environmentName]);
   }
 
-  async assertPaidConfigurationClosed(): Promise<void> {
-    const variables = JSON.parse(
-      (
-        await this.gh([
-          "variable",
-          "list",
-          "--env",
-          environmentName,
-          "--json",
-          "name,value",
-        ])
-      ).stdout,
-    ) as unknown;
-    const secrets = JSON.parse(
-      (
-        await this.gh([
-          "secret",
-          "list",
-          "--env",
-          environmentName,
-          "--json",
-          "name",
-        ])
-      ).stdout,
-    ) as unknown;
-    if (!Array.isArray(variables) || !Array.isArray(secrets)) {
-      throw new Error("DEVELOPMENT_AGENT_GITHUB_CLEANUP_SCHEMA_INVALID");
+  private async listVariables(): Promise<Record<string, unknown>[]> {
+    const response = await this.gh([
+      "variable",
+      "list",
+      "--env",
+      environmentName,
+      "--json",
+      "name,value",
+    ]);
+    const values = JSON.parse(response.stdout) as unknown;
+    if (!Array.isArray(values)) {
+      throw new Error("DEVELOPMENT_AGENT_GITHUB_VARIABLE_SCHEMA_INVALID");
     }
-    const costClosed = variables
-      .map(object)
-      .some(
+    return values.map(object);
+  }
+
+  private async listSecrets(): Promise<Record<string, unknown>[]> {
+    const response = await this.gh([
+      "secret",
+      "list",
+      "--env",
+      environmentName,
+      "--json",
+      "name",
+    ]);
+    const values = JSON.parse(response.stdout) as unknown;
+    if (!Array.isArray(values)) {
+      throw new Error("DEVELOPMENT_AGENT_GITHUB_SECRET_SCHEMA_INVALID");
+    }
+    return values.map(object);
+  }
+
+  async deleteLegacyConfiguration(): Promise<void> {
+    const variables = await this.listVariables();
+    for (const name of legacyAgentVariableNames) {
+      if (variables.some((entry) => entry.name === name)) {
+        await this.deleteVariable(name);
+      }
+    }
+    const remainingVariables = await this.listVariables();
+    if (
+      remainingVariables.some((entry) =>
+        legacyAgentVariableNames.has(String(entry.name)),
+      )
+    ) {
+      throw new Error("DEVELOPMENT_AGENT_GITHUB_VARIABLE_NOT_REMOVED");
+    }
+
+    const secrets = await this.listSecrets();
+    for (const name of legacyAgentSecretNames) {
+      if (secrets.some((entry) => entry.name === name)) {
+        await this.deleteSecret(name);
+      }
+    }
+    const remainingSecrets = await this.listSecrets();
+    if (
+      remainingSecrets.some((entry) =>
+        legacyAgentSecretNames.has(String(entry.name)),
+      )
+    ) {
+      throw new Error("DEVELOPMENT_AGENT_GITHUB_SECRET_NOT_REMOVED");
+    }
+  }
+
+  async deleteVariable(name: string): Promise<void> {
+    if (!deletableAgentVariableNames.has(name)) {
+      throw new Error("DEVELOPMENT_AGENT_GITHUB_VARIABLE_DELETE_UNSAFE");
+    }
+    await this.gh(["variable", "delete", name, "--env", environmentName]);
+  }
+
+  async deletePaidSecrets(): Promise<void> {
+    const existing = new Set(
+      (await this.listSecrets()).map((entry) => String(entry.name)),
+    );
+    const errors: unknown[] = [];
+    for (const name of paidAgentSecretNames) {
+      if (!existing.has(name)) continue;
+      try {
+        await this.deleteSecret(name);
+      } catch (error) {
+        errors.push(error);
+      }
+    }
+    try {
+      const remaining = await this.listSecrets();
+      if (
+        remaining.some((entry) =>
+          paidAgentSecretNames.has(String(entry.name)),
+        )
+      ) {
+        errors.push(
+          new Error("DEVELOPMENT_AGENT_GITHUB_PAID_SECRET_NOT_REMOVED"),
+        );
+      }
+    } catch (error) {
+      errors.push(error);
+    }
+    if (errors.length > 0) throw errors[0];
+  }
+
+  async assertPaidConfigurationClosed(): Promise<void> {
+    const variables = await this.listVariables();
+    const secrets = await this.listSecrets();
+    const costClosed = variables.some(
         (entry) =>
           entry.name === "STAGING_AGENT_MODEL_COST_ATTESTED" &&
           entry.value === "false",
       );
-    const paidSecrets = new Set([
-      "STAGING_DEEPSEEK_API_KEY",
-      "STAGING_AI_TOOL_APPROVAL_SECRET",
-    ]);
     if (
       !costClosed ||
-      secrets.map(object).some((entry) => paidSecrets.has(String(entry.name)))
+      secrets.some((entry) => paidAgentSecretNames.has(String(entry.name)))
     ) {
       throw new Error("DEVELOPMENT_AGENT_GITHUB_PAID_CONFIG_NOT_CLOSED");
     }
@@ -470,9 +621,8 @@ async function verifyApplication(
       STAGING_VERCEL_PROJECT_NAME: input.config.vercelProjectName,
       STAGING_DEPLOYMENT_PROTECTION_REQUIRED: "1",
       STAGING_VERCEL_AUTOMATION_BYPASS_SECRET: input.bypassSecret,
+      STAGING_AUTH_MODE: "postgres-local-v1",
       DATABASE_URL: input.connection.pooledUrl,
-      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: input.config.clerkPublishableKey,
-      CLERK_SECRET_KEY: input.config.clerkSecretKey,
       AI_PROVIDER_DISABLED: input.aiProviderDisabled,
       ...(input.modelKey ? { DEEPSEEK_API_KEY: input.modelKey } : {}),
       ...(input.aiProviderDisabled === "0" ? { AI_MODEL: model } : {}),
@@ -490,10 +640,7 @@ function artifactEnvironment(input: Readonly<{
   run: WorkflowRun;
   config: DevelopmentInfrastructureConfig;
   connection: NeonConnection;
-  teacher: AgentIdentity;
-  student: AgentIdentity;
-  otherStudent: AgentIdentity;
-  otherTeacher: AgentIdentity;
+  passwords: Readonly<Record<SyntheticPasswordName, string>>;
   baseUrl: string;
   modelKey: string;
   approvalSecret: string;
@@ -516,12 +663,8 @@ function artifactEnvironment(input: Readonly<{
     STAGING_DATABASE_NAME: input.config.neonDatabaseName,
     DATABASE_URL: input.connection.pooledUrl,
     DIRECT_URL: input.connection.directUrl,
-    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: input.config.clerkPublishableKey,
-    CLERK_SECRET_KEY: input.config.clerkSecretKey,
-    STAGING_TEST_TEACHER_CLERK_ID: input.teacher.id,
-    STAGING_TEST_STUDENT_CLERK_ID: input.student.id,
-    STAGING_TEST_OTHER_STUDENT_CLERK_ID: input.otherStudent.id,
-    STAGING_TEST_OTHER_TEACHER_CLERK_ID: input.otherTeacher.id,
+    STAGING_AUTH_MODE: "postgres-local-v1",
+    ...agentFixtureVariables,
     STAGING_ACCEPTANCE_TEST_TEACHER_NAME:
       agentAcceptanceTeacherDisplayName,
     STAGING_ACCEPTANCE_TEST_STUDENT_NAME:
@@ -536,6 +679,7 @@ function artifactEnvironment(input: Readonly<{
     AI_MODEL: model,
     AI_TOOL_APPROVAL_SECRET: input.approvalSecret,
     STAGING_HEALTH_PROOF_SECRET: input.healthProofSecret,
+    ...input.passwords,
     ...Object.fromEntries(
       agentAcceptanceAttestations.map((name) => [name, "true"]),
     ),
@@ -548,10 +692,7 @@ async function configureAgentEnvironment(
     config: DevelopmentInfrastructureConfig;
     repository: RepositoryTarget;
     connection: NeonConnection;
-    teacher: AgentIdentity;
-    student: AgentIdentity;
-    otherStudent: AgentIdentity;
-    otherTeacher: AgentIdentity;
+    passwords: Readonly<Record<SyntheticPasswordName, string>>;
     baseUrl: string;
     modelKey: string;
     approvalSecret: string;
@@ -560,21 +701,23 @@ async function configureAgentEnvironment(
   }>,
 ): Promise<void> {
   await github.ensureEnvironment(input.repository);
+  await github.deleteLegacyConfiguration();
   const variables = {
     STAGING_BASE_URL: input.baseUrl,
     STAGING_VERCEL_PROJECT_NAME: input.config.vercelProjectName,
     STAGING_DATABASE_NAME: input.config.neonDatabaseName,
     STAGING_AI_MODEL: model,
     STAGING_SYNTHETIC_ONLY_ATTESTED: "true",
-    STAGING_CLERK_INSTANCE_ATTESTED: "true",
+    STAGING_LOCAL_AUTH_ATTESTED: "true",
     STAGING_DATABASE_ISOLATION_ATTESTED: "true",
     STAGING_HOSTING_ACCESS_ATTESTED: "true",
     STAGING_ROLLBACK_OWNER_ATTESTED: "true",
     STAGING_RETENTION_ATTESTED: "true",
     STAGING_AGENT_WRITES_ATTESTED: "true",
-    STAGING_AGENT_CLERK_TOKENS_ATTESTED: "true",
+    STAGING_AGENT_LOCAL_SESSIONS_ATTESTED: "true",
     STAGING_AGENT_RETENTION_ATTESTED: "true",
     STAGING_AGENT_IDENTITIES_RESERVED_ATTESTED: "true",
+    ...agentFixtureVariables,
   };
   for (const [name, value] of Object.entries(variables)) {
     await github.setVariable(name, value);
@@ -582,17 +725,11 @@ async function configureAgentEnvironment(
   const secrets = {
     STAGING_DATABASE_URL: input.connection.pooledUrl,
     STAGING_DIRECT_URL: input.connection.directUrl,
-    STAGING_NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:
-      input.config.clerkPublishableKey,
-    STAGING_CLERK_SECRET_KEY: input.config.clerkSecretKey,
-    STAGING_TEST_TEACHER_CLERK_ID: input.teacher.id,
-    STAGING_TEST_STUDENT_CLERK_ID: input.student.id,
-    STAGING_TEST_OTHER_STUDENT_CLERK_ID: input.otherStudent.id,
-    STAGING_TEST_OTHER_TEACHER_CLERK_ID: input.otherTeacher.id,
     STAGING_HEALTH_PROOF_SECRET: input.healthProofSecret,
     STAGING_VERCEL_AUTOMATION_BYPASS_SECRET: input.bypassSecret,
     STAGING_DEEPSEEK_API_KEY: input.modelKey,
     STAGING_AI_TOOL_APPROVAL_SECRET: input.approvalSecret,
+    ...input.passwords,
   };
   for (const [name, value] of Object.entries(secrets)) {
     await github.setSecret(name, value);
@@ -621,7 +758,6 @@ async function main(): Promise<void> {
     config.vercelProjectName,
     config.vercelTeamId,
   );
-  const clerk = new ClerkApiProvider(config.clerkSecretKey);
   const neon = new NeonApiProvider(config);
   const derived = deriveInfrastructureSecrets(config.masterSecret);
   let failure: string | null = null;
@@ -633,57 +769,26 @@ async function main(): Promise<void> {
     process.stdout.write("DEVELOPMENT_AGENT_PHASE_READ_ONLY_BOUNDARIES\n");
     await github.assertCiPassed(repository);
     await Promise.all([
-      clerk.assertDevelopmentInstance(),
       (async () => {
         await vercel.assertProject(repository);
         await vercel.assertPrivateBlobConnection();
       })(),
     ]);
+    const passwords = generateSyntheticPasswords();
     connection = await neon.ensureIsolatedDatabase();
     await deployMigrationsWithMinimalEnvironment(connection, runner);
-    const [teacher, student, otherStudent, otherTeacher] = await Promise.all([
-      clerk.ensureSyntheticIdentity(
-        syntheticExternalIds.teacher,
-        syntheticUsernames.teacher,
-        "CDAS Staging Synthetic",
-        "Teacher",
-      ),
-      clerk.ensureSyntheticIdentity(
-        syntheticExternalIds.student,
-        syntheticUsernames.student,
-        "CDAS Staging Synthetic",
-        "Student",
-      ),
-      clerk.ensureSyntheticIdentity(
-        syntheticExternalIds.otherStudent,
-        syntheticUsernames.otherStudent,
-        "CDAS Staging Synthetic Other",
-        "Student",
-      ),
-      clerk.ensureSyntheticIdentity(
-        syntheticExternalIds.otherTeacher,
-        syntheticUsernames.otherTeacher,
-        "CDAS Staging Synthetic Other",
-        "Teacher",
-      ),
-    ]);
-    if (new Set([teacher.id, student.id, otherStudent.id, otherTeacher.id]).size !== 4) {
-      throw new Error("DEVELOPMENT_AGENT_IDENTITIES_NOT_DISTINCT");
-    }
 
     process.stdout.write("DEVELOPMENT_AGENT_PHASE_AI_PREVIEW\n");
     await vercel.ensurePreviewEnvironment({
       DATABASE_URL: connection.pooledUrl,
       DIRECT_URL: connection.directUrl,
-      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: config.clerkPublishableKey,
-      CLERK_SECRET_KEY: config.clerkSecretKey,
+      STAGING_AUTH_MODE: "postgres-local-v1",
       AI_PROVIDER_DISABLED: "0",
       DEEPSEEK_API_KEY: modelKey,
       AI_MODEL: model,
       AI_TOOL_APPROVAL_SECRET: approvalSecret,
       ATTACHMENT_STORAGE_ENABLED: "1",
       STAGING_HEALTH_PROOF_SECRET: derived.healthProofSecret,
-      NEXT_PUBLIC_CLERK_KEYLESS_DISABLED: "1",
     });
     await vercel.ensureProtectionBypass(derived.vercelBypassSecret);
     const deployment = await vercel.deployPreview(repository);
@@ -706,10 +811,7 @@ async function main(): Promise<void> {
       config,
       repository,
       connection,
-      teacher,
-      student,
-      otherStudent,
-      otherTeacher,
+      passwords,
       baseUrl: deployment.url,
       modelKey,
       approvalSecret,
@@ -725,10 +827,7 @@ async function main(): Promise<void> {
         run,
         config,
         connection,
-        teacher,
-        student,
-        otherStudent,
-        otherTeacher,
+        passwords,
         baseUrl: deployment.url,
         modelKey,
         approvalSecret,
@@ -756,10 +855,9 @@ async function main(): Promise<void> {
         "false",
       );
     });
-    await github.deleteSecret("STAGING_DEEPSEEK_API_KEY").catch(() => undefined);
-    await github
-      .deleteSecret("STAGING_AI_TOOL_APPROVAL_SECRET")
-      .catch(() => undefined);
+    await cleanup(async () => {
+      await github.deletePaidSecrets();
+    });
     await cleanup(async () => {
       await github.assertPaidConfigurationClosed();
     });
@@ -767,7 +865,10 @@ async function main(): Promise<void> {
     await cleanup(async () => {
       await vercel.assertProject(repository);
       await vercel.assertPrivateBlobConnection();
-      await vercel.ensurePreviewEnvironment({ AI_PROVIDER_DISABLED: "1" });
+      await vercel.ensurePreviewEnvironment({
+        STAGING_AUTH_MODE: "postgres-local-v1",
+        AI_PROVIDER_DISABLED: "1",
+      });
       await vercel.removePaidPreviewEnvironment();
       const disabled = await vercel.deployPreview(repository);
       disabledUrl = disabled.url;
@@ -807,7 +908,9 @@ async function main(): Promise<void> {
   process.stdout.write(`DEVELOPMENT_AGENT_PASS ${runUrl}\n`);
 }
 
-void main().catch((error) => {
-  process.stdout.write(`${stableDevelopmentAgentError(error)}\n`);
-  process.exitCode = 1;
-});
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  void main().catch((error) => {
+    process.stdout.write(`${stableDevelopmentAgentError(error)}\n`);
+    process.exitCode = 1;
+  });
+}
