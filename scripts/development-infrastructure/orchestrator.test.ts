@@ -93,4 +93,17 @@ describe("development infrastructure reconciliation", () => {
     expect(events).not.toContain("vercel-env");
     expect(events).not.toContain("dispatch");
   });
+  it("stops before bypass, deployment, and GitHub writes when legacy cleanup fails", async () => {
+    const events: string[] = [];
+    await expect(
+      reconcileDevelopmentInfrastructure(
+        config,
+        providers(events, "vercel-legacy-delete"),
+      ),
+    ).rejects.toThrow("DEVELOPMENT_INFRA_TEST_STOP");
+    expect(events).not.toContain("vercel-bypass");
+    expect(events).not.toContain("vercel-deploy");
+    expect(events).not.toContain("github-env");
+    expect(events).not.toContain("dispatch");
+  });
 });

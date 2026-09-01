@@ -376,6 +376,48 @@ describe("provider fail-closed contracts", () => {
     await expect(client.removeLegacyPreviewEnvironment()).rejects.toThrow("DEVELOPMENT_INFRA_VERCEL_LEGACY_ENV_SCOPE_UNSAFE");
     expect(requests.filter((request) => request.method === "DELETE")).toEqual([]);
   });
+  it("fails closed when one legacy key is ambiguous on the exact Preview branch", async () => {
+    const requests: Request[] = [];
+    const project = { name: "cdas-next", link: { type: "github", repoId: 1 }, buildCommand: null, ssoProtection: { deploymentType: "preview" }, targets: hobbyTargets, protectionBypass: {} };
+    const duplicate = ["first", "second"].map((id) => ({
+      id,
+      key: "CLERK_SECRET_KEY",
+      type: "encrypted",
+      target: ["preview"],
+      gitBranch: "codex/x",
+    }));
+    const client = new VercelApiProvider("t", "cdas-next", undefined, queuedFetch([
+      response(project),
+      response({ envs: duplicate }),
+    ], requests));
+    await client.assertProject({ owner: "o", name: "r", branch: "codex/x", sha: "a".repeat(40), repositoryId: 1 });
+    await expect(client.removeLegacyPreviewEnvironment()).rejects.toThrow(
+      "DEVELOPMENT_INFRA_VERCEL_LEGACY_ENV_AMBIGUOUS",
+    );
+    expect(requests.filter((request) => request.method === "DELETE")).toEqual([]);
+  });
+  it("fails closed when Vercel still returns a deleted legacy Preview entry", async () => {
+    const requests: Request[] = [];
+    const project = { name: "cdas-next", link: { type: "github", repoId: 1 }, buildCommand: null, ssoProtection: { deploymentType: "preview" }, targets: hobbyTargets, protectionBypass: {} };
+    const legacy = {
+      id: "secret",
+      key: "CLERK_SECRET_KEY",
+      type: "encrypted",
+      target: ["preview"],
+      gitBranch: "codex/x",
+    };
+    const client = new VercelApiProvider("t", "cdas-next", undefined, queuedFetch([
+      response(project),
+      response({ envs: [legacy] }),
+      response({}),
+      response({ envs: [legacy] }),
+    ], requests));
+    await client.assertProject({ owner: "o", name: "r", branch: "codex/x", sha: "a".repeat(40), repositoryId: 1 });
+    await expect(client.removeLegacyPreviewEnvironment()).rejects.toThrow(
+      "DEVELOPMENT_INFRA_VERCEL_LEGACY_ENV_NOT_REMOVED",
+    );
+    expect(requests.filter((request) => request.method === "DELETE")).toHaveLength(1);
+  });
   it("accepts Vercel bypass only when the derived secret is a protectionBypass map key", async () => {
     const secret = "B".repeat(32);
     const project = { name: "cdas-next", link: { type: "github", repoId: 1 }, buildCommand: null, ssoProtection: { deploymentType: "preview" }, targets: hobbyTargets, protectionBypass: {} };
