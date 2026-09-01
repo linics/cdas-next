@@ -1,7 +1,7 @@
 # CDAS Next 第一阶段验收合同
 
-状态：启动基线（v0.1）；官方课程依据检索已合入主线并由 D-058 扩展为 14 门课标；D-055 附件预览/自托管/评阅受限读取已完成本地开发门禁，待固定合成远程验收；D-059 学校组织与管理员端
-日期：2026-08-29
+状态：启动基线（v0.1）；D-060 本地认证、会话与门禁迁移已完成源码收尾
+日期：2026-09-01
 
 本文件把 `PRODUCT.md`、`DOMAIN.md` 与 `AGENT.md` 的第一阶段边界转成实现和测试必须共同满足的行为合同。`ROADMAP.md` 记录的是后续候选能力，不属于本文件的当前验收范围；任何路线能力进入开发时必须在同一变更中补充对应的权限矩阵、正常路径和反例场景。
 
@@ -27,9 +27,44 @@
 
 Agent 不是新的业务主体。审计中的 actor 始终是登录用户，`agent_run_id` 只表示调用来源。
 
-账号与名单码仍由受控 operator CLI 预配置，CLI 不得覆盖既有角色、显示名称、班级管理员或成员历史。D-027 起，班级当前管理员教师可以管理既有学生账号的成员关系；创建 Clerk 用户、邀请、密码和身份资料修改仍不是教师业务操作，也不是 Agent 工具。
+### 本地认证权限矩阵
 
-所有写命令的 actor、调用来源、追踪号和时钟都由服务端入口注入。客户端即使提交同名字段也必须被输入合同拒绝，不能覆盖 Clerk 会话或回拨命令时间。
+| 场景 | ADMIN | ACTIVE 学校的 ACTIVE 教师 | ACTIVE 学校的 ACTIVE 学生 | DISABLED 账号 | DISABLED 学校成员 | 未认证调用者 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 使用本角色登录入口 | 允许 | 允许 | 允许 | 拒绝 | 拒绝 | 仅可查看登录页 |
+| 首次登录后强制改密 | 适用 | 适用 | 适用 | 拒绝 | 拒绝 | 拒绝 |
+| 建立、撤销自己的会话 | 允许 | 允许 | 允许 | 不建立新会话 | 不建立新会话 | 拒绝 |
+| 进入角色工作台 | `/admin` | `/teacher` | `/student` | 拒绝 | 拒绝 | 重定向登录 |
+| 读取或写入教学资源 | 仅管理员命令，不读取教学内容 | 仍按所有权与班级管理关系 | 仍按当前/历史成员关系与资源归属 | 拒绝 | 拒绝 | 拒绝 |
+
+认证只识别 actor，不替代授权。角色登录入口不匹配、跨校 identifier、跨校资源 ID、其他教师或学生的资源都不得因持有有效 session 而变为可见。
+
+```gherkin
+场景: ACTIVE 教师正常登录并建立本地会话
+  假如教师账号、所属学校和本地凭据均为 ACTIVE
+  当教师在教师登录页提交正确学校代码、工号和密码
+  那么系统建立 12 小时本地会话并进入教师工作台
+  并且后续教学操作仍按草稿所有权和班级管理关系授权
+```
+
+```gherkin
+场景: 停用账号或学校拒绝登录和既有会话访问
+  假如账号或其所属学校已被管理员停用
+  当该用户提交正确密码或使用停用前建立的会话访问工作台
+  那么系统拒绝访问且不删除任何既有教学历史
+```
+
+```gherkin
+场景: 跨校身份与资源拒绝
+  假如两所学校存在相同工号或学号且各自拥有独立资源
+  当甲校用户以乙校代码登录或持甲校会话访问乙校资源
+  那么登录失败或资源表现为不存在
+  并且不得泄露乙校账号或资源是否存在
+```
+
+平台管理员由受控 `bootstrap:admin` CLI 建立；学校、教师和学生账号由本地 provisioning/import 路径建立。CLI 不得覆盖既有角色、显示名称、班级管理员或成员历史。D-027 起，班级当前管理员教师可以管理既有学生账号的成员关系；创建账号、重置密码和身份资料修改仍不是 Agent 工具。
+
+所有写命令的 actor、调用来源、追踪号和时钟都由服务端入口注入。客户端即使提交同名字段也必须被输入合同拒绝，不能覆盖本地会话或回拨命令时间。
 
 工作台导航必须明确显示服务端 `AppUser` 的当前账号名称、业务角色和退出登录入口。教师账号进入 `/student` 或学生账号进入 `/teacher` 时，根工作台只能显示不含业务资源的角色说明、正确工作台入口与退出入口；带具体资源 ID 的越权访问仍返回不存在，不能以角色提示泄露资源是否存在。
 
@@ -49,7 +84,7 @@ Agent 不是新的业务主体。审计中的 actor 始终是登录用户，`age
 | 关闭发布 | 发布教师且当前班级管理员确认后由 active 变为 closed | 非发布者或不再管理班级者无写入 | Release 已关闭、状态变化或确认过期时拒绝 | 返回同一关闭结果 | AI 关闭时第一方 UI 仍可完成关闭 |
 | 学生提交 | 产生不可变 Revision | 其他学生不可读写 | 活动关闭或版本过期时拒绝 | 不增加第二份修订 | AI、对象存储等外部服务不可用时文本证据仍可提交 |
 | 证据附件 | 私有上传、元数据与文件头验证通过后进入同一正式修订；图片/PDF 可授权预览 | 其他学生和教师无对象 URL、storage key 或元数据 | 工作版本变化、对象元数据或文件头不符时拒绝正式提交；Word/未知类型不可 inline | 相同预留不增加第二个资产 | 配置的附件后端暂不可用时暂停附件，纯文字提交仍可用 |
-| 班级成员管理 | 名单码预览后确认加入，或确认结束当前区间 | 非管理员、学生和 Agent 无写入且不能枚举学生 | 名单码、成员状态或班级版本变化时要求重新预览 | 相同幂等请求返回原结果且不增加区间 | Clerk 不可用时既有 AppUser 名单读取与变更仍可完成 |
+| 班级成员管理 | 名单码预览后确认加入，或确认结束当前区间 | 非管理员、学生和 Agent 无写入且不能枚举学生 | 名单码、成员状态或班级版本变化时要求重新预览 | 相同幂等请求返回原结果且不增加区间 | 认证会话之外无外部身份调用；既有 AppUser 名单读取与变更仍可完成 |
 | 结构化形成性反馈 | 正文、继续/重交指令与基础/标准/挑战支架一起绑定当前提交修订 | 其他教师不可写，其他学生或组外学生不可读 | 学生已重交、反馈版本变化或确认参数变化时要求重新确认 | 相同幂等请求返回原结果，不增加第二个反馈修订 | AI 建议失败时仍可手写、确认并由学生重交 |
 | 证据绑定量规评价 | 覆盖全部冻结维度；等级须引用本版证据，或明确标记证据不足 | 其他教师不可写，其他学生或组外学生不可读；v1 快照不可写 | 学生已重交、评价版本变化或确认参数变化时要求重新确认 | 相同幂等请求返回原结果，不增加第二个评价修订 | AI 不可用时仍可手写确认；关闭后有权教师仍可评价 |
 | AI 量规评价建议 | 当前正式修订的全部冻结维度回填可编辑建议；可引用可见文字、已确认检查点或本次成功读取的正式附件 | 其他教师、学生与已失去班级管理权的发布者得到资源级不存在；附件逐件复用下载授权且文件名/storage key 不进模型 | v1、无正式修订、陈旧页面、不可读附件引用或非法模型 schema 不起草评价 | pending 时不并发；每次新的明确起草请求留下独立 AgentRun，但不增加评价历史 | 模型或附件读取失败只关闭/降级当前建议并保留手写表单；禁用时不渲染入口、不建 run/provider |
@@ -300,11 +335,11 @@ Agent 不是新的业务主体。审计中的 actor 始终是登录用户，`age
   当相同幂等键用于不同参数
   那么系统返回幂等冲突
 
-场景: 名单管理不依赖 Clerk 在线调用
+场景: 名单管理不把认证工作放进业务事务
   假如既有学生账号和名单码已经由 operator 写入应用数据库
-  当 Clerk 管理 API 不可用
+  当有权教师读取班级名单、预览精确名单码并确认加入或结束成员关系
   那么有权教师仍可读取班级名单、预览精确名单码并确认加入或结束成员关系
-  并且系统不在数据库事务中调用认证供应商
+  并且系统只使用已解析的本地 actor，不在数据库事务中执行密码派生或会话创建
 
 场景: 学生把已验证格式的私有附件固化进正式修订
   假如当前成员学生已经保存一份含非空文字的工作草稿
@@ -341,17 +376,11 @@ Agent 不是新的业务主体。审计中的 actor 始终是登录用户，`age
   当同一账号访问不属于自己的具体草稿、发布或提交路径
   那么系统仍返回不存在，避免枚举资源
 
-场景: 本地开发默认可点击进入预配置工作台
-  假如 NODE_ENV 为 development 且未运行在 Vercel
-  并且 DEV_TEST_TEACHER_CLERK_ID 与 DEV_TEST_STUDENT_CLERK_ID 已绑定对应 AppUser
-  并且未把 DEV_CLICKTHROUGH_AUTH 显式设为关闭
-  当未持有 Clerk 会话访问 /teacher
-  那么以该教师身份进入教师工作台并显示其名称与角色
-  当未持有 Clerk 会话访问 /student
-  那么以该学生身份进入学生工作台并显示其名称与角色
-  并且查询与写入仍走同一套领域命令，只把身份解析换成预配置演示账号
-  当 NODE_ENV 不是 development、存在 VERCEL_ENV、E2E_RUN_MARKER 或 STAGING_RUN_MARKER，或 DEV_CLICKTHROUGH_AUTH 显式关闭
-  那么仍要求 Clerk 会话
+场景: 未认证访问不能旁路本地登录
+  假如调用者没有有效 cdas_session
+  当访问 /admin、/teacher、/student 或任一具体业务资源
+  那么系统重定向到对应角色登录页或返回资源级不存在
+  并且 development、Preview、E2E 与 staging 都不提供点击进入预配置账号的旁路
 
 场景: 教师确认后发布精确草稿版本
   假如教师拥有 ready 状态的草稿版本 7
@@ -702,18 +731,18 @@ Agent 不是新的业务主体。审计中的 actor 始终是登录用户，`age
 
 场景: 受保护 staging 的合成真实账号验收不扩大业务权限
   假如同一次受保护 GitHub run 已生成并校验 staging GO 证据
-  并且该证据以健康证明密钥绑定 run、部署源码、数据库、Clerk test instance、合成教师、两个学生与一名无关教师、GitHub Environment secret 中的 base URL、Vercel project name 及有效的 Vercel Automation Bypass secret
+  并且该证据以健康证明密钥绑定 run、部署源码、数据库、本地认证配置、合成教师、两个学生与一名无关教师、GitHub Environment secret 中的 base URL、Vercel project name 及有效的 Vercel Automation Bypass secret
   并且 Vercel Preview 在未提供显式部署标识时以其 Git commit SHA 作为构建期部署标识
-  当额外的“合成写入、短期 Clerk ticket、保留不清理”人工证明均为 true
+  当额外的“合成写入、本地认证会话、保留不清理”人工证明均为 true
   并且写入前重新验证当前远端 health proof 仍与该 run 精确一致
-  并且四个 Clerk test 用户均可读取、签发 60 秒 ticket 并立即撤销
+  并且四个本地合成账号均存在、为 ACTIVE、所属学校为 ACTIVE 且密码验证成功
   并且 base URL 必须是该 project 的精确 HTTPS `.vercel.app` Preview 根地址，不能由普通 Environment Variable 替换为自定义域或其他主机
   并且只有本合成验收 workflow 将 `STAGING_DEPLOYMENT_PROTECTION_REQUIRED` 固定为 `1`；共享 staging verifier 在该值缺失时只验证通用公开 HTTPS 根地址，既不要求 project 也不读取 bypass secret
   并且 Vercel Deployment Protection 保持启用；每次发送 bypass 前，独立无 cookie、无 bypass 的 health 请求必须得到 Vercel SSO `302`、`server: Vercel`、`x-vercel-id` 与精确绑定 health URL 的 64 位 nonce challenge
   并且两次 health 请求与四个全新浏览器上下文只对精确的 staging scheme、host 和有效 port 通过 `x-vercel-protection-bypass` 请求头访问
-  并且 Clerk、CDN、重定向与任何其他 origin 均不接收 bypass 或 set-bypass-cookie 请求头，bypass secret 不进入 URL、截图、artifact 或验收记录
-  那么 acceptance-only operator 只能以唯一 `cdas-staging-*` namespace 先预配置教师与主学生，再追加或精确重入同班第三学生，并为无关教师只建立不含班级或成员关系的 AppUser；该 operator 不扩大产品成员管理权限
-  并且班级恰有两个活跃学生成员，且两个学生 Clerk subject 均不同
+  并且 CDN、重定向与任何其他 origin 均不接收 bypass 或 set-bypass-cookie 请求头，bypass secret 不进入 URL、截图、artifact 或验收记录
+  那么 acceptance-only operator 只能以唯一 `cdas-staging-*` namespace 先预配置教师与主学生及其本地凭据，再追加或精确重入同班第三学生，并为无关教师只建立不含班级或成员关系的 AppUser；该 operator 不扩大产品成员管理权限
+  并且班级恰有两个活跃学生成员，且两个学生本地身份均不同
   并且真实浏览器必须经现有第一方 UI 完成手工草稿、发布、文本提交、教师反馈、量规评价、学生查看与关闭
   并且第三学生能看到同一 Release，但主学生的 evidence、feedback、evaluation 与显示名称均不泄漏；直接打开教师页面取得的主学生 submission URL 返回 404
   并且无关教师直接打开该教师的 Release 与主学生 Submission URL 均返回资源级 404，且不泄漏学生 evidence、feedback、evaluation 或显示名称
@@ -727,12 +756,12 @@ Agent 不是新的业务主体。审计中的 actor 始终是登录用户，`age
   那么重跑在追加新的业务历史前拒绝，并要求新的 run attempt 使用新 marker
 
 场景: 受保护 staging 的首个 Agent 场景以真实模型启动同一 Release 的完整教学闭环
-  假如受保护 Environment 已批准唯一合成写入、短期 Clerk ticket、模型费用、identity reservation 与历史保留
-  并且同一次 run 的 GO 证据绑定当前源码、AI-enabled deployment、隔离数据库、Clerk test instance、DeepSeek API key、模型、approval secret、Vercel project 与 automation bypass
-  并且 Vercel Deployment Protection 保持启用，automation bypass 只发送到绑定 Preview 的精确 origin，不发送给 Clerk、DeepSeek、重定向或其他主机
+  假如受保护 Environment 已批准唯一合成写入、本地认证会话、模型费用、identity reservation 与历史保留
+  并且同一次 run 的 GO 证据绑定当前源码、AI-enabled deployment、隔离数据库、本地认证配置、DeepSeek API key、模型、approval secret、Vercel project 与 automation bypass
+  并且 Vercel Deployment Protection 保持启用，automation bypass 只发送到绑定 Preview 的精确 origin，不发送给 DeepSeek、重定向或其他主机
   并且 DeepSeek V4 使用 non-thinking 模式；已有草稿会话中的明确发布请求只向模型开放并指定 publish_activity_release，仍必须等待签名的人类确认
-  当 runner 为预留教师签发只驻内存的 60 秒 ticket
-  并且 ticket 只能在首页最终 scheme、host 与有效 port 精确等于已绑定 staging origin 后签发，且每次关键导航后重新校验 origin
+  当 runner 在首页最终 scheme、host 与有效 port 精确等于已绑定 staging origin 后，使用预留教师凭据提交登录表单
+  并且每次关键导航后重新校验 origin，密码在使用后从环境和表单输入清除
   并且教师在第一方助手提交固定合成主题与 marker 标题；模型生成的 schema v2 任务书必须满足 D-030 的基本设置、真实情境、三维目标、连续阶段、类型化证据与四档评价合同，但不把生成文本逐字照抄 prompt 当成成功条件
   那么模型通过共享 saveActivityDraft 命令创建唯一 READY_FOR_PREVIEW 版本 1 与 AGENT revision
   并且客户端只渲染与工具返回 draft ID 一致的精确站内预览链接，教师点击后才导航

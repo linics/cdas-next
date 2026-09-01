@@ -599,7 +599,7 @@
 
 - Neon 是否满足目标地区的数据驻留、备份与恢复要求
 - Vercel Blob 的正式数据保留/删除策略，以及真实学生文件进入前是否增加独立恶意文件扫描
-- Clerk 的学校数据条款、账号开通与角色配置流程
+- 本地账号找回、管理员重置、MFA 与大规模账号开通流程
 - 模型供应商、区域、日志保留和关闭模型时的降级行为
 - Vercel 部署区域、观测数据范围与故障恢复方案
 
@@ -651,3 +651,15 @@
 - 授权：每个管理员命令/查询证明当前 actor 为 ACTIVE 的 ADMIN。教师与学生业务入口在 `getCurrentActor` 与关键查询中拒绝 DISABLED 账号或所属 DISABLED 学校，表现为不能进入工作台或资源级不存在。教学历史表不写 `schoolId`。
 - 非目标：本地认证、登录页、会话、Clerk 用户创建或 ticket、邀请码自助注册、教师自助改资料、Excel 导入、任务书演进、蓝色换肤、管理员读写教学对象。
 - 验收：回填后既有教学资源 ID 不变；同校工号唯一、跨校可复用；跨校班级/成员被数据库拒绝；停用学校或教师后业务入口拒绝且历史只读完整；重置邀请码后旧码失效且失败响应不泄露校名；ADMIN 单例；非管理员不能建校或枚举学校；相同幂等请求不双写；Agent 无学校管理工具。
+
+## D-060：认证回归应用数据库并停用外部身份供应商
+
+- 状态：已接受
+- 日期：2026-09-01
+- 用户场景：小规模学校部署需要在单一 CDAS Next 应用与 PostgreSQL 内完成管理员、教师和学生登录，不再依赖外部身份供应商的账号、ticket、回调或客户端脚本；既有教学授权和历史必须原样保持。
+- 决策：新增一对一 `LocalCredential` 和可多条的 `AuthSession`。密码使用版本化 Argon2id envelope（memory 19456 KiB、iterations 2、parallelism 2、16-byte salt、32-byte tag），密码策略为 10–128 个 Unicode 字符且至少含字母和数字。未知 identifier 使用同参数固定 dummy hash，避免快速 miss 泄露账号；连续 5 次失败锁定 15 分钟，锁定检查在密码派生前执行。
+- 会话：成功登录生成 32-byte 随机 token，浏览器持有 base64url 原值，数据库仅存 SHA-256；默认 TTL 12 小时。`cdas_session` 使用 HttpOnly、SameSite=Lax、Path=/、Expires/Max-Age，并在 production 启用 Secure。登出先撤销数据库会话再清 cookie；改密清除锁定状态、撤销全部旧会话并签发新会话。教师和学生的 `mustChangePassword` 都必须执行。
+- 迁移语义：管理员登记的教师继续使用既有 `AppUser`。完成本地开通时，在同一事务把 `authSubject` 从 `pending:<provisioningId>` 改为 `local:<同一 AppUser id>`、创建凭据并完成 provisioning；不新建替身用户，不改教学资源 ID，不复制或重写任何发布、提交、反馈、评价、审计或幂等历史。
+- 授权：本地认证只识别 caller。会话解析后的所有 UI actions 和 Agent tools 继续调用同一服务端领域命令，并在每次调用检查 ACTIVE 账号、ACTIVE 学校、资源所有权或成员关系；LocalCredential 与 AuthSession 不保存教学权限。
+- 原因：第一阶段部署规模不需要外部身份供应商的组织、社交登录或企业 SSO 能力；移除跨供应商账号、ticket 与运行时配置后，自托管、离线演示、合成门禁和故障边界更简单，同时避免认证供应商不可用阻断全部手工教学流程。
+- 非目标：SSO/MFA、邮件找回或自助重置、无密码登录、外部目录同步、生产凭据导入、跨校账号合并、新的授权模型，以及为了迁移而改写 append-only 教学历史。合成门禁密码只存 GitHub Environment secrets，不进入仓库或 artifact。
