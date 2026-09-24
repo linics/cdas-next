@@ -2,6 +2,13 @@
 
 import { useActionState, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { ArrowRightIcon, SparklesIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  NativeSelect,
+  NativeSelectOption,
+} from "@/components/ui/native-select";
+import { Textarea } from "@/components/ui/textarea";
 import { LocalizedDateTime } from "../../../_components/localized-date-time";
 import { ConfirmDialog, InlineAlert } from "../../../_components/ui";
 import { TEACHER_FEEDBACK_BODY_MAX_LENGTH } from "../../../../domain/feedback/teacher-feedback-policy";
@@ -26,7 +33,13 @@ import {
   initialFeedbackSuggestionActionState,
   type FeedbackSuggestionActionState,
 } from "./feedback-suggestion-action-state";
-import styles from "./feedback-workspace.module.css";
+import {
+  AiNote,
+  ComposerFrame,
+  FieldHead,
+  PrepareRow,
+  ReviewNotice,
+} from "./review-ui";
 
 type FeedbackComposerProps = Readonly<{
   submissionId: string;
@@ -49,22 +62,11 @@ function SuggestionNotice({
   const isSuccess = state.status === "suggested";
   const isConflict = state.status === "stale";
   return (
-    <div
-      className={styles.actionNotice}
-      data-tone={isSuccess ? "success" : isConflict ? "conflict" : "error"}
-      role={isSuccess ? "status" : "alert"}
-      aria-live="polite"
-    >
-      <span aria-hidden="true">
-        {isSuccess ? "✓" : isConflict ? "↻" : "!"}
-      </span>
-      <p>{state.message}</p>
-      {isConflict ? (
-        <button type="button" onClick={onRefresh}>
-          刷新
-        </button>
-      ) : null}
-    </div>
+    <ReviewNotice
+      message={state.message}
+      onRefresh={isConflict ? onRefresh : undefined}
+      tone={isSuccess ? "success" : isConflict ? "conflict" : "error"}
+    />
   );
 }
 
@@ -88,22 +90,13 @@ function ActionNotice({
   const isSuccess = state.status === "saved" || state.status === "rejected";
 
   return (
-    <div
-      className={styles.actionNotice}
-      data-tone={isSuccess ? "success" : isConflict ? "conflict" : "error"}
-      role={isSuccess ? "status" : "alert"}
-      aria-live="polite"
-    >
-      <span aria-hidden="true">
-        {isSuccess ? "✓" : isConflict ? "↻" : "!"}
-      </span>
-      <p>{state.message}</p>
-      {isConflict && state.status !== "concurrent" ? (
-        <button type="button" onClick={onRefresh}>
-          刷新
-        </button>
-      ) : null}
-    </div>
+    <ReviewNotice
+      message={state.message}
+      onRefresh={
+        isConflict && state.status !== "concurrent" ? onRefresh : undefined
+      }
+      tone={isSuccess ? "success" : isConflict ? "conflict" : "error"}
+    />
   );
 }
 
@@ -130,10 +123,10 @@ function ConfirmationPanel({
   ].includes(decisionState.status);
 
   return (
-    <section className={styles.confirmationPanel} aria-label="最终反馈确认">
+    <section className="flex flex-col gap-3 rounded-xl border bg-card p-4" aria-label="最终反馈确认">
       <InlineAlert tone="warning">反馈已准备待确认；确认前不会保存，学生重新提交会使该确认失效。</InlineAlert>
-      <button className={styles.secondaryButton} onClick={() => setConfirmDialogOpen(true)} type="button">查看最终反馈确认</button>
-      <form action={decisionAction} className={styles.visuallyHidden} ref={feedbackFormRef}>
+      <Button onClick={() => setConfirmDialogOpen(true)} type="button" variant="outline">查看最终反馈确认</Button>
+      <form action={decisionAction} className="sr-only" ref={feedbackFormRef}>
         <input type="hidden" name="actionIntentId" value={confirmation.actionIntentId} />
         <input type="hidden" name="decision" value="CONFIRM" />
         <input type="hidden" name="idempotencyKey" value={confirmation.saveIdempotencyKey} />
@@ -141,7 +134,7 @@ function ConfirmationPanel({
       <ConfirmDialog
         open={isConfirmDialogOpen}
         title="确认并保存最终反馈"
-        detail={<div className={styles.dialogDetail}><p>将对第 {confirmation.submissionRevisionNumber} 版正式提交创建反馈版本 {confirmation.expectedFeedbackVersion + 1}。</p><dl className={styles.structuredFeedbackDetails}><div><dt>形成性下一步</dt><dd>{teacherFeedbackNextStepLabels[confirmation.nextStep]}</dd></div><div><dt>支架层级</dt><dd>{teacherFeedbackSupportLevelLabels[confirmation.supportLevel]}</dd></div></dl><div className={styles.confirmationBody}>{confirmation.body}</div><p>确认有效至 <LocalizedDateTime dateTime={confirmation.expiresAt} includeSeconds />。</p><p>参数摘要：<code>{confirmation.payloadHash}</code></p></div>}
+        detail={<div className="flex flex-col gap-3 text-sm"><p>将对第 {confirmation.submissionRevisionNumber} 版正式提交创建反馈版本 {confirmation.expectedFeedbackVersion + 1}。</p><dl className="grid grid-cols-2 gap-2"><div className="rounded-md bg-muted p-2"><dt className="text-xs text-muted-foreground">形成性下一步</dt><dd className="font-medium">{teacherFeedbackNextStepLabels[confirmation.nextStep]}</dd></div><div className="rounded-md bg-muted p-2"><dt className="text-xs text-muted-foreground">支架层级</dt><dd className="font-medium">{teacherFeedbackSupportLevelLabels[confirmation.supportLevel]}</dd></div></dl><div className="max-h-48 overflow-auto rounded-md border p-3 whitespace-pre-wrap text-foreground">{confirmation.body}</div><p>确认有效至 <LocalizedDateTime dateTime={confirmation.expiresAt} includeSeconds />。</p><p>参数摘要：<code className="font-mono text-xs break-all">{confirmation.payloadHash}</code></p></div>}
         confirmLabel="确认并保存最终反馈"
         pending={pending}
         disabled={blocked}
@@ -245,57 +238,48 @@ export function FeedbackComposer({
   }
 
   return (
-    <section
-      className={styles.composer}
-      aria-labelledby="feedback-editor-title"
-      aria-busy={preparePending}
+    <ComposerFrame
+      assistantEnabled={assistantEnabled}
+      busy={preparePending}
+      lead={`第 ${submissionRevisionNumber} 版提交 · ${
+        expectedFeedbackVersion > 0
+          ? `第 ${expectedFeedbackVersion + 1} 版反馈`
+          : "第一版反馈"
+      }`}
+      suggestion={
+        assistantEnabled ? (
+          <form action={requestSuggestion}>
+            <input type="hidden" name="submissionId" value={submissionId} />
+            <input
+              type="hidden"
+              name="submissionRevisionId"
+              value={submissionRevisionId}
+            />
+            <input
+              type="hidden"
+              name="submissionRevisionNumber"
+              value={submissionRevisionNumber}
+            />
+            <Button
+              aria-label="让助手起草这一版反馈"
+              disabled={anyPending}
+              size="sm"
+              type="submit"
+              variant="outline"
+            >
+              <SparklesIcon />
+              {suggestionPending ? "起草中…" : "AI 起草建议"}
+            </Button>
+          </form>
+        ) : null
+      }
+      title={expectedFeedbackVersion > 0 ? "修改教师反馈" : "撰写教师反馈"}
+      titleId="feedback-editor-title"
     >
-      <header className={styles.composerHeading}>
-        <div>
-          <h2 id="feedback-editor-title">
-            {expectedFeedbackVersion > 0 ? "修改教师反馈" : "撰写教师反馈"}
-          </h2>
-          <p className={styles.composerLead}>
-            第 {submissionRevisionNumber} 版提交 ·{" "}
-            {expectedFeedbackVersion > 0
-              ? `第 ${expectedFeedbackVersion + 1} 版反馈`
-              : "第一版反馈"}
-          </p>
-        </div>
-        <div className={styles.composerActions}>
-          <span className={styles.manualMode}>
-            {assistantEnabled ? "教师终审 · AI 可选" : "手动撰写 · 未启用 AI"}
-          </span>
-          {assistantEnabled ? (
-            <form className={styles.suggestionAction} action={requestSuggestion}>
-              <input type="hidden" name="submissionId" value={submissionId} />
-              <input
-                type="hidden"
-                name="submissionRevisionId"
-                value={submissionRevisionId}
-              />
-              <input
-                type="hidden"
-                name="submissionRevisionNumber"
-                value={submissionRevisionNumber}
-              />
-              <button
-                className={styles.secondaryButton}
-                type="submit"
-                disabled={anyPending}
-                aria-label="让助手起草这一版反馈"
-              >
-                {suggestionPending ? "起草中…" : "AI 起草建议"}
-              </button>
-            </form>
-          ) : null}
-        </div>
-      </header>
-
       {assistantEnabled ? (
-        <p className={styles.aiNote} role="note">
+        <AiNote>
           这是 AI 建议，未经你确认不会保存。助手只读取当前正式修订的文字、已确认检查点与可解析附件；文件名和不可读内容不会交给模型。
-        </p>
+        </AiNote>
       ) : null}
       {assistantEnabled ? (
         <SuggestionNotice
@@ -310,7 +294,7 @@ export function FeedbackComposer({
         <ActionNotice state={decisionState} onRefresh={() => router.refresh()} />
       ) : null}
 
-      <form className={styles.composerForm} action={prepareAction}>
+      <form className="flex flex-col gap-3" action={prepareAction}>
         <input type="hidden" name="submissionId" value={submissionId} />
         <input
           type="hidden"
@@ -338,16 +322,15 @@ export function FeedbackComposer({
           value={prepareIdempotencyKey}
         />
 
-        <div className={styles.fieldHead}>
-          <label htmlFor="teacher-feedback-body">反馈正文</label>
-          <span
-            id="teacher-feedback-count"
-            data-over-limit={bodyOverLimit ? "true" : "false"}
-          >
-            {codePointCount.toLocaleString("zh-CN")} / 10,000
-          </span>
-        </div>
-        <textarea
+        <FieldHead
+          count={codePointCount}
+          countId="teacher-feedback-count"
+          htmlFor="teacher-feedback-body"
+          label="反馈正文"
+          overLimit={bodyOverLimit}
+        />
+        <Textarea
+          className="min-h-40"
           id="teacher-feedback-body"
           name="body"
           value={draftBody}
@@ -357,16 +340,17 @@ export function FeedbackComposer({
           spellCheck="true"
           disabled={anyPending}
         />
-        <p id="teacher-feedback-help" className={styles.visuallyHidden}>
+        <p id="teacher-feedback-help" className="sr-only">
           反馈内容需经确认后才会保存。
         </p>
 
-        <fieldset className={styles.structuredFeedbackFields}>
-          <legend className={styles.visuallyHidden}>形成性下一步与支架</legend>
-          <div className={styles.choiceGrid}>
-            <div>
-              <label htmlFor="teacher-feedback-next-step">形成性下一步</label>
-              <select
+        <fieldset className="flex flex-col gap-2">
+          <legend className="sr-only">形成性下一步与支架</legend>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium" htmlFor="teacher-feedback-next-step">形成性下一步</label>
+              <NativeSelect
+              className="w-full"
                 id="teacher-feedback-next-step"
                 name="nextStep"
                 value={draftNextStep}
@@ -378,14 +362,15 @@ export function FeedbackComposer({
                 disabled={anyPending}
                 required
               >
-                <option value="" disabled>请选择下一步</option>
-                <option value="CONTINUE">继续后续阶段</option>
-                <option value="REVISE">按反馈修改并重交</option>
-              </select>
+                <NativeSelectOption value="" disabled>请选择下一步</NativeSelectOption>
+                <NativeSelectOption value="CONTINUE">继续后续阶段</NativeSelectOption>
+                <NativeSelectOption value="REVISE">按反馈修改并重交</NativeSelectOption>
+              </NativeSelect>
             </div>
-            <div>
-              <label htmlFor="teacher-feedback-support-level">支架层级</label>
-              <select
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium" htmlFor="teacher-feedback-support-level">支架层级</label>
+              <NativeSelect
+              className="w-full"
                 id="teacher-feedback-support-level"
                 name="supportLevel"
                 value={draftSupportLevel}
@@ -397,26 +382,26 @@ export function FeedbackComposer({
                 disabled={anyPending}
                 required
               >
-                <option value="" disabled>请选择支架层级</option>
-                <option value="FOUNDATION">基础支持</option>
-                <option value="STANDARD">标准任务</option>
-                <option value="CHALLENGE">挑战拓展</option>
-              </select>
+                <NativeSelectOption value="" disabled>请选择支架层级</NativeSelectOption>
+                <NativeSelectOption value="FOUNDATION">基础支持</NativeSelectOption>
+                <NativeSelectOption value="STANDARD">标准任务</NativeSelectOption>
+                <NativeSelectOption value="CHALLENGE">挑战拓展</NativeSelectOption>
+              </NativeSelect>
             </div>
           </div>
-          <p className={styles.fieldHint}>
+          <p className="text-xs text-muted-foreground">
             与正文一同保存，仅作为对学生的行动建议。
           </p>
         </fieldset>
 
-        <div className={styles.prepareRow}>
-          <p>
-            {expectedFeedbackVersion > 0
+        <PrepareRow
+          note={
+            expectedFeedbackVersion > 0
               ? `当前反馈版本 ${expectedFeedbackVersion}；确认后新增一版，旧版不会被覆盖。`
-              : "确认后才会写入第一版反馈。"}
-          </p>
-          <button
-            className={styles.prepareButton}
+              : "确认后才会写入第一版反馈。"
+          }
+        >
+          <Button
             type="submit"
             disabled={
               anyPending ||
@@ -427,10 +412,10 @@ export function FeedbackComposer({
             }
           >
             {preparePending ? "正在准备…" : "准备确认"}
-            <span aria-hidden="true">→</span>
-          </button>
-        </div>
+            <ArrowRightIcon />
+          </Button>
+        </PrepareRow>
       </form>
-    </section>
+    </ComposerFrame>
   );
 }
