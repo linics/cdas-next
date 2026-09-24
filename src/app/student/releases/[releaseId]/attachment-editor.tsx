@@ -15,7 +15,7 @@ import {
   reserveAttachmentUploadAction,
 } from "./attachment-actions";
 import { AttachmentPreview } from "../../../_components/attachment-preview";
-import styles from "./submission-workspace.module.css";
+import { styles } from "./submission-ui";
 
 /**
  * Two backends, two ways in. Vercel Blob hands out a presigned token and the

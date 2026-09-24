@@ -37,7 +37,7 @@ import {
 } from "../../../../server/queries/submission-workspace";
 import { SubmissionEditor } from "./submission-editor";
 import { StudentAccessGate } from "../../_components/student-shell";
-import styles from "./submission-workspace.module.css";
+import { styles } from "./submission-ui";
 import { TaskBookV3View } from "../../../_components/task-book-v3-view";
 
 const studentNavigation = [

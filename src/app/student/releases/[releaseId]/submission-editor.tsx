@@ -22,7 +22,8 @@ import {
   initialSubmissionActionState,
   type SubmissionActionState,
 } from "./submission-action-state";
-import styles from "./submission-workspace.module.css";
+import { Textarea } from "@/components/ui/textarea";
+import { styles } from "./submission-ui";
 import type { AttachmentUploadStrategy } from "../../../../server/attachments/attachment-storage-factory";
 
 type Submission = StudentReleaseWorkspace["submission"];
@@ -216,7 +217,8 @@ export function SubmissionEditor({
   const writingField = (
     <div className={styles.writingField}>
       <label htmlFor="text-evidence">文字证据</label>
-      <textarea
+      <Textarea
+        className="min-h-56 text-[15px] leading-7"
         id="text-evidence"
         name={canWrite ? "text" : undefined}
         value={text}
