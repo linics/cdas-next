@@ -22,7 +22,6 @@ import { Separator } from "@/components/ui/separator";
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarHeader,
   SidebarInset,
   SidebarMenu,
@@ -153,12 +152,7 @@ export function WorkspaceShell({
             <SidebarContent>
               <WorkspaceNavigation audience={audience} items={navigation} />
             </SidebarContent>
-            <SidebarFooter>
-              <p className="px-2 pb-1 text-xs leading-relaxed text-muted-foreground group-data-[collapsible=icon]:hidden">
-                AI 只帮忙准备内容，发布和评价都由教师确认。
-              </p>
-            </SidebarFooter>
-            <SidebarRail />
+              <SidebarRail />
           </Sidebar>
         ) : null}
         <SidebarInset className={cn(fillViewport && "min-h-0 overflow-hidden")}>

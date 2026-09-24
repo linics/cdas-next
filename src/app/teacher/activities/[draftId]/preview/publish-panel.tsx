@@ -49,7 +49,7 @@ export function PublishPanel({
         <p className={styles.eyebrow}>发布参数</p>
         <h2>选择班级与期限</h2>
         <p>
-          先设置发布参数并准备确认；活动需经你最终确认后才会发布。
+          经你最终确认后才会发布。
         </p>
 
         {workspace.classrooms.length === 0 ? (
@@ -103,7 +103,7 @@ export function PublishPanel({
                 aria-invalid={dueAtInstant === null}
               />
               <small>
-                保存后按固定时间点记录。活动开放期间超过截止时间，学生仍可提交，但会标记为迟交。
+                超过截止时间仍可提交，但会标记为迟交。
               </small>
             </label>
             <button

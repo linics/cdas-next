@@ -278,7 +278,7 @@ export function FeedbackComposer({
     >
       {assistantEnabled ? (
         <AiNote>
-          这是 AI 建议，未经你确认不会保存。助手只读取当前正式修订的文字、已确认检查点与可解析附件；文件名和不可读内容不会交给模型。
+          AI 建议需你确认后才保存。助手只读取本版正式提交的文字、已确认检查点和可解析附件。
         </AiNote>
       ) : null}
       {assistantEnabled ? (
@@ -389,16 +389,13 @@ export function FeedbackComposer({
               </NativeSelect>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground">
-            与正文一同保存，仅作为对学生的行动建议。
-          </p>
         </fieldset>
 
         <PrepareRow
           note={
             expectedFeedbackVersion > 0
-              ? `当前反馈版本 ${expectedFeedbackVersion}；确认后新增一版，旧版不会被覆盖。`
-              : "确认后才会写入第一版反馈。"
+              ? `确认后保存为第 ${expectedFeedbackVersion + 1} 版，旧版保留。`
+              : "确认后才会保存。"
           }
         >
           <Button

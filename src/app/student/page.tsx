@@ -52,17 +52,17 @@ const groupDetails = {
   resubmit: {
     number: "01",
     title: "待重交",
-    detail: "教师已要求修改，请按反馈调整后重新提交。",
+    detail: "按老师的反馈修改后重新提交。",
   },
   active: {
     number: "02",
     title: "进行中",
-    detail: "尚未开始、已提交待反馈或已收到反馈的活动都在这里。",
+    detail: "",
   },
   closed: {
     number: "03",
     title: "已关闭",
-    detail: "仅可查看，不能再保存或提交。",
+    detail: "只能查看，不能再提交。",
   },
 } satisfies Record<
   ReleaseGroupKey,
@@ -225,7 +225,9 @@ function ReleaseGroup({
           {detail.title}
         </h2>
         <Badge variant="secondary">{`${releases.length} 项`}</Badge>
-        <p className="text-sm text-muted-foreground">{detail.detail}</p>
+        {detail.detail ? (
+          <p className="text-sm text-muted-foreground">{detail.detail}</p>
+        ) : null}
       </header>
       <div className="flex flex-col gap-3">
         {releases.map((release) => (
@@ -288,10 +290,7 @@ export default async function StudentDashboardPage() {
       navigation={studentNavigation}
     >
       <div className={cn("mx-auto flex w-full max-w-5xl flex-col gap-8", revealChildren)}>
-        <PageHeader
-          description="所有对你开放的学习活动都在这里。"
-          title="我的学习活动"
-        />
+        <PageHeader title="我的学习活动" />
         {/* 计数跟着分组走，同一套口径，不再另立五个状态。 */}
         <dl className="grid grid-cols-3 gap-4">
           {(Object.keys(groupDetails) as ReleaseGroupKey[]).map((groupKey) => (

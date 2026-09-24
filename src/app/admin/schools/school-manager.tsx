@@ -142,7 +142,7 @@ export function SchoolManager({ schools }: { schools: readonly SchoolRow[] }) {
       <ConfirmDialog
         open={Boolean(pendingInvite)}
         title="重置教师邀请码？"
-        detail="旧邀请码立即失效。新明文只出现在本次结果里，不会写入数据库或审计。"
+        detail="旧邀请码立即失效。新邀请码只显示这一次，请当场记下。"
         confirmLabel="确认重置"
         tone="danger"
         pending={actionPending}

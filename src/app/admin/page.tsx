@@ -34,7 +34,7 @@ export default async function AdminHomePage() {
       <header className={styles.pageHeader}>
         <div>
           <h1>学校与教师边界</h1>
-          <p>这里只统计学校、教师、学生和班级数量，不打开活动、提交或评价。</p>
+          
         </div>
       </header>
       <dl className={styles.stats}>

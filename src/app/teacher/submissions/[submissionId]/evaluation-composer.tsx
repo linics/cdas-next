@@ -446,7 +446,7 @@ export function EvaluationComposer({
         expectedEvaluationVersion > 0
           ? `第 ${expectedEvaluationVersion + 1} 版评价`
           : "第一版评价"
-      } · 每个维度需给出等级并引用证据，或标记证据不足`}
+      } · 每个维度给出等级并引用证据，或标为证据不足`}
       suggestion={
         assistantEnabled ? (
           <form action={requestSuggestion}>
@@ -479,7 +479,7 @@ export function EvaluationComposer({
     >
       {assistantEnabled ? (
         <AiNote>
-          这是 AI 建议，未经你确认不会保存。助手只读取当前正式修订的文字、已确认检查点、当前量规与可解析附件；文件名和不可读内容不会交给模型。
+          AI 建议需你确认后才保存。助手只读取本版正式提交的文字、已确认检查点、量规和可解析附件。
         </AiNote>
       ) : null}
       {assistantEnabled ? (
@@ -749,8 +749,8 @@ export function EvaluationComposer({
         <PrepareRow
           note={
             expectedEvaluationVersion > 0
-              ? `当前评价版本 ${expectedEvaluationVersion}；确认后新增一版，旧版不会被覆盖。形成性下一步仍在上方单独确认。`
-              : "确认后才会写入第一版评价。形成性下一步仍在上方单独确认。"
+              ? `确认后保存为第 ${expectedEvaluationVersion + 1} 版评价，旧版保留。`
+              : "确认后才会保存。"
           }
         >
           <Button

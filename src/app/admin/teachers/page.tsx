@@ -45,7 +45,7 @@ export default async function AdminTeachersPage() {
       <header className={styles.pageHeader}>
         <div>
           <h1>按学校登记与启停</h1>
-          <p>新教师只写入业务身份，保持待开通。同校工号唯一，跨校可以重复。</p>
+          <p>同校工号唯一，跨校可以重复。</p>
         </div>
       </header>
       <TeacherManager

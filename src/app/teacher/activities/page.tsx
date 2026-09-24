@@ -70,9 +70,7 @@ export default async function TeacherActivityStudioPage() {
         <header className={styles.pageHeader}>
           <div>
             <h1>未发布的活动草稿</h1>
-            <p>
-              这里管理编辑中与可预览的草稿；已发布的活动请在工作台按班级查看。
-            </p>
+
           </div>
           <div className={styles.pageHeaderActions}>
             <Link className={styles.secondaryButton} href="/teacher/knowledge">

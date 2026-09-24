@@ -658,7 +658,7 @@ export default async function StudentReleasePage({
                 .join("、")}
             </p>
             <p>
-              全组共用同一份草稿、附件、提交记录和教师反馈；任一成员保存后，其他成员刷新即可看到最新内容。
+              全组共用同一份草稿、附件、提交记录和教师反馈；有人保存后，其他成员刷新即可看到。
             </p>
           </section>
         ) : null}

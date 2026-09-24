@@ -340,8 +340,8 @@ export default async function TeacherInsightsPage({
               <Link href="/teacher">返回工作台</Link>
             </Button>
           }
-          description="汇总你可查看的各次发布，统计基于正式提交与已确认的反馈、评价。"
-          title="阶段进度、量规表现与重交改善"
+          description="只统计正式提交与已确认的反馈、评价。"
+          title="过程诊断"
         />
 
         {hasReleases ? (
@@ -373,7 +373,6 @@ export default async function TeacherInsightsPage({
               <FilterIcon />
               筛选
             </Button>
-            <p className="type-caption sm:ml-auto">各次发布的量规分别统计。</p>
           </form>
         ) : (
           <EmptyState title="暂无可查看的发布">
@@ -387,7 +386,7 @@ export default async function TeacherInsightsPage({
               key: "rubric",
               eyebrow: "量规诊断",
               title: "量规薄弱项",
-              lead: "统计各次发布最新一份已确认评价；「需改进」占比最高的维度标记为薄弱项。",
+              lead: "「需改进」占比最高的维度记为薄弱项。",
               body: hasReleases
                 ? dashboard.rubric.map((card) => (
                     <RubricCard card={card} key={card.releaseId} />
@@ -398,7 +397,7 @@ export default async function TeacherInsightsPage({
               key: "stages",
               eyebrow: "阶段进度",
               title: "阶段卡点",
-              lead: "小组按组统计，未分组学生按人统计；要求重交不会使学生退回上一阶段。",
+              lead: "小组按组、个人按人计；要求重交不会退回阶段。",
               body: hasReleases
                 ? dashboard.stages.map((card) => (
                     <StageCard card={card} key={card.releaseId} />
@@ -409,7 +408,7 @@ export default async function TeacherInsightsPage({
               key: "improvement",
               eyebrow: "重交与改善",
               title: "反馈后改善",
-              lead: "重交率统计被要求重交后完成重新提交的比例；评价变化仅比较重交前后均有量规评价的样本。",
+              lead: "评价变化只比较重交前后都有量规评价的样本。",
               body: (
                 <ImprovementCard
                   hasReleases={hasReleases}

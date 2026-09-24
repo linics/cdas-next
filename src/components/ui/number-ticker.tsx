@@ -33,18 +33,33 @@ export function NumberTicker({
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null
 
+    // 保险：动画帧被暂停（后台标签页、低性能设备）时，1.5 秒后直接落到真实值，
+    // 不让老师看到停在半路的错误数字。
+    let settle: ReturnType<typeof setTimeout> | null = null
+
     if (isInView) {
       timer = setTimeout(() => {
         motionValue.set(direction === "down" ? startValue : value)
       }, delay * 1000)
+      settle = setTimeout(() => {
+        if (ref.current) {
+          ref.current.textContent = Intl.NumberFormat("en-US", {
+            minimumFractionDigits: decimalPlaces,
+            maximumFractionDigits: decimalPlaces,
+          }).format(direction === "down" ? startValue : value)
+        }
+      }, delay * 1000 + 1500)
     }
 
     return () => {
       if (timer !== null) {
         clearTimeout(timer)
       }
+      if (settle !== null) {
+        clearTimeout(settle)
+      }
     }
-  }, [motionValue, isInView, delay, value, direction, startValue])
+  }, [motionValue, isInView, delay, value, direction, startValue, decimalPlaces])
 
   useEffect(
     () =>

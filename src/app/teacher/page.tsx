@@ -199,7 +199,6 @@ export default async function TeacherDashboardPage() {
               </Button>
             </>
           }
-          description="先处理等你评阅的学生提交。已发布的活动按班级排列，没发布的草稿在「活动设计」里。"
           title="待处理的提交与班级"
         />
 
@@ -261,7 +260,6 @@ export default async function TeacherDashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle>待办</CardTitle>
-            <CardDescription>有学生提交在等你处理的活动</CardDescription>
             <CardAction>
               <Badge variant="outline">{`${actionable.length} 项`}</Badge>
             </CardAction>
@@ -376,7 +374,7 @@ export default async function TeacherDashboardPage() {
             <Card>
               <CardHeader>
                 <CardTitle>已不在管理范围的班级</CardTitle>
-                <CardDescription>历史发布</CardDescription>
+                <CardDescription>管理权已转交，只保留发布记录，不能再查看提交。</CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col gap-1">
                 {orphanReleases.map((release) => (
@@ -385,9 +383,6 @@ export default async function TeacherDashboardPage() {
               </CardContent>
             </Card>
           ) : null}
-          <p className="text-sm text-muted-foreground">
-            只有班级管理教师能发布活动、查看提交。管理权换人后，历史发布记录还在，但不能再看里面的提交内容。
-          </p>
         </section>
         </Reveal>
       </div>

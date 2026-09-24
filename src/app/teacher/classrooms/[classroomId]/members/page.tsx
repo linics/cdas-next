@@ -42,7 +42,7 @@ export default async function TeacherClassroomMembersPage({
         <header className={styles.pageHeader}>
           <div>
             <h1>{roster.classroom.name}</h1>
-            <p>用 Excel 名单或名单码管理班级学生；每次变更都需确认，历史记录会保留。</p>
+            
           </div>
           <Link className={styles.secondaryButton} href="/teacher">返回教师工作台</Link>
         </header>

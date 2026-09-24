@@ -76,7 +76,7 @@ export default async function TeacherActivityPreviewPage({
           <div>
             <h1>{content.title}</h1>
             <p>
-              以下内容来自草稿版本 {workspace.draft.version}，即发布时将固定的内容。
+              发布后将固定为草稿版本 {workspace.draft.version} 的内容。
             </p>
           </div>
           <Link

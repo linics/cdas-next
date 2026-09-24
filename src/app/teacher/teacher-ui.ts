@@ -165,10 +165,10 @@ export const styles = {
   dimensionRow: "grid gap-2",
   dimensionHead:
     "flex flex-wrap items-baseline justify-between gap-2 text-sm [&_strong]:font-medium",
-  // 堆叠条：五档都用主题的图表灰阶，深底配浅字、浅底配深字，保证数字可读。
+  // 堆叠条：优秀用主色实底，其余各档用浅底深字的状态色，保证条上的数字可读。
   barTrack: "flex min-h-6 w-full overflow-hidden rounded-md border bg-muted",
   barFill:
-    "grid min-w-0 place-items-center text-xs font-medium tabular-nums [&+&]:border-l [&+&]:border-background data-[tone=excellent]:bg-primary data-[tone=excellent]:text-primary-foreground data-[tone=good]:bg-chart-3 data-[tone=good]:text-primary-foreground data-[tone=pass]:bg-chart-1 data-[tone=pass]:text-foreground data-[tone=improve]:bg-secondary data-[tone=improve]:text-foreground data-[tone=insufficient]:bg-background data-[tone=insufficient]:text-muted-foreground data-[tone=stage]:bg-chart-1 data-[tone=stage]:text-foreground",
+    "grid min-w-0 place-items-center text-xs font-medium tabular-nums [&+&]:border-l [&+&]:border-background data-[tone=excellent]:bg-primary data-[tone=excellent]:text-primary-foreground data-[tone=good]:bg-status-pending data-[tone=good]:text-status-pending-foreground data-[tone=pass]:bg-status-done data-[tone=pass]:text-status-done-foreground data-[tone=improve]:bg-status-resubmit data-[tone=improve]:text-status-resubmit-foreground data-[tone=insufficient]:bg-background data-[tone=insufficient]:text-muted-foreground data-[tone=stage]:bg-status-pending data-[tone=stage]:text-status-pending-foreground",
   weakMark:
     "inline-flex h-5 items-center rounded-4xl bg-status-resubmit px-2 text-xs font-medium text-status-resubmit-foreground",
   legend: "flex flex-wrap gap-x-3 gap-y-1 text-xs tabular-nums text-muted-foreground",

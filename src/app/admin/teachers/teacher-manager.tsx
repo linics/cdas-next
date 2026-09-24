@@ -48,7 +48,7 @@ export function TeacherManager({
       <form action={dispatchAction} className={styles.form}>
         <input name="operation" type="hidden" value="register" />
         <h2>登记本校教师</h2>
-        <p>只创建业务身份，停在待开通。不调用认证供应商，也不能立刻登录。</p>
+        <p>登记后处于待开通状态，暂时不能登录。</p>
         <div className={styles.field}>
           <label htmlFor="teacher-school">学校</label>
           <select id="teacher-school" name="schoolId" required>

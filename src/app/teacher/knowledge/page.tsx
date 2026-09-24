@@ -91,7 +91,7 @@ export default async function TeacherKnowledgePage({
               <Link href="/teacher/activities">返回活动设计</Link>
             </Button>
           }
-          description="收录教育部 2022 年版课程方案与 14 门课程标准，供设计活动时查证依据；检索结果不构成合规判定。综合实践活动暂无独立课标语料。"
+          description="教育部 2022 年版课程方案与 14 门课程标准。结果仅供查证，不构成合规判定。"
           title="检索课程标准"
         />
 
