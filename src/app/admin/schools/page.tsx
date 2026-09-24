@@ -11,7 +11,7 @@ import {
   AdminPage,
   adminHomeCrumb,
 } from "../_components/admin-shell";
-import styles from "../admin.module.css";
+import { styles } from "../admin-ui";
 import { SchoolManager } from "./school-manager";
 
 export default async function AdminSchoolsPage() {

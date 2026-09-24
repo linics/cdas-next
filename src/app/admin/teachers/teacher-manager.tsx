@@ -6,7 +6,7 @@ import {
   teacherManagerAction,
 } from "../actions";
 import { idleAdminActionState } from "../action-state";
-import styles from "../admin.module.css";
+import { styles } from "../admin-ui";
 
 type SchoolOption = { id: string; name: string; code: string };
 type TeacherRow = {

@@ -12,7 +12,7 @@ import {
   AdminPage,
   adminHomeCrumb,
 } from "../_components/admin-shell";
-import styles from "../admin.module.css";
+import { styles } from "../admin-ui";
 import { TeacherManager } from "./teacher-manager";
 
 export default async function AdminTeachersPage() {

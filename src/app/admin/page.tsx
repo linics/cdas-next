@@ -9,7 +9,7 @@ import {
   AdminAccessGate,
   AdminPage,
 } from "./_components/admin-shell";
-import styles from "./admin.module.css";
+import { styles } from "./admin-ui";
 
 export default async function AdminHomePage() {
   let dashboard;

@@ -5,9 +5,8 @@ import {
   WorkspaceShell,
   type WorkspaceCrumb,
 } from "../../_components/workspace-shell";
-import Link from "next/link";
 import { LocalLoginForm } from "../../auth/local-login-form";
-import gateStyles from "../../_components/access-gate.module.css";
+import { AccessGateLayout } from "../../_components/access-gate-layout";
 
 const adminNavigation = [
   { href: "/admin", label: "概览" },
@@ -84,27 +83,16 @@ export function AdminAccessGate({
             };
 
   return (
-    <div className={gateStyles.gate}>
-      <section className={gateStyles.gateAside}>
-        <Link className={gateStyles.brand} href="/" aria-label="返回 CDAS Next 首页">
-          <strong>CDAS</strong>
-          <small>学校组织边界</small>
-        </Link>
-        <div className={gateStyles.pitch}>
-          <p className={gateStyles.eyebrow}>管理员工作台</p>
-          <h1>管理学校与教师，不进入教学历史</h1>
-          <p>这里只处理学校启停、邀请码和教师登记。活动、提交与评价仍只在教师工作台。</p>
-        </div>
-      </section>
-      <main className={gateStyles.accessGate}>
-        <div>
-          <p className={gateStyles.eyebrow}>{copy.eyebrow}</p>
-          <h2>{copy.title}</h2>
-        </div>
-        {code === "UNAUTHENTICATED" || code === "USER_NOT_PROVISIONED" ? (
-          <LocalLoginForm role="ADMIN" />
-        ) : null}
-      </main>
-    </div>
+    <AccessGateLayout
+      eyebrow={copy.eyebrow}
+      pitchBody="这里只处理学校启停、邀请码和教师登记。活动、提交与评价仍只在教师工作台。"
+      pitchTitle="管理学校与教师，不进入教学历史"
+      title={copy.title}
+      workspace="管理员工作台"
+    >
+      {code === "UNAUTHENTICATED" || code === "USER_NOT_PROVISIONED" ? (
+        <LocalLoginForm role="ADMIN" />
+      ) : null}
+    </AccessGateLayout>
   );
 }

@@ -165,72 +165,7 @@
   }
 }
 
-/* ══════════════════════════════════════════════════════════════════════════
-   LEGACY —— 旧 Classical 变量的兼容层，只给还没迁移到 shadcn 的 *.module.css 用。
-   它们全部指向上面的新 token，所以没迁移的页面也会变成黑白灰。
-   新代码不准引用这里的任何变量；最后一个 module.css 删掉时，整块一起删。
-   ══════════════════════════════════════════════════════════════════════ */
-:root {
-  --color-bg: var(--background);
-  --color-surface: var(--muted);
-  --color-text: var(--foreground);
-  --color-accent: var(--primary);
-  --color-divider: var(--border);
-  --color-neutral-100: oklch(0.985 0 0);
-  --color-neutral-200: oklch(0.97 0 0);
-  --color-neutral-300: oklch(0.922 0 0);
-  --color-neutral-400: oklch(0.87 0 0);
-  --color-neutral-500: oklch(0.708 0 0);
-  --color-neutral-600: oklch(0.556 0 0);
-  --color-neutral-700: oklch(0.439 0 0);
-  --color-neutral-800: oklch(0.269 0 0);
-  --color-neutral-900: oklch(0.205 0 0);
-  --color-accent-100: var(--color-neutral-100);
-  --color-accent-200: var(--color-neutral-200);
-  --color-accent-300: var(--color-neutral-300);
-  --color-accent-500: var(--color-neutral-600);
-  --color-accent-600: var(--color-neutral-700);
-  --color-accent-700: var(--color-neutral-800);
-  --color-accent-800: var(--color-neutral-900);
-  --font-heading: var(--font-geist-sans), var(--font-cjk), sans-serif;
-  --font-heading-weight: 600;
-  --font-body: var(--font-heading);
-  --font-ui: var(--font-heading);
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 20px;
-  --space-6: 24px;
-  --space-8: 32px;
-  --text-display: 30px;
-  --text-title: 24px;
-  --text-card: 20px;
-  --text-section: 18px;
-  --text-subhead: 15px;
-  --text-body: 14px;
-  --text-ui: 14px;
-  --text-meta: 13px;
-  --text-label: 13px;
-  --text-kicker: 12px;
-  --shadow-md: 0 1px 3px oklch(0 0 0 / 10%), 0 1px 2px oklch(0 0 0 / 6%);
-  --shadow-lg: 0 10px 15px oklch(0 0 0 / 10%), 0 4px 6px oklch(0 0 0 / 5%);
-  --primary-tint: var(--accent);
-  --primary-tint-strong: var(--muted);
-  --ink-tint: var(--muted);
-  --stroke-heavy: var(--foreground);
-  --motion-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-  --motion-medium: 200ms cubic-bezier(0.4, 0, 0.2, 1);
-  --z-nav: 20;
-  --z-overlay: 100;
-  --toolbar-height: 56px;
-  --content-width: 1200px;
-  --figure-ui: tabular-nums lining-nums;
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-}
-
+/* 评阅页等整屏工作区：锁定到视口高度，两栏各自滚动；窄屏恢复整页滚动。 */
 html:has([data-fill-viewport]) {
   height: 100dvh;
   overflow: hidden;

@@ -18,7 +18,7 @@ export function AccessGateLayout({
   workspace: string;
   pitchTitle: string;
   pitchBody: string;
-  steps: readonly string[];
+  steps?: readonly string[];
   eyebrow: string;
   title: string;
   children?: ReactNode;
@@ -54,6 +54,7 @@ export function AccessGateLayout({
                 {pitchBody}
               </p>
             </div>
+            {steps && steps.length > 0 ? (
             <ol className="grid grid-cols-2 gap-3 text-sm">
               {steps.map((step, index) => (
                 <li className="flex items-center gap-2" key={step}>
@@ -64,6 +65,7 @@ export function AccessGateLayout({
                 </li>
               ))}
             </ol>
+            ) : null}
           </section>
         </CardContent>
       </Card>
