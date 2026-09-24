@@ -4,7 +4,18 @@ import { connection } from "next/server";
 import { notFound } from "next/navigation";
 import { ZodError } from "zod";
 import { LocalizedDateTime } from "../_components/localized-date-time";
-import { EmptyState, StatusBadge } from "../_components/ui";
+import { ChevronRightIcon } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardAction,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { PageHeader } from "../_components/page-header";
+import { EmptyState, StatusBadge, type StatusTone } from "../_components/ui";
 import {
   WorkspaceRoleGate,
   WorkspaceShell,
@@ -18,7 +29,6 @@ import {
   type StudentReleaseList,
 } from "../../server/queries/student-releases";
 import { StudentAccessGate } from "./_components/student-shell";
-import styles from "./student-dashboard.module.css";
 
 const studentNavigation = [
   { href: "/student", label: "我的活动" },
@@ -99,26 +109,27 @@ function releaseStatusLabel(release: StudentRelease): string {
   return "尚未开始";
 }
 
-function releaseStatusTone(release: StudentRelease): "neutral" | "warning" | "success" | "info" {
+function releaseStatusTone(release: StudentRelease): StatusTone {
   if (!release.access.canWrite) {
-    return "neutral";
+    return "closed";
   }
   if (release.submission.followUp === "AWAITING_RESUBMISSION") {
-    return "warning";
+    return "resubmit";
   }
   if (
     release.submission.hasCurrentEvaluation ||
     release.submission.hasCurrentFeedback
   ) {
-    return "success";
+    return "done";
   }
   if (
     release.submission.latestRevisionNumber > 0 &&
     !release.submission.hasWorkingCopy
   ) {
-    return "info";
+    return "neutral";
   }
-  return "warning";
+  // 尚未开始或有未提交草稿：轮到学生动手。
+  return "pending";
 }
 
 function ReleaseRow({
@@ -146,40 +157,44 @@ function ReleaseRow({
 
   return (
     <Link
-      className={styles.releaseRow}
-      href={`/student/releases/${release.id}`}
       aria-label={`打开活动：${release.snapshot.title}`}
+      className="group block rounded-xl focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+      href={`/student/releases/${release.id}`}
     >
-      <div className={styles.releaseCopy}>
-        <h3>{release.snapshot.title}</h3>
-        <p>{release.snapshot.summary}</p>
-        <span>{progressParts.join(" · ")}</span>
-      </div>
-      <dl className={styles.releaseDates}>
-        <div>
-          <dt>发布时间</dt>
-          <dd>
-            <LocalizedDateTime dateTime={release.publishedAt} />
-          </dd>
-        </div>
-        <div>
-          <dt>截止时间</dt>
-          <dd>
+      <Card className="transition-colors group-hover:bg-muted/40">
+        <CardHeader>
+          <CardTitle className="text-base">{release.snapshot.title}</CardTitle>
+          <CardDescription className="line-clamp-2">
+            {release.snapshot.summary}
+          </CardDescription>
+          <CardAction>
+            <StatusBadge tone={releaseStatusTone(release)}>
+              {releaseStatusLabel(release)}
+            </StatusBadge>
+          </CardAction>
+        </CardHeader>
+        <CardFooter className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
+          <span>{progressParts.join(" · ")}</span>
+          <span className="tabular-nums">
+            发布 <LocalizedDateTime dateTime={release.publishedAt} />
+          </span>
+          <span className="flex items-center gap-2 tabular-nums">
+            截止{" "}
             {release.dueAt ? (
               <LocalizedDateTime dateTime={release.dueAt} />
             ) : (
               "未设置"
             )}
-            {isPastDue ? <strong>仍可迟交</strong> : null}
-          </dd>
-        </div>
-      </dl>
-      <div className={styles.releaseAction}>
-        <StatusBadge tone={releaseStatusTone(release)}>{releaseStatusLabel(release)}</StatusBadge>
-        <small>
-          打开活动 <i aria-hidden="true">→</i>
-        </small>
-      </div>
+            {isPastDue ? (
+              <StatusBadge tone="resubmit">仍可迟交</StatusBadge>
+            ) : null}
+          </span>
+          <span className="ml-auto flex items-center gap-1 font-medium text-foreground">
+            打开活动
+            <ChevronRightIcon className="size-4 transition-transform group-hover:translate-x-0.5" />
+          </span>
+        </CardFooter>
+      </Card>
     </Link>
   );
 }
@@ -198,16 +213,18 @@ function ReleaseGroup({
   }
   const detail = groupDetails[groupKey];
   return (
-    <section className={styles.releaseGroup} aria-labelledby={`${groupKey}-title`}>
-      <header className={styles.groupHeading}>
-        <span>{detail.number}</span>
-        <div>
-          <h2 id={`${groupKey}-title`}>{detail.title}</h2>
-          <p>{detail.detail}</p>
-        </div>
-        <strong>{releases.length} 项</strong>
+    <section
+      aria-labelledby={`${groupKey}-title`}
+      className="flex flex-col gap-3"
+    >
+      <header className="flex items-baseline gap-3">
+        <h2 className="text-lg font-semibold" id={`${groupKey}-title`}>
+          {detail.title}
+        </h2>
+        <Badge variant="secondary">{`${releases.length} 项`}</Badge>
+        <p className="text-sm text-muted-foreground">{detail.detail}</p>
       </header>
-      <div className={styles.releaseList}>
+      <div className="flex flex-col gap-3">
         {releases.map((release) => (
           <ReleaseRow release={release} now={now} key={release.id} />
         ))}
@@ -267,36 +284,35 @@ export default async function StudentDashboardPage() {
       breadcrumb={[{ label: "我的学习活动" }]}
       navigation={studentNavigation}
     >
-      <div className={styles.dashboardMain}>
-        <header className={styles.dashboardHeader}>
-          <div>
-            <p className={styles.eyebrow}>学生工作台 / 学习活动</p>
-            <h1>我的学习活动</h1>
-            <p>这里汇总所有对你开放的学习活动。</p>
-          </div>
-          {/* 计数跟着分组走，同一套口径，不再另立五个状态。 */}
-          <dl className={styles.summaryLine}>
-            <div>
-              <dt>待重交</dt>
-              <dd>{grouped.resubmit.length}</dd>
-            </div>
-            <div>
-              <dt>进行中</dt>
-              <dd>{grouped.active.length}</dd>
-            </div>
-            <div>
-              <dt>已关闭</dt>
-              <dd>{grouped.closed.length}</dd>
-            </div>
-          </dl>
-        </header>
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
+        <PageHeader
+          description="所有对你开放的学习活动都在这里。"
+          title="我的学习活动"
+        />
+        {/* 计数跟着分组走，同一套口径，不再另立五个状态。 */}
+        <dl className="grid grid-cols-3 gap-4">
+          {(Object.keys(groupDetails) as ReleaseGroupKey[]).map((groupKey) => (
+            <Card key={groupKey}>
+              <CardHeader>
+                <dt>
+                  <CardDescription>{groupDetails[groupKey].title}</CardDescription>
+                </dt>
+                <dd>
+                  <CardTitle className="text-3xl font-semibold tabular-nums">
+                    {grouped[groupKey].length}
+                  </CardTitle>
+                </dd>
+              </CardHeader>
+            </Card>
+          ))}
+        </dl>
 
         {releaseList.releases.length === 0 ? (
           <EmptyState title="还没有对你开放的学习活动">
             教师发布到你的班级后，活动会自动出现在这里。
           </EmptyState>
         ) : (
-          <div className={styles.groups}>
+          <div className="flex flex-col gap-10">
             {(Object.keys(groupDetails) as ReleaseGroupKey[]).map(
               (groupKey) => (
                 <ReleaseGroup

@@ -2,9 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
-import { WorkspaceIcon, iconForNavigationHref } from "./workspace-icons";
-import styles from "./workspace-shell.module.css";
+import {
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  useSidebar,
+} from "@/components/ui/sidebar";
+import { iconForNavigationHref } from "./workspace-icons";
+
+const workspaceRoots = new Set(["/teacher", "/student", "/admin"]);
 
 export function WorkspaceNavigation({
   audience,
@@ -14,49 +23,42 @@ export function WorkspaceNavigation({
   items: readonly { href: string; label: string }[];
 }) {
   const pathname = usePathname();
-  const [open, setOpen] = useState(false);
+  const { setOpenMobile } = useSidebar();
 
   return (
-    <div className={styles.navigationRegion}>
-      <button
-        aria-controls="workspace-navigation"
-        aria-expanded={open}
-        aria-label={`打开${audience}工作台导航`}
-        className={styles.navigationToggle}
-        onClick={() => setOpen((current) => !current)}
-        type="button"
-      >
-        <span aria-hidden="true" />
-        导航
-      </button>
-      <nav
-        aria-label={`${audience}工作台导航`}
-        className={styles.navigation}
-        data-open={open || undefined}
-        id="workspace-navigation"
-      >
-        {items.map((item) => {
-          const active =
-            pathname === item.href ||
-            (item.href !== "/teacher" &&
-              item.href !== "/student" &&
-              item.href !== "/admin" &&
-              pathname.startsWith(`${item.href}/`));
-          return (
-            <Link
-              aria-current={active ? "page" : undefined}
-              className={styles.navigationLink}
-              data-active={active || undefined}
-              href={item.href}
-              key={item.href}
-              onClick={() => setOpen(false)}
-            >
-              <WorkspaceIcon name={iconForNavigationHref(item.href)} />
-              <span>{item.label}</span>
-            </Link>
-          );
-        })}
-      </nav>
-    </div>
+    <SidebarGroup>
+      <SidebarGroupLabel>{audience}工作台</SidebarGroupLabel>
+      <SidebarGroupContent>
+        <nav aria-label={`${audience}工作台导航`}>
+          <SidebarMenu>
+            {items.map((item) => {
+              const active =
+                pathname === item.href ||
+                (!workspaceRoots.has(item.href) &&
+                  pathname.startsWith(`${item.href}/`));
+              const Icon = iconForNavigationHref(item.href);
+              return (
+                <SidebarMenuItem key={item.href}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={active}
+                    tooltip={item.label}
+                  >
+                    <Link
+                      aria-current={active ? "page" : undefined}
+                      href={item.href}
+                      onClick={() => setOpenMobile(false)}
+                    >
+                      <Icon />
+                      <span>{item.label}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              );
+            })}
+          </SidebarMenu>
+        </nav>
+      </SidebarGroupContent>
+    </SidebarGroup>
   );
 }

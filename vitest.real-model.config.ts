@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 
 /**
@@ -7,6 +8,9 @@ import { defineConfig } from "vitest/config";
  * to mock `server-only` to reach the prompt builders they exercise.
  */
 export default defineConfig({
+  resolve: {
+    alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },
+  },
   test: {
     include: ["**/*.real-model.test.ts"],
     testTimeout: 300_000,

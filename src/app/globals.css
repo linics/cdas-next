@@ -1,189 +1,234 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
 
 /* ══════════════════════════════════════════════════════════════════════════
-   Classical — the token sheet, ported verbatim from the design system
-   (`_ds/classical-…/styles.css`) plus the two 中文 adjustments the prototype
-   documents. Every colour, font, spacing, radius and shadow comes from here.
-   Never hard-code a hex, a font name or a px value these tokens carry.
+   主题 —— shadcn/ui（radix-nova，neutral）。
+   颜色只在这里定义：浅色一块（:root），深色一块（.dark）。组件和页面只写语义类
+   （bg-primary、text-muted-foreground、border-border、bg-status-*），
+   不准写死 bg-zinc-900 这类具体色值。换主题 = 改下面两块的值。
    ══════════════════════════════════════════════════════════════════════ */
 :root {
-  color-scheme: light;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
 
-  --color-bg: #f3f2f2;
-  --color-surface: #eae9e9;
-  --color-text: #201f1d;
-  --color-accent: #b68235;
-  --color-accent-2: #ac803e;
-  --color-divider: color-mix(in srgb, #201f1d 16%, transparent);
+  /* 业务状态色 —— shadcn 没有，本项目补的四档。每档一个底色 + 一个字色。
+     pending：等教师处理（待反馈、待评价）；resubmit：等学生重交；
+     done：已反馈、已评价；closed：已关闭、已封存、只读。 */
+  --status-pending: oklch(0.205 0 0);
+  --status-pending-foreground: oklch(0.985 0 0);
+  --status-resubmit: oklch(0.95 0.06 75);
+  --status-resubmit-foreground: oklch(0.45 0.11 60);
+  --status-done: oklch(0.95 0.05 155);
+  --status-done-foreground: oklch(0.42 0.1 155);
+  --status-closed: oklch(0.97 0 0);
+  --status-closed-foreground: oklch(0.5 0 0);
+}
 
-  /* Tonal ramps — generated in OKLCH on one shared lightness scale, so the
-     same step of any role matches the others in visual value. */
-  --color-neutral-100: #f8f4f4;
-  --color-neutral-200: #eae7e7;
-  --color-neutral-300: #d7d3d3;
-  --color-neutral-400: #bab6b6;
-  --color-neutral-500: #9b9797;
-  --color-neutral-600: #7d7979;
-  --color-neutral-700: #605d5d;
-  --color-neutral-800: #444141;
-  --color-neutral-900: #2d2b2b;
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.922 0 0);
+  --sidebar-primary-foreground: oklch(0.205 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
 
-  --color-accent-100: #fff3e4;
-  --color-accent-200: #ffe3bf;
-  --color-accent-300: #facb8d;
-  --color-accent-400: #e1ad66;
-  --color-accent-500: #c28d41;
-  --color-accent-600: #a06f24;
-  --color-accent-700: #7d5411;
-  --color-accent-800: #5a3b0a;
-  --color-accent-900: #3a270d;
+  --status-pending: oklch(0.922 0 0);
+  --status-pending-foreground: oklch(0.205 0 0);
+  --status-resubmit: oklch(0.32 0.07 65);
+  --status-resubmit-foreground: oklch(0.88 0.1 75);
+  --status-done: oklch(0.3 0.06 155);
+  --status-done-foreground: oklch(0.86 0.09 155);
+  --status-closed: oklch(0.269 0 0);
+  --status-closed-foreground: oklch(0.708 0 0);
+}
 
-  /* Mono scheme: no second accent was chosen. These carry a machine-derived
-     stand-in kept only so both sets resolve — treat them as one role. */
-  --color-accent-2-100: #fff3e4;
-  --color-accent-2-200: #ffe3be;
-  --color-accent-2-300: #f5cd96;
-  --color-accent-2-400: #dbaf70;
-  --color-accent-2-500: #bc8f4e;
-  --color-accent-2-600: #9b7232;
-  --color-accent-2-700: #79561f;
-  --color-accent-2-800: #573d14;
-  --color-accent-2-900: #382810;
+@theme inline {
+  --font-sans: var(--font-geist-sans), var(--font-cjk), "PingFang SC", "Hiragino Sans GB", sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-heading: var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --color-status-pending: var(--status-pending);
+  --color-status-pending-foreground: var(--status-pending-foreground);
+  --color-status-resubmit: var(--status-resubmit);
+  --color-status-resubmit-foreground: var(--status-resubmit-foreground);
+  --color-status-done: var(--status-done);
+  --color-status-done-foreground: var(--status-done-foreground);
+  --color-status-closed: var(--status-closed);
+  --color-status-closed-foreground: var(--status-closed-foreground);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
 
-  --font-heading: var(--font-heading-loaded), var(--font-cjk-loaded), "Songti SC", "STSong", serif;
-  --font-heading-weight: 600; /* bold is retired — semibold is the interface
-     headings' ceiling; display sizes go lighter still, to the normal cut */
-  --font-body: var(--font-body-loaded), var(--font-cjk-loaded), "Songti SC", "STSong", serif;
-  /* 界面小字（按钮、标签、分段控件、表头、字段名）全是中文，字形来自 Noto Serif SC，
-     行盒若按 Cormorant/Lora 的度量计算，两套度量叠加会让上下留白不对称。
-     让度量和字形出自同一个字，并显式定行高；拉丁标题仍走 Cormorant。
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+    font-variant-numeric: lining-nums;
+  }
+  body {
+    @apply min-h-svh bg-background text-foreground antialiased;
+  }
+}
 
-     另：Classical 的 10/11/12px 三档是按拉丁字形定的，中文在这几档上笔画会糊。
-     界面小字的下限整体抬一档（kicker 11、tag 12、字段名 13），并且正文颜色最浅
-     只到 --color-neutral-700（5.83:1）—— neutral-600 在这块底色上只有 3.85:1。
-     这是本项目对 Classical 的两处中文适配之一，另一处是按钮内边距。 */
-  --font-ui: var(--font-cjk-loaded), "Songti SC", "STSong", serif;
-
-  /* Classical 出厂密度是 1.15×（4.6 / 9.2 / …），那是给拉丁文本的行宽定的。
-     中文字面本身就比拉丁密实，同样的留白会显得版面发空，所以密度收回 1.0×。
-     这是 token 层的调参，不是逐处覆写 —— 要再松再紧，只改这六个值。 */
+/* ══════════════════════════════════════════════════════════════════════════
+   LEGACY —— 旧 Classical 变量的兼容层，只给还没迁移到 shadcn 的 *.module.css 用。
+   它们全部指向上面的新 token，所以没迁移的页面也会变成黑白灰。
+   新代码不准引用这里的任何变量；最后一个 module.css 删掉时，整块一起删。
+   ══════════════════════════════════════════════════════════════════════ */
+:root {
+  --color-bg: var(--background);
+  --color-surface: var(--muted);
+  --color-text: var(--foreground);
+  --color-accent: var(--primary);
+  --color-divider: var(--border);
+  --color-neutral-100: oklch(0.985 0 0);
+  --color-neutral-200: oklch(0.97 0 0);
+  --color-neutral-300: oklch(0.922 0 0);
+  --color-neutral-400: oklch(0.87 0 0);
+  --color-neutral-500: oklch(0.708 0 0);
+  --color-neutral-600: oklch(0.556 0 0);
+  --color-neutral-700: oklch(0.439 0 0);
+  --color-neutral-800: oklch(0.269 0 0);
+  --color-neutral-900: oklch(0.205 0 0);
+  --color-accent-100: var(--color-neutral-100);
+  --color-accent-200: var(--color-neutral-200);
+  --color-accent-300: var(--color-neutral-300);
+  --color-accent-500: var(--color-neutral-600);
+  --color-accent-600: var(--color-neutral-700);
+  --color-accent-700: var(--color-neutral-800);
+  --color-accent-800: var(--color-neutral-900);
+  --font-heading: var(--font-geist-sans), var(--font-cjk), sans-serif;
+  --font-heading-weight: 600;
+  --font-body: var(--font-heading);
+  --font-ui: var(--font-heading);
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
   --space-4: 16px;
+  --space-5: 20px;
   --space-6: 24px;
   --space-8: 32px;
-
-  /* ── 字号层级 ─────────────────────────────────────────────────────────
-     Classical 的标题阶 42/32/25/20/16 原样保留；界面小字阶按中文抬了一档。
-     每个模块只准写角色名，不准再写 px —— 之前 11 个模块各自攒了一套字号，
-     同一个「区块标题」在教师端是 20px、学生端 24px、课程依据 26px，
-     所以每页看起来轻重不一。 */
-  --text-display: 42px;  /* 页面主标题 h1 */
-  --text-title: 32px;    /* 门禁页、整屏面板标题 */
-  --text-card: 25px;     /* 卡片标题、页面主内容块标题 */
-  --text-section: 20px;  /* 区块标题、列表行标题、对话框标题 */
-  --text-subhead: 16px;  /* 小标题、字段组标题（靠字族与字重区分，不靠字号） */
-  --text-body: 16px;     /* 正文 */
-  --text-ui: 15px;       /* 按钮、输入框 */
-  --text-meta: 14px;     /* 次要信息、行内元数据 */
-  --text-label: 13px;    /* 字段名、状态、表头 */
-  --text-kicker: 12px;   /* kicker、tag、脚注 */
-
-  --radius-sm: 2px;
-  --radius-md: 4px;
-  --radius-lg: 7px;
-
-  /* Elevation — derived from the ground: a whisper, never a heavy drop. */
-  --shadow-sm: 0 1px 2px color-mix(in srgb, var(--color-neutral-900) 14%, transparent);
-  --shadow-md: 0 3px 10px color-mix(in srgb, var(--color-neutral-900) 16%, transparent);
-  --shadow-lg: 0 12px 32px color-mix(in srgb, var(--color-neutral-900) 22%, transparent);
-
-  /* — the only derived values, all resolved from the palette above — */
-  --primary-tint: color-mix(in srgb, var(--color-accent) 12%, transparent);
-  --primary-tint-strong: color-mix(in srgb, var(--color-accent) 22%, transparent);
-  --ink-tint: color-mix(in srgb, var(--color-text) 7%, transparent);
-  --ink-tint-strong: color-mix(in srgb, var(--color-text) 14%, transparent);
-  /* Mono scheme: 破坏性动作与错误不靠色相区分 —— 靠措辞、确认对话框和更重的
-     笔画。这里只给一档更深的墨色，不引入调色板以外的红。 */
-  --stroke-heavy: var(--color-neutral-900);
-
-  --motion-fast: 160ms cubic-bezier(0.23, 1, 0.32, 1);
-  --motion-medium: 240ms cubic-bezier(0.23, 1, 0.32, 1);
+  --text-display: 30px;
+  --text-title: 24px;
+  --text-card: 20px;
+  --text-section: 18px;
+  --text-subhead: 15px;
+  --text-body: 14px;
+  --text-ui: 14px;
+  --text-meta: 13px;
+  --text-label: 13px;
+  --text-kicker: 12px;
+  --shadow-md: 0 1px 3px oklch(0 0 0 / 10%), 0 1px 2px oklch(0 0 0 / 6%);
+  --shadow-lg: 0 10px 15px oklch(0 0 0 / 10%), 0 4px 6px oklch(0 0 0 / 5%);
+  --primary-tint: var(--accent);
+  --primary-tint-strong: var(--muted);
+  --ink-tint: var(--muted);
+  --stroke-heavy: var(--foreground);
+  --motion-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --motion-medium: 200ms cubic-bezier(0.4, 0, 0.2, 1);
   --z-nav: 20;
   --z-overlay: 100;
-  --toolbar-height: 52px;
-  --sidebar-width: 232px;
+  --toolbar-height: 56px;
   --content-width: 1200px;
-  /* Counts, versions and tables: lining + tabular. Cormorant's default
-     oldstyle 1 sits like a short roman I and does not share height with 3. */
   --figure-ui: tabular-nums lining-nums;
-}
-
-*, *::before, *::after { box-sizing: border-box; }
-html {
-  background: var(--color-bg);
-  scroll-behavior: smooth;
-  font-variant-numeric: lining-nums;
-}
-body {
-  min-width: 320px;
-  min-height: 100vh;
-  margin: 0;
-  background: var(--color-bg);
-  color: var(--color-text);
-  font-family: var(--font-body);
-  font-size: var(--text-body);
-  font-weight: 400;
-  line-height: 1.6;
-}
-h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-heading);
-  font-weight: var(--font-heading-weight);
-  line-height: 1.12;
-  letter-spacing: -.015em;
-  margin: 0 0 var(--space-2);
-}
-h1 { font-size: var(--text-display); font-weight: 400; } /* display sizes take the normal cut */
-h2 { font-size: var(--text-title); }
-h3 { font-size: var(--text-card); }
-h4 { font-size: var(--text-section); }
-h5 { font-size: var(--text-subhead); }
-h6 { font-size: var(--text-meta); letter-spacing: .08em; text-transform: uppercase; }
-p { margin: 0 0 var(--space-3); }
-a { color: var(--color-accent); text-decoration: none; text-underline-offset: 3px; }
-a:hover { color: var(--color-accent-700); }
-img { display: block; max-width: 100%; }
-figure { margin: 0; }
-figcaption {
-  margin-top: var(--space-1);
-  color: color-mix(in srgb, var(--color-text) 55%, transparent);
-  font-size: var(--text-kicker);
-}
-button, input, textarea, select { font: inherit; }
-button, label, th, legend, dt, summary { font-family: var(--font-ui); }
-button { cursor: pointer; line-height: 1.15; }
-button, a {
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-}
-/* Figures set lining+tabular wherever they stand as numbers or columns;
-   running prose still inherits lining from html, not oldstyle text figures. */
-time, th, td, output { font-variant-numeric: var(--figure-ui); }
-:focus { outline: none; }
-:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
-::selection { background: color-mix(in srgb, var(--color-accent) 30%, transparent); }
-/* 窄屏：主标题降一阶，其余层级不动 —— 只有这一个断点会改字号。 */
-@media (max-width: 640px) {
-  :root { --text-display: var(--text-title); }
-}
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    scroll-behavior: auto !important;
-    transition-duration: .01ms !important;
-    animation-duration: .01ms !important;
-    animation-iteration-count: 1 !important;
-  }
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
 }
 
 html:has([data-fill-viewport]) {

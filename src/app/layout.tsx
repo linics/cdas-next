@@ -1,27 +1,29 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Lora, Noto_Serif_SC } from "next/font/google";
+import { Geist, Geist_Mono, Noto_Sans_SC } from "next/font/google";
 import type { ReactNode } from "react";
+import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 import "./globals.css";
 
-const displayFont = Cormorant_Garamond({
+const geistSans = Geist({
   display: "swap",
   subsets: ["latin"],
-  variable: "--font-heading-loaded",
-  weight: ["400", "600"],
+  variable: "--font-geist-sans",
 });
 
-const bodyFont = Lora({
+const geistMono = Geist_Mono({
   display: "swap",
   subsets: ["latin"],
-  variable: "--font-body-loaded",
-  weight: ["400", "600"],
+  variable: "--font-geist-mono",
 });
 
-const chineseFont = Noto_Serif_SC({
+// 中文字形走 Noto Sans SC；拉丁字母与数字先落到 Geist。
+const chineseFont = Noto_Sans_SC({
   display: "swap",
   preload: false,
-  variable: "--font-cjk-loaded",
-  weight: ["400", "500", "600"],
+  variable: "--font-cjk",
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -32,11 +34,14 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html
-      className={`${displayFont.variable} ${bodyFont.variable} ${chineseFont.variable}`}
+      className={cn(geistSans.variable, geistMono.variable, chineseFont.variable)}
       data-scroll-behavior="smooth"
       lang="zh-CN"
     >
-      <body>{children}</body>
+      <body>
+        <TooltipProvider>{children}</TooltipProvider>
+        <Toaster />
+      </body>
     </html>
   );
 }
