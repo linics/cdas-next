@@ -218,7 +218,7 @@ function ReleaseGroup({
       className="flex flex-col gap-3"
     >
       <header className="flex items-baseline gap-3">
-        <h2 className="text-lg font-semibold" id={`${groupKey}-title`}>
+        <h2 className="type-section-title" id={`${groupKey}-title`}>
           {detail.title}
         </h2>
         <Badge variant="secondary">{`${releases.length} 项`}</Badge>

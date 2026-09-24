@@ -1,16 +1,10 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Noto_Sans_SC } from "next/font/google";
+import { Geist_Mono, Noto_Sans_SC } from "next/font/google";
 import type { ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import "./globals.css";
-
-const geistSans = Geist({
-  display: "swap",
-  subsets: ["latin"],
-  variable: "--font-geist-sans",
-});
 
 const geistMono = Geist_Mono({
   display: "swap",
@@ -18,12 +12,13 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
 });
 
-// 中文字形走 Noto Sans SC；拉丁字母与数字先落到 Geist。
+// 全站唯一的界面字体：中文、拉丁字母和数字都出自思源黑体，字形一致。
+// 只用 400 / 500 / 600 三个字重。
 const chineseFont = Noto_Sans_SC({
   display: "swap",
   preload: false,
   variable: "--font-cjk",
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "500", "600"],
 });
 
 export const metadata: Metadata = {
@@ -34,7 +29,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html
-      className={cn(geistSans.variable, geistMono.variable, chineseFont.variable)}
+      className={cn(geistMono.variable, chineseFont.variable)}
       data-scroll-behavior="smooth"
       lang="zh-CN"
     >

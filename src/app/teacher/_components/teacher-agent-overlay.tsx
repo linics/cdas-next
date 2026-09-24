@@ -136,9 +136,6 @@ export function TeacherAgentOverlay({
           ) : (
             <MessageSquareTextIcon className="size-6" />
           )}
-          <span className="absolute -right-0.5 -bottom-0.5 rounded-full border-2 border-background bg-foreground px-1 text-[9px] leading-3.5 font-bold text-background">
-            AI
-          </span>
         </button>
       </div>
     </ActivityAssistantSessionProvider>

@@ -19,7 +19,7 @@ const resultBox = `mt-3 flex flex-col gap-2 rounded-lg border bg-muted/40 p-3 te
 export const styles = {
   assistant: `group/assistant mx-auto grid w-full max-w-5xl gap-4 px-0 pb-8 data-[surface=panel]:h-full data-[surface=panel]:min-h-0 data-[surface=panel]:grid-rows-[minmax(0,1fr)_auto] data-[surface=panel]:gap-2 data-[surface=panel]:p-3`,
   conversation: `grid content-start gap-3 ${panel}:min-h-0 ${panel}:overflow-x-hidden ${panel}:overflow-y-auto ${panel}:overscroll-contain ${panel}:px-1`,
-  header: `flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-end sm:justify-between [&_h2]:text-xl [&_h2]:font-semibold ${panel}:flex-row ${panel}:items-center ${panel}:border-t-0 ${panel}:pt-0 ${panel}:[&_h2]:text-base`,
+  header: `flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-end sm:justify-between [&_h2]:type-section-title ${panel}:flex-row ${panel}:items-center ${panel}:border-t-0 ${panel}:pt-0 ${panel}:[&_h2]:text-base`,
   eyebrow: "text-xs font-medium text-muted-foreground",
   speaker: "text-xs font-medium text-muted-foreground",
   availability:

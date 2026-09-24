@@ -110,7 +110,7 @@ export default function HomePage() {
                     <Icon className="size-5" />
                   </span>
                   <CardDescription>{role}</CardDescription>
-                  <CardTitle className="flex items-center justify-between text-lg">
+                  <CardTitle className="type-section-title flex items-center justify-between">
                     {title}
                     <ArrowRightIcon className="size-4 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-foreground" />
                   </CardTitle>
@@ -123,7 +123,7 @@ export default function HomePage() {
 
         <section aria-labelledby="workflow-title" className="flex flex-col gap-6">
           <div className="space-y-1">
-            <h2 className="text-lg font-semibold" id="workflow-title">
+            <h2 className="type-section-title" id="workflow-title">
               完整的教学闭环
             </h2>
             <p className="text-sm text-muted-foreground">
@@ -133,7 +133,7 @@ export default function HomePage() {
           <ol className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border bg-border sm:grid-cols-3 lg:grid-cols-6">
             {loopSteps.map((step, index) => (
               <li className="flex flex-col gap-2 bg-background p-4" key={step}>
-                <span className="font-mono text-xs text-muted-foreground">
+                <span className="text-xs text-muted-foreground tabular-nums">
                   {String(index + 1).padStart(2, "0")}
                 </span>
                 <span className="text-sm font-medium">{step}</span>

@@ -51,7 +51,6 @@ export default async function NewTeacherActivityPage() {
       <div className={styles.pageContent}>
         <header className={styles.pageHeader}>
           <div>
-            <p className={styles.eyebrow}>跨学科任务 / 新草稿</p>
             <h1>新建跨学科任务</h1>
             <p>
               每条学习目标关联官方课程标准的核心素养，并由某个阶段承担、某个评价维度评价。保存后可先保持编辑中，也可直接标记为可预览。

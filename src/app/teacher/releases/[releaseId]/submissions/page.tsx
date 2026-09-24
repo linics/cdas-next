@@ -70,7 +70,6 @@ export default async function TeacherReleaseSubmissionsPage({
       <div className={styles.pageContent}>
         <header className={styles.pageHeader}>
           <div>
-            <p className={styles.eyebrow}>发布 / 正式提交</p>
             <h1>{workspace.release.title}</h1>
             <p>
               {workspace.release.classroomName} · 发布{" "}

@@ -63,7 +63,6 @@ export default async function TeacherActivityPage({
       <div className={styles.pageContent}>
         <header className={styles.pageHeader}>
           <div>
-            <p className={styles.eyebrow}>活动设计 / 草稿版本 {draft.version}</p>
             <h1>{content.title}</h1>
             <p>
               当前内容创建于{" "}

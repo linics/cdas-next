@@ -1,4 +1,9 @@
 import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
+/** shadcn 的按钮类要先合并冲突（基础类里的透明边框会盖掉描边色），和 <Button> 内部一致。 */
+const button = (...args: Parameters<typeof buttonVariants>) =>
+  cn(buttonVariants(...args));
 
 /**
  * 教师端各页面（活动设计、提交列表、班级名册、过程诊断、课程依据……）共用的版式。
@@ -33,11 +38,11 @@ export const styles = {
   pageContent: "mx-auto flex w-full max-w-6xl flex-col gap-6",
   submissionPage: "mx-auto flex w-full max-w-6xl flex-col gap-6",
   pageHeader:
-    "flex flex-col gap-4 md:flex-row md:items-end md:justify-between [&_h1]:text-2xl [&_h1]:font-semibold [&_h1]:tracking-tight [&>div>p:last-child]:mt-1 [&>div>p:last-child]:max-w-2xl [&>div>p:last-child]:text-sm [&>div>p:last-child]:text-muted-foreground",
+    "flex flex-col gap-4 md:flex-row md:items-end md:justify-between [&_h1]:type-page-title [&>div>p:last-child]:mt-1 [&>div>p:last-child]:max-w-2xl [&>div>p:last-child]:text-sm [&>div>p:last-child]:text-muted-foreground",
   pageHeaderActions: "flex shrink-0 flex-wrap gap-2",
   eyebrow: "text-xs font-medium text-muted-foreground",
   sectionHeader:
-    "flex items-end justify-between gap-3 [&_h2]:text-lg [&_h2]:font-semibold [&>span]:text-sm [&>span]:text-muted-foreground",
+    "flex items-end justify-between gap-3 [&_h2]:type-section-title [&>span]:text-sm [&>span]:text-muted-foreground",
   dashboardBody: "flex flex-col gap-6",
   dashboardSection: `${card} flex flex-col gap-4 p-5`,
   emptyState:
@@ -46,10 +51,10 @@ export const styles = {
     "rounded-lg border border-dashed bg-muted/40 p-3 text-sm text-muted-foreground",
 
   // 按钮与链接
-  primaryButton: buttonVariants(),
-  primaryLink: buttonVariants(),
-  secondaryButton: buttonVariants({ variant: "outline" }),
-  dangerButton: buttonVariants({ variant: "destructive" }),
+  primaryButton: button(),
+  primaryLink: button(),
+  secondaryButton: button({ variant: "outline" }),
+  dangerButton: button({ variant: "destructive" }),
   rowLink:
     "text-sm font-medium underline-offset-4 hover:underline",
   conflictLink: "text-sm font-medium underline underline-offset-4",
@@ -83,7 +88,7 @@ export const styles = {
   editorRail: `${card} flex flex-col gap-3 p-5 lg:sticky lg:top-4 [&_h2]:text-base [&_h2]:font-semibold [&>p]:text-sm [&>p]:text-muted-foreground`,
   formSection: `${card} relative flex flex-col gap-4 p-5 [&_h2]:text-base [&_h2]:font-semibold`,
   formIndex:
-    "font-mono text-xs text-muted-foreground",
+    "text-xs text-muted-foreground tabular-nums",
   formField: `flex flex-col gap-2 [&>label:first-child]:text-sm [&>label:first-child]:font-medium [&>small]:text-xs [&>small]:text-muted-foreground ${nestedControls}`,
   taskGrid: `grid grid-cols-1 gap-4 sm:grid-cols-2 [&>label]:flex [&>label]:flex-col [&>label]:gap-2 [&>label]:text-sm [&>label]:font-medium ${nestedControls}`,
   taskFull: "sm:col-span-2",
@@ -102,7 +107,7 @@ export const styles = {
     "flex flex-wrap gap-1.5 [&>span]:inline-flex [&>span]:h-6 [&>span]:items-center [&>span]:rounded-4xl [&>span]:bg-secondary [&>span]:px-2.5 [&>span]:text-xs [&>span]:text-secondary-foreground",
   publishRail: `${card} flex flex-col gap-3 p-5 lg:sticky lg:top-4 [&_h2]:text-base [&_h2]:font-semibold [&>p]:text-sm [&>p]:text-muted-foreground`,
   parameterForm: `flex flex-col gap-3 [&_label]:flex [&_label]:flex-col [&_label]:gap-1.5 [&_label]:text-sm [&_label]:font-medium [&_small]:text-xs [&_small]:font-normal [&_small]:text-muted-foreground ${nestedControls}`,
-  legacyReadPanel: `${card} flex flex-col gap-5 p-6 text-sm leading-relaxed [&_h2]:text-lg [&_h2]:font-semibold [&_h3]:font-semibold [&_p]:text-muted-foreground [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5`,
+  legacyReadPanel: `${card} flex flex-col gap-5 p-6 text-sm leading-relaxed [&_h2]:type-section-title [&_h3]:font-semibold [&_p]:text-muted-foreground [&_ol]:list-decimal [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:pl-5`,
 
   // 提交列表
   progressSection: `${card} flex flex-col gap-4 p-5`,
@@ -148,7 +153,7 @@ export const styles = {
   card: `${card} flex flex-col gap-4 p-5 [&_h2]:text-base [&_h2]:font-semibold`,
   cardLead: "text-sm text-muted-foreground",
   statGrid:
-    "grid grid-cols-2 gap-3 md:grid-cols-4 [&>div]:rounded-lg [&>div]:border [&>div]:p-3 [&_dt]:text-xs [&_dt]:text-muted-foreground [&_dd]:text-2xl [&_dd]:font-semibold [&_dd]:tabular-nums",
+    "grid grid-cols-2 gap-3 md:grid-cols-4 [&>div]:rounded-lg [&>div]:border [&>div]:p-3 [&_dt]:text-xs [&_dt]:text-muted-foreground [&_dd]:text-3xl [&_dd]:font-semibold [&_dd]:tabular-nums",
   releaseBlock:
     "flex flex-col gap-3 border-t pt-4 first:border-t-0 first:pt-0 [&>h3]:text-sm [&>h3]:font-semibold [&>p]:text-xs [&>p]:text-muted-foreground",
   stageList: "flex flex-col gap-4",

@@ -41,7 +41,6 @@ export default async function AdminSchoolsPage() {
     >
       <header className={styles.pageHeader}>
         <div>
-          <p className={styles.eyebrow}>学校</p>
           <h1>建校、启停与邀请码</h1>
           <p>学校代码创建后不可改。邀请码明文只在创建或重置时出现一次。</p>
         </div>

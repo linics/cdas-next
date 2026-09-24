@@ -633,7 +633,6 @@ export default async function StudentReleasePage({
         <Link className={styles.backLink} href="/student">← 返回我的活动</Link>
         <header className={styles.releaseHeader}>
           <div>
-            <p className={styles.eyebrow}>学习活动 / 阶段证据</p>
             <h1>{content.title}</h1>
             <p>{content.summary}</p>
           </div>

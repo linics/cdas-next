@@ -46,11 +46,11 @@ const styles = {
   submissionRevision: "flex flex-col gap-4",
   revisionHeading: "flex items-start justify-between gap-3",
   revisionIndex:
-    "flex size-8 shrink-0 items-center justify-center rounded-md bg-muted font-mono text-xs",
+    "flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-xs font-medium tabular-nums",
   revisionBadges: "flex gap-1.5",
   formalLabel: "text-xs text-muted-foreground",
   submissionBody:
-    "rounded-xl border bg-card p-5 text-[15px] leading-7 whitespace-pre-wrap shadow-xs",
+    "rounded-xl border bg-card p-5 text-base leading-7 whitespace-pre-wrap shadow-xs",
   formalAttachmentList: "flex flex-col gap-2 text-sm",
   historyDisclosure:
     "group rounded-xl border bg-card [&>summary]:cursor-pointer [&>summary]:px-4 [&>summary]:py-3 [&>summary]:text-sm [&>summary]:font-medium [&[open]>summary]:border-b",
@@ -96,7 +96,7 @@ function FeedbackHistory({ revision }: { revision: FormalRevision }) {
     >
       <header className="flex items-center justify-between">
         <h4 className="font-semibold" id={`feedback-history-${revision.id}`}>教师反馈</h4>
-        <span className="font-mono text-xs text-muted-foreground">
+        <span className="text-xs text-muted-foreground tabular-nums">
           {feedback ? `v${feedback.currentVersion}` : "尚无反馈"}
         </span>
       </header>
@@ -106,7 +106,7 @@ function FeedbackHistory({ revision }: { revision: FormalRevision }) {
           {revisions.map((feedbackRevision, index) => (
             <article className="flex flex-col gap-2" key={feedbackRevision.id}>
               <div className={styles.feedbackMeta}>
-                <Badge className="font-mono" variant="outline">v{feedbackRevision.version}</Badge>
+                <Badge className="tabular-nums" variant="outline">v{feedbackRevision.version}</Badge>
                 <p className="flex flex-wrap items-center gap-x-2">
                   {index === 0 ? <strong className="font-medium text-foreground">当前版本</strong> : null}
                   {feedbackRevision.source === "AI_ASSISTED"
@@ -164,7 +164,7 @@ function EvaluationHistory({ revision }: { revision: FormalRevision }) {
     >
       <header className="flex items-center justify-between">
         <h4 className="font-semibold" id={`evaluation-history-${revision.id}`}>量规评价</h4>
-        <span className="font-mono text-xs text-muted-foreground">
+        <span className="text-xs text-muted-foreground tabular-nums">
           {evaluation ? `v${evaluation.currentVersion}` : "尚无评价"}
         </span>
       </header>
@@ -174,7 +174,7 @@ function EvaluationHistory({ revision }: { revision: FormalRevision }) {
           {revisions.map((evaluationRevision, index) => (
             <article className="flex flex-col gap-2" key={evaluationRevision.id}>
               <div className={styles.feedbackMeta}>
-                <Badge className="font-mono" variant="outline">v{evaluationRevision.version}</Badge>
+                <Badge className="tabular-nums" variant="outline">v{evaluationRevision.version}</Badge>
                 <p className="flex flex-wrap items-center gap-x-2">
                   {index === 0 ? <strong className="font-medium text-foreground">当前版本</strong> : null}
                   {evaluationRevision.source === "AI_ASSISTED"
@@ -402,7 +402,7 @@ export default async function TeacherSubmissionPage({
           >
             <header className={styles.paneHeading}>
               <p className={styles.eyebrow}>学生证据</p>
-              <h1 className="text-2xl font-semibold tracking-tight" id="submission-student-title">
+              <h1 className="type-page-title" id="submission-student-title">
                 {group?.name ?? student.displayName}
               </h1>
               <p className={styles.contextLine}>

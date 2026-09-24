@@ -284,7 +284,7 @@ export default async function TeacherDashboardPage() {
         </Card>
 
         <section aria-labelledby="classrooms-title" className="flex flex-col gap-4">
-          <h2 className="text-lg font-semibold" id="classrooms-title">
+          <h2 className="type-section-title" id="classrooms-title">
             任教班级
           </h2>
           {dashboard.classrooms.length === 0 ? (

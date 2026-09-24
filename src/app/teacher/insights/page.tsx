@@ -16,6 +16,21 @@ import {
   TeacherPage,
   teacherHomeCrumb,
 } from "../_components/teacher-shell";
+import { FilterIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  NativeSelect,
+  NativeSelectOption,
+} from "@/components/ui/native-select";
+import { PageHeader } from "../../_components/page-header";
+import { EmptyState } from "../../_components/ui";
 import { styles, styles as workspaceStyles } from "../teacher-ui";
 
 type InsightsSearchParams = Promise<{
@@ -316,89 +331,101 @@ export default async function TeacherInsightsPage({
       actorName={dashboard.actor.displayName}
       breadcrumb={[teacherHomeCrumb, { label: "过程诊断" }]}
     >
-      <div className={workspaceStyles.pageContent}>
-        <header className={workspaceStyles.pageHeader}>
-          <div>
-            <p className={workspaceStyles.eyebrow}>教师工作台 / 过程诊断</p>
-            <h1>阶段进度、量规表现与重交改善</h1>
-            <p>
-              汇总你可查看的各次发布，统计基于正式提交与已确认的反馈、评价。
-            </p>
-          </div>
-          <Link className={workspaceStyles.secondaryButton} href="/teacher">
-            返回工作台
-          </Link>
-        </header>
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+        <PageHeader
+          actions={
+            <Button asChild variant="outline">
+              <Link href="/teacher">返回工作台</Link>
+            </Button>
+          }
+          description="汇总你可查看的各次发布，统计基于正式提交与已确认的反馈、评价。"
+          title="阶段进度、量规表现与重交改善"
+        />
 
-        <div className={styles.insightsLayout}>
-          {hasReleases ? (
-            <form
-              action="/teacher/insights"
-              className={styles.filterForm}
-              method="get"
+        {hasReleases ? (
+          <form
+            action="/teacher/insights"
+            className="flex flex-col gap-2 rounded-xl border bg-card p-4 shadow-xs sm:flex-row sm:items-center sm:gap-3"
+            method="get"
+          >
+            <label
+              className="shrink-0 text-sm font-medium"
+              htmlFor="insights-release"
             >
-              <label htmlFor="insights-release">查看范围</label>
-              <div>
-                <select
-                  defaultValue={dashboard.selectedReleaseId ?? ""}
-                  id="insights-release"
-                  name="release"
-                >
-                  <option value="">全部可查看的发布</option>
-                  {dashboard.releaseOptions.map((option) => (
-                    <option key={option.id} value={option.id}>
-                      {option.title} · {option.classroomName}
-                    </option>
-                  ))}
-                </select>
-                <button type="submit">筛选</button>
-              </div>
-              <small>各次发布的量规分别统计。</small>
-            </form>
-          ) : (
-            <p className={workspaceStyles.emptyState}>
-              暂无可查看的发布。发布活动并保持班级管理权后，这里会出现过程诊断。
-            </p>
-          )}
+              查看范围
+            </label>
+            <NativeSelect
+              className="w-full sm:w-96"
+              defaultValue={dashboard.selectedReleaseId ?? ""}
+              id="insights-release"
+              name="release"
+            >
+              <NativeSelectOption value="">全部可查看的发布</NativeSelectOption>
+              {dashboard.releaseOptions.map((option) => (
+                <NativeSelectOption key={option.id} value={option.id}>
+                  {option.title} · {option.classroomName}
+                </NativeSelectOption>
+              ))}
+            </NativeSelect>
+            <Button type="submit" variant="secondary">
+              <FilterIcon />
+              筛选
+            </Button>
+            <p className="type-caption sm:ml-auto">各次发布的量规分别统计。</p>
+          </form>
+        ) : (
+          <EmptyState title="暂无可查看的发布">
+            发布活动并保持班级管理权后，这里会出现过程诊断。
+          </EmptyState>
+        )}
 
-          <section className={styles.card}>
-            <p className={workspaceStyles.eyebrow}>量规诊断</p>
-            <h2>量规薄弱项</h2>
-            <p className={styles.cardLead}>
-              统计各次发布最新一份已确认评价；「需改进」占比最高的维度标记为薄弱项。
-            </p>
-            {hasReleases
-              ? dashboard.rubric.map((card) => (
-                  <RubricCard card={card} key={card.releaseId} />
-                ))
-              : null}
-          </section>
-
-          <section className={styles.card}>
-            <p className={workspaceStyles.eyebrow}>阶段进度</p>
-            <h2>阶段卡点</h2>
-            <p className={styles.cardLead}>
-              小组按组统计，未分组学生按人统计；要求重交不会使学生退回上一阶段。
-            </p>
-            {hasReleases
-              ? dashboard.stages.map((card) => (
-                  <StageCard card={card} key={card.releaseId} />
-                ))
-              : null}
-          </section>
-
-          <section className={styles.card}>
-            <p className={workspaceStyles.eyebrow}>重交与改善</p>
-            <h2>反馈后改善</h2>
-            <p className={styles.cardLead}>
-              重交率统计被要求重交后完成重新提交的比例；评价变化仅比较重交前后均有量规评价的样本。
-            </p>
-            <ImprovementCard
-              hasReleases={hasReleases}
-              improvement={dashboard.improvement}
-            />
-          </section>
-        </div>
+        {(
+          [
+            {
+              key: "rubric",
+              eyebrow: "量规诊断",
+              title: "量规薄弱项",
+              lead: "统计各次发布最新一份已确认评价；「需改进」占比最高的维度标记为薄弱项。",
+              body: hasReleases
+                ? dashboard.rubric.map((card) => (
+                    <RubricCard card={card} key={card.releaseId} />
+                  ))
+                : null,
+            },
+            {
+              key: "stages",
+              eyebrow: "阶段进度",
+              title: "阶段卡点",
+              lead: "小组按组统计，未分组学生按人统计；要求重交不会使学生退回上一阶段。",
+              body: hasReleases
+                ? dashboard.stages.map((card) => (
+                    <StageCard card={card} key={card.releaseId} />
+                  ))
+                : null,
+            },
+            {
+              key: "improvement",
+              eyebrow: "重交与改善",
+              title: "反馈后改善",
+              lead: "重交率统计被要求重交后完成重新提交的比例；评价变化仅比较重交前后均有量规评价的样本。",
+              body: (
+                <ImprovementCard
+                  hasReleases={hasReleases}
+                  improvement={dashboard.improvement}
+                />
+              ),
+            },
+          ] as const
+        ).map((section) => (
+          <Card key={section.key}>
+            <CardHeader>
+              <p className="type-caption">{section.eyebrow}</p>
+              <CardTitle className="type-section-title">{section.title}</CardTitle>
+              <CardDescription>{section.lead}</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-5">{section.body}</CardContent>
+          </Card>
+        ))}
       </div>
     </TeacherPage>
   );

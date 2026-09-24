@@ -44,17 +44,18 @@
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
 
-  /* 业务状态色 —— shadcn 没有，本项目补的四档。每档一个底色 + 一个字色。
+  /* 业务状态色 —— shadcn 没有，本项目补的四档。同一种视觉重量：浅底 + 深字，
+     靠色相区分类别，文字本身写明状态，颜色只做辅助。
      pending：等教师处理（待反馈、待评价）；resubmit：等学生重交；
      done：已反馈、已评价；closed：已关闭、已封存、只读。 */
-  --status-pending: oklch(0.205 0 0);
-  --status-pending-foreground: oklch(0.985 0 0);
-  --status-resubmit: oklch(0.95 0.06 75);
-  --status-resubmit-foreground: oklch(0.45 0.11 60);
-  --status-done: oklch(0.95 0.05 155);
-  --status-done-foreground: oklch(0.42 0.1 155);
-  --status-closed: oklch(0.97 0 0);
-  --status-closed-foreground: oklch(0.5 0 0);
+  --status-pending: oklch(0.95 0.03 255);
+  --status-pending-foreground: oklch(0.43 0.13 258);
+  --status-resubmit: oklch(0.95 0.055 75);
+  --status-resubmit-foreground: oklch(0.47 0.11 58);
+  --status-done: oklch(0.95 0.045 155);
+  --status-done-foreground: oklch(0.43 0.1 155);
+  --status-closed: oklch(0.96 0 0);
+  --status-closed-foreground: oklch(0.48 0 0);
 }
 
 .dark {
@@ -90,8 +91,8 @@
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
 
-  --status-pending: oklch(0.922 0 0);
-  --status-pending-foreground: oklch(0.205 0 0);
+  --status-pending: oklch(0.3 0.06 258);
+  --status-pending-foreground: oklch(0.86 0.07 255);
   --status-resubmit: oklch(0.32 0.07 65);
   --status-resubmit-foreground: oklch(0.88 0.1 75);
   --status-done: oklch(0.3 0.06 155);
@@ -101,9 +102,29 @@
 }
 
 @theme inline {
-  --font-sans: var(--font-geist-sans), var(--font-cjk), "PingFang SC", "Hiragino Sans GB", sans-serif;
+  /* 全站一种字体：思源黑体自带拉丁字母与数字，中英混排不再出现两套字形。
+     等宽字只留给代码与参数摘要。 */
+  --font-sans: var(--font-cjk), "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
   --font-heading: var(--font-sans);
+
+  /* 字号阶 —— 按中文重排。shadcn 默认的 12/14 是给拉丁字母定的，中文在这两档上
+     笔画发糊、显得局促，所以 xs/sm 各抬一档；行高统一按 1.6 左右给中文留呼吸。
+     页面里只准用这张表里的档位，不写 text-[15px] 这类散值。 */
+  --text-xs: 0.8125rem;        /* 13 · 说明文字、标签、状态、表头 */
+  --text-xs--line-height: 1.25rem;
+  --text-sm: 0.9375rem;        /* 15 · 正文、按钮、输入框、表格、导航 */
+  --text-sm--line-height: 1.5rem;
+  --text-base: 1rem;           /* 16 · 卡片标题、阅读正文 */
+  --text-base--line-height: 1.625rem;
+  --text-lg: 1.125rem;         /* 18 · 区块标题 */
+  --text-lg--line-height: 1.75rem;
+  --text-xl: 1.25rem;          /* 20 */
+  --text-xl--line-height: 1.875rem;
+  --text-2xl: 1.625rem;        /* 26 · 页面标题 */
+  --text-2xl--line-height: 2.25rem;
+  --text-3xl: 2rem;            /* 32 · 统计数字 */
+  --text-3xl--line-height: 2.5rem;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -150,6 +171,34 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/* 语义字号：五个角色，页面标题 → 区块标题 → 卡片标题 → 正文 → 说明。
+   要整体调松或调紧，只改这里。 */
+@utility type-page-title {
+  font-size: var(--text-2xl);
+  line-height: var(--text-2xl--line-height);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+@utility type-section-title {
+  font-size: var(--text-lg);
+  line-height: var(--text-lg--line-height);
+  font-weight: 600;
+}
+@utility type-card-title {
+  font-size: var(--text-base);
+  line-height: var(--text-base--line-height);
+  font-weight: 600;
+}
+@utility type-body {
+  font-size: var(--text-sm);
+  line-height: 1.75;
+}
+@utility type-caption {
+  font-size: var(--text-xs);
+  line-height: var(--text-xs--line-height);
+  color: var(--muted-foreground);
 }
 
 @layer base {

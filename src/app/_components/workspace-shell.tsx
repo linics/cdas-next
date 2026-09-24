@@ -57,7 +57,7 @@ function workspaceHrefFor(audience: Audience) {
 
 function BrandMark() {
   return (
-    <span className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-xs font-semibold tracking-tight text-primary-foreground">
+    <span className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-xs font-semibold text-primary-foreground">
       CD
     </span>
   );
@@ -233,7 +233,7 @@ export function WorkspaceRoleGate({
         <Card className="w-full max-w-md">
           <CardHeader>
             <CardDescription>账号角色不匹配</CardDescription>
-            <CardTitle className="text-xl">
+            <CardTitle className="type-section-title">
               当前登录的是{currentAudience}账号
             </CardTitle>
           </CardHeader>

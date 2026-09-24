@@ -40,14 +40,14 @@ export function AccessGateLayout({
           <main className="flex flex-col gap-6 p-6 md:p-8">
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">{eyebrow}</p>
-              <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
+              <h2 className="type-section-title">{title}</h2>
             </div>
             {children}
           </main>
           <section className="hidden flex-col justify-between gap-8 border-l bg-muted/50 p-8 md:flex">
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground">{workspace}</p>
-              <h1 className="text-2xl leading-snug font-semibold tracking-tight">
+              <h1 className="type-page-title">
                 {pitchTitle}
               </h1>
               <p className="text-sm leading-relaxed text-muted-foreground">

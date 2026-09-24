@@ -218,7 +218,7 @@ export function SubmissionEditor({
     <div className={styles.writingField}>
       <label htmlFor="text-evidence">文字证据</label>
       <Textarea
-        className="min-h-56 text-[15px] leading-7"
+        className="min-h-56 text-base leading-7"
         id="text-evidence"
         name={canWrite ? "text" : undefined}
         value={text}
