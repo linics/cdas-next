@@ -32,7 +32,7 @@ import {
   type TaskBookArea,
 } from "../../../domain/activity/task-book-areas";
 import { getTeacherAgentPageContext } from "../../../domain/assistant/teacher-agent-page-context";
-import styles from "./activity-assistant.module.css";
+import { styles } from "./assistant-ui";
 
 type CreatedDraftOutput = {
   draftId: string;
