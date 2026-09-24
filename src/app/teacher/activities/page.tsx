@@ -15,7 +15,7 @@ import {
   TeacherPage,
   teacherHomeCrumb,
 } from "../_components/teacher-shell";
-import styles from "../teacher-workspace.module.css";
+import { styles } from "../teacher-ui";
 
 const draftStatus = {
   EDITING: { label: "编辑中", tone: "editing" },

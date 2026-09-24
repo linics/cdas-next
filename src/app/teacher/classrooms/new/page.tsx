@@ -9,7 +9,7 @@ import {
   TeacherActivityQueryError,
 } from "../../../../server/queries/teacher-activity-workspace";
 import { TeacherAccessGate, TeacherPage, teacherHomeCrumb } from "../../_components/teacher-shell";
-import styles from "../../teacher-workspace.module.css";
+import { styles } from "../../teacher-ui";
 import { ClassroomForm } from "./classroom-form";
 
 export default async function NewClassroomPage() {

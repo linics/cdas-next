@@ -24,7 +24,7 @@ import {
   type ActivityDraftV3ActionState,
 } from "./activity-draft-v3-state";
 import { saveActivityDraftV3Action } from "./v3-actions";
-import styles from "../teacher-workspace.module.css";
+import { styles } from "../teacher-ui";
 
 const statusLabels = {
   EDITING: "编辑中",

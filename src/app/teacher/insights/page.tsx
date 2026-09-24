@@ -16,8 +16,7 @@ import {
   TeacherPage,
   teacherHomeCrumb,
 } from "../_components/teacher-shell";
-import workspaceStyles from "../teacher-workspace.module.css";
-import styles from "./insights.module.css";
+import { styles, styles as workspaceStyles } from "../teacher-ui";
 
 type InsightsSearchParams = Promise<{
   release?: string | string[];

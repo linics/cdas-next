@@ -16,7 +16,7 @@ import {
   TeacherPage,
   teacherHomeCrumb,
 } from "../../../_components/teacher-shell";
-import styles from "../../../teacher-workspace.module.css";
+import { styles } from "../../../teacher-ui";
 import { CloseActivityPanel } from "./close-activity-panel";
 import { ReleaseGroupManager } from "./release-group-manager";
 

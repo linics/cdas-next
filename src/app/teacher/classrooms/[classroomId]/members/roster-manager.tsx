@@ -6,7 +6,7 @@ import { LocalizedDateTime } from "../../../../_components/localized-date-time";
 import { ConfirmDialog, InlineAlert } from "../../../../_components/ui";
 import type { TeacherClassroomRoster } from "../../../../../server/queries/teacher-classroom-roster";
 import { StudentImportPanel } from "./student-import-panel";
-import styles from "../../../teacher-workspace.module.css";
+import { styles } from "../../../teacher-ui";
 import {
   decideRosterChangeAction,
   prepareEndMembershipAction,

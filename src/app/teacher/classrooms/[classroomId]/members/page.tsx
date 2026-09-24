@@ -9,7 +9,7 @@ import {
   TeacherClassroomRosterQueryError,
 } from "../../../../../server/queries/teacher-classroom-roster";
 import { TeacherAccessGate, TeacherPage, teacherHomeCrumb } from "../../../_components/teacher-shell";
-import styles from "../../../teacher-workspace.module.css";
+import { styles } from "../../../teacher-ui";
 import { RosterManager } from "./roster-manager";
 
 export default async function TeacherClassroomMembersPage({

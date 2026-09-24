@@ -18,7 +18,7 @@ import {
 import { ActivityDraftForm } from "../activity-draft-form";
 import { ActivityDraftV3Form } from "../activity-draft-v3-form";
 import { structuredTaskBookValues } from "../activity-draft-action-state";
-import styles from "../../teacher-workspace.module.css";
+import { styles } from "../../teacher-ui";
 
 export default async function TeacherActivityPage({
   params,

@@ -19,8 +19,7 @@ import {
   TeacherPage,
   teacherHomeCrumb,
 } from "../_components/teacher-shell";
-import workspaceStyles from "../teacher-workspace.module.css";
-import styles from "./knowledge.module.css";
+import { styles, styles as workspaceStyles } from "../teacher-ui";
 
 type KnowledgeSearchParams = Promise<{
   q?: string | string[];

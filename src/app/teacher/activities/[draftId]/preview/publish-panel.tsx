@@ -5,7 +5,7 @@ import { useActionState, useRef, useState } from "react";
 import { LocalizedDateTime } from "../../../../_components/localized-date-time";
 import { ConfirmDialog, InlineAlert } from "../../../../_components/ui";
 import type { TeacherActivityPreview } from "../../../../../server/queries/teacher-activity-workspace";
-import styles from "../../../teacher-workspace.module.css";
+import { styles } from "../../../teacher-ui";
 import {
   decidePublishActivityAction,
   preparePublishActivityAction,

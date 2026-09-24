@@ -24,7 +24,7 @@ import {
   activityStudioCrumb,
   teacherHomeCrumb,
 } from "../../../_components/teacher-shell";
-import styles from "../../../teacher-workspace.module.css";
+import { styles } from "../../../teacher-ui";
 import { PublishPanel } from "./publish-panel";
 import { TaskBookV3View } from "../../../../_components/task-book-v3-view";
 

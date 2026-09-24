@@ -17,7 +17,7 @@ import {
 } from "../../_components/teacher-shell";
 import { ActivityDraftV3Form } from "../activity-draft-v3-form";
 import { emptyActivityDraftV3Values } from "../activity-draft-v3-state";
-import styles from "../../teacher-workspace.module.css";
+import { styles } from "../../teacher-ui";
 
 export default async function NewTeacherActivityPage() {
   let actor;

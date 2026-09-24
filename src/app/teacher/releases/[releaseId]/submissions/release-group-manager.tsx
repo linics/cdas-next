@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useSyncExternalStore } from "react";
 import { ConfirmDialog, InlineAlert } from "../../../../_components/ui";
 import type { TeacherReleaseSubmissions } from "../../../../../server/queries/submission-workspace";
-import styles from "../../../teacher-workspace.module.css";
+import { styles } from "../../../teacher-ui";
 import {
   deleteReleaseGroupAction,
   saveReleaseGroupAction,
