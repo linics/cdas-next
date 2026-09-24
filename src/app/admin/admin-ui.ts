@@ -1,4 +1,5 @@
 import { buttonVariants } from "@/components/ui/button";
+import { revealChildren } from "../_components/reveal";
 import { cn } from "@/lib/utils";
 
 /** shadcn 的按钮类要先合并冲突（基础类里的透明边框会盖掉描边色），和 <Button> 内部一致。 */
@@ -18,7 +19,7 @@ export const styles = {
   stats:
     "mx-auto grid w-full max-w-6xl grid-cols-2 gap-4 pb-6 lg:grid-cols-4",
   stat: `${card} flex flex-col gap-1 p-4 [&_dt]:text-sm [&_dt]:text-muted-foreground [&_dd]:text-3xl [&_dd]:font-semibold [&_dd]:tabular-nums`,
-  stack: "mx-auto flex w-full max-w-6xl flex-col gap-6",
+  stack: `mx-auto flex w-full max-w-6xl flex-col gap-6 ${revealChildren}`,
   form: `${card} grid gap-4 p-5 [&_h2]:text-base [&_h2]:font-semibold`,
   field:
     "grid gap-1.5 [&_label]:text-sm [&_label]:font-medium [&_input]:h-9 [&_input]:w-full [&_input]:rounded-md [&_input]:border [&_input]:border-input [&_input]:bg-transparent [&_input]:px-3 [&_input]:text-sm [&_input]:shadow-xs [&_select]:h-9 [&_select]:w-full [&_select]:rounded-md [&_select]:border [&_select]:border-input [&_select]:bg-transparent [&_select]:px-3 [&_select]:text-sm [&_select]:shadow-xs [&_input:focus-visible]:border-ring [&_input:focus-visible]:ring-[3px] [&_input:focus-visible]:ring-ring/50 [&_input:focus-visible]:outline-none [&_select:focus-visible]:border-ring [&_select:focus-visible]:ring-[3px] [&_select:focus-visible]:ring-ring/50 [&_select:focus-visible]:outline-none",

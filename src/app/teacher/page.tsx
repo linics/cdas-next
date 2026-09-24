@@ -3,6 +3,9 @@ import { notFound } from "next/navigation";
 import { ChevronRightIcon, PlusIcon, UsersIcon } from "lucide-react";
 import { ZodError } from "zod";
 import { Badge } from "@/components/ui/badge";
+import { BorderBeam } from "@/components/ui/border-beam";
+import { NumberTicker } from "@/components/ui/number-ticker";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -24,6 +27,7 @@ import {
 } from "@/components/ui/table";
 import { LocalizedDateTime } from "../_components/localized-date-time";
 import { PageHeader } from "../_components/page-header";
+import { Reveal } from "../_components/reveal";
 import { EmptyState, StatusBadge, type StatusTone } from "../_components/ui";
 import { WorkspaceRoleGate } from "../_components/workspace-shell";
 import { AuthenticationError } from "../../server/auth/current-actor";
@@ -200,32 +204,60 @@ export default async function TeacherDashboardPage() {
         />
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {statCards.map(([label, count, hint]) => (
-            <Card key={label}>
+          {statCards.map(([label, count, hint], index) => (
+            <Reveal delay={0.06 + index * 0.05} key={label}>
+              <Card
+                className={cn(
+                  "relative h-full",
+                  index === 0 &&
+                    "border-transparent bg-linear-135 from-primary to-[color-mix(in_oklch,var(--primary),var(--aurora-1)_45%)] text-primary-foreground",
+                )}
+              >
+                <CardHeader>
+                  <CardDescription
+                    className={cn(index === 0 && "text-primary-foreground/80")}
+                  >
+                    {label}
+                  </CardDescription>
+                  <CardTitle className="text-3xl font-semibold">
+                    <NumberTicker value={count} />
+                  </CardTitle>
+                </CardHeader>
+                <CardFooter
+                  className={cn(
+                    "border-0 bg-transparent pt-0 text-sm text-muted-foreground",
+                    index === 0 && "text-primary-foreground/80",
+                  )}
+                >
+                  {hint}
+                </CardFooter>
+                {index === 0 ? (
+                  <BorderBeam
+                    colorFrom="oklch(1 0 0 / 0.9)"
+                    colorTo="var(--aurora-2)"
+                    duration={8}
+                    size={120}
+                  />
+                ) : null}
+              </Card>
+            </Reveal>
+          ))}
+          <Reveal delay={0.06 + statCards.length * 0.05}>
+            <Card className="h-full">
               <CardHeader>
-                <CardDescription>{label}</CardDescription>
-                <CardTitle className="text-3xl font-semibold tabular-nums">
-                  {count}
+                <CardDescription>任教班级</CardDescription>
+                <CardTitle className="text-3xl font-semibold">
+                  <NumberTicker value={dashboard.classrooms.length} />
                 </CardTitle>
               </CardHeader>
-              <CardFooter className="text-sm text-muted-foreground">
-                {hint}
+              <CardFooter className="border-0 bg-transparent pt-0 text-sm text-muted-foreground">
+                {`共 ${dashboard.releases.length} 个已发布活动`}
               </CardFooter>
             </Card>
-          ))}
-          <Card>
-            <CardHeader>
-              <CardDescription>任教班级</CardDescription>
-              <CardTitle className="text-3xl font-semibold tabular-nums">
-                {dashboard.classrooms.length}
-              </CardTitle>
-            </CardHeader>
-            <CardFooter className="text-sm text-muted-foreground">
-              {`共 ${dashboard.releases.length} 个已发布活动`}
-            </CardFooter>
-          </Card>
+          </Reveal>
         </div>
 
+        <Reveal delay={0.3}>
         <Card>
           <CardHeader>
             <CardTitle>待办</CardTitle>
@@ -282,7 +314,9 @@ export default async function TeacherDashboardPage() {
             )}
           </CardContent>
         </Card>
+        </Reveal>
 
+        <Reveal delay={0.38}>
         <section aria-labelledby="classrooms-title" className="flex flex-col gap-4">
           <h2 className="type-section-title" id="classrooms-title">
             任教班级
@@ -355,6 +389,7 @@ export default async function TeacherDashboardPage() {
             只有班级管理教师能发布活动、查看提交。管理权换人后，历史发布记录还在，但不能再看里面的提交内容。
           </p>
         </section>
+        </Reveal>
       </div>
     </TeacherPage>
   );

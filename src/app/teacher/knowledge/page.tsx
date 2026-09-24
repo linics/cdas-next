@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { cn } from "@/lib/utils";
+import { revealChildren } from "../../_components/reveal";
 import { notFound } from "next/navigation";
 import { ZodError } from "zod";
 import { AuthenticationError } from "../../../server/auth/current-actor";
@@ -82,7 +84,7 @@ export default async function TeacherKnowledgePage({
       actorName={actor.displayName}
       breadcrumb={[teacherHomeCrumb, { label: "课程依据" }]}
     >
-      <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
+      <div className={cn("mx-auto flex w-full max-w-4xl flex-col gap-6", revealChildren)}>
         <PageHeader
           actions={
             <Button asChild variant="outline">

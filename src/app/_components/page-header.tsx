@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Reveal } from "./reveal";
 
 /** 每个工作台页面顶部的同一套标题区：标题、一句说明、右侧操作。 */
 export function PageHeader({
@@ -11,7 +12,7 @@ export function PageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+    <Reveal className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
       <div className="space-y-1">
         <h1 className="type-page-title">{title}</h1>
         {description ? (
@@ -23,6 +24,6 @@ export function PageHeader({
       {actions ? (
         <div className="flex shrink-0 flex-wrap gap-2">{actions}</div>
       ) : null}
-    </div>
+    </Reveal>
   );
 }

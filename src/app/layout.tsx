@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { AuroraBackground } from "./_components/aurora-background";
 import "./globals.css";
 
 const geistMono = Geist_Mono({
@@ -34,6 +35,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       lang="zh-CN"
     >
       <body>
+        <AuroraBackground />
         <TooltipProvider>{children}</TooltipProvider>
         <Toaster />
       </body>

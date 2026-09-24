@@ -8,6 +8,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { revealChildren } from "./_components/reveal";
 import {
   Card,
   CardDescription,
@@ -79,7 +81,7 @@ export default function HomePage() {
       </header>
 
       <main
-        className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-16 px-6 py-16 md:py-24"
+        className={cn("mx-auto flex w-full max-w-6xl flex-1 flex-col gap-16 px-6 py-16 md:py-24", revealChildren)}
         id="main-content"
       >
         <section aria-labelledby="home-title" className="flex max-w-3xl flex-col gap-6">

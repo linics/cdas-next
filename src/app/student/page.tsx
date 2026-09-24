@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { cn } from "@/lib/utils";
+import { revealChildren } from "../_components/reveal";
 import Link from "next/link";
 import { connection } from "next/server";
 import { notFound } from "next/navigation";
@@ -6,6 +8,7 @@ import { ZodError } from "zod";
 import { LocalizedDateTime } from "../_components/localized-date-time";
 import { ChevronRightIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { NumberTicker } from "@/components/ui/number-ticker";
 import {
   Card,
   CardAction,
@@ -161,7 +164,7 @@ function ReleaseRow({
       className="group block rounded-xl focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
       href={`/student/releases/${release.id}`}
     >
-      <Card className="transition-colors group-hover:bg-muted/40">
+      <Card className="transition-[transform,box-shadow] duration-300 group-hover:-translate-y-0.5 group-hover:shadow-lg motion-reduce:transition-none motion-reduce:group-hover:translate-y-0">
         <CardHeader>
           <CardTitle className="text-base">{release.snapshot.title}</CardTitle>
           <CardDescription className="line-clamp-2">
@@ -284,7 +287,7 @@ export default async function StudentDashboardPage() {
       breadcrumb={[{ label: "我的学习活动" }]}
       navigation={studentNavigation}
     >
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
+      <div className={cn("mx-auto flex w-full max-w-5xl flex-col gap-8", revealChildren)}>
         <PageHeader
           description="所有对你开放的学习活动都在这里。"
           title="我的学习活动"
@@ -298,8 +301,8 @@ export default async function StudentDashboardPage() {
                   <CardDescription>{groupDetails[groupKey].title}</CardDescription>
                 </dt>
                 <dd>
-                  <CardTitle className="text-3xl font-semibold tabular-nums">
-                    {grouped[groupKey].length}
+                  <CardTitle className="text-3xl font-semibold">
+                    <NumberTicker value={grouped[groupKey].length} />
                   </CardTitle>
                 </dd>
               </CardHeader>

@@ -1,4 +1,5 @@
 import { buttonVariants } from "@/components/ui/button";
+import { revealChildren } from "../../../_components/reveal";
 import { cn } from "@/lib/utils";
 
 /** shadcn 的按钮类要先合并冲突（基础类里的透明边框会盖掉描边色），和 <Button> 内部一致。 */
@@ -12,7 +13,7 @@ const button = (...args: Parameters<typeof buttonVariants>) =>
  */
 export const styles = {
   // 页面骨架
-  releasePage: "mx-auto flex w-full max-w-4xl flex-col gap-6",
+  releasePage: `mx-auto flex w-full max-w-4xl flex-col gap-6 ${revealChildren}`,
   backLink: `${button({ variant: "ghost", size: "sm" })} -ml-2 w-fit`,
   releaseHeader:
     "flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between [&_h1]:type-page-title [&_p:last-child]:mt-1 [&_p:last-child]:text-sm [&_p:last-child]:text-muted-foreground",

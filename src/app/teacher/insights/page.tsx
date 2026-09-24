@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { cn } from "@/lib/utils";
+import { revealChildren } from "../../_components/reveal";
 import { notFound } from "next/navigation";
 import { z, ZodError } from "zod";
 import { INSIGHTS_MIN_SAMPLE } from "../../../domain/insights/teacher-insights";
@@ -331,7 +333,7 @@ export default async function TeacherInsightsPage({
       actorName={dashboard.actor.displayName}
       breadcrumb={[teacherHomeCrumb, { label: "过程诊断" }]}
     >
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+      <div className={cn("mx-auto flex w-full max-w-6xl flex-col gap-6", revealChildren)}>
         <PageHeader
           actions={
             <Button asChild variant="outline">

@@ -1,4 +1,5 @@
 import { buttonVariants } from "@/components/ui/button";
+import { revealChildren } from "../_components/reveal";
 import { cn } from "@/lib/utils";
 
 /** shadcn 的按钮类要先合并冲突（基础类里的透明边框会盖掉描边色），和 <Button> 内部一致。 */
@@ -35,8 +36,8 @@ const card = "rounded-xl border bg-card text-card-foreground shadow-xs";
 
 export const styles = {
   // 页面骨架
-  pageContent: "mx-auto flex w-full max-w-6xl flex-col gap-6",
-  submissionPage: "mx-auto flex w-full max-w-6xl flex-col gap-6",
+  pageContent: `mx-auto flex w-full max-w-6xl flex-col gap-6 ${revealChildren}`,
+  submissionPage: `mx-auto flex w-full max-w-6xl flex-col gap-6 ${revealChildren}`,
   pageHeader:
     "flex flex-col gap-4 md:flex-row md:items-end md:justify-between [&_h1]:type-page-title [&>div>p:last-child]:mt-1 [&>div>p:last-child]:max-w-2xl [&>div>p:last-child]:text-sm [&>div>p:last-child]:text-muted-foreground",
   pageHeaderActions: "flex shrink-0 flex-wrap gap-2",
