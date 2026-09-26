@@ -7,6 +7,7 @@ export function AuroraBackground() {
   return (
     <div
       aria-hidden="true"
+      data-print="hide"
       className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-background"
     >
       <div className="absolute -top-[18vw] -left-[10vw] size-[54vw] rounded-full bg-(--aurora-1) opacity-80 blur-[90px] motion-safe:animate-aurora-drift-1" />

@@ -146,6 +146,12 @@ export default async function TeacherReleaseSubmissionsPage({
             </p>
           </div>
           <div className={styles.pageHeaderActions}>
+            <Link
+              className={styles.secondaryButton}
+              href={`/print/releases/${workspace.release.id}`}
+            >
+              打印任务书
+            </Link>
             <a
               className={styles.secondaryButton}
               href={`/teacher/releases/${workspace.release.id}/submissions/export`}
