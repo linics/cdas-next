@@ -13,6 +13,14 @@ const mocks = vi.hoisted(() => ({
   }),
 }));
 
+vi.mock("../../../../server/queries/review-queue", () => ({
+  getReviewQueuePosition: vi.fn().mockResolvedValue({
+    total: 1,
+    position: 1,
+    previousId: null,
+    nextId: null,
+  }),
+}));
 vi.mock("server-only", () => ({}));
 vi.mock("next/link", () => ({
   default: ({

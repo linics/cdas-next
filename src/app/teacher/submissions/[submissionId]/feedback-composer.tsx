@@ -33,6 +33,7 @@ import {
   initialFeedbackSuggestionActionState,
   type FeedbackSuggestionActionState,
 } from "./feedback-suggestion-action-state";
+import { useUnsavedChangesWarning } from "./unsaved-changes";
 import {
   AiNote,
   ComposerFrame,
@@ -204,6 +205,12 @@ export function FeedbackComposer({
     codePointCount > TEACHER_FEEDBACK_BODY_MAX_LENGTH;
   const bodyHasVisibleText = hasMeaningfulTextEvidence(draftBody);
   const anyPending = preparePending || decisionPending || suggestionPending;
+  useUnsavedChangesWarning(
+    decisionState.status !== "saved" &&
+      (draftBody !== initialBody ||
+        draftNextStep !== "" ||
+        draftSupportLevel !== ""),
+  );
 
   const requestSuggestion = (formData: FormData) => {
     startSuggestionTransition(async () => {

@@ -646,9 +646,12 @@ export async function getTeacherReleaseSubmissions(
     const byTime = right.currentRevision.submittedAt.localeCompare(
       left.currentRevision.submittedAt,
     );
+    // The review queue (D-069) walks this order, so it must be total:
+    // identical times and names fall back to the submission id.
     return (
       byTime ||
-      left.student.displayName.localeCompare(right.student.displayName)
+      left.student.displayName.localeCompare(right.student.displayName) ||
+      left.submissionId.localeCompare(right.submissionId)
     );
   });
 

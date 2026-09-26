@@ -41,6 +41,7 @@ import {
   initialEvaluationSuggestionActionState,
   type EvaluationSuggestionActionState,
 } from "./evaluation-suggestion-action-state";
+import { useUnsavedChangesWarning } from "./unsaved-changes";
 import {
   AiNote,
   ComposerFrame,
@@ -309,6 +310,9 @@ export function EvaluationComposer({
   const [dimensionDrafts, setDimensionDrafts] = useState<DimensionDraft[]>(() =>
     rubricDimensions.map(() => emptyDimensionDraft()),
   );
+  const [pristineDimensions] = useState(() =>
+    JSON.stringify(rubricDimensions.map(() => emptyDimensionDraft())),
+  );
   const [suggestionAgentRunId, setSuggestionAgentRunId] = useState<string | null>(
     null,
   );
@@ -324,6 +328,12 @@ export function EvaluationComposer({
   const [decisionState, decisionAction, decisionPending] = useActionState(
     decideTeacherEvaluationAction,
     initialEvaluationActionState,
+  );
+
+  useUnsavedChangesWarning(
+    decisionState.status !== "saved" &&
+      (draftSummary !== initialSummary ||
+        JSON.stringify(dimensionDrafts) !== pristineDimensions),
   );
 
   const preparedConfirmation = prepareState.confirmation;
