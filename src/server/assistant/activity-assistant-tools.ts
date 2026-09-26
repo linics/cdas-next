@@ -875,6 +875,13 @@ export function createActivityAssistantTools({
             desiredStatus: "READY_FOR_PREVIEW",
             content: proposal.content,
             agentRunId,
+            // Already checked against this conversation's read ledger above;
+            // D-067 keeps them with the draft's first revision.
+            sourceReferences: proposal.sourceReferences.map((reference) => ({
+              sourceId: reference.sourceId,
+              sectionId: reference.sectionId,
+              rationale: reference.reason,
+            })),
             idempotencyKey: idempotencyKey("draft", toolCallId),
           });
           // A resolved command means the transaction and its provenance are

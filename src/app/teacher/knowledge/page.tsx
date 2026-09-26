@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { revealChildren } from "../../_components/reveal";
@@ -16,6 +17,8 @@ import {
   getTeacherIdentity,
   TeacherActivityQueryError,
 } from "../../../server/queries/teacher-activity-workspace";
+import { getAdoptableDrafts } from "../../../server/queries/activity-source-references";
+import { AdoptSourceForm } from "./adopt-source-form";
 import {
   TeacherAccessGate,
   TeacherPage,
@@ -41,6 +44,7 @@ type KnowledgeSearchParams = Promise<{
   q?: string | string[];
   source?: string | string[];
   section?: string | string[];
+  draft?: string | string[];
 }>;
 
 function one(value: string | string[] | undefined): string {
@@ -53,9 +57,12 @@ export default async function TeacherKnowledgePage({
   searchParams?: KnowledgeSearchParams;
 }) {
   let actor;
+  let adoptableDrafts: Awaited<ReturnType<typeof getAdoptableDrafts>> = [];
   try {
     const context = await createUiCommandContext();
-    actor = await getTeacherIdentity(getDatabaseClient(), context, {});
+    const database = getDatabaseClient();
+    actor = await getTeacherIdentity(database, context, {});
+    adoptableDrafts = await getAdoptableDrafts(database, context);
   } catch (error) {
     if (error instanceof AuthenticationError) {
       return <TeacherAccessGate code={error.code} returnPath="/teacher/knowledge" />;
@@ -70,6 +77,13 @@ export default async function TeacherKnowledgePage({
   const query = one(values.q).trim().slice(0, 400);
   const sourceId = one(values.source);
   const sectionId = one(values.section);
+  // Opened from a draft's evidence list: keep that draft preselected while the
+  // teacher searches, but only if it is still one of their adoptable drafts.
+  const draftId = adoptableDrafts.some((draft) => draft.id === one(values.draft))
+    ? one(values.draft)
+    : null;
+  const withDraft = (href: string) =>
+    draftId ? `${href}&draft=${draftId}` : href;
   const selected =
     sourceId && sectionId
       ? getOfficialKnowledgeReference(sourceId, sectionId)
@@ -98,6 +112,7 @@ export default async function TeacherKnowledgePage({
         <Card>
           <CardContent>
             <form action="/teacher/knowledge" className="flex flex-col gap-2" method="get">
+              {draftId ? <input name="draft" type="hidden" value={draftId} /> : null}
               <label className="text-sm font-medium" htmlFor="knowledge-query">
                 关键词或设计问题
               </label>
@@ -150,6 +165,17 @@ export default async function TeacherKnowledgePage({
           )
         ) : null}
 
+        {selected ? (
+          <AdoptSourceForm
+            defaultDraftId={draftId}
+            drafts={adoptableDrafts}
+            idempotencyKey={`adopt_activity_source_${randomUUID()}`}
+            key={`${selected.sourceId}-${selected.sectionId}`}
+            sectionId={selected.sectionId}
+            sourceId={selected.sourceId}
+          />
+        ) : null}
+
         {search ? (
           <section aria-labelledby="search-results-title" className="flex flex-col gap-3">
             <div className="flex items-end justify-between gap-3">
@@ -170,7 +196,7 @@ export default async function TeacherKnowledgePage({
                         <CardTitle className="type-card-title">
                           <Link
                             className="underline-offset-4 hover:underline"
-                            href={result.href}
+                            href={withDraft(result.href)}
                           >
                             {result.citationLabel}
                           </Link>

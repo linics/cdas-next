@@ -23,6 +23,7 @@ import {
   resolveCommandContext,
 } from "./command-context";
 import { isActiveSchoolMember } from "../school/teacher-authorization";
+import { officialKnowledgeFingerprint } from "../knowledge/official-corpus";
 
 const commandInputSchema = z
   .object({
@@ -31,6 +32,20 @@ const commandInputSchema = z
     desiredStatus: z.enum(["EDITING", "READY_FOR_PREVIEW"]),
     content: activityContentSchema,
     agentRunId: z.uuid().nullable().default(null),
+    // D-067: official sources an approved Agent proposal adopted. Only an
+    // AGENT creation may carry them; they are bound to its first revision.
+    sourceReferences: z
+      .array(
+        z
+          .object({
+            sourceId: z.string().trim().min(1).max(80),
+            sectionId: z.string().trim().min(1).max(120),
+            rationale: z.string().trim().min(1).max(600),
+          })
+          .strict(),
+      )
+      .max(4)
+      .default([]),
     idempotencyKey: z.string().trim().min(8).max(200),
   })
   .strict()
@@ -66,6 +81,7 @@ export class SaveActivityDraftError extends Error {
       | "LEGACY_SCHEMA_READ_ONLY"
       | "SCHEMA_VERSION_CHANGED"
       | "INVALID_AGENT_RUN"
+      | "INVALID_SOURCE_REFERENCES"
       | "IDEMPOTENCY_MISMATCH"
       | "CONCURRENT_WRITE",
   ) {
@@ -95,6 +111,44 @@ function contentColumns(content: ActivityContent) {
     summary: content.summary,
     ...projection,
   };
+}
+
+/**
+ * Turn the proposal's references into rows. The label and hashes come from
+ * the server corpus; the caller only names a section and says why. The Agent
+ * tool has already enforced the read ledger, stage and discipline coverage.
+ */
+function resolveSourceReferences(
+  context: ResolvedCommandContext,
+  input: z.infer<typeof commandInputSchema>,
+) {
+  if (input.sourceReferences.length === 0) return [];
+  if (
+    context.source !== "AGENT" ||
+    input.agentRunId === null ||
+    input.draftId !== null
+  ) {
+    throw new SaveActivityDraftError("INVALID_SOURCE_REFERENCES");
+  }
+  const seen = new Set<string>();
+  return input.sourceReferences.map((reference) => {
+    const fingerprint = officialKnowledgeFingerprint(
+      reference.sourceId,
+      reference.sectionId,
+    );
+    if (!fingerprint || seen.has(reference.sectionId)) {
+      throw new SaveActivityDraftError("INVALID_SOURCE_REFERENCES");
+    }
+    seen.add(reference.sectionId);
+    return {
+      sourceId: fingerprint.sourceId,
+      sectionId: fingerprint.sectionId,
+      sourceHash: fingerprint.sourceHash,
+      contentHash: fingerprint.contentHash,
+      citationLabel: fingerprint.citationLabel,
+      rationale: reference.rationale,
+    };
+  });
 }
 
 async function recordFailureAudit(
@@ -211,6 +265,8 @@ async function runTransaction(
         throw new SaveActivityDraftError("LEGACY_SCHEMA_READ_ONLY");
       }
 
+      const sourceReferences = resolveSourceReferences(context, input);
+
       let version: number;
       let revisionId: string;
       let beforeVersion: number | undefined;
@@ -247,6 +303,19 @@ async function runTransaction(
         }
         version = created.version;
         revisionId = createdRevision.id;
+        if (sourceReferences.length > 0) {
+          await transaction.activityDraftSourceReference.createMany({
+            data: sourceReferences.map((reference) => ({
+              ...reference,
+              draftId: targetDraftId,
+              revisionId: createdRevision.id,
+              origin: "AGENT_PROPOSAL" as const,
+              agentRunId: input.agentRunId,
+              adoptedById: context.actorId,
+              createdAt: now,
+            })),
+          });
+        }
       } else {
         const draft = await transaction.activityDraft.findUnique({
           where: { id: input.draftId },
@@ -378,6 +447,10 @@ export async function saveActivityDraft(
     desiredStatus: input.desiredStatus,
     content: input.content,
     agentRunId: input.agentRunId,
+    // Omitted when empty so requests recorded before D-067 still replay.
+    ...(input.sourceReferences.length > 0
+      ? { sourceReferences: input.sourceReferences }
+      : {}),
   });
 
   for (let attempt = 1; attempt <= serializableRetryAttempts; attempt += 1) {
