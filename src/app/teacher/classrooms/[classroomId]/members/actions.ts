@@ -37,6 +37,10 @@ import {
   type PrepareStudentImportResult,
 } from "../../../../../server/commands/student-import";
 import { getDatabaseClient } from "../../../../../server/db/client";
+import {
+  resetStudentPassword,
+  ResetStudentPasswordError,
+} from "../../../../../server/commands/reset-student-password";
 import type { ClassifiedImportRow } from "../../../../../server/classroom/student-import-classification";
 import {
   previewStudentImport,
@@ -431,5 +435,48 @@ export async function decideStudentImportAction(
     };
   } catch (error) {
     return failure(error);
+  }
+}
+
+export type ResetStudentPasswordActionResult =
+  | { ok: true; temporaryPassword: string }
+  | { ok: false; message: string };
+
+const resetMessages: Record<ResetStudentPasswordError["code"], string> = {
+  NOT_FOUND: "这名学生已不在本班，或你已不再管理本班，没有重置。",
+  FORBIDDEN: "当前账号不能重置学生密码。",
+  ACCOUNT_DISABLED: "该学生账号或学校已停用，重置不会恢复账号；请联系管理员处理。",
+  NO_LOCAL_CREDENTIAL: "该学生还没有本地登录账号，无法重置。",
+  IDEMPOTENCY_MISMATCH: "请求不一致，没有重置。请刷新后再试。",
+  PASSWORD_ALREADY_ISSUED: "这次重置已完成，新密码只显示一次。若没有记下，请重新发起一次重置。",
+  CONCURRENT_WRITE: "有其他操作同时进行，没有重置。请稍后再试。",
+};
+
+/** D-073: the plaintext is returned to this response only and never stored. */
+export async function resetStudentPasswordAction(
+  rawInput: unknown,
+): Promise<ResetStudentPasswordActionResult> {
+  const input = z
+    .object({
+      classroomId: z.uuid(),
+      studentId: z.uuid(),
+      idempotencyKey: z.string().trim().min(8).max(200),
+    })
+    .strict()
+    .safeParse(rawInput);
+  if (!input.success) return { ok: false, message: "请求格式不正确，请刷新后再试。" };
+  try {
+    const database = getDatabaseClient();
+    const context = await createUiCommandContext(database);
+    const result = await resetStudentPassword(database, context, input.data);
+    return { ok: true, temporaryPassword: result.temporaryPassword };
+  } catch (error) {
+    if (error instanceof AuthenticationError) {
+      return { ok: false, message: "登录状态已失效，请重新登录。" };
+    }
+    if (error instanceof ResetStudentPasswordError) {
+      return { ok: false, message: resetMessages[error.code] };
+    }
+    throw error;
   }
 }
