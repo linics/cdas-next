@@ -260,6 +260,7 @@ model ActivityDraft {
   owner                AppUser                 @relation("DraftOwner", fields: [ownerId], references: [id], onDelete: Restrict)
   revisions            ActivityDraftRevision[]
   release              ActivityRelease?
+  origin               ActivityDraftOrigin?
 
   @@index([ownerId, status, updatedAt])
   @@map("activity_drafts")
@@ -283,6 +284,7 @@ model ActivityDraftRevision {
   draft                ActivityDraft             @relation(fields: [draftId], references: [id], onDelete: Restrict)
   agentRun             AgentRun?                 @relation(fields: [agentRunId], references: [id], onDelete: Restrict)
   releaseSnapshots     ActivityReleaseSnapshot[]
+  copiedDrafts         ActivityDraftOrigin[]
 
   @@unique([draftId, version])
   @@map("activity_draft_revisions")
@@ -327,9 +329,25 @@ model ActivityReleaseSnapshot {
   release            ActivityRelease       @relation(fields: [releaseId, sourceDraftId], references: [id, sourceDraftId], onDelete: Restrict)
   sourceRevision     ActivityDraftRevision @relation(fields: [sourceDraftId, sourceDraftVersion], references: [draftId, version], onDelete: Restrict)
 
+  copiedDrafts       ActivityDraftOrigin[]
+
   @@unique([releaseId, sourceDraftId])
   @@index([sourceDraftId, sourceDraftVersion])
   @@map("activity_release_snapshots")
+}
+
+// A copy points to exactly one immutable source. The database guards this
+// record against replacement or deletion; editing the copy keeps its origin.
+model ActivityDraftOrigin {
+  draftId                String                   @id @map("draft_id") @db.Uuid
+  sourceRevisionId       String?                  @map("source_revision_id") @db.Uuid
+  sourceReleaseId        String?                  @map("source_release_id") @db.Uuid
+  createdAt              DateTime                 @default(now()) @map("created_at") @db.Timestamptz(3)
+  draft                  ActivityDraft            @relation(fields: [draftId], references: [id], onDelete: Restrict)
+  sourceRevision         ActivityDraftRevision?   @relation(fields: [sourceRevisionId], references: [id], onDelete: Restrict)
+  sourceSnapshot         ActivityReleaseSnapshot? @relation(fields: [sourceReleaseId], references: [releaseId], onDelete: Restrict)
+
+  @@map("activity_draft_origins")
 }
 
 model Submission {
