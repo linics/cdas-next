@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "motion/react";
+import { cn } from "@/lib/utils";
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -42,7 +43,13 @@ export function WorkspaceNavigation({
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
                     asChild
-                    className="relative data-active:bg-transparent"
+                    className={cn(
+                      "relative text-sidebar-foreground/80 transition-colors",
+                      // 悬停：很淡的中性底，只提示「可点」
+                      "hover:bg-foreground/5 hover:text-foreground active:bg-foreground/10",
+                      // 选中：底色交给下面滑动的浮起白块，这里只负责文字和图标
+                      "data-active:bg-transparent data-active:font-semibold data-active:text-primary data-active:hover:bg-transparent data-active:hover:text-primary",
+                    )}
                     isActive={active}
                     tooltip={item.label}
                   >
@@ -55,7 +62,7 @@ export function WorkspaceNavigation({
                       {active ? (
                         <motion.span
                           aria-hidden="true"
-                          className="absolute inset-0 -z-10 rounded-md bg-sidebar-accent shadow-[0_1px_0_0_oklch(1_0_0/0.7)_inset]"
+                          className="absolute inset-0 -z-10 rounded-md bg-background/90 shadow-[0_1px_2px_0_oklch(0.3_0.05_270/0.14),0_0_0_1px_oklch(0.36_0.03_270/0.07)] after:absolute after:top-1/2 after:left-0.5 after:h-4 after:w-[3px] after:-translate-y-1/2 after:rounded-full after:bg-primary group-data-[collapsible=icon]:after:hidden"
                           layoutId={`workspace-nav-active-${audience}`}
                           transition={{ type: "spring", stiffness: 420, damping: 36 }}
                         />
