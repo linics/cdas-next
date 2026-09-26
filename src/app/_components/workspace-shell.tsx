@@ -130,7 +130,11 @@ export function WorkspaceShell({
             <SidebarHeader>
               <SidebarMenu>
                 <SidebarMenuItem>
-                  <SidebarMenuButton asChild size="lg">
+                  <SidebarMenuButton
+                    asChild
+                    className="hover:bg-foreground/5 active:bg-foreground/10"
+                    size="lg"
+                  >
                     <Link
                       aria-label={`CDAS Next ${audience}工作台`}
                       href={workspaceHref}
