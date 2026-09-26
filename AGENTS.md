@@ -11,7 +11,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 # CDAS Next repository rules
 
 - Read `PRODUCT.md`, `DOMAIN.md`, `ACCEPTANCE.md`, and `AGENT.md` before changing business behavior.
-- Any teacher/student-visible UI change must follow `design-system/cdas-next/CLASSICAL.md` and `src/app/globals.css` tokens. Do not follow historical `design-system/cdas-next/MASTER.md`.
+- Any teacher/student/admin-visible UI change must follow `design-system/cdas-next/FROSTED.md` (shadcn/ui + frosted glass) and the tokens in `src/app/globals.css`. `CLASSICAL.md` and `MASTER.md` are historical; do not follow them.
 - Keep the first phase inside one modular Next.js application. Do not add a second backend, workflow engine, RAG system, or multi-Agent layer without a new accepted decision record.
 - Authentication identifies the caller; authorization belongs in server-side domain commands and must check resource ownership or membership on every call.
 - UI actions and Agent tools must call the same domain commands. Neither may import Prisma directly.
@@ -37,8 +37,15 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Parallelize independent reading, review, and verification. Allow only one source-code writer at a time; serialize dependent work and overlapping file ownership.
 - The primary coordinator thread retains product and domain decisions, authorization boundaries, Prisma and transaction invariants, append-only history, external side effects, integration, and final acceptance.
 
+## Environments and deployment (owner, 2026-09-26)
+
+- The working line is **local development + the self-hosted cloud server** (see `SELF-HOST.md`). Deploying to the server is a deliberate, manual `pnpm self-host:deploy`; merging to `main` does not deploy there. That script builds locally, uploads a release and runs `prisma migrate deploy` on the server itself.
+- **Vercel + Neon are legacy.** They are kept but no longer maintained: do not manage, migrate, reseed or clean them unless the owner asks. Vercel still builds each PR; treat that check only as an extra build signal, not as a deployment.
+- All data in every environment is synthetic. Every environment uses the one canonical demo account set that `pnpm demo:seed` creates (see README 「本地演示账号」); do not invent other accounts. Replace these before any real users are admitted.
+- `pnpm audit:prod` is the first CI step; new advisories fail every PR until dependencies are bumped or overridden in `pnpm-workspace.yaml`.
+
 ## Development branch sync
 
-On `codex/*` branches, the primary thread has standing authorization to push ordinary commits to the tracked origin branch after a local commit succeeds. GitHub CI and the connected Vercel Preview are part of the development loop; a local-only commit is incomplete. Do not wait for a per-session push request. Do not force-push. Do not push `main` or production. Subagents still must not push.
+On `codex/*` branches, the primary thread has standing authorization to push ordinary commits to the tracked origin branch after a local commit succeeds. GitHub CI is part of the development loop; a local-only commit is incomplete. Do not wait for a per-session push request. Do not force-push. Do not push `main` or production. Subagents still must not push.
 
 `pnpm development:infra` remains a separate step: it requires a clean, already-pushed HEAD. Run it when reconciling the isolated stack or protected synthetic acceptance, not as a substitute for `git push`.

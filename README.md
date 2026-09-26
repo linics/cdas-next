@@ -25,7 +25,7 @@ pnpm dev
 
 打开 [http://localhost:3000](http://localhost:3000)，使用 `/login/admin` 登录并建立学校及教师账号。教师与学生使用学校代码加工号/学号登录；首次登录可能被要求改密。认证只识别调用者，教学操作仍在服务端检查学校状态、账号状态、资源所有权和班级成员关系。
 
-国内小机器自托管见 [SELF-HOST.md](./SELF-HOST.md)，受保护 Preview 与合成门禁见 [STAGING.md](./STAGING.md)。
+当前部署主线是本地开发 + 自托管云服务器，见 [SELF-HOST.md](./SELF-HOST.md)；Vercel + Neon 仅保留、不再维护（D-064）。受保护 Preview 与合成门禁的历史说明见 [STAGING.md](./STAGING.md)。
 
 ## 验证
 
@@ -129,7 +129,7 @@ pnpm demo:seed -- --confirm-database cdas_next_demo
 | 教师 | `/teacher/login` | 学校代码 `SCHARCHX`；工号 `T-DEMO`；密码 `Teacher2026demo` |
 | 学生 | `/student/login` | 学校代码 `SCHARCHX`；学号 `700001`、`700002`、`700003` 或 `700004`；密码均为 `Student2026demo` |
 
-这些凭据是仅供本地开发和产品演示的公开模拟账号，绝不能用于真实部署或任何含真实用户数据的环境。
+这些凭据是公开的模拟账号。目前所有环境（本地与自托管服务器）的数据都是合成数据，统一使用这一套账号；接入任何真实用户或真实数据之前，必须先替换这些账号和密码。
 
 ## 可选活动助手
 
@@ -146,6 +146,7 @@ pnpm demo:seed -- --confirm-database cdas_next_demo
 - [PLAN-NEXT-DEVELOPMENT.md](./PLAN-NEXT-DEVELOPMENT.md)：2026-09-22 源码核查后的开发优先级、首版范围与候选验收
 - [ARCHITECTURE.md](./ARCHITECTURE.md)：代码分层和运行时边界
 - [STAGING.md](./STAGING.md)：远端合成 staging 门禁
-- [SELF-HOST.md](./SELF-HOST.md)：单机自托管 runbook
+- [SELF-HOST.md](./SELF-HOST.md)：单机自托管 runbook（当前部署主线）
+- [design-system/cdas-next/FROSTED.md](./design-system/cdas-next/FROSTED.md)：现行视觉合同（shadcn/ui + 雾面玻璃）
 
 当前主线包含学校边界、本地认证、教师建班与学生名单导入、schema v3 新任务书（保留 v1/v2 历史读取与既有未封存 v2 草稿编辑）、阶段与小组执行、附件、官方课标检索、结构化反馈、量规评价、过程诊断和受约束教师助手。SSO/MFA、真实学生数据生产授权、开放式 RAG、产品运行时多 Agent、自动评分、跨校教学资源管理和旧数据库迁移仍不在第一阶段范围。
