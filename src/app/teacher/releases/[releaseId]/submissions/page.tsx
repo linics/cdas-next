@@ -19,13 +19,25 @@ import {
 import { styles } from "../../../teacher-ui";
 import { CloseActivityPanel } from "./close-activity-panel";
 import { ReleaseGroupManager } from "./release-group-manager";
+import {
+  matchesReviewQueue,
+  parseReviewQueueFilter,
+  reviewQueueQuery,
+  reviewQueueStatuses,
+  type ReviewQueueFilter,
+} from "../../../../../domain/review/review-queue";
+import { reviewQueueItems } from "../../../../../server/queries/review-queue";
+import { cn } from "@/lib/utils";
 
 export default async function TeacherReleaseSubmissionsPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ releaseId: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { releaseId } = await params;
+  const filter = parseReviewQueueFilter((await searchParams) ?? {});
   let workspace;
   try {
     const context = await createUiCommandContext();
@@ -54,6 +66,37 @@ export default async function TeacherReleaseSubmissionsPage({
   const awaitingResubmissionCount = workspace.submissions.filter(
     (submission) => submission.currentRevision.followUp === "AWAITING_RESUBMISSION",
   ).length;
+  const queueItems = reviewQueueItems(workspace);
+  const rubricAvailable = workspace.release.rubricAvailable;
+  const countFor = (candidate: ReviewQueueFilter) =>
+    queueItems.filter((item) =>
+      matchesReviewQueue(item, candidate, rubricAvailable),
+    ).length;
+  const visibleIds = new Set(
+    queueItems
+      .filter((item) => matchesReviewQueue(item, filter, rubricAvailable))
+      .map((item) => item.submissionId),
+  );
+  const visibleSubmissions = workspace.submissions.filter((submission) =>
+    visibleIds.has(submission.submissionId),
+  );
+  const phaseOptions = [
+    ...new Map(
+      workspace.submissions.map((submission) => [
+        submission.phaseIndex,
+        submission.phaseName ?? "整项提交",
+      ]),
+    ),
+  ].sort(([left], [right]) => left - right);
+  const rosterHref = (next: ReviewQueueFilter) =>
+    `/teacher/releases/${workspace.release.id}/submissions${reviewQueueQuery(next)}`;
+  const chip = (active: boolean) =>
+    cn(
+      "inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-sm transition-colors",
+      active
+        ? "border-primary/40 bg-primary/12 font-medium text-foreground"
+        : "text-muted-foreground hover:bg-muted",
+    );
 
   return (
     <TeacherPage
@@ -215,13 +258,66 @@ export default async function TeacherReleaseSubmissionsPage({
             </span>
           </header>
 
+          {workspace.submissions.length > 0 ? (
+            <nav aria-label="评阅筛选" className="flex flex-col gap-2">
+              <div className="flex flex-wrap gap-2">
+                {reviewQueueStatuses
+                  // An empty status is noise; keep "全部" and whatever is selected.
+                  .filter(
+                    (status) =>
+                      (status.code !== "evaluation" || rubricAvailable) &&
+                      (status.code === "all" ||
+                        status.code === filter.status ||
+                        countFor({ ...filter, status: status.code }) > 0),
+                  )
+                  .map((status) => {
+                    const next = { ...filter, status: status.code };
+                    return (
+                      <Link
+                        aria-current={filter.status === status.code ? "true" : undefined}
+                        className={chip(filter.status === status.code)}
+                        href={rosterHref(next)}
+                        key={status.code}
+                      >
+                        {status.label}
+                        <span className="tabular-nums">{countFor(next)}</span>
+                      </Link>
+                    );
+                  })}
+              </div>
+              {phaseOptions.length > 1 ? (
+                <div className="flex flex-wrap gap-2">
+                  <Link
+                    className={chip(filter.phase === null)}
+                    href={rosterHref({ ...filter, phase: null })}
+                  >
+                    全部阶段
+                  </Link>
+                  {phaseOptions.map(([phaseIndex, phaseName]) => (
+                    <Link
+                      className={chip(filter.phase === phaseIndex)}
+                      href={rosterHref({ ...filter, phase: phaseIndex })}
+                      key={phaseIndex}
+                    >
+                      {phaseIndex > 0 ? `第 ${phaseIndex} 阶段 · ${phaseName}` : phaseName}
+                    </Link>
+                  ))}
+                </div>
+              ) : null}
+            </nav>
+          ) : null}
+
           {workspace.submissions.length === 0 ? (
             <p className={styles.emptyState}>
               尚无正式提交。学生未提交的草稿不会显示在这里。
             </p>
+          ) : visibleSubmissions.length === 0 ? (
+            <p className={styles.emptyState}>
+              当前筛选下没有提交。
+            </p>
           ) : (
             <div className={styles.submissionList}>
-              {workspace.submissions.map((submission) => (
+              {visibleSubmissions.map((submission) => (
                 <article
                   className={styles.submissionRow}
                   key={submission.submissionId}
@@ -267,7 +363,7 @@ export default async function TeacherReleaseSubmissionsPage({
                   </div>
                   <Link
                     className={styles.rowLink}
-                    href={`/teacher/submissions/${submission.submissionId}`}
+                    href={`/teacher/submissions/${submission.submissionId}${reviewQueueQuery(filter)}`}
                   >
                     查看反馈与评价 →
                   </Link>

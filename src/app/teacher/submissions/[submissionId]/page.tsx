@@ -32,6 +32,10 @@ import { EvaluationComposer } from "./evaluation-composer";
 import { FeedbackWorkspacePanes } from "./feedback-workspace-panes";
 import { TeacherAccessGate, TeacherPage, teacherHomeCrumb } from "../../_components/teacher-shell";
 import { Badge } from "@/components/ui/badge";
+import { parseReviewQueueFilter, reviewQueueQuery } from "../../../../domain/review/review-queue";
+import { getReviewQueuePosition } from "../../../../server/queries/review-queue";
+import { SubmissionWorkspaceQueryError } from "../../../../server/queries/submission-workspace";
+import { ReviewQueueNav } from "./review-queue-nav";
 
 /* 评阅页的版式：只用 Tailwind 语义类，颜色全部来自主题 token。 */
 const styles = {
@@ -318,17 +322,32 @@ function SubmissionRevision({
 
 export default async function TeacherSubmissionPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ submissionId: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { submissionId } = await params;
+  const queueFilter = parseReviewQueueFilter((await searchParams) ?? {});
   let workspace: TeacherFeedbackWorkspace;
+  let queuePosition: Awaited<ReturnType<typeof getReviewQueuePosition>> | null =
+    null;
 
   try {
     const context = await createUiCommandContext();
     const database = getDatabaseClient();
     workspace = await getTeacherFeedbackWorkspace(database, context, {
       submissionId,
+    });
+    // Navigation is a convenience: if the roster cannot be read, the review
+    // itself still renders, just without previous / next.
+    queuePosition = await getReviewQueuePosition(database, context, {
+      releaseId: workspace.submission.release.id,
+      submissionId,
+      filter: queueFilter,
+    }).catch((error: unknown) => {
+      if (error instanceof SubmissionWorkspaceQueryError) return null;
+      throw error;
     });
   } catch (error) {
     if (error instanceof AuthenticationError) {
@@ -388,7 +407,7 @@ export default async function TeacherSubmissionPage({
           label: submission.release.classroom.name,
         },
         {
-          href: `/teacher/releases/${submission.release.id}/submissions`,
+          href: `/teacher/releases/${submission.release.id}/submissions${reviewQueueQuery(queueFilter)}`,
           label: content.title,
         },
         { label: group?.name ?? student.displayName },
@@ -400,6 +419,13 @@ export default async function TeacherSubmissionPage({
             className={styles.submissionHistory}
             aria-labelledby="submission-student-title"
           >
+            {queuePosition ? (
+              <ReviewQueueNav
+                filter={queueFilter}
+                position={queuePosition}
+                releaseId={submission.release.id}
+              />
+            ) : null}
             <header className={styles.paneHeading}>
               <p className={styles.eyebrow}>学生证据</p>
               <h1 className="type-page-title" id="submission-student-title">
