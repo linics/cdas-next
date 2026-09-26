@@ -15,3 +15,15 @@
 验证：pnpm check；pnpm db:validate；独立 TEST_DATABASE_URL 上 db:test:deploy、db:test、test:db、db:test:diff；pnpm audit:prod。一次独立审查，只有阻断或授权/历史风险修复后追加验证。
 
 交付证据：记录实际命令、结果、提交及推送；不把本地成功写成远端验收，不启动生产部署。升级条件：来源/授权合同矛盾、阻断验收失败或无法安全操作测试库。
+
+## 交付证据（2026-09-26，本地）
+
+分支 `feature/n1-activity-reuse`（基于 `design/shadcn-redesign`），功能提交 `f5a74b5`。承接 `codex/n1-activity-reuse` 上未提交的实现；补齐复制页新 UI、修正集成测试夹具（教师工号与学校角色约束）及封存草稿用例的幂等 key。
+
+- `pnpm check`：通过（lint、typecheck、885 单测、两套浏览器脚本合同、build）。
+- `pnpm db:validate`：通过。
+- 独立库 `TEST_DATABASE_URL=…/cdas_next_n1_test`：`db:test:deploy` 全部迁移成功；`db:test` 通过；`db:test:diff` 无差异；`test:db` 24 文件 130 用例通过，含 D-063 全部 10 个场景。
+- `pnpm audit:prod`：未通过，9 项与 `main` 相同（next <16.3.3、sharp、prisma 传递依赖 mysql2 / fast-uri），本片未新增；另行升级处理。
+- UI 走查（本地开发库，演示教师）：选择发布快照「校园节水行动」→ 核对完整任务书 → 改标题「校园节水行动（八年级版）」确认 → 进入副本编辑页并显示来源。库内核对：副本 EDITING v1、MANUAL 首修订、唯一来源指向该快照、无发布关联；成功审计与幂等记录各 1 条。过期版本链接显示版本冲突提示且不新建草稿。
+- 独立审查：尚未进行。
+- 推送：尚未推送；未做远端验收，未启动任何部署。
