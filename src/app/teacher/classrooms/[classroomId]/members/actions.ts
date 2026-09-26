@@ -22,6 +22,10 @@ import {
   DecideActionIntentError,
 } from "../../../../../server/commands/decide-action-intent";
 import {
+  deleteEmptyClassroom,
+  DeleteClassroomError,
+} from "../../../../../server/commands/delete-classroom";
+import {
   prepareClassroomMembershipChange,
   PrepareClassroomMembershipChangeError,
   type PrepareClassroomMembershipChangeResult,
@@ -65,6 +69,12 @@ const decisionSchema = z
     idempotencyKey: z.string().trim().min(8).max(200),
   })
   .strict();
+const deleteClassroomSchema = z
+  .object({
+    classroomId: z.uuid(),
+    idempotencyKey: z.string().trim().min(8).max(200),
+  })
+  .strict();
 
 export type RosterActionFailure = Readonly<{
   ok: false;
@@ -91,6 +101,9 @@ export type RosterDecisionActionResult =
       status: "APPLIED" | "REJECTED";
       message: string;
     }>
+  | RosterActionFailure;
+export type DeleteClassroomActionResult =
+  | Readonly<{ ok: true; message: string }>
   | RosterActionFailure;
 
 const fileErrorMessages: Readonly<Record<StudentRosterFileError["code"], string>> = {
@@ -127,13 +140,23 @@ function failure(error: unknown): RosterActionFailure {
     (error instanceof PrepareClassroomMembershipChangeError && ["FORBIDDEN", "NOT_FOUND"].includes(error.code)) ||
     (error instanceof ApplyClassroomMembershipChangeError && ["FORBIDDEN", "NOT_FOUND"].includes(error.code)) ||
     (error instanceof DecideActionIntentError && ["FORBIDDEN", "NOT_FOUND"].includes(error.code))
+    ||
+    (error instanceof DeleteClassroomError && ["FORBIDDEN", "NOT_FOUND", "ACCOUNT_DISABLED", "SCHOOL_DISABLED"].includes(error.code))
   ) {
     return { ok: false, code: "UNAUTHORIZED", message: "当前账号不能管理这个班级的成员。" };
+  }
+  if (error instanceof DeleteClassroomError && error.code === "NOT_EMPTY") {
+    return {
+      ok: false,
+      code: "CONFLICT",
+      message: "班级已有成员区间或发布记录，不能删除。",
+    };
   }
   if (
     error instanceof PrepareClassroomMembershipChangeError ||
     error instanceof ApplyClassroomMembershipChangeError ||
-    error instanceof DecideActionIntentError
+    error instanceof DecideActionIntentError ||
+    error instanceof DeleteClassroomError
   ) {
     return { ok: false, code: "CONFLICT", message: "名单、成员状态或班级版本已经变化，请刷新后重新预览。" };
   }
@@ -141,6 +164,23 @@ function failure(error: unknown): RosterActionFailure {
     errorName: error instanceof Error ? error.name : "UnknownError",
   });
   return { ok: false, code: "ERROR", message: "服务器暂时无法完成名单操作，现有成员关系没有被假设为已改变。" };
+}
+
+export async function deleteClassroomAction(
+  rawInput: z.input<typeof deleteClassroomSchema>,
+): Promise<DeleteClassroomActionResult> {
+  try {
+    const input = deleteClassroomSchema.parse(rawInput);
+    await deleteEmptyClassroom(
+      getDatabaseClient(),
+      await createUiCommandContext(),
+      input,
+    );
+    revalidatePath("/teacher");
+    return { ok: true, message: "空班级已删除。" };
+  } catch (error) {
+    return failure(error);
+  }
 }
 
 export async function previewRosterImportAction(

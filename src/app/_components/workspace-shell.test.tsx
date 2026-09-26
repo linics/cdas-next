@@ -4,7 +4,12 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../auth/local-login-actions", () => ({
   logoutAction: vi.fn(),
+  developmentQuickAdminEntryAction: vi.fn(),
+  developmentQuickStudentEntryAction: vi.fn(),
+  developmentQuickTeacherEntryAction: vi.fn(),
 }));
+
+vi.mock("server-only", () => ({}));
 
 vi.mock("next/link", () => ({
   default: ({

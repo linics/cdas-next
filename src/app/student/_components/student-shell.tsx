@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { AuthenticationError } from "../../../server/auth/current-actor";
+import { isDevelopmentQuickLoginEnabled } from "../../../server/auth/development-quick-login";
 import { LocalLoginForm } from "../../auth/local-login-form";
 import { Button } from "@/components/ui/button";
 import { AccessGateLayout } from "../../_components/access-gate-layout";
@@ -43,7 +44,7 @@ export function StudentAccessGate({
       workspace="学生工作台"
     >
       {code === "UNAUTHENTICATED" || code === "USER_NOT_PROVISIONED" ? (
-        <LocalLoginForm role="STUDENT" />
+        <LocalLoginForm role="STUDENT" quickLogin={isDevelopmentQuickLoginEnabled()} />
       ) : code === "PASSWORD_CHANGE_REQUIRED" ? (
         <Button asChild>
           <Link href="/student/password">修改密码后继续</Link>

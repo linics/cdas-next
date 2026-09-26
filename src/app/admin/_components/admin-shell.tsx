@@ -5,6 +5,7 @@ import {
   WorkspaceShell,
   type WorkspaceCrumb,
 } from "../../_components/workspace-shell";
+import { isDevelopmentQuickLoginEnabled } from "../../../server/auth/development-quick-login";
 import { LocalLoginForm } from "../../auth/local-login-form";
 import { AccessGateLayout } from "../../_components/access-gate-layout";
 
@@ -91,7 +92,7 @@ export function AdminAccessGate({
       workspace="管理员工作台"
     >
       {code === "UNAUTHENTICATED" || code === "USER_NOT_PROVISIONED" ? (
-        <LocalLoginForm role="ADMIN" />
+        <LocalLoginForm role="ADMIN" quickLogin={isDevelopmentQuickLoginEnabled()} />
       ) : null}
     </AccessGateLayout>
   );

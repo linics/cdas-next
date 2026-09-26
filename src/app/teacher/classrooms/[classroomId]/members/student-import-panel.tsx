@@ -95,13 +95,22 @@ export function StudentImportPanel({
   const blockedCount = preview?.rows.filter((row) => rowTone(row) === "blocked").length ?? 0;
 
   return (
-    <details className={styles.importDisclosure} id="student-import-panel">
-      <summary>从 Excel 导入学生（可创建账号）</summary>
-      <div className={styles.importDisclosureBody}>
+    <section className={styles.importSection} id="student-import-panel" aria-labelledby="student-import-title">
+      <header className={styles.sectionHeader}>
+        <div>
+          <p className={styles.eyebrow}>逐行预览后确认</p>
+          <h2 id="student-import-title">从 Excel 导入学生</h2>
+        </div>
+      </header>
+      <div className={styles.importSectionLead}>
         <p>
           按模板填写「学号、姓名」两列，一次最多 100 行。学号是本校内唯一的学生编号；
           已有账号只会加入本班，不会被改名或改密码。系统只保留解析后的名单，不保存上传的文件。
         </p>
+      </div>
+      <details className={styles.importDisclosure}>
+        <summary>打开导入工具</summary>
+        <div className={styles.importDisclosureBody}>
         <p>
           新建账号的初始密码是 <code>cdas</code> + 学号（例如学号 20260001 的初始密码为
           <code> cdas20260001</code>），学生首次登录必须修改。
@@ -176,7 +185,8 @@ export function StudentImportPanel({
             {message}
           </InlineAlert>
         ) : null}
-      </div>
+        </div>
+      </details>
 
       <ConfirmDialog
         confirmLabel="确认导入"
@@ -199,6 +209,6 @@ export function StudentImportPanel({
         title="确认导入学生"
         tone="primary"
       />
-    </details>
+    </section>
   );
 }

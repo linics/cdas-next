@@ -9,6 +9,7 @@ import {
   inquiryDepths,
   submissionModes,
 } from "../../domain/activity/activity-content";
+import { coreCompetencyRegistry } from "../../domain/curriculum/core-competencies";
 import { waterConservationTaskBookV3 } from "../../fixtures/water-conservation-v3";
 import type { AppUser, PrismaClient } from "../../generated/prisma/client";
 
@@ -484,6 +485,15 @@ describe("buildActivityAssistantInstructions", () => {
     },
   );
 
+  it("states every registered core competency code the payload will be validated against", () => {
+    const text = buildActivityAssistantInstructions([]);
+
+    for (const competency of coreCompetencyRegistry) {
+      expect(text).toContain(`${competency.code}（${competency.name}`);
+    }
+    expect(text).toContain("没有可引用的核心素养代码");
+  });
+
   it("says what to do when a closed vocabulary is emptied", () => {
     // 跨学科概念 is expected to be dropped. On that day the instructions must
     // tell the model to send an empty array, not keep listing labels the schema
@@ -764,6 +774,57 @@ describe("activity assistant route handler", () => {
     expect(response.status).toBe(400);
     expect(mocks.createModel).not.toHaveBeenCalled();
     expect(mocks.startRun).not.toHaveBeenCalled();
+  });
+
+  it("lets a teacher retry after an interrupted draft tool call", async () => {
+    const recoveryModel = new MockLanguageModelV4({
+      doStream: async () => ({
+        stream: simulateReadableStream({
+          chunks: [
+            { type: "text-delta", id: "recovery_text", delta: "已重新开始整理这份活动。" },
+            {
+              type: "finish",
+              finishReason: { unified: "stop", raw: undefined },
+              usage,
+            },
+          ],
+        }),
+      }),
+    });
+    mocks.createModel.mockReturnValue(recoveryModel);
+
+    const response = await handleActivityAssistantRequest(
+      messageRequest([
+        {
+          id: "message_1",
+          role: "user",
+          parts: [{ type: "text", text: "设计一个七年级数据调查活动" }],
+        },
+        {
+          id: "assistant_1",
+          role: "assistant",
+          parts: [
+            {
+              type: "tool-create_activity_draft",
+              toolCallId: "interrupted_draft",
+              state: "input-streaming",
+              input: { content: { title: "尚未完成" } },
+            },
+          ],
+        },
+        {
+          id: "message_2",
+          role: "user",
+          parts: [{ type: "text", text: "请重新创建草稿" }],
+        },
+      ]),
+      dependencies(),
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.text()).resolves.toContain("已重新开始整理这份活动。");
+    expect(recoveryModel.doStreamCalls).toHaveLength(1);
+    expect(mocks.startRun).toHaveBeenCalledTimes(1);
   });
 
   it("records a provider interruption before tools without a business write", async () => {
@@ -1182,6 +1243,9 @@ describe("activity assistant route handler", () => {
       ),
     ).toHaveLength(1);
     expect(repairModel.doGenerateCalls).toHaveLength(1);
+    expect(JSON.stringify(repairModel.doGenerateCalls[0]?.prompt)).toContain(
+      "physical_concept",
+    );
     expect(mocks.saveDraft).not.toHaveBeenCalled();
   });
 

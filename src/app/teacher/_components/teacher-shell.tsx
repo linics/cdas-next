@@ -5,6 +5,7 @@ import {
   WorkspaceShell,
   type WorkspaceCrumb,
 } from "../../_components/workspace-shell";
+import { isDevelopmentQuickLoginEnabled } from "../../../server/auth/development-quick-login";
 import { LocalLoginForm } from "../../auth/local-login-form";
 import { Button } from "@/components/ui/button";
 import { AccessGateLayout } from "../../_components/access-gate-layout";
@@ -89,7 +90,7 @@ export function TeacherAccessGate({
       workspace="教师工作台"
     >
       {code === "UNAUTHENTICATED" || code === "USER_NOT_PROVISIONED" ? (
-        <LocalLoginForm role="TEACHER">
+        <LocalLoginForm role="TEACHER" quickLogin={isDevelopmentQuickLoginEnabled()}>
           <Button asChild variant="link">
             <Link href="/teacher/register">使用邀请码开通教师账号</Link>
           </Button>

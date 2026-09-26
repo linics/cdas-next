@@ -212,7 +212,7 @@ type ReleaseRosterOutput =
   | { status: "NOT_FOUND"; releaseId: string };
 
 const draftNotCreatedRetryText =
-  '草稿未创建。你可以补一句"请重新创建草稿"让助手重试，或改用手动表单。';
+  "草稿未创建。这次失败不会影响后续对话；你可以补充要求后重试，或改用手动表单。";
 
 type OfficialKnowledgeSearchOutput = {
   status: "FOUND" | "NO_MATCH";
@@ -1527,7 +1527,7 @@ export function ActivityAssistant({
 
       {error ? (
         <p className={styles.errorText} role="alert">
-          助手当前无法完成请求。手动创建与编辑活动仍可正常使用。
+          助手当前无法完成请求。这次失败不会阻塞下一条消息；你可以调整要求后重试，手动创建与编辑活动仍可正常使用。
         </p>
       ) : null}
       </div>

@@ -33,7 +33,13 @@ import {
 } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { logoutAction } from "../auth/local-login-actions";
+import {
+  developmentQuickAdminEntryAction,
+  developmentQuickStudentEntryAction,
+  developmentQuickTeacherEntryAction,
+  logoutAction,
+} from "../auth/local-login-actions";
+import { isDevelopmentQuickLoginEnabled } from "../../server/auth/development-quick-login";
 import { WorkspaceNavigation } from "./workspace-navigation";
 
 export type WorkspaceNavigationItem = { href: string; label: string };
@@ -111,6 +117,7 @@ export function WorkspaceShell({
 }) {
   const workspaceHref = workspaceHrefFor(audience);
   const showNavigation = navigation.length > 0;
+  const showDevelopmentSwitcher = isDevelopmentQuickLoginEnabled();
   const crumbs =
     breadcrumb && breadcrumb.length > 0
       ? breadcrumb
@@ -186,6 +193,25 @@ export function WorkspaceShell({
                   : `${audience}工作台`}
               </span>
               {toolbarAction}
+              {actorName && showDevelopmentSwitcher ? (
+                <>
+                  {(
+                    [
+                      ["教师", developmentQuickTeacherEntryAction],
+                      ["学生", developmentQuickStudentEntryAction],
+                      ["管理员", developmentQuickAdminEntryAction],
+                    ] as const
+                  )
+                    .filter(([role]) => role !== actorAudience)
+                    .map(([role, action]) => (
+                      <form action={action} key={role}>
+                        <Button size="sm" type="submit" variant="ghost">
+                          切换默认{role}
+                        </Button>
+                      </form>
+                    ))}
+                </>
+              ) : null}
               {actorName ? (
                 <form action={logoutAction}>
                   <Button size="sm" type="submit" variant="ghost">

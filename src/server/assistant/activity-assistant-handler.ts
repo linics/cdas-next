@@ -67,6 +67,7 @@ import {
   submissionModes,
   type SchoolStage,
 } from "../../domain/activity/activity-content";
+import { coreCompetencyRegistry } from "../../domain/curriculum/core-competencies";
 
 type StartedRun = Awaited<ReturnType<typeof startActivityAssistantRun>>;
 
@@ -309,6 +310,33 @@ function crossDisciplinaryConceptRule(): string {
     : `crossDisciplinaryConceptCodes 可选 0–2 个跨学科概念，只用这些 code：${codeList(concepts)}。`;
 }
 
+/**
+ * Competency codes are a closed registry with stage and grade scopes. The
+ * synthetic codes cannot be inferred from their Chinese labels, so generate
+ * this instruction from the same registry the content schema validates.
+ */
+function coreCompetencyRule(): string {
+  const stageLabel = (stages: readonly SchoolStage[]) =>
+    stages
+      .map((stage) => (stage === "PRIMARY" ? "小学" : "初中"))
+      .join("、");
+  const lines = disciplineCatalog.map((discipline) => {
+    const entries = coreCompetencyRegistry.filter(
+      (competency) => competency.disciplineCode === discipline.code,
+    );
+    if (entries.length === 0) {
+      return `${discipline.code}（${discipline.label}）：没有可引用的核心素养代码。`;
+    }
+    return `${discipline.code}（${discipline.label}）：${entries
+      .map(
+        (competency) =>
+          `${competency.code}（${competency.name}，${stageLabel(competency.schoolStages)} ${competency.gradeRange[0]}–${competency.gradeRange[1]} 年级）`,
+      )
+      .join("、")}`;
+  });
+  return `核心素养引用不是自由文本。learningGoals 的 competencyReferences 只能从下列 code 逐字选用；每一条的 disciplineCode 必须是本活动已选学科，且要同时符合该条标示的学段与年级：\n${lines.join("\n")}`;
+}
+
 export function buildActivityAssistantInstructions(
   classrooms: AssistantClassroom[],
 ): string {
@@ -363,6 +391,7 @@ ${buildProductSurfaceInstructions()}
 1. 根据教师自然语言，整理 schema v3 的完整跨学科任务书。必须使用原版 CTS 的学段/年级、稳定学科目录、主学科加至少一个融合学科、实践性/探究性/项目式作业及其条件子类型、探究深度、提交模式和 1–16 周周期。作业类型只用这些 code：${codeList(assignmentTypes)}。子类型必须与类型匹配：${assignmentSubtypeRules()}。探究深度只用 ${codeList(inquiryDepths)}。提交模式只用 ${codeList(submissionModes)}；教师说过程性提交时用 phased。学科代码必须用目录中的英文 code。主学科与每个融合学科都必须是该学段真的开设的科目，否则整份提案会被拒绝——各学段可用的 code 如下：
 ${disciplineCodesByStage()}
 初中没有「科学」这门课，水循环之类的内容要落到 physics、chemistry、biology 或 geography。另需具体背景、2–8 条可观察学习目标（每条挂 1–3 条适配学段年级的官方核心素养）、主学科与每个融合学科的贡献与不可替代性、三到四个连续阶段（每阶段一个明确行动、情境、支架、类型化证据、评价要点、课时，并写明它承担哪几条目标）及四到八个量规维度（每个维度写明它评价哪几条目标）。每条目标都必须被某个阶段承担、被某个维度评价。${crossDisciplinaryConceptRule()}
+${coreCompetencyRule()}
 2. 只有缺少会改变年级、学科、真实任务、成果、证据或评价结构的资料时，才每轮问一个必要问题；不要因可选润饰、措辞或补充背景而阻塞，也不得把缺失事实当成已知资料。资料足够时立刻调用 create_activity_draft。
 
 关于「要不要先问一句」：不要。create_activity_draft、update_activity_draft 和 publish_activity_release 本身就会停下来，把你填的全部参数完整渲染成确认卡片摆在教师面前等他点确认——调用工具就是在请求确认，不是在执行。所以：不要在文字里写「请确认这份提案，确认后我会调用 create_activity_draft」，也不要写「请确认下面的修改声明，下面调用工具提交」，也不要把任务理解、三条目标链、来源引用先用文字复述一遍再调用。你在文字里复述，教师反而看不到那张可确认的卡片，只能看到一堆散文，这一轮就白费了。把这些内容直接写进工具参数，让卡片去展示。资料够了就调用，教师自然会在卡片上确认或拒绝。
@@ -558,6 +587,7 @@ export async function handleActivityAssistantRequest(
     classrooms = workspace.classrooms.map(({ id, name }) => ({ id, name }));
     modelMessages = await convertToModelMessages(uiMessages, {
       tools: activityAssistantMessageValidationTools,
+      ignoreIncompleteToolCalls: true,
     });
   } catch {
     return jsonError(400, "INVALID_REQUEST");
@@ -657,6 +687,7 @@ export async function handleActivityAssistantRequest(
       const repair = await generateText({
         model,
         instructions:
+          `${buildActivityAssistantInstructions(classrooms)}\n\n` +
           "你在上一次工具调用里写错了参数。请只用同一个工具重新调用一次，" +
           "修正报错指出的地方，其余内容逐字保留。中文不要用半角双引号，需要引用用「」。" +
           "不要输出任何解释文字。",
