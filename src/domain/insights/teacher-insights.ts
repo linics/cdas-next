@@ -168,6 +168,27 @@ function currentRevision(
   );
 }
 
+/**
+ * Whether one evaluation places a dimension in the low band the insights card
+ * counts as weak: 待改进 or 证据不足. Matched by index and name, exactly as the
+ * card tallies, so a drill-down lists the same submissions the card counted.
+ */
+export function isLowBandOutcome(
+  outcomes: readonly InsightsOutcome[],
+  dimensionIndex: number,
+  dimensionName: string,
+): boolean {
+  const outcome = outcomes.find(
+    (item) =>
+      item.dimensionIndex === dimensionIndex &&
+      item.dimensionName === dimensionName,
+  );
+  return (
+    outcome !== undefined &&
+    (outcome.status === "INSUFFICIENT_EVIDENCE" || outcome.level === "improve")
+  );
+}
+
 export function aggregateRubricCard(
   release: InsightsReleaseInput,
 ): InsightsRubricCard {
@@ -250,6 +271,24 @@ export function aggregateRubricCard(
   };
 }
 
+/**
+ * The stage bucket one audience (student or group) sits in. The insights card
+ * counts with it and the roster's stage drill-down filters with it (D-070),
+ * so both always agree on who is "stuck" where.
+ */
+export function stageBucketKey(
+  progress: Readonly<{ complete: boolean; started: boolean; currentPhaseIndex: number }>,
+  executionVersion: 0 | 1,
+): string {
+  if (progress.complete) return "complete";
+  if (!progress.started) return "not_started";
+  if (executionVersion === 0) return "in_progress";
+  if (progress.currentPhaseIndex === 0) return "final";
+  return `phase:${progress.currentPhaseIndex}`;
+}
+
+export const stageBucketKeyPattern = /^(not_started|in_progress|final|complete|phase:\d{1,2})$/;
+
 function stageBuckets(release: InsightsReleaseInput): InsightsStageBucket[] {
   if (release.executionVersion === 0) {
     return [
@@ -312,17 +351,10 @@ export function aggregateStageCard(
       phaseCount: release.phases.length,
       submissions: audience.submissions,
     });
-    if (progress.complete) {
-      buckets = incrementBucket(buckets, "complete");
-    } else if (!progress.started) {
-      buckets = incrementBucket(buckets, "not_started");
-    } else if (release.executionVersion === 0) {
-      buckets = incrementBucket(buckets, "in_progress");
-    } else if (progress.currentPhaseIndex === 0) {
-      buckets = incrementBucket(buckets, "final");
-    } else {
-      buckets = incrementBucket(buckets, `phase:${progress.currentPhaseIndex}`);
-    }
+    buckets = incrementBucket(
+      buckets,
+      stageBucketKey(progress, release.executionVersion),
+    );
   }
 
   return {

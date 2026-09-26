@@ -109,7 +109,7 @@
 - 学生重交、另一会话保存、权限撤销后拒绝陈旧写入；已有成功保存不被导航失败回滚。
 - AI 关闭时同样可用；抽样记录完成三份评阅的页面往返次数。
 
-**进度（2026-09-27）：**队列基础按 D-069 完成，见 [实施卡](PLAN-N2-REVIEW-QUEUE.md)。诊断下钻（薄弱项、阶段卡点进入对应提交）是下一步。
+**进度（2026-09-27）：**队列基础按 D-069 完成，诊断下钻按 D-070 完成，见 [实施卡](PLAN-N2-REVIEW-QUEUE.md)。N2 已完成；下一方向是 N3。
 
 涉及入口：[名册页](src/app/teacher/releases/[releaseId]/submissions/page.tsx)、[评阅页](src/app/teacher/submissions/[submissionId]/page.tsx)、[工作区查询](src/server/queries/submission-workspace.ts)。非目标：批量终评、自动发布反馈、给学生排名。
 

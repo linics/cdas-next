@@ -28,6 +28,18 @@ import {
 } from "../../../../../domain/review/review-queue";
 import { reviewQueueItems } from "../../../../../server/queries/review-queue";
 import { cn } from "@/lib/utils";
+import { stageBucketKeyPattern } from "../../../../../domain/insights/teacher-insights";
+
+const stageLabels: Record<string, string> = {
+  not_started: "尚未开始",
+  in_progress: "已开始、尚未正式提交",
+  final: "正在整理整项终稿",
+  complete: "全部完成",
+};
+
+function stageLabel(key: string): string {
+  return stageLabels[key] ?? `停在第 ${key.replace("phase:", "")} 阶段`;
+}
 
 export default async function TeacherReleaseSubmissionsPage({
   params,
@@ -37,7 +49,12 @@ export default async function TeacherReleaseSubmissionsPage({
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { releaseId } = await params;
-  const filter = parseReviewQueueFilter((await searchParams) ?? {});
+  const query = (await searchParams) ?? {};
+  const filter = parseReviewQueueFilter(query);
+  // Stage drill-down from the insights card (D-070): which students or groups
+  // sit in one progress bucket. It narrows the progress list, not the queue.
+  const stageParam = typeof query.stage === "string" ? query.stage : "";
+  const stage = stageBucketKeyPattern.test(stageParam) ? stageParam : null;
   let workspace;
   try {
     const context = await createUiCommandContext();
@@ -88,6 +105,13 @@ export default async function TeacherReleaseSubmissionsPage({
       ]),
     ),
   ].sort(([left], [right]) => left - right);
+  const visibleProgress = stage
+    ? workspace.progress.filter((entry) => entry.stageKey === stage)
+    : workspace.progress;
+  const dimensionName =
+    filter.dimension !== null
+      ? (workspace.release.rubricDimensionNames[filter.dimension - 1] ?? null)
+      : null;
   const rosterHref = (next: ReviewQueueFilter) =>
     `/teacher/releases/${workspace.release.id}/submissions${reviewQueueQuery(next)}`;
   const chip = (active: boolean) =>
@@ -149,8 +173,9 @@ export default async function TeacherReleaseSubmissionsPage({
             </>
           ) : null}
           {workspace.release.executionVersion === 1 ||
+          stage !== null ||
           workspace.progress.some((entry) => entry.group !== null) ? (
-            <section className={styles.progressSection}>
+            <section className={styles.progressSection} id="progress">
               <header className={styles.sectionHeader}>
                 <div>
                   <p className={styles.eyebrow}>
@@ -166,8 +191,19 @@ export default async function TeacherReleaseSubmissionsPage({
                     : "整项提交"}
                 </span>
               </header>
+              {stage ? (
+                <p className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/40 px-3 py-2 text-sm">
+                  只看「{stageLabel(stage)}」的 {visibleProgress.length} 个学生或小组
+                  <Link
+                    className="font-medium underline-offset-4 hover:underline"
+                    href={rosterHref(filter)}
+                  >
+                    显示全部
+                  </Link>
+                </p>
+              ) : null}
               <div className={styles.submissionList}>
-                {workspace.progress.map((progress) => (
+                {visibleProgress.map((progress) => (
                   <article
                     className={styles.submissionRow}
                     key={progress.group?.id ?? progress.student.id}
@@ -305,6 +341,18 @@ export default async function TeacherReleaseSubmissionsPage({
                 </div>
               ) : null}
             </nav>
+          ) : null}
+
+          {filter.dimension !== null ? (
+            <p className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/40 px-3 py-2 text-sm">
+              只看「{dimensionName ?? `评价维度 ${filter.dimension}`}」当前评价为待改进或证据不足的提交
+              <Link
+                className="font-medium underline-offset-4 hover:underline"
+                href={rosterHref({ ...filter, dimension: null })}
+              >
+                清除
+              </Link>
+            </p>
           ) : null}
 
           {workspace.submissions.length === 0 ? (

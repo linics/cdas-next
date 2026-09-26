@@ -118,7 +118,7 @@ function isCurrentMembership(
   );
 }
 
-function compactOutcomes(value: unknown): InsightsOutcome[] {
+export function compactOutcomes(value: unknown): InsightsOutcome[] {
   return z.array(teacherEvaluationOutcomeSchema).parse(value).map((outcome) =>
     outcome.status === "LEVEL"
       ? {

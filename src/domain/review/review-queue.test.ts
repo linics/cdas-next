@@ -15,10 +15,11 @@ const item = (
   hasFeedback: false,
   hasEvaluation: false,
   awaitingResubmission: false,
+  lowDimensionIndexes: [],
   ...overrides,
 });
 
-const feedback = { status: "feedback" as const, phase: null };
+const feedback = { status: "feedback" as const, phase: null, dimension: null };
 
 describe("review queue", () => {
   it("walks three pending items without skipping or repeating", () => {
@@ -42,14 +43,20 @@ describe("review queue", () => {
 
   it("narrows by phase and treats no-rubric releases as having nothing to evaluate", () => {
     const roster = [item("a", { phaseIndex: 1 }), item("b", { phaseIndex: 2 }), item("c", { phaseIndex: 2 })];
-    expect(reviewQueuePosition(roster, "b", { status: "all", phase: 2 }, true)).toMatchObject({ total: 2, position: 1, nextId: "c" });
-    expect(reviewQueuePosition(roster, "a", { status: "evaluation", phase: null }, false).total).toBe(0);
+    expect(reviewQueuePosition(roster, "b", { status: "all", phase: 2, dimension: null }, true)).toMatchObject({ total: 2, position: 1, nextId: "c" });
+    expect(reviewQueuePosition(roster, "a", { status: "evaluation", phase: null, dimension: null }, false).total).toBe(0);
   });
 
   it("parses only whitelisted params and round-trips them", () => {
-    expect(parseReviewQueueFilter({ queue: "feedback", phase: "2" })).toEqual({ status: "feedback", phase: 2 });
-    expect(parseReviewQueueFilter({ queue: "delete-everything", phase: "x" })).toEqual({ status: "all", phase: null });
-    expect(reviewQueueQuery({ status: "resubmit", phase: 3 })).toBe("?queue=resubmit&phase=3");
-    expect(reviewQueueQuery({ status: "all", phase: null })).toBe("");
+    expect(parseReviewQueueFilter({ queue: "feedback", phase: "2", dim: "3" })).toEqual({ status: "feedback", phase: 2, dimension: 3 });
+    expect(parseReviewQueueFilter({ queue: "delete-everything", phase: "x", dim: "9" })).toEqual({ status: "all", phase: null, dimension: null });
+    expect(reviewQueueQuery({ status: "resubmit", phase: 3, dimension: 2 })).toBe("?queue=resubmit&phase=3&dim=2");
+    expect(reviewQueueQuery({ status: "all", phase: null, dimension: null })).toBe("");
+  });
+
+  it("drills into one rubric dimension's low band", () => {
+    const roster = [item("a", { lowDimensionIndexes: [2] }), item("b", { lowDimensionIndexes: [1] }), item("c", { lowDimensionIndexes: [1, 2] })];
+    const filter = { status: "all" as const, phase: null, dimension: 2 };
+    expect(reviewQueuePosition(roster, "a", filter, true)).toEqual({ total: 2, position: 1, previousId: null, nextId: "c" });
   });
 });

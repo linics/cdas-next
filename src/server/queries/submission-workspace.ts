@@ -4,7 +4,12 @@ import { z } from "zod";
 import {
   activityContentSchema,
   isStructuredContent,
+  type ActivityContent,
 } from "../../domain/activity/activity-content";
+import {
+  isLowBandOutcome,
+  stageBucketKey,
+} from "../../domain/insights/teacher-insights";
 import type { PrismaClient } from "../../generated/prisma/client";
 import {
   type CommandContext,
@@ -17,6 +22,7 @@ import {
 import { reviewFollowUp } from "../../domain/feedback/review-follow-up";
 import { isSubmissionAudienceMemberWhere } from "../submissions/submission-audience";
 import { isActiveSchoolMember } from "../school/teacher-authorization";
+import { compactOutcomes } from "./teacher-insights";
 
 const queryInputSchema = z
   .object({
@@ -129,6 +135,7 @@ const teacherReleaseSubmissionsSchema = z.strictObject({
     submissionMode: z.enum(["once", "phased", "mixed"]),
     phaseCount: z.int().nonnegative(),
     rubricAvailable: z.boolean(),
+    rubricDimensionNames: z.array(preservedNonBlankTextSchema),
   }),
   submissions: z.array(
     z.strictObject({
@@ -161,6 +168,9 @@ const teacherReleaseSubmissionsSchema = z.strictObject({
         followUp: z
           .enum(["AWAITING_RESUBMISSION", "RESUBMISSION_IN_PROGRESS"])
           .nullable(),
+        // Rubric dimensions (1-based) this revision's current evaluation puts
+        // in the insights low band; the drill-down filter reads this (D-070).
+        lowDimensionIndexes: z.array(z.int().positive()),
       }),
     }),
   ),
@@ -176,6 +186,7 @@ const teacherReleaseSubmissionsSchema = z.strictObject({
       currentPhaseIndex: z.int().nonnegative(),
       complete: z.boolean(),
       awaitingFormalRevision: z.boolean(),
+      stageKey: z.string(),
       group: z.strictObject({
         id: z.uuid(),
         name: preservedNonBlankTextSchema,
@@ -473,6 +484,29 @@ export async function getStudentReleaseWorkspace(
   return studentWorkspaceSchema.parse(workspace);
 }
 
+function lowDimensionIndexes(
+  content: ActivityContent,
+  evaluation: {
+    version: number;
+    revisions: { version: number; outcomes: unknown }[];
+  } | null,
+): number[] {
+  const current = evaluation?.revisions[0];
+  if (
+    !evaluation ||
+    !current ||
+    current.version !== evaluation.version ||
+    !isStructuredContent(content)
+  ) {
+    return [];
+  }
+  const outcomes = compactOutcomes(current.outcomes);
+  return content.rubricDimensions.flatMap(
+    (dimension, index) =>
+      isLowBandOutcome(outcomes, index + 1, dimension.name) ? [index + 1] : [],
+  );
+}
+
 export async function getTeacherReleaseSubmissions(
   database: PrismaClient,
   commandContext: CommandContext,
@@ -528,7 +562,16 @@ export async function getTeacherReleaseSubmissions(
                   },
                 },
               },
-              evaluation: { select: { version: true } },
+              evaluation: {
+                select: {
+                  version: true,
+                  revisions: {
+                    orderBy: { version: "desc" },
+                    take: 1,
+                    select: { version: true, outcomes: true },
+                  },
+                },
+              },
             },
           },
         },
@@ -638,6 +681,10 @@ export async function getTeacherReleaseSubmissions(
           nextStep: currentFeedbackRevision?.nextStep,
           hasWorkingCopy: submission.workingCopy !== null,
         }),
+        lowDimensionIndexes: lowDimensionIndexes(
+          content,
+          currentRevision.evaluation,
+        ),
       },
     };
       });
@@ -680,6 +727,10 @@ export async function getTeacherReleaseSubmissions(
           groupSubmissions,
           currentPhaseIndex,
           complete,
+        ),
+        stageKey: stageBucketKey(
+          { complete, started: groupSubmissions.length > 0, currentPhaseIndex },
+          release.executionVersion === 1 ? 1 : 0,
         ),
       };
     }),
@@ -731,6 +782,10 @@ export async function getTeacherReleaseSubmissions(
           currentPhaseIndex,
           complete,
         ),
+        stageKey: stageBucketKey(
+          { complete, started: studentSubmissions.length > 0, currentPhaseIndex },
+          release.executionVersion === 1 ? 1 : 0,
+        ),
       };
     }),
   ];
@@ -762,6 +817,9 @@ export async function getTeacherReleaseSubmissions(
       submissionMode,
       phaseCount,
       rubricAvailable,
+      rubricDimensionNames: isStructuredContent(content)
+        ? content.rubricDimensions.map((dimension) => dimension.name)
+        : [],
     },
     submissions,
     progress,
