@@ -11,3 +11,7 @@ minimumReleaseAgeExclude:
   - '@clerk/shared@4.29.2'
 overrides:
   deepmerge-ts: 8.0.1
+  # Prisma 7.x 仍锁 mysql2 3.15.3 与旧 fast-uri；本项目只用 PostgreSQL，
+  # 在同一大版本内抬到已修复版本以通过 audit:prod。
+  fast-uri@3: ^3.1.6
+  mysql2@3: ^3.24.4
