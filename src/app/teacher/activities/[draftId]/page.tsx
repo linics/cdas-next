@@ -97,13 +97,23 @@ export default async function TeacherActivityPage({
               ；每次保存都会生成新版本，历史版本保留。
             </p>
           </div>
-          {content.schemaVersion === 3 && draft.status !== "SEALED" ? (
-            <Link
-              className={styles.secondaryButton}
-              href={`/teacher/activities/copy?kind=DRAFT&id=${draft.id}&version=${draft.version}`}
-            >
-              复制为新活动
-            </Link>
+          {content.schemaVersion === 3 ? (
+            <div className="flex flex-wrap gap-2">
+              <Link
+                className={styles.secondaryButton}
+                href={`/print/drafts/${draft.id}?version=${draft.version}`}
+              >
+                打印第 {draft.version} 版
+              </Link>
+              {draft.status !== "SEALED" ? (
+                <Link
+                  className={styles.secondaryButton}
+                  href={`/teacher/activities/copy?kind=DRAFT&id=${draft.id}&version=${draft.version}`}
+                >
+                  复制为新活动
+                </Link>
+              ) : null}
+            </div>
           ) : null}
         </header>
         {origin ? (

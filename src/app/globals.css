@@ -282,3 +282,30 @@ html:has([data-fill-viewport]) {
     overflow: visible;
   }
 }
+
+/* Printing (D-071): A4 paper, black on white, no atmosphere or controls. */
+@page {
+  size: A4;
+  margin: 16mm 14mm;
+}
+
+@media print {
+  [data-print="hide"] {
+    display: none !important;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  .print-sheet li,
+  .print-sheet section > h3 {
+    break-inside: avoid;
+  }
+
+  .print-sheet section > h3 {
+    break-after: avoid;
+  }
+}
