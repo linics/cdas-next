@@ -16,7 +16,7 @@ import {
   TeacherPage,
   teacherHomeCrumb,
 } from "../../../_components/teacher-shell";
-import styles from "../../../teacher-workspace.module.css";
+import { styles } from "../../../teacher-ui";
 import { CloseActivityPanel } from "./close-activity-panel";
 import { ReleaseGroupManager } from "./release-group-manager";
 
@@ -70,7 +70,6 @@ export default async function TeacherReleaseSubmissionsPage({
       <div className={styles.pageContent}>
         <header className={styles.pageHeader}>
           <div>
-            <p className={styles.eyebrow}>发布 / 正式提交</p>
             <h1>{workspace.release.title}</h1>
             <p>
               {workspace.release.classroomName} · 发布{" "}

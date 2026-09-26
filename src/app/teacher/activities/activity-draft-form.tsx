@@ -20,7 +20,7 @@ import {
   normalizeTaskBookValues,
   type ActivityDraftActionState,
 } from "./activity-draft-action-state";
-import styles from "../teacher-workspace.module.css";
+import { styles } from "../teacher-ui";
 
 const statusLabels = { EDITING: "编辑中", READY_FOR_PREVIEW: "可预览", SEALED: "已封存" } as const;
 const subscribeToHydration = () => () => {};

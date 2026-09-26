@@ -31,7 +31,41 @@ import { FeedbackComposer } from "./feedback-composer";
 import { EvaluationComposer } from "./evaluation-composer";
 import { FeedbackWorkspacePanes } from "./feedback-workspace-panes";
 import { TeacherAccessGate, TeacherPage, teacherHomeCrumb } from "../../_components/teacher-shell";
-import styles from "./feedback-workspace.module.css";
+import { Badge } from "@/components/ui/badge";
+
+/* 评阅页的版式：只用 Tailwind 语义类，颜色全部来自主题 token。 */
+const styles = {
+  submissionHistory: "mx-auto flex w-full max-w-3xl flex-col gap-5",
+  paneHeading: "flex flex-col gap-1 border-b pb-4",
+  eyebrow: "text-xs font-medium text-muted-foreground",
+  contextLine: "text-sm text-muted-foreground",
+  railNote:
+    "flex flex-col gap-1 rounded-lg border bg-muted/40 p-3 text-sm text-muted-foreground",
+  historyHeading: "flex items-center justify-between gap-3",
+  phaseContext: "rounded-lg bg-muted/50 p-3 text-sm text-muted-foreground",
+  submissionRevision: "flex flex-col gap-4",
+  revisionHeading: "flex items-start justify-between gap-3",
+  revisionIndex:
+    "flex size-8 shrink-0 items-center justify-center rounded-md bg-muted text-xs font-medium tabular-nums",
+  revisionBadges: "flex gap-1.5",
+  formalLabel: "text-xs text-muted-foreground",
+  submissionBody:
+    "glass rounded-2xl p-5 text-base leading-7 whitespace-pre-wrap",
+  formalAttachmentList: "flex flex-col gap-2 text-sm",
+  historyDisclosure:
+    "group glass rounded-2xl [&>summary]:cursor-pointer [&>summary]:px-4 [&>summary]:py-3 [&>summary]:text-sm [&>summary]:font-medium [&[open]>summary]:border-b",
+  revisionList: "flex flex-col gap-6 p-4",
+  statusLine: "grid grid-cols-2 gap-3",
+  feedbackHistory: "flex flex-col gap-3 p-4 text-sm",
+  feedbackVersions: "flex flex-col gap-3",
+  feedbackMeta: "flex items-center gap-2 text-xs text-muted-foreground",
+  feedbackBody: "rounded-md border bg-background p-3 whitespace-pre-wrap",
+  feedbackStructure: "flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground",
+  legacyFeedbackStructure: "text-xs text-muted-foreground",
+  feedbackOwner: "text-xs text-muted-foreground",
+  emptyFeedback: "text-sm text-muted-foreground",
+  evaluationOutcomeList: "flex flex-col divide-y rounded-md border",
+} as const;
 
 function AccessUnavailable({
   code,
@@ -60,9 +94,9 @@ function FeedbackHistory({ revision }: { revision: FormalRevision }) {
       className={styles.feedbackHistory}
       aria-labelledby={`feedback-history-${revision.id}`}
     >
-      <header>
-        <h4 id={`feedback-history-${revision.id}`}>教师反馈</h4>
-        <span>
+      <header className="flex items-center justify-between">
+        <h4 className="font-semibold" id={`feedback-history-${revision.id}`}>教师反馈</h4>
+        <span className="text-xs text-muted-foreground tabular-nums">
           {feedback ? `v${feedback.currentVersion}` : "尚无反馈"}
         </span>
       </header>
@@ -70,11 +104,11 @@ function FeedbackHistory({ revision }: { revision: FormalRevision }) {
       {feedback ? (
         <div className={styles.feedbackVersions}>
           {revisions.map((feedbackRevision, index) => (
-            <article key={feedbackRevision.id}>
+            <article className="flex flex-col gap-2" key={feedbackRevision.id}>
               <div className={styles.feedbackMeta}>
-                <span>v{feedbackRevision.version}</span>
-                <p>
-                  {index === 0 ? <strong>当前版本</strong> : null}
+                <Badge className="tabular-nums" variant="outline">v{feedbackRevision.version}</Badge>
+                <p className="flex flex-wrap items-center gap-x-2">
+                  {index === 0 ? <strong className="font-medium text-foreground">当前版本</strong> : null}
                   {feedbackRevision.source === "AI_ASSISTED"
                     ? "AI 建议 · 教师已确认"
                     : "教师撰写"}
@@ -128,9 +162,9 @@ function EvaluationHistory({ revision }: { revision: FormalRevision }) {
       className={styles.feedbackHistory}
       aria-labelledby={`evaluation-history-${revision.id}`}
     >
-      <header>
-        <h4 id={`evaluation-history-${revision.id}`}>量规评价</h4>
-        <span>
+      <header className="flex items-center justify-between">
+        <h4 className="font-semibold" id={`evaluation-history-${revision.id}`}>量规评价</h4>
+        <span className="text-xs text-muted-foreground tabular-nums">
           {evaluation ? `v${evaluation.currentVersion}` : "尚无评价"}
         </span>
       </header>
@@ -138,11 +172,11 @@ function EvaluationHistory({ revision }: { revision: FormalRevision }) {
       {evaluation ? (
         <div className={styles.feedbackVersions}>
           {revisions.map((evaluationRevision, index) => (
-            <article key={evaluationRevision.id}>
+            <article className="flex flex-col gap-2" key={evaluationRevision.id}>
               <div className={styles.feedbackMeta}>
-                <span>v{evaluationRevision.version}</span>
-                <p>
-                  {index === 0 ? <strong>当前版本</strong> : null}
+                <Badge className="tabular-nums" variant="outline">v{evaluationRevision.version}</Badge>
+                <p className="flex flex-wrap items-center gap-x-2">
+                  {index === 0 ? <strong className="font-medium text-foreground">当前版本</strong> : null}
                   {evaluationRevision.source === "AI_ASSISTED"
                     ? "AI 建议 · 教师已确认"
                     : "教师撰写"}
@@ -153,17 +187,17 @@ function EvaluationHistory({ revision }: { revision: FormalRevision }) {
               </div>
               <ul className={styles.evaluationOutcomeList}>
                 {evaluationRevision.outcomes.map((outcome) => (
-                  <li key={outcome.dimensionIndex}>
-                    <strong>
+                  <li className="flex flex-wrap items-baseline gap-x-3 gap-y-1 p-2" key={outcome.dimensionIndex}>
+                    <strong className="font-medium">
                       {outcome.dimensionIndex}. {outcome.dimensionName}
                     </strong>
-                    <span>
+                    <span className="ml-auto font-medium">
                       {outcome.status === "LEVEL" && "level" in outcome
                         ? teacherEvaluationLevelLabels[outcome.level]
                         : teacherEvaluationOutcomeStatusLabels.INSUFFICIENT_EVIDENCE}
                     </span>
                     {outcome.citations.length > 0 ? (
-                      <small>
+                      <small className="w-full text-xs text-muted-foreground">
                         {outcome.citations
                           .map((citation) => {
                             if (citation.kind === "text") {
@@ -224,22 +258,22 @@ function SubmissionRevision({
     >
       {current ? null : (
         <header className={styles.revisionHeading}>
-        <div>
+        <div className="flex items-start gap-3">
           <span className={styles.revisionIndex}>
             {String(revision.revisionNumber).padStart(2, "0")}
           </span>
           <div>
-            <h3 id={`submission-revision-${revision.id}`}>
+            <h3 className="text-sm font-semibold" id={`submission-revision-${revision.id}`}>
               第 {revision.revisionNumber} 版正式提交
             </h3>
             <LocalizedDateTime dateTime={revision.submittedAt} />
           </div>
         </div>
         <div className={styles.revisionBadges}>
-          {current ? <span>当前正式版</span> : null}
-          <span data-late={revision.isLate ? "true" : "false"}>
+          {current ? <Badge variant="secondary">当前正式版</Badge> : null}
+          <Badge data-late={revision.isLate ? "true" : "false"} variant="outline">
             {revision.isLate ? "迟交" : "期限内"}
-          </span>
+          </Badge>
         </div>
         </header>
       )}
@@ -253,9 +287,9 @@ function SubmissionRevision({
           {revision.completedEvidenceIndexes.map((evidenceIndex) => {
             const evidence = phase.evidence[evidenceIndex - 1];
             return evidence ? (
-              <li key={evidenceIndex}>
-                <strong>已确认：{evidence.description}</strong>
-                <span>{evidenceTypeLabel(evidence.type)}</span>
+              <li className="flex items-center justify-between gap-3 rounded-lg border p-3" key={evidenceIndex}>
+                <strong className="font-medium">已确认：{evidence.description}</strong>
+                <Badge variant="secondary">{evidenceTypeLabel(evidence.type)}</Badge>
               </li>
             ) : null;
           })}
@@ -264,14 +298,15 @@ function SubmissionRevision({
       {revision.attachments.length > 0 ? (
         <ul className={styles.formalAttachmentList}>
           {revision.attachments.map((attachment) => (
-            <li key={attachment.id}>
+            <li className="flex flex-col gap-2 rounded-lg border p-3" key={attachment.id}>
               <a
+                className="font-medium underline-offset-4 hover:underline"
                 href={`/attachments/${attachment.id}/download`}
                 download={attachment.filename}
               >
                 {attachment.filename}
               </a>
-              <span>{Math.ceil(attachment.byteSize / 1024)} KB</span>
+              <span className="text-xs text-muted-foreground tabular-nums">{Math.ceil(attachment.byteSize / 1024)} KB</span>
               <AttachmentPreview attachment={attachment} />
             </li>
           ))}
@@ -367,7 +402,7 @@ export default async function TeacherSubmissionPage({
           >
             <header className={styles.paneHeading}>
               <p className={styles.eyebrow}>学生证据</p>
-              <h1 id="submission-student-title">
+              <h1 className="type-page-title" id="submission-student-title">
                 {group?.name ?? student.displayName}
               </h1>
               <p className={styles.contextLine}>
@@ -406,11 +441,11 @@ export default async function TeacherSubmissionPage({
             ) : null}
             <header className={styles.historyHeading}>
               <div>
-                <h2 id="submission-evidence-title">
+                <h2 className="text-base font-semibold" id="submission-evidence-title">
                   第 {currentRevision.revisionNumber} 版正式提交
                 </h2>
               </div>
-              <span>
+              <span className="text-sm text-muted-foreground">
                 {currentRevision.isLate ? "迟交" : "期限内"}
                 {revisions.length > 1
                   ? ` · 共 ${revisions.length} 版`
@@ -446,13 +481,13 @@ export default async function TeacherSubmissionPage({
         }
       >
           <dl className={styles.statusLine}>
-              <div>
-                <dt>形成性反馈</dt>
-                <dd>{feedbackStatus}</dd>
+              <div className="rounded-lg border bg-card p-3">
+                <dt className="text-xs text-muted-foreground">形成性反馈</dt>
+                <dd className="text-sm font-medium">{feedbackStatus}</dd>
               </div>
-              <div>
-                <dt>量规评价</dt>
-                <dd>{evaluationStatus}</dd>
+              <div className="rounded-lg border bg-card p-3">
+                <dt className="text-xs text-muted-foreground">量规评价</dt>
+                <dd className="text-sm font-medium">{evaluationStatus}</dd>
               </div>
             </dl>
             <details className={styles.historyDisclosure}>

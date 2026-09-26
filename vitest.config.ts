@@ -1,6 +1,10 @@
+import { fileURLToPath } from "node:url";
 import { configDefaults, defineConfig } from "vitest/config";
 
 export default defineConfig({
+  resolve: {
+    alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },
+  },
   test: {
     // Real-model suites cost money and need a provider key, so they never run in
     // `pnpm test`. Invoke them by name: `pnpm test:real-model-injection`.

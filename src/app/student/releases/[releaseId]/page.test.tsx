@@ -468,7 +468,8 @@ describe("student release page access boundary", () => {
       `href="/attachments/${docxAttachmentId}/download"`,
     );
     expect(markup.match(/>预览<\/button>/gu)).toHaveLength(1);
-    expect(markup.match(/ download="/gu)).toHaveLength(3);
+    // 每个附件一行各一个下载链接；预览弹窗里的「下载原件」只在打开时渲染。
+    expect(markup.match(/ download="/gu)).toHaveLength(2);
   });
 
   it("passes no write capability to the submission workspace when the release is closed", async () => {

@@ -9,7 +9,7 @@ import {
   TeacherClassroomRosterQueryError,
 } from "../../../../../server/queries/teacher-classroom-roster";
 import { TeacherAccessGate, TeacherPage, teacherHomeCrumb } from "../../../_components/teacher-shell";
-import styles from "../../../teacher-workspace.module.css";
+import { styles } from "../../../teacher-ui";
 import { RosterManager } from "./roster-manager";
 
 export default async function TeacherClassroomMembersPage({
@@ -41,11 +41,10 @@ export default async function TeacherClassroomMembersPage({
       <div className={styles.pageContent}>
         <header className={styles.pageHeader}>
           <div>
-            <p className={styles.eyebrow}>教师工作台 / 班级成员</p>
             <h1>{roster.classroom.name}</h1>
-            <p>用 Excel 名单或名单码管理班级学生；每次变更都需确认，历史记录会保留。</p>
+            
           </div>
-          <Link className={styles.rowLink} href="/teacher">返回教师工作台</Link>
+          <Link className={styles.secondaryButton} href="/teacher">返回教师工作台</Link>
         </header>
         <RosterManager roster={roster} />
       </div>

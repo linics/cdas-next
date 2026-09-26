@@ -1,5 +1,38 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
+import { LogOutIcon } from "lucide-react";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarHeader,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarRail,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 import {
   developmentQuickAdminEntryAction,
   developmentQuickStudentEntryAction,
@@ -8,7 +41,6 @@ import {
 } from "../auth/local-login-actions";
 import { isDevelopmentQuickLoginEnabled } from "../../server/auth/development-quick-login";
 import { WorkspaceNavigation } from "./workspace-navigation";
-import styles from "./workspace-shell.module.css";
 
 export type WorkspaceNavigationItem = { href: string; label: string };
 
@@ -18,42 +50,49 @@ export type WorkspaceCrumb = {
   href?: string;
 };
 
-function WorkspaceBreadcrumb({
-  items,
-}: {
-  items: readonly WorkspaceCrumb[];
-}) {
+type Audience = "教师" | "学生" | "管理员";
+
+function workspaceHrefFor(audience: Audience) {
+  return audience === "教师"
+    ? "/teacher"
+    : audience === "学生"
+      ? "/student"
+      : "/admin";
+}
+
+function BrandMark() {
   return (
-    <nav aria-label="面包屑" className={styles.audienceLabel}>
-      <ol className={styles.breadcrumbList}>
+    <span className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-xs font-semibold text-primary-foreground">
+      CD
+    </span>
+  );
+}
+
+function WorkspaceBreadcrumb({ items }: { items: readonly WorkspaceCrumb[] }) {
+  return (
+    <Breadcrumb aria-label="面包屑">
+      <BreadcrumbList>
         {items.map((item, index) => {
           const isCurrent = index === items.length - 1;
-          const showLink = !isCurrent && Boolean(item.href);
-
           return (
-            <li key={`${item.label}-${index}`} className={styles.breadcrumbItem}>
-              {index > 0 ? (
-                <span aria-hidden="true" className={styles.breadcrumbSeparator}>
-                  ›
-                </span>
-              ) : null}
-              {showLink && item.href ? (
-                <Link className={styles.breadcrumbLink} href={item.href}>
-                  {item.label}
-                </Link>
-              ) : (
-                <span
-                  aria-current={isCurrent ? "page" : undefined}
-                  className={styles.breadcrumbCurrent}
-                >
-                  {item.label}
-                </span>
-              )}
-            </li>
+            <Fragment key={`${item.label}-${index}`}>
+              {index > 0 ? <BreadcrumbSeparator /> : null}
+              <BreadcrumbItem>
+                {!isCurrent && item.href ? (
+                  <BreadcrumbLink asChild>
+                    <Link href={item.href}>{item.label}</Link>
+                  </BreadcrumbLink>
+                ) : (
+                  <BreadcrumbPage aria-current={isCurrent ? "page" : undefined}>
+                    {item.label}
+                  </BreadcrumbPage>
+                )}
+              </BreadcrumbItem>
+            </Fragment>
           );
         })}
-      </ol>
-    </nav>
+      </BreadcrumbList>
+    </Breadcrumb>
   );
 }
 
@@ -67,17 +106,16 @@ export function WorkspaceShell({
   fillViewport = false,
   children,
 }: {
-  audience: "教师" | "学生" | "管理员";
+  audience: Audience;
   actorName?: string;
-  actorAudience?: "教师" | "学生" | "管理员";
+  actorAudience?: Audience;
   breadcrumb?: readonly WorkspaceCrumb[];
   navigation?: readonly WorkspaceNavigationItem[];
   toolbarAction?: ReactNode;
   fillViewport?: boolean;
   children: ReactNode;
 }) {
-  const workspaceHref =
-    audience === "教师" ? "/teacher" : audience === "学生" ? "/student" : "/admin";
+  const workspaceHref = workspaceHrefFor(audience);
   const showNavigation = navigation.length > 0;
   const showDevelopmentSwitcher = isDevelopmentQuickLoginEnabled();
   const crumbs =
@@ -86,84 +124,117 @@ export function WorkspaceShell({
       : [{ label: `${audience}工作台` }];
 
   return (
-    <div
-      className={styles.shell}
-      data-with-sidebar={showNavigation || undefined}
-      data-fill-viewport={fillViewport || undefined}
-    >
-      <a className={styles.skipLink} href="#main-content">跳到主要内容</a>
-      {showNavigation ? (
-        <aside className={styles.sidebar}>
-          <Link
-            className={styles.brand}
-            href={workspaceHref}
-            aria-label={`CDAS Next ${audience}工作台`}
-          >
-            <strong>CDAS</strong>
-            <span>跨学科学习活动</span>
-          </Link>
-          <WorkspaceNavigation audience={audience} items={navigation} />
-          <p className={styles.sidebarNote}>
-            AI 仅辅助准备内容，发布与评价均由教师确认。
-          </p>
-        </aside>
-      ) : null}
-      <div className={styles.workspace}>
-        <header className={styles.toolbar}>
-          {!showNavigation ? (
-            <Link
-              className={styles.compactBrand}
-              href={workspaceHref}
-              aria-label={`CDAS Next ${audience}工作台`}
-            >
-              CDAS
-            </Link>
-          ) : null}
-          <WorkspaceBreadcrumb items={crumbs} />
-          <div className={styles.toolbarEnd}>
-            <span className={styles.actorLabel}>
-              {actorName
-                ? `当前账号：${actorName} · ${actorAudience}`
-                : `${audience}工作台`}
-            </span>
-            {toolbarAction}
-            {actorName && showDevelopmentSwitcher ? (
+    <TooltipProvider>
+      <SidebarProvider data-fill-viewport={fillViewport || undefined}>
+        <a
+          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-background focus:px-3 focus:py-2 focus:shadow"
+          href="#main-content"
+        >
+          跳到主要内容
+        </a>
+        {showNavigation ? (
+          <Sidebar collapsible="icon" variant="inset">
+            <SidebarHeader>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    className="hover:bg-foreground/5 active:bg-foreground/10"
+                    size="lg"
+                  >
+                    <Link
+                      aria-label={`CDAS Next ${audience}工作台`}
+                      href={workspaceHref}
+                    >
+                      <BrandMark />
+                      <span className="grid flex-1 text-left leading-tight">
+                        <span className="truncate font-semibold">
+                          CDAS Next
+                        </span>
+                        <span className="truncate text-xs text-muted-foreground">
+                          跨学科学习活动
+                        </span>
+                      </span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarHeader>
+            <SidebarContent>
+              <WorkspaceNavigation audience={audience} items={navigation} />
+            </SidebarContent>
+              <SidebarRail />
+          </Sidebar>
+        ) : null}
+        <SidebarInset className={cn(fillViewport && "min-h-0 overflow-hidden")}>
+          <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
+            {showNavigation ? (
               <>
-                {actorAudience !== "教师" ? (
-                  <form action={developmentQuickTeacherEntryAction}>
-                    <button className={styles.signOutButton} type="submit">
-                      切换默认教师
-                    </button>
-                  </form>
-                ) : null}
-                {actorAudience !== "学生" ? (
-                  <form action={developmentQuickStudentEntryAction}>
-                    <button className={styles.signOutButton} type="submit">
-                      切换默认学生
-                    </button>
-                  </form>
-                ) : null}
-                {actorAudience !== "管理员" ? (
-                  <form action={developmentQuickAdminEntryAction}>
-                    <button className={styles.signOutButton} type="submit">
-                      切换默认管理员
-                    </button>
-                  </form>
-                ) : null}
+                <SidebarTrigger aria-label="展开或收起导航" className="-ml-1" />
+                <Separator
+                  className="mr-2 data-[orientation=vertical]:h-4"
+                  orientation="vertical"
+                />
               </>
-            ) : null}
-            {actorName ? (
-              <form action={logoutAction}>
-                <button className={styles.signOutButton} type="submit">退出登录</button>
-              </form>
-            ) : null}
-          </div>
-        </header>
-        <main className={styles.main} id="main-content" tabIndex={-1}>
-          {children}
-        </main>
-      </div>
-    </div>
+            ) : (
+              <Link
+                aria-label={`CDAS Next ${audience}工作台`}
+                className="mr-2"
+                href={workspaceHref}
+              >
+                <BrandMark />
+              </Link>
+            )}
+            <WorkspaceBreadcrumb items={crumbs} />
+            <div className="ml-auto flex items-center gap-2">
+              <span className="hidden text-sm text-muted-foreground sm:inline">
+                {actorName
+                  ? `当前账号：${actorName} · ${actorAudience}`
+                  : `${audience}工作台`}
+              </span>
+              {toolbarAction}
+              {actorName && showDevelopmentSwitcher ? (
+                <>
+                  {(
+                    [
+                      ["教师", developmentQuickTeacherEntryAction],
+                      ["学生", developmentQuickStudentEntryAction],
+                      ["管理员", developmentQuickAdminEntryAction],
+                    ] as const
+                  )
+                    .filter(([role]) => role !== actorAudience)
+                    .map(([role, action]) => (
+                      <form action={action} key={role}>
+                        <Button size="sm" type="submit" variant="ghost">
+                          切换默认{role}
+                        </Button>
+                      </form>
+                    ))}
+                </>
+              ) : null}
+              {actorName ? (
+                <form action={logoutAction}>
+                  <Button size="sm" type="submit" variant="ghost">
+                    <LogOutIcon />
+                    退出登录
+                  </Button>
+                </form>
+              ) : null}
+            </div>
+          </header>
+          <main
+            className={cn(
+              "flex flex-1 flex-col outline-none",
+              fillViewport ? "min-h-0" : "p-4 md:p-6",
+            )}
+            id="main-content"
+            tabIndex={-1}
+          >
+            {children}
+          </main>
+        </SidebarInset>
+      </SidebarProvider>
+    </TooltipProvider>
   );
 }
 
@@ -173,35 +244,36 @@ export function WorkspaceRoleGate({
   requestedAudience,
 }: {
   actorName: string;
-  currentAudience: "教师" | "学生" | "管理员";
-  requestedAudience: "教师" | "学生" | "管理员";
+  currentAudience: Audience;
+  requestedAudience: Audience;
 }) {
-  const currentWorkspaceHref =
-    currentAudience === "教师"
-      ? "/teacher"
-      : currentAudience === "学生"
-        ? "/student"
-        : "/admin";
-
   return (
     <WorkspaceShell
       audience={requestedAudience}
       actorName={actorName}
       actorAudience={currentAudience}
     >
-      <section className={styles.roleGate}>
-        <p>账号角色不匹配</p>
-        <h1>当前登录的是{currentAudience}账号</h1>
-        <p>
-          {requestedAudience}工作台仅对{requestedAudience}账号开放。请返回
-          {currentAudience}工作台，或退出后使用{requestedAudience}账号登录。
-        </p>
-        <div className={styles.roleGateActions}>
-          <Link href={currentWorkspaceHref}>
-            返回{currentAudience}工作台
-          </Link>
-        </div>
-      </section>
+      <div className="flex flex-1 items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardDescription>账号角色不匹配</CardDescription>
+            <CardTitle className="type-section-title">
+              当前登录的是{currentAudience}账号
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-muted-foreground">
+            {requestedAudience}工作台只对{requestedAudience}账号开放。请返回
+            {currentAudience}工作台，或者退出后用{requestedAudience}账号登录。
+          </CardContent>
+          <CardFooter>
+            <Button asChild>
+              <Link href={workspaceHrefFor(currentAudience)}>
+                返回{currentAudience}工作台
+              </Link>
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
     </WorkspaceShell>
   );
 }

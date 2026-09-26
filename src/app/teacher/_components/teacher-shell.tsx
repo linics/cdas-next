@@ -5,9 +5,10 @@ import {
   WorkspaceShell,
   type WorkspaceCrumb,
 } from "../../_components/workspace-shell";
-import { LocalLoginForm } from "../../auth/local-login-form";
-import gateStyles from "../../_components/access-gate.module.css";
 import { isDevelopmentQuickLoginEnabled } from "../../../server/auth/development-quick-login";
+import { LocalLoginForm } from "../../auth/local-login-form";
+import { Button } from "@/components/ui/button";
+import { AccessGateLayout } from "../../_components/access-gate-layout";
 
 const teacherNavigation = [
   { href: "/teacher", label: "工作台" },
@@ -80,55 +81,25 @@ export function TeacherAccessGate({
           };
 
   return (
-    <div className={gateStyles.gate}>
-      <section className={gateStyles.gateAside}>
-        <Link
-          className={gateStyles.brand}
-          href="/"
-          aria-label="返回 CDAS Next 首页"
-        >
-          <strong>CDAS</strong>
-          <small>跨学科学习活动</small>
-        </Link>
-        <div className={gateStyles.pitch}>
-          <p className={gateStyles.eyebrow}>教师工作台</p>
-          <h1>设计一次活动，走完一整条反馈闭环</h1>
-          <p>
-            从任务书草稿到确认发布，从学生的阶段证据到反馈与量规评价，每一步留存版本记录。
-          </p>
-        </div>
-        <ol className={gateStyles.steps}>
-          <li>
-            <span>01</span>设计任务书
-          </li>
-          <li>
-            <span>02</span>确认发布
-          </li>
-          <li>
-            <span>03</span>学生提交证据
-          </li>
-          <li>
-            <span>04</span>反馈与评价
-          </li>
-        </ol>
-      </section>
-      <main className={gateStyles.accessGate}>
-        <div>
-          <p className={gateStyles.eyebrow}>{copy.eyebrow}</p>
-          <h2>{copy.title}</h2>
-        </div>
-        {code === "UNAUTHENTICATED" || code === "USER_NOT_PROVISIONED" ? (
-          <LocalLoginForm role="TEACHER" quickLogin={isDevelopmentQuickLoginEnabled()}>
-            <Link className={gateStyles.backLink} href="/teacher/register">
-              使用邀请码开通教师账号
-            </Link>
-          </LocalLoginForm>
-        ) : code === "PASSWORD_CHANGE_REQUIRED" ? (
-          <div className={gateStyles.actions}>
-            <Link className={gateStyles.primaryButton} href="/teacher/password">修改密码后继续</Link>
-          </div>
-        ) : null}
-      </main>
-    </div>
+    <AccessGateLayout
+      eyebrow={copy.eyebrow}
+      pitchBody="从任务书草稿到确认发布，从学生的阶段证据到反馈与量规评价，每一步都保留版本记录。"
+      pitchTitle="设计一次活动，走完一整条反馈闭环"
+      steps={["设计任务书", "确认发布", "学生提交证据", "反馈与评价"]}
+      title={copy.title}
+      workspace="教师工作台"
+    >
+      {code === "UNAUTHENTICATED" || code === "USER_NOT_PROVISIONED" ? (
+        <LocalLoginForm role="TEACHER" quickLogin={isDevelopmentQuickLoginEnabled()}>
+          <Button asChild variant="link">
+            <Link href="/teacher/register">使用邀请码开通教师账号</Link>
+          </Button>
+        </LocalLoginForm>
+      ) : code === "PASSWORD_CHANGE_REQUIRED" ? (
+        <Button asChild>
+          <Link href="/teacher/password">修改密码后继续</Link>
+        </Button>
+      ) : null}
+    </AccessGateLayout>
   );
 }

@@ -1,6 +1,21 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import styles from "./home.module.css";
+import {
+  ArrowRightIcon,
+  GraduationCapIcon,
+  PresentationIcon,
+  SchoolIcon,
+  type LucideIcon,
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { revealChildren } from "./_components/reveal";
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 export const metadata: Metadata = {
   title: "CDAS Next | 跨学科学习活动工作台",
@@ -16,100 +31,117 @@ const loopSteps = [
   "关闭活动",
 ] as const;
 
-function DoorArrow() {
-  return (
-    <svg
-      aria-hidden="true"
-      fill="none"
-      height="1em"
-      stroke="currentColor"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth="1.75"
-      viewBox="0 0 24 24"
-      width="1em"
-    >
-      <path d="M5 12h14" />
-      <path d="m12 5 7 7-7 7" />
-    </svg>
-  );
-}
+const doors: readonly {
+  href: string;
+  role: string;
+  title: string;
+  detail: string;
+  icon: LucideIcon;
+}[] = [
+  {
+    href: "/teacher",
+    role: "教师",
+    title: "教师工作台",
+    detail: "管理活动草稿和已发布的活动，处理等你反馈的学生提交。",
+    icon: PresentationIcon,
+  },
+  {
+    href: "/student",
+    role: "学生",
+    title: "学生工作台",
+    detail: "查看要完成的活动、已经提交的证据和教师反馈。",
+    icon: GraduationCapIcon,
+  },
+  {
+    href: "/admin/login",
+    role: "管理员",
+    title: "学校管理",
+    detail: "建立学校，启用或停用学校与教师，登记还没开通登录的本校教师。",
+    icon: SchoolIcon,
+  },
+];
 
 export default function HomePage() {
   return (
-    <div className={styles.home}>
-      <header className={styles.toolbar}>
-        <Link className={styles.brand} href="/" aria-label="CDAS Next 首页">
-          <strong>CDAS</strong>
-          <span>跨学科学习活动</span>
-        </Link>
-        <p>选择工作台</p>
+    <div className="flex min-h-svh flex-col">
+      <header className="border-b">
+        <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between px-6">
+          <Link
+            aria-label="CDAS Next 首页"
+            className="flex items-center gap-2 font-semibold"
+            href="/"
+          >
+            <span className="flex size-7 items-center justify-center rounded-md bg-primary text-xs text-primary-foreground">
+              CD
+            </span>
+            CDAS Next
+          </Link>
+          <p className="text-sm text-muted-foreground">选择工作台</p>
+        </div>
       </header>
-      <main className={styles.main} id="main-content">
-        <section className={styles.preface} aria-labelledby="home-title">
-          <div className={styles.prefaceBody}>
-            <h1 id="home-title">让一次学习活动，从设计走到证据。</h1>
-            <p className={styles.lead}>
-              教师在这里设计、发布活动并给出反馈，学生提交学习证据。全过程保留版本记录，可随时回溯。
-            </p>
 
-            <section className={styles.loop} aria-labelledby="workflow-title">
-              <h2 id="workflow-title">完整的教学闭环</h2>
-              <ol className={styles.loopList}>
-                {loopSteps.map((step, index) => (
-                  <li key={step}>
-                    <span aria-hidden="true">
-                      {String(index + 1).padStart(2, "0")}
-                    </span>
-                    {step}
-                  </li>
-                ))}
-              </ol>
-              <p className={styles.loopNote}>
-                AI 仅辅助准备内容，正式决定始终由教师作出。
-              </p>
-            </section>
-          </div>
+      <main
+        className={cn("mx-auto flex w-full max-w-6xl flex-1 flex-col gap-16 px-6 py-16 md:py-24", revealChildren)}
+        id="main-content"
+      >
+        <section aria-labelledby="home-title" className="flex max-w-3xl flex-col gap-6">
+          <Badge className="w-fit" variant="secondary">
+            面向 K12 教师与学生的跨学科学习活动工作台
+          </Badge>
+          <h1
+            className="text-4xl font-semibold tracking-tight text-balance md:text-5xl"
+            id="home-title"
+          >
+            让一次学习活动，从设计走到证据。
+          </h1>
+          <p className="text-lg text-muted-foreground">
+            教师设计、发布活动并给出反馈，学生提交学习证据。每一版都有记录，随时可以回看。
+          </p>
         </section>
 
-        <div className={styles.spine} aria-hidden="true">
-          <span>跨学科学习活动工作台</span>
-        </div>
+        <nav aria-label="选择工作台" className="grid gap-4 md:grid-cols-3">
+          {doors.map(({ href, role, title, detail, icon: Icon }) => (
+            <Link
+              className="group rounded-xl focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+              href={href}
+              key={href}
+            >
+              <Card className="h-full transition-all group-hover:-translate-y-0.5 group-hover:shadow-md">
+                <CardHeader className="gap-3">
+                  <span className="flex size-10 items-center justify-center rounded-lg bg-muted">
+                    <Icon className="size-5" />
+                  </span>
+                  <CardDescription>{role}</CardDescription>
+                  <CardTitle className="type-section-title flex items-center justify-between">
+                    {title}
+                    <ArrowRightIcon className="size-4 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-foreground" />
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">{detail}</p>
+                </CardHeader>
+              </Card>
+            </Link>
+          ))}
+        </nav>
 
-        <section className={styles.doors} aria-label="选择工作台">
-          <Link className={styles.door} href="/teacher">
-            <p className={styles.doorEyebrow}>教师</p>
-            <h2>教师工作台</h2>
-            <p className={styles.doorDetail}>
-              管理活动草稿与已发布活动，处理待反馈的学生提交。
+        <section aria-labelledby="workflow-title" className="flex flex-col gap-6">
+          <div className="space-y-1">
+            <h2 className="type-section-title" id="workflow-title">
+              完整的教学闭环
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              AI 只帮忙准备内容，正式决定都由教师来做。
             </p>
-            <span className={styles.doorAction}>
-              进入教师工作台
-              <DoorArrow />
-            </span>
-          </Link>
-          <Link className={styles.door} href="/student">
-            <p className={styles.doorEyebrow}>学生</p>
-            <h2>学生工作台</h2>
-            <p className={styles.doorDetail}>
-              查看待完成的活动、已提交的证据和教师反馈。
-            </p>
-            <span className={styles.doorAction}>
-              进入学生工作台
-              <DoorArrow />
-            </span>
-          </Link>
-          <Link className={styles.door} href="/admin/login">
-            <p className={styles.doorEyebrow}>管理员</p>
-            <h2>学校管理</h2>
-            <p className={styles.doorDetail}>
-              建校、启停学校与教师，登记尚未开通登录的本校教师。
-            </p>
-            <span className={styles.doorAction}>
-              进入管理员工作台
-              <DoorArrow />
-            </span>
-          </Link>
+          </div>
+          <ol className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border bg-border sm:grid-cols-3 lg:grid-cols-6">
+            {loopSteps.map((step, index) => (
+              <li className="flex flex-col gap-2 bg-background p-4" key={step}>
+                <span className="text-xs text-muted-foreground tabular-nums">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <span className="text-sm font-medium">{step}</span>
+              </li>
+            ))}
+          </ol>
         </section>
       </main>
     </div>

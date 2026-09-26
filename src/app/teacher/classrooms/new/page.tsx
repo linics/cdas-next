@@ -9,7 +9,7 @@ import {
   TeacherActivityQueryError,
 } from "../../../../server/queries/teacher-activity-workspace";
 import { TeacherAccessGate, TeacherPage, teacherHomeCrumb } from "../../_components/teacher-shell";
-import styles from "../../teacher-workspace.module.css";
+import { styles } from "../../teacher-ui";
 import { ClassroomForm } from "./classroom-form";
 
 export default async function NewClassroomPage() {
@@ -36,11 +36,10 @@ export default async function NewClassroomPage() {
       <div className={styles.pageContent}>
         <header className={styles.pageHeader}>
           <div>
-            <p className={styles.eyebrow}>教师工作台 / 班级</p>
             <h1>新建班级</h1>
-            <p>班级属于你所在的学校，由你负责管理；创建后即可导入学生或用名单码加入成员。</p>
+            <p>创建后即可导入学生名单。</p>
           </div>
-          <Link className={styles.rowLink} href="/teacher">返回教师工作台</Link>
+          <Link className={styles.secondaryButton} href="/teacher">返回教师工作台</Link>
         </header>
         <ClassroomForm />
       </div>

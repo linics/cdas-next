@@ -24,7 +24,7 @@ import {
   activityStudioCrumb,
   teacherHomeCrumb,
 } from "../../../_components/teacher-shell";
-import styles from "../../../teacher-workspace.module.css";
+import { styles } from "../../../teacher-ui";
 import { PublishPanel } from "./publish-panel";
 import { TaskBookV3View } from "../../../../_components/task-book-v3-view";
 
@@ -74,10 +74,9 @@ export default async function TeacherActivityPreviewPage({
       <div className={styles.pageContent}>
         <header className={styles.pageHeader}>
           <div>
-            <p className={styles.eyebrow}>发布管理 / 版本预览</p>
             <h1>{content.title}</h1>
             <p>
-              以下内容来自草稿版本 {workspace.draft.version}，即发布时将固定的内容。
+              发布后将固定为草稿版本 {workspace.draft.version} 的内容。
             </p>
           </div>
           <Link

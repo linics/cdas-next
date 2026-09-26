@@ -1,191 +1,276 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
 
 /* ══════════════════════════════════════════════════════════════════════════
-   Classical — the token sheet, ported verbatim from the design system
-   (`_ds/classical-…/styles.css`) plus the two 中文 adjustments the prototype
-   documents. Every colour, font, spacing, radius and shadow comes from here.
-   Never hard-code a hex, a font name or a px value these tokens carry.
+   主题 ——「雾面玻璃」。组合来源：
+   · 配色：取自 tweakcn 社区主题 Midnight Bloom 的淡紫 / 雾蓝 / 橄榄三色过渡，
+     把原版常规的蓝紫主色换成深海青；
+   · 材质：苹果 Liquid Glass 的网页做法 —— 半透明表面 + 背景模糊 + 顶部高光；
+   · 背景：极光色雾（见 aurora-background.tsx），颜色取下面的 --aurora-*。
+   颜色只在这里定义：浅色一块（:root），深色一块（.dark）。页面只写语义类，
+   不准写死色值。换主题 = 改下面两块；换材质强弱 = 改 --glass-*。
    ══════════════════════════════════════════════════════════════════════ */
 :root {
-  color-scheme: light;
+  --background: oklch(0.972 0.01 275);
+  --foreground: oklch(0.255 0.03 265);
+  /* 卡片与弹层是半透明的「玻璃」，透出底下的极光。 */
+  --card: oklch(1 0 0 / 0.64);
+  --card-foreground: oklch(0.255 0.03 265);
+  --popover: oklch(1 0 0 / 0.86);
+  --popover-foreground: oklch(0.255 0.03 265);
+  --primary: oklch(0.47 0.085 203);
+  --primary-foreground: oklch(0.985 0.01 200);
+  --secondary: oklch(0.94 0.025 250 / 0.72);
+  --secondary-foreground: oklch(0.32 0.05 255);
+  --muted: oklch(0.95 0.012 275 / 0.7);
+  --muted-foreground: oklch(0.49 0.025 270);
+  --accent: oklch(0.93 0.04 205 / 0.7);
+  --accent-foreground: oklch(0.35 0.07 205);
+  --destructive: oklch(0.56 0.19 22);
+  --border: oklch(0.36 0.03 270 / 0.11);
+  --input: oklch(0.36 0.03 270 / 0.16);
+  --ring: oklch(0.47 0.085 203 / 0.55);
+  --chart-1: oklch(0.47 0.085 203);
+  --chart-2: oklch(0.62 0.09 290);
+  --chart-3: oklch(0.66 0.08 120);
+  --chart-4: oklch(0.7 0.07 240);
+  --chart-5: oklch(0.86 0.03 270);
+  --radius: 0.875rem;
+  --sidebar: oklch(1 0 0 / 0.42);
+  --sidebar-foreground: oklch(0.3 0.03 265);
+  --sidebar-primary: oklch(0.47 0.085 203);
+  --sidebar-primary-foreground: oklch(0.985 0.01 200);
+  --sidebar-accent: oklch(0.9 0.045 203 / 0.62);
+  --sidebar-accent-foreground: oklch(0.33 0.07 205);
+  --sidebar-border: oklch(1 0 0 / 0.6);
+  --sidebar-ring: oklch(0.47 0.085 203 / 0.55);
 
-  --color-bg: #f3f2f2;
-  --color-surface: #eae9e9;
-  --color-text: #201f1d;
-  --color-accent: #b68235;
-  --color-accent-2: #ac803e;
-  --color-divider: color-mix(in srgb, #201f1d 16%, transparent);
+  /* 业务状态色：浅底 + 深字，色相取自同一套极光色，互相用明度与色相区分。 */
+  --status-pending: oklch(0.92 0.045 203 / 0.8);
+  --status-pending-foreground: oklch(0.36 0.075 205);
+  --status-resubmit: oklch(0.94 0.055 70 / 0.85);
+  --status-resubmit-foreground: oklch(0.45 0.1 55);
+  --status-done: oklch(0.93 0.05 125 / 0.85);
+  --status-done-foreground: oklch(0.4 0.075 130);
+  --status-closed: oklch(0.93 0.01 275 / 0.8);
+  --status-closed-foreground: oklch(0.48 0.02 270);
 
-  /* Tonal ramps — generated in OKLCH on one shared lightness scale, so the
-     same step of any role matches the others in visual value. */
-  --color-neutral-100: #f8f4f4;
-  --color-neutral-200: #eae7e7;
-  --color-neutral-300: #d7d3d3;
-  --color-neutral-400: #bab6b6;
-  --color-neutral-500: #9b9797;
-  --color-neutral-600: #7d7979;
-  --color-neutral-700: #605d5d;
-  --color-neutral-800: #444141;
-  --color-neutral-900: #2d2b2b;
+  /* 极光色雾：淡紫、橄榄、雾蓝、青 —— 低饱和，只作氛围，不承载信息。 */
+  --aurora-1: oklch(0.86 0.075 295);
+  --aurora-2: oklch(0.9 0.08 118);
+  --aurora-3: oklch(0.87 0.065 235);
+  --aurora-4: oklch(0.88 0.06 195);
 
-  --color-accent-100: #fff3e4;
-  --color-accent-200: #ffe3bf;
-  --color-accent-300: #facb8d;
-  --color-accent-400: #e1ad66;
-  --color-accent-500: #c28d41;
-  --color-accent-600: #a06f24;
-  --color-accent-700: #7d5411;
-  --color-accent-800: #5a3b0a;
-  --color-accent-900: #3a270d;
-
-  /* Mono scheme: no second accent was chosen. These carry a machine-derived
-     stand-in kept only so both sets resolve — treat them as one role. */
-  --color-accent-2-100: #fff3e4;
-  --color-accent-2-200: #ffe3be;
-  --color-accent-2-300: #f5cd96;
-  --color-accent-2-400: #dbaf70;
-  --color-accent-2-500: #bc8f4e;
-  --color-accent-2-600: #9b7232;
-  --color-accent-2-700: #79561f;
-  --color-accent-2-800: #573d14;
-  --color-accent-2-900: #382810;
-
-  --font-heading: var(--font-heading-loaded), var(--font-cjk-loaded), "Songti SC", "STSong", serif;
-  --font-heading-weight: 600; /* bold is retired — semibold is the interface
-     headings' ceiling; display sizes go lighter still, to the normal cut */
-  --font-body: var(--font-body-loaded), var(--font-cjk-loaded), "Songti SC", "STSong", serif;
-  /* 界面小字（按钮、标签、分段控件、表头、字段名）全是中文，字形来自 Noto Serif SC，
-     行盒若按 Cormorant/Lora 的度量计算，两套度量叠加会让上下留白不对称。
-     让度量和字形出自同一个字，并显式定行高；拉丁标题仍走 Cormorant。
-
-     另：Classical 的 10/11/12px 三档是按拉丁字形定的，中文在这几档上笔画会糊。
-     界面小字的下限整体抬一档（kicker 11、tag 12、字段名 13），并且正文颜色最浅
-     只到 --color-neutral-700（5.83:1）—— neutral-600 在这块底色上只有 3.85:1。
-     这是本项目对 Classical 的两处中文适配之一，另一处是按钮内边距。 */
-  --font-ui: var(--font-cjk-loaded), "Songti SC", "STSong", serif;
-
-  /* Classical 出厂密度是 1.15×（4.6 / 9.2 / …），那是给拉丁文本的行宽定的。
-     中文字面本身就比拉丁密实，同样的留白会显得版面发空，所以密度收回 1.0×。
-     这是 token 层的调参，不是逐处覆写 —— 要再松再紧，只改这六个值。 */
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-6: 24px;
-  --space-8: 32px;
-
-  /* ── 字号层级 ─────────────────────────────────────────────────────────
-     Classical 的标题阶 42/32/25/20/16 原样保留；界面小字阶按中文抬了一档。
-     每个模块只准写角色名，不准再写 px —— 之前 11 个模块各自攒了一套字号，
-     同一个「区块标题」在教师端是 20px、学生端 24px、课程依据 26px，
-     所以每页看起来轻重不一。 */
-  --text-display: 42px;  /* 页面主标题 h1 */
-  --text-title: 32px;    /* 门禁页、整屏面板标题 */
-  --text-card: 25px;     /* 卡片标题、页面主内容块标题 */
-  --text-section: 20px;  /* 区块标题、列表行标题、对话框标题 */
-  --text-subhead: 16px;  /* 小标题、字段组标题（靠字族与字重区分，不靠字号） */
-  --text-body: 16px;     /* 正文 */
-  --text-ui: 15px;       /* 按钮、输入框 */
-  --text-meta: 14px;     /* 次要信息、行内元数据 */
-  --text-label: 13px;    /* 字段名、状态、表头 */
-  --text-kicker: 12px;   /* kicker、tag、脚注 */
-
-  --radius-sm: 2px;
-  --radius-md: 4px;
-  --radius-lg: 7px;
-
-  /* Elevation — derived from the ground: a whisper, never a heavy drop. */
-  --shadow-sm: 0 1px 2px color-mix(in srgb, var(--color-neutral-900) 14%, transparent);
-  --shadow-md: 0 3px 10px color-mix(in srgb, var(--color-neutral-900) 16%, transparent);
-  --shadow-lg: 0 12px 32px color-mix(in srgb, var(--color-neutral-900) 22%, transparent);
-
-  /* — the only derived values, all resolved from the palette above — */
-  --primary-tint: color-mix(in srgb, var(--color-accent) 12%, transparent);
-  --primary-tint-strong: color-mix(in srgb, var(--color-accent) 22%, transparent);
-  --ink-tint: color-mix(in srgb, var(--color-text) 7%, transparent);
-  --ink-tint-strong: color-mix(in srgb, var(--color-text) 14%, transparent);
-  /* Mono scheme: 破坏性动作与错误不靠色相区分 —— 靠措辞、确认对话框和更重的
-     笔画。这里只给一档更深的墨色，不引入调色板以外的红。 */
-  --stroke-heavy: var(--color-neutral-900);
-
-  --motion-fast: 160ms cubic-bezier(0.23, 1, 0.32, 1);
-  --motion-medium: 240ms cubic-bezier(0.23, 1, 0.32, 1);
-  --z-nav: 20;
-  --z-overlay: 100;
-  --toolbar-height: 52px;
-  --sidebar-width: 232px;
-  --content-width: 1200px;
-  /* Counts, versions and tables: lining + tabular. Cormorant's default
-     oldstyle 1 sits like a short roman I and does not share height with 3. */
-  --figure-ui: tabular-nums lining-nums;
+  /* 玻璃材质：模糊强度、顶部高光、柔和投影。 */
+  --glass-blur: 20px;
+  --glass-edge: oklch(1 0 0 / 0.7);
+  --glass-shadow: 0 1px 0 0 oklch(1 0 0 / 0.85) inset,
+    0 12px 32px -18px oklch(0.3 0.06 275 / 0.3);
 }
 
-*, *::before, *::after { box-sizing: border-box; }
-html {
-  background: var(--color-bg);
-  scroll-behavior: smooth;
-  font-variant-numeric: lining-nums;
+.dark {
+  --background: oklch(0.17 0.02 270);
+  --foreground: oklch(0.95 0.01 270);
+  --card: oklch(0.24 0.02 270 / 0.6);
+  --card-foreground: oklch(0.95 0.01 270);
+  --popover: oklch(0.24 0.02 270 / 0.9);
+  --popover-foreground: oklch(0.95 0.01 270);
+  --primary: oklch(0.78 0.09 198);
+  --primary-foreground: oklch(0.2 0.03 210);
+  --secondary: oklch(0.3 0.03 255 / 0.7);
+  --secondary-foreground: oklch(0.92 0.02 250);
+  --muted: oklch(0.28 0.02 270 / 0.7);
+  --muted-foreground: oklch(0.72 0.02 270);
+  --accent: oklch(0.33 0.05 205 / 0.7);
+  --accent-foreground: oklch(0.9 0.05 200);
+  --destructive: oklch(0.7 0.17 22);
+  --border: oklch(1 0 0 / 0.1);
+  --input: oklch(1 0 0 / 0.15);
+  --ring: oklch(0.78 0.09 198 / 0.5);
+  --chart-1: oklch(0.78 0.09 198);
+  --chart-2: oklch(0.72 0.1 290);
+  --chart-3: oklch(0.76 0.09 120);
+  --chart-4: oklch(0.72 0.08 240);
+  --chart-5: oklch(0.4 0.02 270);
+  --sidebar: oklch(0.2 0.02 270 / 0.5);
+  --sidebar-foreground: oklch(0.9 0.01 270);
+  --sidebar-primary: oklch(0.78 0.09 198);
+  --sidebar-primary-foreground: oklch(0.2 0.03 210);
+  --sidebar-accent: oklch(0.33 0.05 205 / 0.6);
+  --sidebar-accent-foreground: oklch(0.92 0.05 200);
+  --sidebar-border: oklch(1 0 0 / 0.08);
+  --sidebar-ring: oklch(0.78 0.09 198 / 0.5);
+
+  --status-pending: oklch(0.33 0.05 205 / 0.8);
+  --status-pending-foreground: oklch(0.88 0.06 200);
+  --status-resubmit: oklch(0.34 0.06 65 / 0.8);
+  --status-resubmit-foreground: oklch(0.88 0.09 75);
+  --status-done: oklch(0.33 0.05 125 / 0.8);
+  --status-done-foreground: oklch(0.87 0.08 125);
+  --status-closed: oklch(0.3 0.01 270 / 0.8);
+  --status-closed-foreground: oklch(0.72 0.02 270);
+
+  --aurora-1: oklch(0.36 0.09 295);
+  --aurora-2: oklch(0.36 0.07 130);
+  --aurora-3: oklch(0.34 0.07 240);
+  --aurora-4: oklch(0.36 0.06 200);
+
+  --glass-edge: oklch(1 0 0 / 0.1);
+  --glass-shadow: 0 1px 0 0 oklch(1 0 0 / 0.08) inset,
+    0 16px 40px -20px oklch(0 0 0 / 0.6);
 }
-body {
-  min-width: 320px;
-  min-height: 100vh;
-  margin: 0;
-  background: var(--color-bg);
-  color: var(--color-text);
-  font-family: var(--font-body);
-  font-size: var(--text-body);
-  font-weight: 400;
-  line-height: 1.6;
-}
-h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-heading);
-  font-weight: var(--font-heading-weight);
-  line-height: 1.12;
-  letter-spacing: -.015em;
-  margin: 0 0 var(--space-2);
-}
-h1 { font-size: var(--text-display); font-weight: 400; } /* display sizes take the normal cut */
-h2 { font-size: var(--text-title); }
-h3 { font-size: var(--text-card); }
-h4 { font-size: var(--text-section); }
-h5 { font-size: var(--text-subhead); }
-h6 { font-size: var(--text-meta); letter-spacing: .08em; text-transform: uppercase; }
-p { margin: 0 0 var(--space-3); }
-a { color: var(--color-accent); text-decoration: none; text-underline-offset: 3px; }
-a:hover { color: var(--color-accent-700); }
-img { display: block; max-width: 100%; }
-figure { margin: 0; }
-figcaption {
-  margin-top: var(--space-1);
-  color: color-mix(in srgb, var(--color-text) 55%, transparent);
-  font-size: var(--text-kicker);
-}
-button, input, textarea, select { font: inherit; }
-button, label, th, legend, dt, summary { font-family: var(--font-ui); }
-button { cursor: pointer; line-height: 1.15; }
-button, a {
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-}
-/* Figures set lining+tabular wherever they stand as numbers or columns;
-   running prose still inherits lining from html, not oldstyle text figures. */
-time, th, td, output { font-variant-numeric: var(--figure-ui); }
-:focus { outline: none; }
-:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
-::selection { background: color-mix(in srgb, var(--color-accent) 30%, transparent); }
-/* 窄屏：主标题降一阶，其余层级不动 —— 只有这一个断点会改字号。 */
-@media (max-width: 640px) {
-  :root { --text-display: var(--text-title); }
-}
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    scroll-behavior: auto !important;
-    transition-duration: .01ms !important;
-    animation-duration: .01ms !important;
-    animation-iteration-count: 1 !important;
+
+/* 系统要求「减少透明度」时，玻璃退回为不透明表面。 */
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --card: oklch(1 0 0);
+    --popover: oklch(1 0 0);
+    --sidebar: oklch(0.985 0.005 275);
+    --glass-blur: 0px;
   }
 }
 
+@theme inline {
+  /* 全站一种字体：思源黑体自带拉丁字母与数字，中英混排不再出现两套字形。
+     等宽字只留给代码与参数摘要。 */
+  --font-sans: var(--font-cjk), "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-heading: var(--font-sans);
+
+  /* 字号阶 —— 按中文重排。shadcn 默认的 12/14 是给拉丁字母定的，中文在这两档上
+     笔画发糊、显得局促，所以 xs/sm 各抬一档；行高统一按 1.6 左右给中文留呼吸。
+     页面里只准用这张表里的档位，不写 text-[15px] 这类散值。 */
+  --text-xs: 0.8125rem;        /* 13 · 说明文字、标签、状态、表头 */
+  --text-xs--line-height: 1.25rem;
+  --text-sm: 0.9375rem;        /* 15 · 正文、按钮、输入框、表格、导航 */
+  --text-sm--line-height: 1.5rem;
+  --text-base: 1rem;           /* 16 · 卡片标题、阅读正文 */
+  --text-base--line-height: 1.625rem;
+  --text-lg: 1.125rem;         /* 18 · 区块标题 */
+  --text-lg--line-height: 1.75rem;
+  --text-xl: 1.25rem;          /* 20 */
+  --text-xl--line-height: 1.875rem;
+  --text-2xl: 1.625rem;        /* 26 · 页面标题 */
+  --text-2xl--line-height: 2.25rem;
+  --text-3xl: 2rem;            /* 32 · 统计数字 */
+  --text-3xl--line-height: 2.5rem;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --color-status-pending: var(--status-pending);
+  --color-status-pending-foreground: var(--status-pending-foreground);
+  --color-status-resubmit: var(--status-resubmit);
+  --color-status-resubmit-foreground: var(--status-resubmit-foreground);
+  --color-status-done: var(--status-done);
+  --color-status-done-foreground: var(--status-done-foreground);
+  --color-status-closed: var(--status-closed);
+  --color-status-closed-foreground: var(--status-closed-foreground);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* 进场：上移 + 淡入 + 去模糊。纯 CSS，页面一到就播，不等脚本。 */
+  --animate-reveal: reveal 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  @keyframes reveal {
+    from { opacity: 0; transform: translateY(8px); filter: blur(6px); }
+  }
+  --animate-aurora-drift-1: aurora-drift-1 28s ease-in-out infinite alternate;
+  --animate-aurora-drift-2: aurora-drift-2 34s ease-in-out infinite alternate;
+  --animate-aurora-drift-3: aurora-drift-1 40s ease-in-out infinite alternate-reverse;
+  @keyframes aurora-drift-1 {
+    to { transform: translate3d(8vw, 5vw, 0) scale(1.1); }
+  }
+  @keyframes aurora-drift-2 {
+    to { transform: translate3d(-6vw, 7vw, 0) scale(0.92); }
+  }
+}
+
+/* 语义字号：五个角色，页面标题 → 区块标题 → 卡片标题 → 正文 → 说明。
+   要整体调松或调紧，只改这里。 */
+/* 玻璃表面：卡片、侧栏、顶栏、弹层共用。 */
+@utility glass {
+  background-color: var(--card);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.5);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.5);
+  border: 1px solid var(--glass-edge);
+  box-shadow: var(--glass-shadow);
+}
+
+@utility type-page-title {
+  font-size: var(--text-2xl);
+  line-height: var(--text-2xl--line-height);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+@utility type-section-title {
+  font-size: var(--text-lg);
+  line-height: var(--text-lg--line-height);
+  font-weight: 600;
+}
+@utility type-card-title {
+  font-size: var(--text-base);
+  line-height: var(--text-base--line-height);
+  font-weight: 600;
+}
+@utility type-body {
+  font-size: var(--text-sm);
+  line-height: 1.75;
+}
+@utility type-caption {
+  font-size: var(--text-xs);
+  line-height: var(--text-xs--line-height);
+  color: var(--muted-foreground);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply bg-background font-sans;
+    font-variant-numeric: lining-nums;
+  }
+  body {
+    @apply min-h-svh bg-transparent text-foreground antialiased;
+  }
+}
+
+/* 评阅页等整屏工作区：锁定到视口高度，两栏各自滚动；窄屏恢复整页滚动。 */
 html:has([data-fill-viewport]) {
   height: 100dvh;
   overflow: hidden;

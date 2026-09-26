@@ -17,7 +17,7 @@ import {
 } from "../../_components/teacher-shell";
 import { ActivityDraftV3Form } from "../activity-draft-v3-form";
 import { emptyActivityDraftV3Values } from "../activity-draft-v3-state";
-import styles from "../../teacher-workspace.module.css";
+import { styles } from "../../teacher-ui";
 
 export default async function NewTeacherActivityPage() {
   let actor;
@@ -51,10 +51,9 @@ export default async function NewTeacherActivityPage() {
       <div className={styles.pageContent}>
         <header className={styles.pageHeader}>
           <div>
-            <p className={styles.eyebrow}>跨学科任务 / 新草稿</p>
             <h1>新建跨学科任务</h1>
             <p>
-              每条学习目标关联官方课程标准的核心素养，并由某个阶段承担、某个评价维度评价。保存后可先保持编辑中，也可直接标记为可预览。
+              每条学习目标都要关联课标核心素养，并有阶段承担、有量规评价。
             </p>
           </div>
           <div className={styles.pageHeaderActions}>

@@ -37,7 +37,7 @@ import {
 } from "../../../../server/queries/submission-workspace";
 import { SubmissionEditor } from "./submission-editor";
 import { StudentAccessGate } from "../../_components/student-shell";
-import styles from "./submission-workspace.module.css";
+import { styles } from "./submission-ui";
 import { TaskBookV3View } from "../../../_components/task-book-v3-view";
 
 const studentNavigation = [
@@ -633,7 +633,6 @@ export default async function StudentReleasePage({
         <Link className={styles.backLink} href="/student">← 返回我的活动</Link>
         <header className={styles.releaseHeader}>
           <div>
-            <p className={styles.eyebrow}>学习活动 / 阶段证据</p>
             <h1>{content.title}</h1>
             <p>{content.summary}</p>
           </div>
@@ -659,7 +658,7 @@ export default async function StudentReleasePage({
                 .join("、")}
             </p>
             <p>
-              全组共用同一份草稿、附件、提交记录和教师反馈；任一成员保存后，其他成员刷新即可看到最新内容。
+              全组共用同一份草稿、附件、提交记录和教师反馈；有人保存后，其他成员刷新即可看到。
             </p>
           </section>
         ) : null}

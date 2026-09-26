@@ -22,7 +22,8 @@ import {
   initialSubmissionActionState,
   type SubmissionActionState,
 } from "./submission-action-state";
-import styles from "./submission-workspace.module.css";
+import { Textarea } from "@/components/ui/textarea";
+import { styles } from "./submission-ui";
 import type { AttachmentUploadStrategy } from "../../../../server/attachments/attachment-storage-factory";
 
 type Submission = StudentReleaseWorkspace["submission"];
@@ -189,7 +190,7 @@ export function SubmissionEditor({
             <div>
               <strong>第 {latestRevisionNumber} 版 · 开始下一版</strong>
               <p>
-                已提交的版本不可修改。开始重交后，系统会以第 {latestRevisionNumber} 版内容为基础创建新草稿，已有版本与反馈全部保留。
+                已提交的版本不可修改。重交会以第 {latestRevisionNumber} 版为底稿新建草稿，原版本和反馈都保留。
               </p>
             </div>
             <button
@@ -216,7 +217,8 @@ export function SubmissionEditor({
   const writingField = (
     <div className={styles.writingField}>
       <label htmlFor="text-evidence">文字证据</label>
-      <textarea
+      <Textarea
+        className="min-h-56 text-base leading-7"
         id="text-evidence"
         name={canWrite ? "text" : undefined}
         value={text}
@@ -274,7 +276,7 @@ export function SubmissionEditor({
             ) : null}
           </>
         ) : (
-          "先保存草稿，再正式提交。正式提交前，草稿内容不会对教师可见。"
+          "草稿只有你能看到，正式提交后老师才看得到。"
         )}
       </p>
       <ActionNotice state={resubmitState} />
@@ -297,7 +299,7 @@ export function SubmissionEditor({
             <fieldset className={styles.checkpointFieldset}>
               <legend>阶段证据检查点</legend>
               <p>
-                勾选本阶段已完成的证据要求；这些选择会随正式提交一并记录。
+                勾选本阶段已完成的证据要求。
               </p>
               {phase.evidence.map((evidence, index) => {
                 const evidenceIndex = index + 1;
@@ -376,7 +378,7 @@ export function SubmissionEditor({
                 : `提交第 ${latestRevisionNumber + 1} 版`}
             </h3>
             <p>
-              将以当前已保存的草稿为准。提交后内容不可修改；如需调整，可开始重交，历史版本会保留。
+              以最近一次保存的草稿为准。提交后不可修改，需要调整时可以重交。
             </p>
           </div>
           <form action={submitAction} ref={submitFormRef}>

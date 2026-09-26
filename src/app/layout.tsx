@@ -1,26 +1,24 @@
 import type { Metadata } from "next";
-import { Cormorant_Garamond, Lora, Noto_Serif_SC } from "next/font/google";
+import { Geist_Mono, Noto_Sans_SC } from "next/font/google";
 import type { ReactNode } from "react";
+import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
+import { AuroraBackground } from "./_components/aurora-background";
 import "./globals.css";
 
-const displayFont = Cormorant_Garamond({
+const geistMono = Geist_Mono({
   display: "swap",
   subsets: ["latin"],
-  variable: "--font-heading-loaded",
-  weight: ["400", "600"],
+  variable: "--font-geist-mono",
 });
 
-const bodyFont = Lora({
-  display: "swap",
-  subsets: ["latin"],
-  variable: "--font-body-loaded",
-  weight: ["400", "600"],
-});
-
-const chineseFont = Noto_Serif_SC({
+// 全站唯一的界面字体：中文、拉丁字母和数字都出自思源黑体，字形一致。
+// 只用 400 / 500 / 600 三个字重。
+const chineseFont = Noto_Sans_SC({
   display: "swap",
   preload: false,
-  variable: "--font-cjk-loaded",
+  variable: "--font-cjk",
   weight: ["400", "500", "600"],
 });
 
@@ -32,11 +30,15 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html
-      className={`${displayFont.variable} ${bodyFont.variable} ${chineseFont.variable}`}
+      className={cn(geistMono.variable, chineseFont.variable)}
       data-scroll-behavior="smooth"
       lang="zh-CN"
     >
-      <body>{children}</body>
+      <body>
+        <AuroraBackground />
+        <TooltipProvider>{children}</TooltipProvider>
+        <Toaster />
+      </body>
     </html>
   );
 }

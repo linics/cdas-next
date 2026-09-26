@@ -1,6 +1,11 @@
 "use client";
 
 import { useActionState, type ReactNode } from "react";
+import { ArrowRightIcon, CircleAlertIcon } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 import {
   adminLoginAction,
   developmentQuickAdminLoginAction,
@@ -10,7 +15,18 @@ import {
   teacherLoginAction,
   type LoginActionState,
 } from "./local-login-actions";
-import styles from "./local-login-form.module.css";
+
+function errorMessage(code: string) {
+  return code === "INVALID_CREDENTIALS"
+    ? "账号信息或密码不正确"
+    : code === "ACCOUNT_LOCKED"
+      ? "账号已锁定，请稍后再试"
+      : code === "ACCOUNT_DISABLED"
+        ? "账号已停用"
+        : code === "SCHOOL_DISABLED"
+          ? "学校已停用"
+          : code;
+}
 
 export function LocalLoginForm({
   role,
@@ -40,43 +56,64 @@ export function LocalLoginForm({
     { error, schoolCode: "", account: "" },
   );
   return (
-    <form action={formAction} className={styles.form}>
-      {quickLogin ? (
-        <p className={styles.quickLoginNote}>
-          本地开发模式会使用默认{role === "TEACHER" ? "教师" : role === "STUDENT" ? "学生" : "管理员"}账号；生产与测试环境仍需密码登录。
-        </p>
-      ) : !isAdmin ? (
-        <label className={styles.field} htmlFor="login-school">
-          <span>学校代码</span>
-          <input id="login-school" name="schoolCode" autoComplete="organization" defaultValue={state.schoolCode} required />
-        </label>
-      ) : null}
-      {!quickLogin ? <label className={styles.field} htmlFor="login-account">
-        <span>{isAdmin ? "用户名" : role === "TEACHER" ? "工号" : "学号"}</span>
-        <input id="login-account" name="identifier" autoComplete="username" defaultValue={state.account} required />
-      </label> : null}
-      {!quickLogin ? <label className={styles.field} htmlFor="login-password">
-        <span>密码</span>
-        <input id="login-password" name="password" type="password" autoComplete="current-password" required />
-      </label> : null}
-      {state.error ? (
-        <p className={styles.error} role="alert">
-          {state.error === "INVALID_CREDENTIALS"
-            ? "账号信息或密码不正确"
-            : state.error === "ACCOUNT_LOCKED"
-              ? "账号已锁定，请稍后再试"
-              : state.error === "ACCOUNT_DISABLED"
-                ? "账号已停用"
-            : state.error === "SCHOOL_DISABLED"
-              ? "学校已停用"
-              : state.error}
-        </p>
-      ) : null}
-      <button className={styles.submit} disabled={pending} type="submit">
-        {pending ? "正在确认…" : quickLogin ? "使用默认账号进入" : "进入工作台"}
-        <span aria-hidden="true">→</span>
-      </button>
-      {children}
+    <form action={formAction}>
+      <FieldGroup>
+        {quickLogin ? (
+          <p className="rounded-lg border border-dashed bg-muted/40 px-3 py-2 text-sm leading-relaxed text-muted-foreground">
+            本地开发模式会使用默认{role === "TEACHER" ? "教师" : role === "STUDENT" ? "学生" : "管理员"}账号；生产与测试环境仍需密码登录。
+          </p>
+        ) : (
+          <>
+            {!isAdmin ? (
+              <Field>
+                <FieldLabel htmlFor="login-school">学校代码</FieldLabel>
+                <Input
+                  autoComplete="organization"
+                  defaultValue={state.schoolCode}
+                  id="login-school"
+                  name="schoolCode"
+                  required
+                />
+              </Field>
+            ) : null}
+            <Field>
+              <FieldLabel htmlFor="login-account">
+                {isAdmin ? "用户名" : role === "TEACHER" ? "工号" : "学号"}
+              </FieldLabel>
+              <Input
+                autoComplete="username"
+                defaultValue={state.account}
+                id="login-account"
+                name="identifier"
+                required
+              />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="login-password">密码</FieldLabel>
+              <Input
+                autoComplete="current-password"
+                id="login-password"
+                name="password"
+                required
+                type="password"
+              />
+            </Field>
+          </>
+        )}
+        {state.error ? (
+          <Alert role="alert" variant="destructive">
+            <CircleAlertIcon />
+            <AlertDescription>{errorMessage(state.error)}</AlertDescription>
+          </Alert>
+        ) : null}
+        <Field>
+          <Button disabled={pending} type="submit">
+            {pending ? "正在确认…" : quickLogin ? "使用默认账号进入" : "进入工作台"}
+            {pending ? null : <ArrowRightIcon />}
+          </Button>
+          {children}
+        </Field>
+      </FieldGroup>
     </form>
   );
 }

@@ -5,7 +5,7 @@ import {
   createClassroomAction,
   type CreateClassroomActionState,
 } from "./actions";
-import styles from "../../teacher-workspace.module.css";
+import { styles } from "../../teacher-ui";
 
 // A "use server" module may only export async functions, so the idle state
 // lives with the form that owns it.

@@ -1,7 +1,16 @@
 "use client";
 
-import { type ReactNode, useEffect, useId, useRef } from "react";
-import styles from "./ui.module.css";
+import type { ReactNode } from "react";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 
 export function ConfirmDialog({
   open,
@@ -26,52 +35,34 @@ export function ConfirmDialog({
   onCancel: () => void;
   onConfirm: () => void;
 }) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
-  const titleId = useId();
-  const detailId = useId();
-
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    if (open && !dialog.open) dialog.showModal();
-    if (!open && dialog.open) dialog.close();
-  }, [open]);
-
   return (
-    <dialog
-      aria-describedby={detailId}
-      aria-labelledby={titleId}
-      className={styles.dialog}
-      onCancel={(event) => {
-        event.preventDefault();
-        if (!pending) onCancel();
+    <AlertDialog
+      onOpenChange={(next) => {
+        if (!next && !pending) onCancel();
       }}
-      ref={dialogRef}
+      open={open}
     >
-      <div className={styles.dialogContent}>
-        <p className={styles.dialogKicker}>请核对本次操作</p>
-        <h2 id={titleId}>{title}</h2>
-        <div id={detailId}>{detail}</div>
-        <div className={styles.dialogActions}>
-          <button
-            className={styles.secondaryButton}
-            disabled={pending}
-            onClick={onCancel}
-            type="button"
-          >
-            {cancelLabel}
-          </button>
-          <button
-            className={styles.primaryButton}
-            data-tone={tone}
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <p className="text-xs text-muted-foreground">请核对本次操作</p>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
+          <AlertDialogDescription asChild>
+            <div>{detail}</div>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={pending}>{cancelLabel}</AlertDialogCancel>
+          {/* 不用 AlertDialogAction：它点完就关，而这里要等服务端结果。 */}
+          <Button
             disabled={pending || disabled}
             onClick={onConfirm}
             type="button"
+            variant={tone === "danger" ? "destructive" : "default"}
           >
             {pending ? "正在处理…" : confirmLabel}
-          </button>
-        </div>
-      </div>
-    </dialog>
+          </Button>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

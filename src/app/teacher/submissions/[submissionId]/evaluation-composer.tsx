@@ -8,6 +8,13 @@ import {
   useTransition,
 } from "react";
 import { useRouter } from "next/navigation";
+import { ArrowRightIcon, SparklesIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  NativeSelect,
+  NativeSelectOption,
+} from "@/components/ui/native-select";
+import { Textarea } from "@/components/ui/textarea";
 import { LocalizedDateTime } from "../../../_components/localized-date-time";
 import { ConfirmDialog, InlineAlert } from "../../../_components/ui";
 import type { TeacherEvaluationCitation } from "../../../../domain/evaluation/teacher-evaluation-intent";
@@ -34,7 +41,13 @@ import {
   initialEvaluationSuggestionActionState,
   type EvaluationSuggestionActionState,
 } from "./evaluation-suggestion-action-state";
-import styles from "./feedback-workspace.module.css";
+import {
+  AiNote,
+  ComposerFrame,
+  FieldHead,
+  PrepareRow,
+  ReviewNotice,
+} from "./review-ui";
 
 type RubricDimension = Readonly<{
   name: string;
@@ -108,22 +121,13 @@ function ActionNotice({
   const isSuccess = state.status === "saved" || state.status === "rejected";
 
   return (
-    <div
-      className={styles.actionNotice}
-      data-tone={isSuccess ? "success" : isConflict ? "conflict" : "error"}
-      role={isSuccess ? "status" : "alert"}
-      aria-live="polite"
-    >
-      <span aria-hidden="true">
-        {isSuccess ? "✓" : isConflict ? "↻" : "!"}
-      </span>
-      <p>{state.message}</p>
-      {isConflict && state.status !== "concurrent" ? (
-        <button type="button" onClick={onRefresh}>
-          刷新
-        </button>
-      ) : null}
-    </div>
+    <ReviewNotice
+      message={state.message}
+      onRefresh={
+        isConflict && state.status !== "concurrent" ? onRefresh : undefined
+      }
+      tone={isSuccess ? "success" : isConflict ? "conflict" : "error"}
+    />
   );
 }
 
@@ -138,22 +142,11 @@ function SuggestionNotice({
   const isSuccess = state.status === "suggested";
   const isConflict = state.status === "stale";
   return (
-    <div
-      className={styles.actionNotice}
-      data-tone={isSuccess ? "success" : isConflict ? "conflict" : "error"}
-      role={isSuccess ? "status" : "alert"}
-      aria-live="polite"
-    >
-      <span aria-hidden="true">
-        {isSuccess ? "✓" : isConflict ? "↻" : "!"}
-      </span>
-      <p>{state.message}</p>
-      {isConflict ? (
-        <button type="button" onClick={onRefresh}>
-          刷新
-        </button>
-      ) : null}
-    </div>
+    <ReviewNotice
+      message={state.message}
+      onRefresh={isConflict ? onRefresh : undefined}
+      tone={isSuccess ? "success" : isConflict ? "conflict" : "error"}
+    />
   );
 }
 
@@ -206,20 +199,20 @@ function ConfirmationPanel({
   ].includes(decisionState.status);
 
   return (
-    <section className={styles.confirmationPanel} aria-label="最终量规评价确认">
+    <section className="flex flex-col gap-3 glass rounded-2xl p-4" aria-label="最终量规评价确认">
       <InlineAlert tone="warning">
         量规评价已准备待确认；确认前不会保存，学生重新提交会使该确认失效。
       </InlineAlert>
-      <button
-        className={styles.secondaryButton}
+      <Button
         onClick={() => setConfirmDialogOpen(true)}
         type="button"
+        variant="outline"
       >
         查看最终量规评价确认
-      </button>
+      </Button>
       <form
         action={decisionAction}
-        className={styles.visuallyHidden}
+        className="sr-only"
         ref={evaluationFormRef}
       >
         <input
@@ -238,24 +231,24 @@ function ConfirmationPanel({
         open={isConfirmDialogOpen}
         title="确认并保存量规评价"
         detail={
-          <div className={styles.dialogDetail}>
+          <div className="flex flex-col gap-3 text-sm">
             <p>
               将对第 {confirmation.submissionRevisionNumber} 版正式提交创建评价版本{" "}
               {confirmation.expectedEvaluationVersion + 1}。
             </p>
-            <ul className={styles.evaluationOutcomeList}>
+            <ul className="flex flex-col divide-y rounded-md border">
               {confirmation.outcomes.map((outcome) => (
-                <li key={outcome.dimensionIndex}>
-                  <strong>
+                <li className="flex flex-wrap items-baseline gap-x-3 gap-y-1 p-2" key={outcome.dimensionIndex}>
+                  <strong className="font-medium text-foreground">
                     {outcome.dimensionIndex}. {outcome.dimensionName}
                   </strong>
-                  <span>
+                  <span className="ml-auto font-medium text-foreground">
                     {outcome.status === "LEVEL" && outcome.level
                       ? teacherEvaluationLevelLabels[outcome.level]
                       : teacherEvaluationOutcomeStatusLabels.INSUFFICIENT_EVIDENCE}
                   </span>
                   {outcome.citations.length > 0 ? (
-                    <small>
+                    <small className="w-full text-xs">
                       {outcome.citations
                         .map((citation) =>
                           citationLabel(citation, attachments, checkpoints),
@@ -266,7 +259,7 @@ function ConfirmationPanel({
                 </li>
               ))}
             </ul>
-            <div className={styles.confirmationBody}>{confirmation.summary}</div>
+            <div className="max-h-48 overflow-auto rounded-md border p-3 whitespace-pre-wrap text-foreground">{confirmation.summary}</div>
             <p>
               确认有效至{" "}
               <LocalizedDateTime
@@ -276,7 +269,7 @@ function ConfirmationPanel({
               。
             </p>
             <p>
-              参数摘要：<code>{confirmation.payloadHash}</code>
+              参数摘要：<code className="font-mono text-xs break-all">{confirmation.payloadHash}</code>
             </p>
           </div>
         }
@@ -446,60 +439,48 @@ export function EvaluationComposer({
   }
 
   return (
-    <section
-      className={styles.composer}
-      aria-labelledby="evaluation-editor-title"
-      aria-busy={preparePending || suggestionPending}
+    <ComposerFrame
+      assistantEnabled={assistantEnabled}
+      busy={preparePending || suggestionPending}
+      lead={`第 ${submissionRevisionNumber} 版提交 · ${
+        expectedEvaluationVersion > 0
+          ? `第 ${expectedEvaluationVersion + 1} 版评价`
+          : "第一版评价"
+      } · 每个维度给出等级并引用证据，或标为证据不足`}
+      suggestion={
+        assistantEnabled ? (
+          <form action={requestSuggestion}>
+            <input type="hidden" name="submissionId" value={submissionId} />
+            <input
+              type="hidden"
+              name="submissionRevisionId"
+              value={submissionRevisionId}
+            />
+            <input
+              type="hidden"
+              name="submissionRevisionNumber"
+              value={submissionRevisionNumber}
+            />
+            <Button
+              aria-label="让助手起草这一版评价"
+              disabled={anyPending}
+              size="sm"
+              type="submit"
+              variant="outline"
+            >
+              <SparklesIcon />
+              {suggestionPending ? "起草中…" : "AI 起草建议"}
+            </Button>
+          </form>
+        ) : null
+      }
+      title={expectedEvaluationVersion > 0 ? "修改量规评价" : "撰写量规评价"}
+      titleId="evaluation-editor-title"
     >
-      <header className={styles.composerHeading}>
-        <div>
-          <h2 id="evaluation-editor-title">
-            {expectedEvaluationVersion > 0
-              ? "修改量规评价"
-              : "撰写量规评价"}
-          </h2>
-          <p className={styles.composerLead}>
-            第 {submissionRevisionNumber} 版提交 ·{" "}
-            {expectedEvaluationVersion > 0
-              ? `第 ${expectedEvaluationVersion + 1} 版评价`
-              : "第一版评价"}
-            · 每个维度需给出等级并引用证据，或标记证据不足
-          </p>
-        </div>
-        <div className={styles.composerActions}>
-          <span className={styles.manualMode}>
-            {assistantEnabled ? "教师终审 · AI 可选" : "手动撰写 · 未启用 AI"}
-          </span>
-          {assistantEnabled ? (
-            <form className={styles.suggestionAction} action={requestSuggestion}>
-              <input type="hidden" name="submissionId" value={submissionId} />
-              <input
-                type="hidden"
-                name="submissionRevisionId"
-                value={submissionRevisionId}
-              />
-              <input
-                type="hidden"
-                name="submissionRevisionNumber"
-                value={submissionRevisionNumber}
-              />
-              <button
-                className={styles.secondaryButton}
-                type="submit"
-                disabled={anyPending}
-                aria-label="让助手起草这一版评价"
-              >
-                {suggestionPending ? "起草中…" : "AI 起草建议"}
-              </button>
-            </form>
-          ) : null}
-        </div>
-      </header>
-
       {assistantEnabled ? (
-        <p className={styles.aiNote} role="note">
-          这是 AI 建议，未经你确认不会保存。助手只读取当前正式修订的文字、已确认检查点、当前量规与可解析附件；文件名和不可读内容不会交给模型。
-        </p>
+        <AiNote>
+          AI 建议需你确认后才保存。助手只读取本版正式提交的文字、已确认检查点、量规和可解析附件。
+        </AiNote>
       ) : null}
       {assistantEnabled ? (
         <SuggestionNotice
@@ -517,7 +498,7 @@ export function EvaluationComposer({
         />
       ) : null}
 
-      <form className={styles.composerForm} action={prepareAction}>
+      <form className="flex flex-col gap-4" action={prepareAction}>
         <input type="hidden" name="submissionId" value={submissionId} />
         <input
           type="hidden"
@@ -552,34 +533,35 @@ export function EvaluationComposer({
           const levelId = `teacher-evaluation-level-${index + 1}`;
           return (
             <fieldset
-              className={styles.evaluationDimension}
+              className="flex flex-col gap-3 rounded-lg border p-3"
               key={`${dimension.name}:${index}`}
             >
-              <legend>
+              <legend className="px-1 text-sm font-semibold">
                 维度 {index + 1}：{dimension.name}
               </legend>
-              <dl className={styles.levelScale}>
-                <div>
-                  <dt>优秀</dt>
-                  <dd>{dimension.excellent}</dd>
+              <dl className="grid grid-cols-1 gap-1.5 text-xs sm:grid-cols-2">
+                <div className="rounded-md bg-muted/60 p-2">
+                  <dt className="font-medium">优秀</dt>
+                  <dd className="text-muted-foreground">{dimension.excellent}</dd>
                 </div>
-                <div>
-                  <dt>良好</dt>
-                  <dd>{dimension.good}</dd>
+                <div className="rounded-md bg-muted/60 p-2">
+                  <dt className="font-medium">良好</dt>
+                  <dd className="text-muted-foreground">{dimension.good}</dd>
                 </div>
-                <div>
-                  <dt>合格</dt>
-                  <dd>{dimension.pass}</dd>
+                <div className="rounded-md bg-muted/60 p-2">
+                  <dt className="font-medium">合格</dt>
+                  <dd className="text-muted-foreground">{dimension.pass}</dd>
                 </div>
-                <div>
-                  <dt>需改进</dt>
-                  <dd>{dimension.improve}</dd>
+                <div className="rounded-md bg-muted/60 p-2">
+                  <dt className="font-medium">需改进</dt>
+                  <dd className="text-muted-foreground">{dimension.improve}</dd>
                 </div>
               </dl>
-              <div className={styles.choiceGrid}>
-                <div>
-                  <label htmlFor={statusId}>判断方式</label>
-                  <select
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-medium" htmlFor={statusId}>判断方式</label>
+                  <NativeSelect
+                    className="w-full"
                     id={statusId}
                     value={draft.status}
                     onChange={(event) => {
@@ -612,17 +594,18 @@ export function EvaluationComposer({
                     disabled={anyPending}
                     required
                   >
-                    <option value="" disabled>
+                    <NativeSelectOption value="" disabled>
                       请选择判断方式
-                    </option>
-                    <option value="LEVEL">给出等级</option>
-                    <option value="INSUFFICIENT_EVIDENCE">证据不足</option>
-                  </select>
+                    </NativeSelectOption>
+                    <NativeSelectOption value="LEVEL">给出等级</NativeSelectOption>
+                    <NativeSelectOption value="INSUFFICIENT_EVIDENCE">证据不足</NativeSelectOption>
+                  </NativeSelect>
                 </div>
                 {draft.status === "LEVEL" ? (
-                  <div>
-                    <label htmlFor={levelId}>达成等级</label>
-                    <select
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-sm font-medium" htmlFor={levelId}>达成等级</label>
+                    <NativeSelect
+                      className="w-full"
                       id={levelId}
                       value={draft.level}
                       onChange={(event) => {
@@ -637,23 +620,24 @@ export function EvaluationComposer({
                       disabled={anyPending}
                       required
                     >
-                      <option value="" disabled>
+                      <NativeSelectOption value="" disabled>
                         请选择等级
-                      </option>
-                      <option value="excellent">优秀</option>
-                      <option value="good">良好</option>
-                      <option value="pass">合格</option>
-                      <option value="improve">需改进</option>
-                    </select>
+                      </NativeSelectOption>
+                      <NativeSelectOption value="excellent">优秀</NativeSelectOption>
+                      <NativeSelectOption value="good">良好</NativeSelectOption>
+                      <NativeSelectOption value="pass">合格</NativeSelectOption>
+                      <NativeSelectOption value="improve">需改进</NativeSelectOption>
+                    </NativeSelect>
                   </div>
                 ) : null}
               </div>
               {draft.status === "LEVEL" ? (
-                  <fieldset className={styles.evaluationCitations}>
-                    <legend>引用本版证据（1–5 项）</legend>
+                  <fieldset className="flex flex-col gap-2 rounded-md bg-muted/40 p-3">
+                    <legend className="text-xs font-medium text-muted-foreground">引用本版证据（1–5 项）</legend>
                     {hasTextEvidence ? (
-                      <label>
+                      <label className="flex items-start gap-2 text-sm">
                         <input
+                          className="mt-0.5 size-4 accent-primary"
                           type="checkbox"
                           checked={draft.citeText}
                           onChange={(event) => {
@@ -672,8 +656,9 @@ export function EvaluationComposer({
                       </label>
                     ) : null}
                     {attachments.map((attachment) => (
-                      <label key={attachment.id}>
+                      <label className="flex items-start gap-2 text-sm" key={attachment.id}>
                         <input
+                          className="mt-0.5 size-4 accent-primary"
                           type="checkbox"
                           checked={draft.attachmentIds.includes(attachment.id)}
                           onChange={(event) => {
@@ -699,8 +684,9 @@ export function EvaluationComposer({
                       </label>
                     ))}
                     {checkpoints.map((checkpoint) => (
-                      <label key={checkpoint.evidenceIndex}>
+                      <label className="flex items-start gap-2 text-sm" key={checkpoint.evidenceIndex}>
                         <input
+                          className="mt-0.5 size-4 accent-primary"
                           type="checkbox"
                           checked={draft.evidenceIndexes.includes(
                             checkpoint.evidenceIndex,
@@ -738,18 +724,16 @@ export function EvaluationComposer({
           );
         })}
 
-        <div className={styles.fieldHead}>
-          <label htmlFor="teacher-evaluation-summary">综合评价</label>
-          <span
-            id="teacher-evaluation-count"
-            data-over-limit={summaryOverLimit ? "true" : "false"}
-          >
-            {codePointCount.toLocaleString("zh-CN")} / 10,000
-          </span>
-        </div>
-        <textarea
+        <FieldHead
+          count={codePointCount}
+          countId="teacher-evaluation-count"
+          htmlFor="teacher-evaluation-summary"
+          label="综合评价"
+          overLimit={summaryOverLimit}
+        />
+        <Textarea
+          className="min-h-28"
           id="teacher-evaluation-summary"
-          className={styles.compactTextarea}
           name="summary"
           value={draftSummary}
           onChange={(event) => setDraftSummary(event.target.value)}
@@ -758,18 +742,18 @@ export function EvaluationComposer({
           spellCheck="true"
           disabled={anyPending}
         />
-        <p id="teacher-evaluation-help" className={styles.visuallyHidden}>
+        <p id="teacher-evaluation-help" className="sr-only">
           评价内容需经确认后才会保存；形成性下一步在上方反馈中单独确认。
         </p>
 
-        <div className={styles.prepareRow}>
-          <p>
-            {expectedEvaluationVersion > 0
-              ? `当前评价版本 ${expectedEvaluationVersion}；确认后新增一版，旧版不会被覆盖。形成性下一步仍在上方单独确认。`
-              : "确认后才会写入第一版评价。形成性下一步仍在上方单独确认。"}
-          </p>
-          <button
-            className={styles.prepareButton}
+        <PrepareRow
+          note={
+            expectedEvaluationVersion > 0
+              ? `确认后保存为第 ${expectedEvaluationVersion + 1} 版评价，旧版保留。`
+              : "确认后才会保存。"
+          }
+        >
+          <Button
             type="submit"
             disabled={
               anyPending ||
@@ -779,10 +763,10 @@ export function EvaluationComposer({
             }
           >
             {preparePending ? "正在准备…" : "准备评价确认"}
-            <span aria-hidden="true">→</span>
-          </button>
-        </div>
+            <ArrowRightIcon />
+          </Button>
+        </PrepareRow>
       </form>
-    </section>
+    </ComposerFrame>
   );
 }

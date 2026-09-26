@@ -9,7 +9,7 @@ import {
   AdminAccessGate,
   AdminPage,
 } from "./_components/admin-shell";
-import styles from "./admin.module.css";
+import { styles } from "./admin-ui";
 
 export default async function AdminHomePage() {
   let dashboard;
@@ -33,9 +33,8 @@ export default async function AdminHomePage() {
     <AdminPage actorName={dashboard.actor.displayName}>
       <header className={styles.pageHeader}>
         <div>
-          <p className={styles.eyebrow}>管理员</p>
           <h1>学校与教师边界</h1>
-          <p>这里只统计学校、教师、学生和班级数量，不打开活动、提交或评价。</p>
+          
         </div>
       </header>
       <dl className={styles.stats}>

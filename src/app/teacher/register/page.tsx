@@ -6,8 +6,12 @@ import {
   registerTeacherAction,
   type RegisterTeacherActionState,
 } from "./actions";
-import gateStyles from "../../_components/access-gate.module.css";
-import formStyles from "../../auth/local-login-form.module.css";
+import { ArrowRightIcon, CircleAlertIcon } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { AccessGateLayout } from "../../_components/access-gate-layout";
 
 // A "use server" module may only export async functions, so the idle state
 // lives with the form that owns it.
@@ -23,57 +27,53 @@ export default function TeacherRegisterPage() {
     idleState,
   );
   return (
-    <div className={gateStyles.gate}>
-      <section className={gateStyles.gateAside}>
-        <Link className={gateStyles.brand} href="/" aria-label="返回 CDAS Next 首页">
-          <strong>CDAS</strong>
-          <small>跨学科学习活动</small>
-        </Link>
-        <div className={gateStyles.pitch}>
-          <p className={gateStyles.eyebrow}>教师账号开通</p>
-          <h1>用邀请码建立你的教师工作台</h1>
-          <p>填写学校提供的邀请码与身份信息。开通完成后，可以直接进入活动设计与班级管理。</p>
-        </div>
-        <ol className={gateStyles.steps}>
-          <li><span>01</span>确认学校</li>
-          <li><span>02</span>验证邀请</li>
-          <li><span>03</span>开始设计</li>
-        </ol>
-      </section>
-      <main className={gateStyles.accessGate}>
-        <div>
-          <p className={gateStyles.eyebrow}>教师账号开通</p>
-          <h2>使用学校邀请码开通</h2>
-        </div>
-        <form action={formAction} className={formStyles.form}>
-          <label className={formStyles.field} htmlFor="register-school">
-            <span>学校代码</span>
-            <input id="register-school" name="schoolCode" autoComplete="organization" defaultValue={state.schoolCode} required />
-          </label>
-          <label className={formStyles.field} htmlFor="register-invite">
-            <span>学校邀请码</span>
-            <input id="register-invite" name="inviteCode" autoComplete="one-time-code" required />
-          </label>
-          <label className={formStyles.field} htmlFor="register-staff">
-            <span>工号</span>
-            <input id="register-staff" name="staffNo" autoComplete="username" defaultValue={state.staffNo} required />
-          </label>
-          <label className={formStyles.field} htmlFor="register-name">
-            <span>显示名称</span>
-            <input id="register-name" name="displayName" defaultValue={state.displayName} required />
-          </label>
-          <label className={formStyles.field} htmlFor="register-password">
-            <span>密码</span>
-            <input id="register-password" name="password" type="password" autoComplete="new-password" required />
-          </label>
-          {state.error ? <p className={formStyles.error} role="alert">{state.error}</p> : null}
-          <button className={formStyles.submit} disabled={pending} type="submit">
-            {pending ? "正在开通…" : "开通账号"}
-            <span aria-hidden="true">→</span>
-          </button>
-          <Link className={gateStyles.backLink} href="/teacher">返回教师工作台</Link>
-        </form>
-      </main>
-    </div>
+    <AccessGateLayout
+      eyebrow="教师账号开通"
+      pitchBody="填写学校提供的邀请码与身份信息。开通完成后，可以直接进入活动设计与班级管理。"
+      pitchTitle="用邀请码建立你的教师工作台"
+      steps={["确认学校", "验证邀请", "开始设计"]}
+      title="使用学校邀请码开通"
+      workspace="教师账号开通"
+    >
+      <form action={formAction}>
+        <FieldGroup>
+          <Field>
+            <FieldLabel htmlFor="register-school">学校代码</FieldLabel>
+            <Input id="register-school" name="schoolCode" autoComplete="organization" defaultValue={state.schoolCode} required />
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="register-invite">学校邀请码</FieldLabel>
+            <Input id="register-invite" name="inviteCode" autoComplete="one-time-code" required />
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="register-staff">工号</FieldLabel>
+            <Input id="register-staff" name="staffNo" autoComplete="username" defaultValue={state.staffNo} required />
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="register-name">显示名称</FieldLabel>
+            <Input id="register-name" name="displayName" defaultValue={state.displayName} required />
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="register-password">密码</FieldLabel>
+            <Input id="register-password" name="password" type="password" autoComplete="new-password" required />
+          </Field>
+          {state.error ? (
+            <Alert role="alert" variant="destructive">
+              <CircleAlertIcon />
+              <AlertDescription>{state.error}</AlertDescription>
+            </Alert>
+          ) : null}
+          <Field>
+            <Button disabled={pending} type="submit">
+              {pending ? "正在开通…" : "开通账号"}
+              {pending ? null : <ArrowRightIcon />}
+            </Button>
+            <Button asChild variant="link">
+              <Link href="/teacher">返回教师工作台</Link>
+            </Button>
+          </Field>
+        </FieldGroup>
+      </form>
+    </AccessGateLayout>
   );
 }

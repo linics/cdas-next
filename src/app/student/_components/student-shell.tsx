@@ -1,8 +1,9 @@
 import Link from "next/link";
 import type { AuthenticationError } from "../../../server/auth/current-actor";
-import { LocalLoginForm } from "../../auth/local-login-form";
-import gateStyles from "../../_components/access-gate.module.css";
 import { isDevelopmentQuickLoginEnabled } from "../../../server/auth/development-quick-login";
+import { LocalLoginForm } from "../../auth/local-login-form";
+import { Button } from "@/components/ui/button";
+import { AccessGateLayout } from "../../_components/access-gate-layout";
 
 export function StudentAccessGate({
   code,
@@ -34,51 +35,21 @@ export function StudentAccessGate({
           };
 
   return (
-    <div className={gateStyles.gate}>
-      <section className={gateStyles.gateAside}>
-        <Link
-          className={gateStyles.brand}
-          href="/"
-          aria-label="返回 CDAS Next 首页"
-        >
-          <strong>CDAS</strong>
-          <small>跨学科学习活动</small>
-        </Link>
-        <div className={gateStyles.pitch}>
-          <p className={gateStyles.eyebrow}>学生工作台</p>
-          <h1>查看活动、提交证据、获得教师反馈</h1>
-          <p>
-            这里只显示发布给你所在班级的活动。每次正式提交都会保留版本，收到教师反馈后可以继续修改或推进。
-          </p>
-        </div>
-        <ol className={gateStyles.steps}>
-          <li>
-            <span>01</span>查看活动
-          </li>
-          <li>
-            <span>02</span>提交证据
-          </li>
-          <li>
-            <span>03</span>阅读反馈
-          </li>
-          <li>
-            <span>04</span>按需重交
-          </li>
-        </ol>
-      </section>
-      <main className={gateStyles.accessGate}>
-        <div>
-          <p className={gateStyles.eyebrow}>{copy.eyebrow}</p>
-          <h2>{copy.title}</h2>
-        </div>
-        {code === "UNAUTHENTICATED" || code === "USER_NOT_PROVISIONED" ? (
-          <LocalLoginForm role="STUDENT" quickLogin={isDevelopmentQuickLoginEnabled()} />
-        ) : code === "PASSWORD_CHANGE_REQUIRED" ? (
-          <div className={gateStyles.actions}>
-            <Link className={gateStyles.primaryButton} href="/student/password">修改密码后继续</Link>
-          </div>
-        ) : null}
-      </main>
-    </div>
+    <AccessGateLayout
+      eyebrow={copy.eyebrow}
+      pitchBody="这里只显示发布给你所在班级的活动。每次正式提交都会保留版本，收到教师反馈后可以继续修改或推进。"
+      pitchTitle="查看活动、提交证据、获得教师反馈"
+      steps={["查看活动", "提交证据", "阅读反馈", "按需重交"]}
+      title={copy.title}
+      workspace="学生工作台"
+    >
+      {code === "UNAUTHENTICATED" || code === "USER_NOT_PROVISIONED" ? (
+        <LocalLoginForm role="STUDENT" quickLogin={isDevelopmentQuickLoginEnabled()} />
+      ) : code === "PASSWORD_CHANGE_REQUIRED" ? (
+        <Button asChild>
+          <Link href="/student/password">修改密码后继续</Link>
+        </Button>
+      ) : null}
+    </AccessGateLayout>
   );
 }

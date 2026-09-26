@@ -1,8 +1,18 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from "react";
+import { useState } from "react";
+import { DownloadIcon, EyeIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { attachmentDisposition } from "../../domain/submission/attachment-policy";
-import styles from "./attachment-preview.module.css";
 
 export type PreviewableAttachment = Readonly<{
   id: string;
@@ -28,16 +38,7 @@ export function AttachmentPreview({
   attachment: PreviewableAttachment;
 }) {
   const [open, setOpen] = useState(false);
-  const dialogRef = useRef<HTMLDialogElement>(null);
-  const titleId = useId();
   const inline = attachmentDisposition(attachment.mediaType) === "inline";
-
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    if (open && !dialog.open) dialog.showModal();
-    if (!open && dialog.open) dialog.close();
-  }, [open]);
 
   if (!inline) {
     return null;
@@ -46,62 +47,50 @@ export function AttachmentPreview({
   const isImage = attachment.mediaType.startsWith("image/");
 
   return (
-    <>
-      <button
-        className={styles.previewButton}
-        type="button"
-        onClick={() => setOpen(true)}
-      >
-        预览
-      </button>
-      <dialog
-        aria-labelledby={titleId}
-        className={styles.previewDialog}
-        onCancel={(event) => {
-          event.preventDefault();
-          setOpen(false);
-        }}
-        ref={dialogRef}
-      >
-        <div className={styles.previewFrame}>
-          <header className={styles.previewHeader}>
-            <div>
-              <p className={styles.previewKicker}>附件预览</p>
-              <h2 id={titleId}>{attachment.filename}</h2>
-            </div>
-            <div className={styles.previewActions}>
-              <a
-                className={styles.previewDownload}
-                href={downloadHref(attachment.id)}
-                download={attachment.filename}
-              >
-                下载原件
-              </a>
-              <button type="button" onClick={() => setOpen(false)}>
-                关闭
-              </button>
-            </div>
-          </header>
-          {/* Only mounted while open: an iframe per attachment would otherwise
-              fetch every file the moment the page renders. */}
-          {open ? (
-            <div className={styles.previewBody}>
-              {isImage ? (
-                // next/image cannot serve this: the bytes come from a private,
-                // no-store, per-actor authorised stream, so there is nothing for
-                // an optimiser to cache or re-fetch on its own.
-                // eslint-disable-next-line @next/next/no-img-element
-                <img alt={attachment.filename} src={downloadHref(attachment.id)} />
-              ) : (
-                <iframe
-                  src={downloadHref(attachment.id)}
-                  title={attachment.filename}
-                />
-              )}
-            </div>
-          ) : null}
-        </div>
-      </dialog>
-    </>
+    <Dialog onOpenChange={setOpen} open={open}>
+      <DialogTrigger asChild>
+        <Button size="sm" type="button" variant="outline">
+          <EyeIcon />
+          预览
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="flex h-[85vh] max-w-[min(64rem,calc(100vw-2rem))] flex-col gap-4 sm:max-w-[min(64rem,calc(100vw-2rem))]">
+        <DialogHeader className="pr-8">
+          <DialogDescription>附件预览</DialogDescription>
+          <DialogTitle className="truncate">{attachment.filename}</DialogTitle>
+        </DialogHeader>
+        {/* Only mounted while open: an iframe per attachment would otherwise
+            fetch every file the moment the page renders. */}
+        {open ? (
+          <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto rounded-lg border bg-muted/40">
+            {isImage ? (
+              // next/image cannot serve this: the bytes come from a private,
+              // no-store, per-actor authorised stream, so there is nothing for
+              // an optimiser to cache or re-fetch on its own.
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                alt={attachment.filename}
+                className="max-h-full max-w-full object-contain"
+                src={downloadHref(attachment.id)}
+              />
+            ) : (
+              <iframe
+                className="size-full bg-background"
+                src={downloadHref(attachment.id)}
+                title={attachment.filename}
+              />
+            )}
+          </div>
+        ) : null}
+        <DialogFooter>
+          <Button asChild variant="outline">
+            <a download={attachment.filename} href={downloadHref(attachment.id)}>
+              <DownloadIcon />
+              下载原件
+            </a>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
