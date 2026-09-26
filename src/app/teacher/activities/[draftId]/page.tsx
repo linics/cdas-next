@@ -1,10 +1,15 @@
 import { randomUUID } from "node:crypto";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ZodError } from "zod";
 import { LocalizedDateTime } from "../../../_components/localized-date-time";
 import { AuthenticationError } from "../../../../server/auth/current-actor";
 import { createUiCommandContext } from "../../../../server/commands/create-ui-command-context";
 import { getDatabaseClient } from "../../../../server/db/client";
+import {
+  ActivityCopyError,
+} from "../../../../server/activity/activity-copy-source";
+import { getActivityDraftOrigin } from "../../../../server/queries/activity-copy-workspace";
 import {
   getTeacherActivityDraft,
   TeacherActivityQueryError,
@@ -27,13 +32,21 @@ export default async function TeacherActivityPage({
 }) {
   const { draftId } = await params;
   let workspace;
+  let origin: Awaited<ReturnType<typeof getActivityDraftOrigin>> = null;
+  let originError = false;
   try {
     const context = await createUiCommandContext();
-    workspace = await getTeacherActivityDraft(
-      getDatabaseClient(),
-      context,
-      { draftId },
-    );
+    const database = getDatabaseClient();
+    workspace = await getTeacherActivityDraft(database, context, { draftId });
+    try {
+      origin = await getActivityDraftOrigin(database, context, draftId);
+    } catch (error) {
+      if (error instanceof ActivityCopyError) {
+        originError = true;
+      } else {
+        throw error;
+      }
+    }
   } catch (error) {
     if (error instanceof AuthenticationError) {
       return (
@@ -70,7 +83,24 @@ export default async function TeacherActivityPage({
               ；每次保存都会生成新版本，历史版本保留。
             </p>
           </div>
+          {content.schemaVersion === 3 && draft.status !== "SEALED" ? (
+            <Link
+              className={styles.secondaryButton}
+              href={`/teacher/activities/copy?kind=DRAFT&id=${draft.id}&version=${draft.version}`}
+            >
+              复制为新活动
+            </Link>
+          ) : null}
         </header>
+        {origin ? (
+          <p className="flex w-fit items-center gap-2 rounded-lg border bg-muted/50 px-3 py-1.5 text-sm text-muted-foreground">
+            来源活动：{origin.kind === "DRAFT" ? "草稿" : "已发布快照"}「{origin.title}」· 版本 {origin.version}
+          </p>
+        ) : originError ? (
+          <p className="w-fit rounded-lg border bg-muted/50 px-3 py-1.5 text-sm text-muted-foreground" role="status">
+            来源信息暂时无法读取。
+          </p>
+        ) : null}
         {content.schemaVersion === 1 ? (
           <article className={styles.legacyReadPanel}>
             <header>

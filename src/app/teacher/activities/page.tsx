@@ -76,6 +76,9 @@ export default async function TeacherActivityStudioPage() {
             <Link className={styles.secondaryButton} href="/teacher/knowledge">
               检索课程标准
             </Link>
+            <Link className={styles.secondaryButton} href="/teacher/activities/copy">
+              复用已有活动
+            </Link>
             <Link className={styles.primaryLink} href="/teacher/activities/new">
               新建学习活动 <span aria-hidden="true">＋</span>
             </Link>

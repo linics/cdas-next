@@ -127,8 +127,9 @@ pnpm e2e:real-model
 - [AGENT.md](./AGENT.md)：嵌入式助手工具与风险边界
 - [DECISIONS.md](./DECISIONS.md)：已接受的架构决策
 - [ROADMAP.md](./ROADMAP.md)：后续切片与长期候选能力
+- [PLAN-NEXT-DEVELOPMENT.md](./PLAN-NEXT-DEVELOPMENT.md)：2026-09-22 源码核查后的开发优先级、首版范围与候选验收
 - [ARCHITECTURE.md](./ARCHITECTURE.md)：代码分层和运行时边界
 - [STAGING.md](./STAGING.md)：远端合成 staging 门禁
 - [SELF-HOST.md](./SELF-HOST.md)：单机自托管 runbook
 
-当前主线包含学校边界、本地认证、schema v2 任务书、阶段与小组执行、附件、官方课标检索、结构化反馈、量规评价和受约束教师助手。SSO/MFA、真实学生数据生产授权、开放式 RAG、产品运行时多 Agent、自动评分、跨校管理和旧数据库迁移仍不在第一阶段范围。
+当前主线包含学校边界、本地认证、教师建班与学生名单导入、schema v3 新任务书（保留 v1/v2 历史读取与既有未封存 v2 草稿编辑）、阶段与小组执行、附件、官方课标检索、结构化反馈、量规评价、过程诊断和受约束教师助手。SSO/MFA、真实学生数据生产授权、开放式 RAG、产品运行时多 Agent、自动评分、跨校教学资源管理和旧数据库迁移仍不在第一阶段范围。
