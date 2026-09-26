@@ -13,9 +13,11 @@ import { PrintButton } from "./print-button";
 export function TaskBookSheet({
   taskBook,
   backHref,
+  docxHref,
 }: {
   taskBook: PrintableTaskBook;
   backHref: string;
+  docxHref: string;
 }) {
   const { content } = taskBook;
   return (
@@ -24,7 +26,14 @@ export function TaskBookSheet({
         <Button asChild variant="outline">
           <Link href={backHref}>返回</Link>
         </Button>
-        <PrintButton />
+        <span className="flex flex-wrap gap-2">
+          <Button asChild variant="outline">
+            <a download href={docxHref}>
+              下载 Word（可编辑）
+            </a>
+          </Button>
+          <PrintButton />
+        </span>
       </div>
       <header className="mb-6 border-b border-black/30 pb-4">
         <p className="text-sm text-black/70">
