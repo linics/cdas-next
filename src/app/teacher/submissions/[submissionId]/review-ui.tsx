@@ -69,7 +69,7 @@ export function ComposerFrame({
     <section
       aria-busy={busy}
       aria-labelledby={titleId}
-      className="flex flex-col gap-4 rounded-xl border bg-card p-4 text-card-foreground shadow-xs"
+      className="flex flex-col gap-4 glass rounded-2xl p-4 text-card-foreground"
     >
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-1">

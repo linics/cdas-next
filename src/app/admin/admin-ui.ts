@@ -10,7 +10,7 @@ const button = (...args: Parameters<typeof buttonVariants>) =>
  * 管理员页面（概览、学校、教师）共用的版式。只用 Tailwind 语义类，
  * 颜色来自主题 token；按钮取 shadcn 的 buttonVariants。
  */
-const card = "rounded-xl border bg-card text-card-foreground shadow-xs";
+const card = "glass rounded-2xl text-card-foreground";
 
 export const styles = {
   pageHeader:

@@ -32,7 +32,7 @@ const nestedControls = [
   "[&_:disabled]:cursor-not-allowed [&_:disabled]:opacity-50",
 ].join(" ");
 
-const card = "rounded-xl border bg-card text-card-foreground shadow-xs";
+const card = "glass rounded-2xl text-card-foreground";
 
 export const styles = {
   // 页面骨架

@@ -123,7 +123,7 @@ function ConfirmationPanel({
   ].includes(decisionState.status);
 
   return (
-    <section className="flex flex-col gap-3 rounded-xl border bg-card p-4" aria-label="最终反馈确认">
+    <section className="flex flex-col gap-3 glass rounded-2xl p-4" aria-label="最终反馈确认">
       <InlineAlert tone="warning">反馈已准备待确认；确认前不会保存，学生重新提交会使该确认失效。</InlineAlert>
       <Button onClick={() => setConfirmDialogOpen(true)} type="button" variant="outline">查看最终反馈确认</Button>
       <form action={decisionAction} className="sr-only" ref={feedbackFormRef}>

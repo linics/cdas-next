@@ -50,10 +50,10 @@ const styles = {
   revisionBadges: "flex gap-1.5",
   formalLabel: "text-xs text-muted-foreground",
   submissionBody:
-    "rounded-xl border bg-card p-5 text-base leading-7 whitespace-pre-wrap shadow-xs",
+    "glass rounded-2xl p-5 text-base leading-7 whitespace-pre-wrap",
   formalAttachmentList: "flex flex-col gap-2 text-sm",
   historyDisclosure:
-    "group rounded-xl border bg-card [&>summary]:cursor-pointer [&>summary]:px-4 [&>summary]:py-3 [&>summary]:text-sm [&>summary]:font-medium [&[open]>summary]:border-b",
+    "group glass rounded-2xl [&>summary]:cursor-pointer [&>summary]:px-4 [&>summary]:py-3 [&>summary]:text-sm [&>summary]:font-medium [&[open]>summary]:border-b",
   revisionList: "flex flex-col gap-6 p-4",
   statusLine: "grid grid-cols-2 gap-3",
   feedbackHistory: "flex flex-col gap-3 p-4 text-sm",

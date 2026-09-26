@@ -347,7 +347,7 @@ export default async function TeacherInsightsPage({
         {hasReleases ? (
           <form
             action="/teacher/insights"
-            className="flex flex-col gap-2 rounded-xl border bg-card p-4 shadow-xs sm:flex-row sm:items-center sm:gap-3"
+            className="flex flex-col gap-2 glass rounded-2xl p-4 sm:flex-row sm:items-center sm:gap-3"
             method="get"
           >
             <label

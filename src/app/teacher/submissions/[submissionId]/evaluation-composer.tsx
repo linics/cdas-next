@@ -199,7 +199,7 @@ function ConfirmationPanel({
   ].includes(decisionState.status);
 
   return (
-    <section className="flex flex-col gap-3 rounded-xl border bg-card p-4" aria-label="最终量规评价确认">
+    <section className="flex flex-col gap-3 glass rounded-2xl p-4" aria-label="最终量规评价确认">
       <InlineAlert tone="warning">
         量规评价已准备待确认；确认前不会保存，学生重新提交会使该确认失效。
       </InlineAlert>
