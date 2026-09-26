@@ -1,6 +1,6 @@
-# Classical 视觉合同（现行）
+# Classical 视觉合同（已被取代）
 
-状态：绑定。任何教师端、学生端、门页、对话框、悬浮 Agent 面板的可见改动都必须遵守本文。
+状态：**已被取代**。自 2026-09-26 起，现行视觉合同是 [`FROSTED.md`](./FROSTED.md)（D-065）。本文只作历史记录保留，不要按本文画新界面。
 
 `design-system/cdas-next/MASTER.md` 是 UI-201 历史稿（海军蓝实底按钮、系统无衬线）。**不要按 MASTER 画新界面。** 现行实现与 token 以 `src/app/globals.css` 的 `:root` 为准。中文适配只允许本文写明的三处，禁止再发明第四套字号或颜色。
 
