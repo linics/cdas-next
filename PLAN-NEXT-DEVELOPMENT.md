@@ -200,6 +200,8 @@
 - 非管理员、角色不匹配、不存在学生、停用对象及参数篡改不产生写入；教师方案若获接受，再补跨校、非当前成员和管理权变化反例。
 - UI 明确提示会退出该学生已有设备，但不展示其作业内容；AI 不提供重置工具。
 
+**进度（2026-09-27）：**按 D-073 由本班管理教师重置，见 [实施卡](PLAN-N5-STUDENT-PASSWORD-RESET.md)。
+
 涉及入口：[本地认证](src/server/auth/local-auth-primitives.ts)、[教师密码签发参考](src/server/commands/admin-teacher-commands.ts)、[学生改密页](src/app/student/password/page.tsx)。非目标：邮件找回、MFA、批量密码下载、修改账号身份信息。
 
 ## 9. 开发阶段的完整性检查

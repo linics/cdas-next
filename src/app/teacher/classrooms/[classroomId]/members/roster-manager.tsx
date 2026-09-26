@@ -13,6 +13,7 @@ import {
   prepareEndMembershipAction,
   prepareRosterImportAction,
   previewRosterImportAction,
+  resetStudentPasswordAction,
   type RosterPrepareActionResult,
   type RosterPreviewActionResult,
 } from "./actions";
@@ -38,6 +39,8 @@ export function RosterManager({
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [deleteConfirmationOpen, setDeleteConfirmationOpen] = useState(false);
+  const [resetTarget, setResetTarget] = useState<{ studentId: string; name: string } | null>(null);
+  const [issuedPassword, setIssuedPassword] = useState<{ name: string; password: string } | null>(null);
   const currentMemberships = roster.memberships.filter((membership) => membership.status === "CURRENT");
   const historicalMemberships = roster.memberships.filter((membership) => membership.status !== "CURRENT");
   const readyKeys = useMemo(
@@ -74,6 +77,24 @@ export function RosterManager({
     });
     if (result.ok) setPrepared(result);
     else setMessage(result.message);
+    setBusy(false);
+  }
+
+  async function confirmReset() {
+    if (!resetTarget) return;
+    setBusy(true);
+    setMessage(null);
+    const result = await resetStudentPasswordAction({
+      classroomId: roster.classroom.id,
+      studentId: resetTarget.studentId,
+      idempotencyKey: `reset_student_password_${crypto.randomUUID()}`,
+    });
+    if (result.ok) {
+      setIssuedPassword({ name: resetTarget.name, password: result.temporaryPassword });
+    } else {
+      setMessage(result.message);
+    }
+    setResetTarget(null);
     setBusy(false);
   }
 
@@ -140,6 +161,34 @@ export function RosterManager({
           </div>
           <span>{currentMemberships.length} 名</span>
         </header>
+        {issuedPassword ? (
+          <InlineAlert tone="success">
+            <span className="flex flex-col gap-2">
+              <span>
+                「{issuedPassword.name}」的临时密码（只显示这一次，学生登录后必须修改）：
+              </span>
+              <code className="w-fit rounded-md border bg-background px-3 py-1.5 font-mono text-lg tracking-wider">
+                {issuedPassword.password}
+              </code>
+              <span className="flex flex-wrap gap-2">
+                <button
+                  className={styles.secondaryButton}
+                  onClick={() => void navigator.clipboard?.writeText(issuedPassword.password)}
+                  type="button"
+                >
+                  复制
+                </button>
+                <button
+                  className={styles.secondaryButton}
+                  onClick={() => setIssuedPassword(null)}
+                  type="button"
+                >
+                  我已记下，隐藏
+                </button>
+              </span>
+            </span>
+          </InlineAlert>
+        ) : null}
         {currentMemberships.length === 0 ? (
           <p className={styles.emptyState}>当前没有有效成员，可用下方 Excel 名单导入，或用右侧名单码加入。</p>
         ) : (
@@ -150,14 +199,27 @@ export function RosterManager({
                   <h3>{membership.studentName}</h3>
                   <p>加入于 <LocalizedDateTime dateTime={membership.joinedAt} /></p>
                 </div>
-                <button
-                  className={styles.dangerButton}
-                  disabled={busy}
-                  onClick={() => prepareEnd(membership.id)}
-                  type="button"
-                >
-                  结束成员关系
-                </button>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    className={styles.secondaryButton}
+                    disabled={busy}
+                    onClick={() => {
+                      setIssuedPassword(null);
+                      setResetTarget({ studentId: membership.studentId, name: membership.studentName });
+                    }}
+                    type="button"
+                  >
+                    重置密码
+                  </button>
+                  <button
+                    className={styles.dangerButton}
+                    disabled={busy}
+                    onClick={() => prepareEnd(membership.id)}
+                    type="button"
+                  >
+                    结束成员关系
+                  </button>
+                </div>
               </article>
             ))}
           </div>
@@ -265,6 +327,19 @@ export function RosterManager({
         )}
       </section>
 
+      <ConfirmDialog
+        confirmLabel="重置并显示新密码"
+        detail={
+          resetTarget
+            ? `将为「${resetTarget.name}」生成新的临时密码，并退出他已登录的所有设备；原密码立即失效。新密码只显示一次，学生登录后必须修改。不会显示或改动他的作业。`
+            : ""
+        }
+        onCancel={() => setResetTarget(null)}
+        onConfirm={() => void confirmReset()}
+        open={resetTarget !== null}
+        pending={busy}
+        title="重置学生密码"
+      />
       <ConfirmDialog
         open={Boolean(confirmation)}
         title={confirmation?.operation === "ADD" ? "确认加入班级成员" : "确认结束成员关系"}
