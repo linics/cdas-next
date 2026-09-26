@@ -163,6 +163,7 @@ model AppUser {
   drafts                  ActivityDraft[]                 @relation("DraftOwner")
   adoptedSources          ActivityDraftSourceReference[]  @relation("SourceReferenceAdopter")
   withdrawnSources        ActivityDraftSourceWithdrawal[] @relation("SourceReferenceWithdrawer")
+  requestedDiagnoses      ActivityDraftDiagnosis[]        @relation("DiagnosisRequester")
   releases                ActivityRelease[]               @relation("ReleasePublisher")
   actionIntents           ActionIntent[]                  @relation("ActionIntentActor")
   actionDecisions         ActionIntent[]                  @relation("ActionIntentDecider")
@@ -269,6 +270,7 @@ model ActivityDraft {
   release              ActivityRelease?
   origin               ActivityDraftOrigin?
   sourceReferences     ActivityDraftSourceReference[]
+  diagnoses            ActivityDraftDiagnosis[]
 
   @@index([ownerId, status, updatedAt])
   @@map("activity_drafts")
@@ -294,6 +296,7 @@ model ActivityDraftRevision {
   releaseSnapshots     ActivityReleaseSnapshot[]
   copiedDrafts         ActivityDraftOrigin[]
   sourceReferences     ActivityDraftSourceReference[]
+  diagnoses            ActivityDraftDiagnosis[]
 
   @@unique([draftId, version])
   @@map("activity_draft_revisions")
@@ -384,6 +387,26 @@ model ActivityDraftSourceReference {
   @@unique([revisionId, sectionId])
   @@index([draftId, createdAt])
   @@map("activity_draft_source_references")
+}
+
+// An AI quality check of one exact draft revision (D-068). Append-only; a
+// newer revision leaves older diagnoses bound to the version they read.
+model ActivityDraftDiagnosis {
+  id            String                @id @default(uuid()) @db.Uuid
+  draftId       String                @map("draft_id") @db.Uuid
+  revisionId    String                @map("revision_id") @db.Uuid
+  agentRunId    String                @unique @map("agent_run_id") @db.Uuid
+  requestedById String                @map("requested_by_id") @db.Uuid
+  summary       String
+  findings      Json
+  createdAt     DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  draft         ActivityDraft         @relation(fields: [draftId], references: [id], onDelete: Restrict)
+  revision      ActivityDraftRevision @relation(fields: [revisionId], references: [id], onDelete: Restrict)
+  agentRun      AgentRun              @relation(fields: [agentRunId], references: [id], onDelete: Restrict)
+  requestedBy   AppUser               @relation("DiagnosisRequester", fields: [requestedById], references: [id], onDelete: Restrict)
+
+  @@index([draftId, createdAt])
+  @@map("activity_draft_diagnoses")
 }
 
 model ActivityDraftSourceWithdrawal {
@@ -619,6 +642,7 @@ model AgentRun {
   actor               AppUser                        @relation(fields: [actorId], references: [id], onDelete: Restrict)
   draftRevision       ActivityDraftRevision?
   sourceReferences    ActivityDraftSourceReference[]
+  diagnosis           ActivityDraftDiagnosis?
   intents             ActionIntent[]
   auditEntries        ActionAudit[]
   feedbackRevisions   TeacherFeedbackRevision[]
