@@ -553,6 +553,12 @@ describe("activity assistant tools", () => {
         desiredStatus: "READY_FOR_PREVIEW",
         content,
         agentRunId: runId,
+        // D-067: the read-checked references travel with the write.
+        sourceReferences: proposal.sourceReferences.map((reference) => ({
+          sourceId: reference.sourceId,
+          sectionId: reference.sectionId,
+          rationale: reference.reason,
+        })),
       }),
     );
     expect(result).toEqual({

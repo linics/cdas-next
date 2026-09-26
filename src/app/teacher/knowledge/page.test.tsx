@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   createUiCommandContext: vi.fn(),
   getDatabaseClient: vi.fn(),
   getTeacherIdentity: vi.fn(),
+  getAdoptableDrafts: vi.fn(),
   notFound: vi.fn(() => {
     throw new Error("NEXT_NOT_FOUND");
   }),
@@ -43,6 +44,10 @@ vi.mock("../../../server/queries/teacher-activity-workspace", () => ({
   },
   getTeacherIdentity: mocks.getTeacherIdentity,
 }));
+vi.mock("../../../server/queries/activity-source-references", () => ({
+  getAdoptableDrafts: mocks.getAdoptableDrafts,
+}));
+vi.mock("./actions", () => ({ adoptSourceAction: vi.fn() }));
 vi.mock("../_components/teacher-shell", () => ({
   TeacherAccessGate: ({ code }: { code: string }) => (
     <div data-access-gate={code}>安全门</div>
@@ -60,6 +65,7 @@ describe("teacher official knowledge page", () => {
     mocks.createUiCommandContext.mockResolvedValue(mocks.context);
     mocks.getDatabaseClient.mockReturnValue(mocks.database);
     mocks.getTeacherIdentity.mockResolvedValue({ displayName: "林老师" });
+    mocks.getAdoptableDrafts.mockResolvedValue([]);
   });
 
   it("lists the approved official sources and supports model-independent search", async () => {

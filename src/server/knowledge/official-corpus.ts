@@ -567,3 +567,22 @@ export function officialKnowledgeCoversDiscipline(code: DisciplineCode): boolean
 export function officialKnowledgeDisciplineLabel(code: DisciplineCode): string {
   return disciplineCatalog.find((item) => item.code === code)?.label ?? code;
 }
+
+/**
+ * What an adopted reference records about the corpus at adoption time (D-067):
+ * the canonical label plus the source and section hashes, so a later reader
+ * can tell whether today's text is still the text that was adopted.
+ */
+export function officialKnowledgeFingerprint(sourceId: string, sectionId: string) {
+  const found = sectionById.get(sectionId);
+  if (!found || found.source.id !== sourceId) return null;
+  return {
+    sourceId,
+    sectionId,
+    citationLabel: citationFor(found.source, found.section).citationLabel,
+    sourceHash: found.source.sourceHash,
+    contentHash: found.section.contentHash,
+    schoolStages: [...found.source.schoolStages] as SchoolStage[],
+    disciplineCodes: [...found.source.disciplineCodes] as DisciplineCode[],
+  };
+}

@@ -27,6 +27,8 @@ import { styles } from "../../teacher-ui";
 import { isActivityAssistantEnabled } from "../../../../server/assistant/assistant-config";
 import { InlineAlert } from "../../../_components/ui";
 import { AdaptationPanel } from "./adaptation-panel";
+import { SourceReferences } from "./source-references";
+import { getActivitySourceReferences } from "../../../../server/queries/activity-source-references";
 
 export default async function TeacherActivityPage({
   params,
@@ -40,10 +42,12 @@ export default async function TeacherActivityPage({
   let workspace;
   let origin: Awaited<ReturnType<typeof getActivityDraftOrigin>> = null;
   let originError = false;
+  let sources: Awaited<ReturnType<typeof getActivitySourceReferences>> = null;
   try {
     const context = await createUiCommandContext();
     const database = getDatabaseClient();
     workspace = await getTeacherActivityDraft(database, context, { draftId });
+    sources = await getActivitySourceReferences(database, context, draftId);
     try {
       origin = await getActivityDraftOrigin(database, context, draftId);
     } catch (error) {
@@ -125,6 +129,14 @@ export default async function TeacherActivityPage({
             draftId={draft.id}
             key={`adaptation-${draft.version}`}
             version={draft.version}
+          />
+        ) : null}
+        {content.schemaVersion === 3 && sources ? (
+          <SourceReferences
+            currentVersion={sources.currentVersion}
+            draftId={draft.id}
+            editable={draft.status !== "SEALED"}
+            references={sources.references}
           />
         ) : null}
         {content.schemaVersion === 1 ? (
