@@ -115,6 +115,22 @@ pnpm e2e:real-model
 
 本地账号密码不属于环境配置。合成 staging 的六组密码只能放在受保护 GitHub Environment secrets，不能进入 `.env*`、命令行、日志、截图、artifact 或 Git 历史。
 
+## 本地演示账号
+
+运行下列命令会建立（或恢复）固定的本地演示账号；每次运行都会使这些账号的既有会话失效，并将密码恢复为下表所示的值：
+
+```bash
+pnpm demo:seed -- --confirm-database cdas_next_demo
+```
+
+| 角色 | 登录入口 | 凭据 |
+| --- | --- | --- |
+| 平台管理员 | `/admin/login` | 用户名 `platformadmin`；密码 `PlatformAdmin2026` |
+| 教师 | `/teacher/login` | 学校代码 `SCHARCHX`；工号 `T-DEMO`；密码 `Teacher2026demo` |
+| 学生 | `/student/login` | 学校代码 `SCHARCHX`；学号 `700001`、`700002`、`700003` 或 `700004`；密码均为 `Student2026demo` |
+
+这些凭据是仅供本地开发和产品演示的公开模拟账号，绝不能用于真实部署或任何含真实用户数据的环境。
+
 ## 可选活动助手
 
 只有 `AI_PROVIDER_DISABLED=0` 且模型密钥、模型 ID 和审批签名密钥全部有效时，教师活动页才显示助手。助手使用只读官方课程语料工具和既有草稿/发布领域命令；模型调用、附件读取和对象存储调用都不放进数据库事务。教师仍须确认草稿提案和发布参数，AI 不是资源所有者、发布者或最终评价者。

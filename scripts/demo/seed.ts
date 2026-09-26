@@ -1,4 +1,4 @@
-import { randomBytes, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import nextEnvironment from "@next/env";
 import type { ActivityContentV3 } from "../../src/domain/activity/activity-content";
 import { demoActivitiesV3 } from "../../src/fixtures/demo-activities";
@@ -9,11 +9,13 @@ import {
   bootstrapLocalStaging,
   stagingLocalIdentifier,
 } from "../../src/server/bootstrap/bootstrap-local-staging";
+import { bootstrapPlatformAdmin } from "../../src/server/bootstrap/bootstrap-admin";
 import {
   resolveBootstrapDatabaseTarget,
   serializeBootstrapAdminCliError,
 } from "../../src/server/bootstrap/bootstrap-admin-cli";
 import { legacySchoolCode, legacySchoolId } from "../../src/domain/school/legacy-school";
+import { adminIdentifier, hashPassword } from "../../src/server/auth/local-auth-primitives";
 import type { CommandContext } from "../../src/server/commands/command-context";
 import { decideActionIntent } from "../../src/server/commands/decide-action-intent";
 import { saveActivityDraft } from "../../src/server/commands/save-activity-draft";
@@ -50,6 +52,11 @@ const DEMO_CLASSROOM_ID = "7e7e7e7e-7e7e-4e7e-8e7e-7e7e7e7e7e01";
 const DEMO_CLASSROOM_NAME = "七年一班";
 const DEMO_TEACHER_NAME = "林老师";
 const DEMO_LOGIN_STUDENT_NAME = "陈同学";
+const DEMO_ADMIN_USERNAME = "platformadmin";
+const DEMO_ADMIN_NAME = "平台管理员";
+const DEMO_ADMIN_PASSWORD = "PlatformAdmin2026";
+const DEMO_TEACHER_PASSWORD = "Teacher2026demo";
+const DEMO_STUDENT_PASSWORD = "Student2026demo";
 
 const extraStudents = [
   {
@@ -72,8 +79,36 @@ const extraStudents = [
 const DEMO_TEACHER_STAFF_NO = "T-DEMO";
 const DEMO_LOGIN_STUDENT_NO = "700001";
 
-function processOnlyPassword(name: string): string {
-  return process.env[name]?.trim() || randomBytes(32).toString("base64url");
+async function ensureDemoAdminCredential(
+  database: PrismaClient,
+  clock: Clock,
+): Promise<void> {
+  const identifier = adminIdentifier(DEMO_ADMIN_USERNAME);
+  const passwordHash = await hashPassword(DEMO_ADMIN_PASSWORD);
+  const result = await bootstrapPlatformAdmin(database, {
+    adminIdentifier: identifier,
+    passwordHash,
+    adminDisplayName: DEMO_ADMIN_NAME,
+  }, () => clock.tick());
+
+  // Unlike the operator CLI, the local demo seed is deliberately repeatable:
+  // every run restores the documented demo credential and ends old sessions.
+  await database.$transaction(async (transaction) => {
+    await transaction.localCredential.update({
+      where: { identifier },
+      data: {
+        passwordHash,
+        mustChangePassword: false,
+        passwordChangedAt: clock.tick(),
+        failedLoginCount: 0,
+        lockedUntil: null,
+      },
+    });
+    await transaction.authSession.updateMany({
+      where: { userId: result.admin.id, revokedAt: null },
+      data: { revokedAt: clock.tick() },
+    });
+  });
 }
 
 function context(actorId: string, now: Date): CommandContext {
@@ -621,19 +656,20 @@ async function main(): Promise<void> {
   const clock = new Clock();
 
   try {
+    await ensureDemoAdminCredential(database, clock);
     const loginStudentIdentifier = stagingLocalIdentifier({
       schoolCode: legacySchoolCode,
       role: "STUDENT",
       studentNo: DEMO_LOGIN_STUDENT_NO,
     });
-    const extraStudentIdentities = extraStudents.map((student, index) => ({
+    const extraStudentIdentities = extraStudents.map((student) => ({
       ...student,
       identifier: stagingLocalIdentifier({
         schoolCode: legacySchoolCode,
         role: "STUDENT",
         studentNo: student.studentNo,
       }),
-      password: processOnlyPassword(`DEV_TEST_DEMO_STUDENT_${index + 2}_PASSWORD`),
+      password: DEMO_STUDENT_PASSWORD,
     }));
     await bootstrapLocalStaging(database, {
       schools: [
@@ -647,7 +683,7 @@ async function main(): Promise<void> {
             role: "TEACHER",
             staffNo: DEMO_TEACHER_STAFF_NO,
           }),
-          password: processOnlyPassword("DEV_TEST_DEMO_TEACHER_PASSWORD"),
+          password: DEMO_TEACHER_PASSWORD,
           displayName: DEMO_TEACHER_NAME,
           role: "TEACHER",
           staffNo: DEMO_TEACHER_STAFF_NO,
@@ -655,7 +691,7 @@ async function main(): Promise<void> {
         {
           schoolCode: legacySchoolCode,
           identifier: loginStudentIdentifier,
-          password: processOnlyPassword("DEV_TEST_DEMO_STUDENT_1_PASSWORD"),
+          password: DEMO_STUDENT_PASSWORD,
           displayName: DEMO_LOGIN_STUDENT_NAME,
           role: "STUDENT",
           studentNo: DEMO_LOGIN_STUDENT_NO,
@@ -1163,7 +1199,7 @@ async function main(): Promise<void> {
             teacher: teacher.displayName,
             student: loginStudent.displayName,
             extraStudents: extraStudents.map((student) => student.displayName),
-            note: "李明、王芳、赵强用于演示花名册，登录凭据只存在于进程内。",
+            note: "四名学生均使用 README 记录的固定本地演示凭据。",
           },
           seeded: {
             drafts: [EDITING_TITLE, READY_TITLE],

@@ -18,10 +18,7 @@ import {
   setTeacherAccountStatus,
   TeacherAdminCommandError,
 } from "../../server/commands/admin-teacher-commands";
-import {
-  idleAdminActionState,
-  type AdminActionState,
-} from "./action-state";
+import type { AdminActionState } from "./action-state";
 
 function fail(message: string): AdminActionState {
   return {
@@ -260,5 +257,3 @@ export async function teacherManagerAction(
       return fail("无法识别这次教师操作，请刷新后重试。");
   }
 }
-
-export { idleAdminActionState };

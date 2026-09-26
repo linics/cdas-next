@@ -148,6 +148,22 @@ export const styles = {
   importReport:
     "flex flex-col gap-1 rounded-lg bg-muted/50 p-3 text-sm",
 
+  // 建班表单（main 上 #21–#22 引入）
+  classroomSetupForm: `${card} flex w-full max-w-2xl flex-col gap-4 p-5`,
+  classroomSetupField: `flex flex-col gap-2 [&_label]:type-card-title [&_p]:text-sm [&_p]:text-muted-foreground ${nestedControls}`,
+  classroomSetupActions:
+    "flex flex-wrap items-center gap-3 [&_p]:max-w-lg [&_p]:text-xs [&_p]:text-muted-foreground",
+  formError:
+    "rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive",
+
+  // 名册页的学生导入与班级维护（main 上 #21–#22 引入）
+  rosterCurrentSection: "min-w-0",
+  rosterPanelHeader: "flex flex-col gap-1",
+  importSection: `${card} flex flex-col gap-4 p-5 ${nestedControls}`,
+  importSectionLead: "max-w-2xl text-sm text-muted-foreground",
+  classroomCleanup:
+    "col-span-full flex flex-col gap-3 border-t pt-6 [&_header]:flex [&_header]:flex-col [&_header]:gap-1 [&_h2]:type-section-title [&>p]:max-w-2xl [&>p]:text-sm [&>p]:text-muted-foreground [&>button]:w-fit",
+
   // 过程诊断
   insightsLayout: "mx-auto flex w-full max-w-6xl flex-col gap-6",
   filterForm: `flex flex-wrap items-end gap-3 [&_label]:flex [&_label]:flex-col [&_label]:gap-1.5 [&_label]:text-sm [&_label]:font-medium ${nestedControls}`,

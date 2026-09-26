@@ -6,24 +6,17 @@
 python3 scripts/ui-audit/audit.py 1280 768 390
 ```
 
-需要先用同一组演示凭据运行种子、dev server 和审查脚本。密码只从进程环境读取，
-不会写入输出、发现结果或截图：
+先运行本地演示种子。它会恢复下面列出的固定开发凭据；脚本不会把密码写入输出、发现结果或截图：
 
 ```bash
-DEV_TEST_DEMO_TEACHER_PASSWORD='…' \
-DEV_TEST_DEMO_STUDENT_1_PASSWORD='…' \
-  pnpm demo:seed -- --confirm-database '<database-name>'
-DEV_TEST_DEMO_TEACHER_PASSWORD='…' \
-DEV_TEST_DEMO_STUDENT_1_PASSWORD='…' \
-  pnpm dev
-DEV_TEST_DEMO_TEACHER_PASSWORD='…' \
-DEV_TEST_DEMO_STUDENT_1_PASSWORD='…' \
-  python3 scripts/ui-audit/audit.py 1280 768 390
+pnpm demo:seed -- --confirm-database '<database-name>'
+pnpm dev
+python3 scripts/ui-audit/audit.py 1280 768 390
 ```
 
-实际使用时，三个进程必须使用相同的两个密码；上面的 `…` 只是 shell 占位符，
-不要把真实密码提交到仓库。脚本分别在独立的浏览器上下文中登录
-`SCHARCHX/T-DEMO` 教师账号和 `SCHARCHX/700001` 学生账号，然后审查各自路由。
+脚本分别在独立的浏览器上下文中登录 `SCHARCHX/T-DEMO` 教师账号和
+`SCHARCHX/700001` 学生账号，然后审查各自路由。固定账号见仓库根目录 README 的「本地演示账号」；
+它们只用于本地演示，不能用于真实部署。
 
 ## 检查项
 
