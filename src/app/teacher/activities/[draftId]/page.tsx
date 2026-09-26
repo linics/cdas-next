@@ -28,6 +28,8 @@ import { isActivityAssistantEnabled } from "../../../../server/assistant/assista
 import { InlineAlert } from "../../../_components/ui";
 import { AdaptationPanel } from "./adaptation-panel";
 import { SourceReferences } from "./source-references";
+import { DraftDiagnosis } from "./draft-diagnosis";
+import { getDraftDiagnoses } from "../../../../server/queries/activity-draft-diagnoses";
 import { getActivitySourceReferences } from "../../../../server/queries/activity-source-references";
 
 export default async function TeacherActivityPage({
@@ -43,11 +45,13 @@ export default async function TeacherActivityPage({
   let origin: Awaited<ReturnType<typeof getActivityDraftOrigin>> = null;
   let originError = false;
   let sources: Awaited<ReturnType<typeof getActivitySourceReferences>> = null;
+  let diagnoses: Awaited<ReturnType<typeof getDraftDiagnoses>> = null;
   try {
     const context = await createUiCommandContext();
     const database = getDatabaseClient();
     workspace = await getTeacherActivityDraft(database, context, { draftId });
     sources = await getActivitySourceReferences(database, context, draftId);
+    diagnoses = await getDraftDiagnoses(database, context, draftId);
     try {
       origin = await getActivityDraftOrigin(database, context, draftId);
     } catch (error) {
@@ -137,6 +141,14 @@ export default async function TeacherActivityPage({
             draftId={draft.id}
             editable={draft.status !== "SEALED"}
             references={sources.references}
+          />
+        ) : null}
+        {content.schemaVersion === 3 && diagnoses ? (
+          <DraftDiagnosis
+            canDiagnose={draft.status !== "SEALED" && isActivityAssistantEnabled()}
+            currentVersion={draft.version}
+            diagnoses={diagnoses}
+            draftId={draft.id}
           />
         ) : null}
         {content.schemaVersion === 1 ? (
