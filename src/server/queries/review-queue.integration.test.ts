@@ -26,7 +26,7 @@ suite("N2 review queue authorization", () => {
     const other = await db!.appUser.create({ data: { authSubject: randomUUID(), role: "TEACHER", displayName: "其他教师", schoolId: school.id, staffNo: `T-${randomUUID().slice(0, 8).toUpperCase()}` } });
     const classroom = await db!.classroom.create({ data: { name: "队列班级", schoolId: school.id, managerId: teacher.id } });
     const release = await createPublishedActivity(db!, { teacherId: teacher.id, classroomId: classroom.id, publishedAt: now, content: waterConservationTaskBookV3 });
-    const input = { releaseId: release.releaseId, submissionId: randomUUID(), filter: { status: "feedback" as const, phase: null } };
+    const input = { releaseId: release.releaseId, submissionId: randomUUID(), filter: { status: "feedback" as const, phase: null, dimension: null } };
 
     expect(await getReviewQueuePosition(db!, context(teacher.id), input)).toEqual({ total: 0, position: null, previousId: null, nextId: null });
     await expect(getReviewQueuePosition(db!, context(other.id), input)).rejects.toBeInstanceOf(SubmissionWorkspaceQueryError);

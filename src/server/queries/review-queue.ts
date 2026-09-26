@@ -23,6 +23,7 @@ export function reviewQueueItems(
     hasEvaluation: submission.currentRevision.evaluation !== null,
     awaitingResubmission:
       submission.currentRevision.followUp === "AWAITING_RESUBMISSION",
+    lowDimensionIndexes: submission.currentRevision.lowDimensionIndexes,
   }));
 }
 

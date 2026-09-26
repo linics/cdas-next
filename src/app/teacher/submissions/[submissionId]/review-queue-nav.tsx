@@ -28,7 +28,7 @@ export function ReviewQueueNav({
   const query = reviewQueueQuery(filter);
   const queueLabel = `${reviewQueueStatusLabels[filter.status]}${
     filter.phase !== null ? ` · 第 ${filter.phase} 阶段` : ""
-  }`;
+  }${filter.dimension !== null ? ` · 维度 ${filter.dimension} 待改进` : ""}`;
   return (
     <nav
       aria-label="评阅队列"

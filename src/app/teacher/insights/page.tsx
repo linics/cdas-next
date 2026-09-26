@@ -156,6 +156,14 @@ function RubricCard({
                 </span>
               ))}
             </p>
+            {dimension.improve + dimension.insufficient > 0 ? (
+              <Link
+                className="w-fit text-sm font-medium underline-offset-4 hover:underline"
+                href={`/teacher/releases/${card.releaseId}/submissions?dim=${dimension.dimensionIndex}`}
+              >
+                查看待改进或证据不足的 {dimension.improve + dimension.insufficient} 份 →
+              </Link>
+            ) : null}
           </li>
         ))}
       </ul>
@@ -195,6 +203,17 @@ function StageCard({
                 {ratioLabel(bucket.count, card.audienceCount)
                   ? ` · ${ratioLabel(bucket.count, card.audienceCount)}`
                   : ""}
+                {bucket.count > 0 && bucket.key !== "complete" ? (
+                  <>
+                    {" · "}
+                    <Link
+                      className="font-medium underline-offset-4 hover:underline"
+                      href={`/teacher/releases/${card.releaseId}/submissions?stage=${encodeURIComponent(bucket.key)}#progress`}
+                    >
+                      查看是谁
+                    </Link>
+                  </>
+                ) : null}
               </span>
             </div>
             <StackedBar

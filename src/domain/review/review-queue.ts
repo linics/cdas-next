@@ -21,11 +21,17 @@ export const reviewQueueStatusLabels = Object.fromEntries(
 export type ReviewQueueFilter = Readonly<{
   status: ReviewQueueStatus;
   phase: number | null;
+  /**
+   * A rubric dimension (1-based) from the insights drill-down (D-070): only
+   * submissions whose current evaluation puts it at 待改进 or 证据不足.
+   */
+  dimension: number | null;
 }>;
 
 export const defaultReviewQueueFilter: ReviewQueueFilter = {
   status: "all",
   phase: null,
+  dimension: null,
 };
 
 export type ReviewQueueItem = Readonly<{
@@ -34,6 +40,7 @@ export type ReviewQueueItem = Readonly<{
   hasFeedback: boolean;
   hasEvaluation: boolean;
   awaitingResubmission: boolean;
+  lowDimensionIndexes: readonly number[];
 }>;
 
 function first(value: string | string[] | undefined): string | undefined {
@@ -50,11 +57,15 @@ export function parseReviewQueueFilter(
   const status = first(params.queue);
   const phaseText = first(params.phase);
   const phase = phaseText && /^\d{1,2}$/.test(phaseText) ? Number(phaseText) : null;
+  const dimensionText = first(params.dim);
+  const dimension =
+    dimensionText && /^[1-8]$/.test(dimensionText) ? Number(dimensionText) : null;
   return {
     status: reviewQueueStatuses.some((item) => item.code === status)
       ? (status as ReviewQueueStatus)
       : "all",
     phase,
+    dimension,
   };
 }
 
@@ -62,6 +73,7 @@ export function reviewQueueQuery(filter: ReviewQueueFilter): string {
   const params = new URLSearchParams();
   if (filter.status !== "all") params.set("queue", filter.status);
   if (filter.phase !== null) params.set("phase", String(filter.phase));
+  if (filter.dimension !== null) params.set("dim", String(filter.dimension));
   const query = params.toString();
   return query ? `?${query}` : "";
 }
@@ -72,6 +84,12 @@ export function matchesReviewQueue(
   rubricAvailable: boolean,
 ): boolean {
   if (filter.phase !== null && item.phaseIndex !== filter.phase) return false;
+  if (
+    filter.dimension !== null &&
+    !item.lowDimensionIndexes.includes(filter.dimension)
+  ) {
+    return false;
+  }
   switch (filter.status) {
     case "all":
       return true;
