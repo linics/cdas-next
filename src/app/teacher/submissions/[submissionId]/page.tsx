@@ -516,6 +516,12 @@ export default async function TeacherSubmissionPage({
                 <dd className="text-sm font-medium">{evaluationStatus}</dd>
               </div>
             </dl>
+            <a
+              className="w-fit text-sm font-medium underline-offset-4 hover:underline"
+              href={`/print/submissions/${submission.id}`}
+            >
+              打印学习成果报告
+            </a>
             <details className={styles.historyDisclosure}>
               <summary>已确认记录</summary>
               <FeedbackHistory revision={currentRevision} />
