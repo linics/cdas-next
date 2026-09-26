@@ -24,13 +24,19 @@ import { ActivityDraftForm } from "../activity-draft-form";
 import { ActivityDraftV3Form } from "../activity-draft-v3-form";
 import { structuredTaskBookValues } from "../activity-draft-action-state";
 import { styles } from "../../teacher-ui";
+import { isActivityAssistantEnabled } from "../../../../server/assistant/assistant-config";
+import { InlineAlert } from "../../../_components/ui";
+import { AdaptationPanel } from "./adaptation-panel";
 
 export default async function TeacherActivityPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ draftId: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { draftId } = await params;
+  const adapted = (await searchParams)?.adapted === "1";
   let workspace;
   let origin: Awaited<ReturnType<typeof getActivityDraftOrigin>> = null;
   let originError = false;
@@ -101,6 +107,26 @@ export default async function TeacherActivityPage({
             来源信息暂时无法读取。
           </p>
         ) : null}
+        {adapted && draft.revision.source === "AGENT" ? (
+          <InlineAlert tone="success">
+            AI 适配已写入为第 {draft.version} 版，原版本保留在历史中。可继续在下方修改，发布前请预览核对。
+          </InlineAlert>
+        ) : null}
+        {content.schemaVersion === 3 &&
+        draft.status !== "SEALED" &&
+        isActivityAssistantEnabled() ? (
+          <AdaptationPanel
+            applyIdempotencyKey={`apply_activity_adaptation_${randomUUID()}`}
+            currentGrade={content.grade}
+            currentLessons={content.phases.reduce(
+              (sum, phase) => sum + phase.suggestedLessons,
+              0,
+            )}
+            draftId={draft.id}
+            key={`adaptation-${draft.version}`}
+            version={draft.version}
+          />
+        ) : null}
         {content.schemaVersion === 1 ? (
           <article className={styles.legacyReadPanel}>
             <header>
@@ -119,6 +145,7 @@ export default async function TeacherActivityPage({
         ) : null}
         {content.schemaVersion === 3 ? (
           <ActivityDraftV3Form
+            key={`form-${draft.version}`}
             initialState={{
               status: "idle",
               message: "",

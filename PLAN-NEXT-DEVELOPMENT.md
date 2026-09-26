@@ -75,6 +75,8 @@
 - 并发修改、账号停用或失去管理权时不产生半份草稿。
 - AI 关闭时完整可用。观察教师完成“复用并修改再发布”的操作数与耗时，不预设提升比例。
 
+**进度（2026-09-27）：**基础复制已按 D-063 完成；AI 适配已按 D-066 完成，见 [实施卡](PLAN-N1-AI-ADAPTATION.md)。v1/v2 转换仍待评估真实需要后再决定。下一方向是 N4。
+
 涉及入口：[活动列表](src/app/teacher/activities/page.tsx)、[草稿保存](src/server/commands/save-activity-draft.ts)、[发布命令](src/server/commands/publish-activity-release.ts)。非目标：公共模板市场、跨教师共享、批量发布。AI 适配步骤另补年级/学科合法性、未指定区域保留、差异确认、并发版本与模型失败验收；不得自动发布。
 
 ## 5. N2：连续评阅与诊断联动

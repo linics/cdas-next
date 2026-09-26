@@ -44,6 +44,14 @@ export const deepSeekAgentLoopProviderOptions = {
   deepseek: { reasoningEffort: "low" },
 } as const;
 
+// N1 adaptation rewrites a whole task book's selected areas in one call. The
+// output is long and the judgement is lighter than grading: at the drafters'
+// high gear one of nine real calls (goals + rubric) overran 120s, so it gets
+// the low gear that still keeps the rewrite reasoned.
+export const deepSeekRewriteProviderOptions = {
+  deepseek: { reasoningEffort: "low" },
+} as const;
+
 /**
  * Pick the gear from the turn's own tool choice, because that is exactly what
  * the provider's refusal keys on. A turn that names a tool must not think; a
