@@ -36,7 +36,8 @@ import { parseReviewQueueFilter, reviewQueueQuery } from "../../../../domain/rev
 import { getReviewQueuePosition } from "../../../../server/queries/review-queue";
 import { SubmissionWorkspaceQueryError } from "../../../../server/queries/submission-workspace";
 import { ReviewQueueNav } from "./review-queue-nav";
-import { ArrowRightIcon } from "lucide-react";
+import { ArrowRightIcon, ClipboardListIcon } from "lucide-react";
+import { StatusBadge } from "../../../_components/ui";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -50,7 +51,8 @@ const styles = {
     "flex flex-col gap-1 rounded-lg border bg-muted/40 p-3 text-sm text-muted-foreground",
   railHint: "px-1 text-xs text-muted-foreground",
   historyHeading: "flex items-center justify-between gap-3",
-  phaseContext: "rounded-lg bg-muted/50 p-3 text-sm text-muted-foreground",
+  phaseContext:
+    "flex flex-col gap-1 rounded-xl border border-primary/25 bg-accent/60 px-4 py-3 text-sm text-muted-foreground",
   submissionRevision: "flex flex-col gap-4",
   revisionHeading: "flex items-start justify-between gap-3",
   revisionIndex:
@@ -435,22 +437,31 @@ export default async function TeacherSubmissionPage({
               <h1 className="type-page-title" id="submission-student-title">
                 {group?.name ?? student.displayName}
               </h1>
-              <p className={styles.contextLine}>
-                {content.title} · {submission.release.classroom.name}
-                {submission.phaseName
-                  ? ` · 第 ${submission.phaseIndex} 阶段 · ${submission.phaseName}`
-                  : " · 整项提交"}
-                {" · "}
-                正式修订 {submission.latestRevisionNumber} 版
-                {" · "}
-                {submission.release.dueAt ? (
-                  <>
-                    <LocalizedDateTime dateTime={submission.release.dueAt} /> 截止
-                  </>
-                ) : (
-                  "未设置截止"
-                )}
-              </p>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <StatusBadge tone="neutral">
+                  {submission.phaseName
+                    ? `第 ${submission.phaseIndex} 阶段 · ${submission.phaseName}`
+                    : "整项提交"}
+                </StatusBadge>
+                <StatusBadge tone="neutral">
+                  第 {currentRevision.revisionNumber} 版
+                </StatusBadge>
+                {currentRevision.isLate ? (
+                  <StatusBadge tone="resubmit">迟交</StatusBadge>
+                ) : null}
+                {submission.evaluationOpen ? (
+                  <StatusBadge tone="neutral">终稿 · 需评价</StatusBadge>
+                ) : null}
+                <span className={styles.contextLine}>
+                  {content.title} · {submission.release.classroom.name}
+                  {submission.release.dueAt ? (
+                    <>
+                      {" · "}
+                      <LocalizedDateTime dateTime={submission.release.dueAt} /> 截止
+                    </>
+                  ) : null}
+                </span>
+              </div>
             </header>
             {group ? (
               <section className={styles.railNote} role="note">
@@ -469,24 +480,22 @@ export default async function TeacherSubmissionPage({
                 </p>
               </section>
             ) : null}
-            <header className={styles.historyHeading}>
-              <div>
-                <h2 className="text-base font-semibold" id="submission-evidence-title">
-                  第 {currentRevision.revisionNumber} 版正式提交
-                </h2>
-              </div>
-              <span className="text-sm text-muted-foreground">
-                {currentRevision.isLate ? "迟交" : "期限内"}
-                {revisions.length > 1
-                  ? ` · 共 ${revisions.length} 版`
-                  : null}
-              </span>
-            </header>
             {phase ? (
-              <p className={styles.phaseContext}>
-                {phase.action} · 评价要点：{phase.evaluationFocus}
-              </p>
+              <aside className={styles.phaseContext} aria-label="这一阶段的要求">
+                <p className="flex items-center gap-1.5 text-xs font-medium text-foreground">
+                  <ClipboardListIcon aria-hidden="true" className="size-3.5" />
+                  这一阶段要求
+                </p>
+                <p>{phase.action}</p>
+                <p>
+                  <span className="font-medium text-foreground">评价要点：</span>
+                  {phase.evaluationFocus}
+                </p>
+              </aside>
             ) : null}
+            <h2 className="sr-only" id="submission-evidence-title">
+              第 {currentRevision.revisionNumber} 版提交内容
+            </h2>
             <SubmissionRevision
               revision={currentRevision}
               current

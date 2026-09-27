@@ -10,6 +10,7 @@ import {
   submissionModes,
 } from "../../domain/activity/activity-content";
 import { coreCompetencyRegistry } from "../../domain/curriculum/core-competencies";
+import { parseSupportScaffold } from "../../domain/activity/support-scaffold";
 import { waterConservationTaskBookV3 } from "../../fixtures/water-conservation-v3";
 import type { AppUser, PrismaClient } from "../../generated/prisma/client";
 
@@ -457,6 +458,21 @@ describe("product surface instructions", () => {
     expect(text).toContain("让助手起草这一版反馈");
     expect(text).toContain("让助手起草这一版评价");
     expect(text).toContain("起草时会读当前正式修订的附件");
+  });
+
+  it("asks for phase support in the shape the student page parses", () => {
+    // D-080: the student page splits support into steps and sentence starters;
+    // the example the prompt gives must survive that parser.
+    const text = buildActivityAssistantInstructions([]);
+    const example = text.match(/可以这样写：「[^\n]*/)?.[0] ?? "";
+
+    expect(text).toContain("「1. 」「2. 」");
+    expect(
+      parseSupportScaffold(`1. 把三个时间点的读数填进同一张表\n${example}`),
+    ).toMatchObject({
+      steps: ["把三个时间点的读数填进同一张表"],
+      starters: ["我们在……发现……", "数据说明……"],
+    });
   });
 });
 

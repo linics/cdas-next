@@ -136,6 +136,7 @@ export function buildActivityAdaptationPrompt(input: AdaptationModelInput): stri
     input.target.contextNote.length > 0
       ? "target.contextNote 是教师对新班级或新情境的说明，据此调整情境、对象与任务细节。"
       : "教师没有提供新情境说明，保持原有情境，只做年级或课时所需的调整。",
+    "改写阶段的 support 时按学生可照做的格式写，每项单独一行：2–4 步，每步以「1. 」「2. 」编号开头、只说一个动作；最后一行以「可以这样写：」开头，给 1–3 个用「」括起来的句子开头。",
     "保持各学科的贡献与必要性真实可辨，不要把跨学科任务改成单学科练习。不要评价原任务书的好坏，只输出改写后的内容。全程使用简体中文。",
     JSON.stringify(input, null, 2),
   ].join("\n\n");

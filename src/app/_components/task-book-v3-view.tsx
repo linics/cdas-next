@@ -120,7 +120,8 @@ export function TaskBookV3View({
               <br />
               情境：{phase.context}
               <br />
-              支架：{phase.support}
+              支架：
+              <span className="whitespace-pre-line">{phase.support}</span>
               <br />
               需提交：
               {phase.evidence

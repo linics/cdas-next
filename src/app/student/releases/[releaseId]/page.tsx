@@ -33,7 +33,18 @@ import {
 } from "../../../../server/queries/submission-workspace";
 import { SubmissionEditor } from "./submission-editor";
 import { StudentAccessGate } from "../../_components/student-shell";
+import {
+  CalendarClockIcon,
+  CheckIcon,
+  FootprintsIcon,
+  HourglassIcon,
+  LightbulbIcon,
+  LockIcon,
+  PackageCheckIcon,
+  TargetIcon,
+} from "lucide-react";
 import { styles } from "./submission-ui";
+import { parseSupportScaffold } from "../../../../domain/activity/support-scaffold";
 import { TaskBookV3View } from "../../../_components/task-book-v3-view";
 
 const studentNavigation = [
@@ -242,9 +253,25 @@ function TeacherResponse({
       data-next-step={nextStep ?? "NONE"}
     >
       <div className={styles.teacherResponseHeading}>
+        <span aria-hidden="true" data-avatar="">
+          {feedback ? (
+            Array.from(feedback.teacher.displayName)[0]
+          ) : (
+            <HourglassIcon className="size-4" />
+          )}
+        </span>
         <h2 id="teacher-response-title">
           {feedback ? `${feedback.teacher.displayName}的反馈` : "已提交，等老师反馈"}
         </h2>
+        {nextStep === "REVISE" ? (
+          <StatusBadge tone="resubmit">
+            {resubmitting ? "修改中" : "需要修改"}
+          </StatusBadge>
+        ) : nextStep === "CONTINUE" ? (
+          <StatusBadge tone="done">{finalSubmission ? "已完成" : "通过"}</StatusBadge>
+        ) : !feedback ? (
+          <StatusBadge tone="pending">等待反馈</StatusBadge>
+        ) : null}
         <span>
           第 {latest.revisionNumber} 版 ·{" "}
           <LocalizedDateTime dateTime={latest.submittedAt} />
@@ -369,6 +396,15 @@ function PhaseNavigator({
           submission !== undefined ||
           (entry.phaseIndex > 0 &&
             entry.phaseIndex < workspace.execution.currentPhaseIndex);
+        const tone =
+          submission?.followUp === "AWAITING_RESUBMISSION" ||
+          submission?.followUp === "RESUBMISSION_IN_PROGRESS"
+            ? "revise"
+            : submitted
+              ? "done"
+              : unlocked
+                ? "active"
+                : "locked";
         const state =
           submission?.followUp === "AWAITING_RESUBMISSION"
             ? "老师请你修改"
@@ -383,9 +419,21 @@ function PhaseNavigator({
                   : "待解锁";
         const content = (
           <>
-            <span>{entry.phaseIndex === 0 ? "终" : entry.phaseIndex}</span>
-            <strong>{entry.label}</strong>
-            <small>{state}</small>
+            <span aria-hidden="true" data-bubble="">
+              {tone === "done" ? (
+                <CheckIcon className="size-3.5" />
+              ) : tone === "locked" ? (
+                <LockIcon className="size-3" />
+              ) : entry.phaseIndex === 0 ? (
+                "终"
+              ) : (
+                entry.phaseIndex
+              )}
+            </span>
+            <span className="flex min-w-0 flex-col">
+              <strong className="truncate">{entry.label}</strong>
+              <small>{state}</small>
+            </span>
           </>
         );
         // 一行一档：只有当前阶段在下方展开详情，其余靠点击切换。
@@ -397,18 +445,14 @@ function PhaseNavigator({
             data-current={
               entry.phaseIndex === selectedPhaseIndex ? "true" : "false"
             }
-            data-attention={
-              submission?.followUp === "AWAITING_RESUBMISSION"
-                ? "true"
-                : undefined
-            }
+            data-tone={tone}
             href={`/student/releases/${workspace.release.id}?phase=${entry.phaseIndex}`}
             key={entry.phaseIndex}
           >
             {content}
           </Link>
         ) : (
-          <span data-locked="true" key={entry.phaseIndex}>
+          <span data-tone="locked" key={entry.phaseIndex}>
             {content}
           </span>
         );
@@ -437,6 +481,7 @@ function PhaseFocus({
   isPastDue: boolean;
   showLateWarning: boolean;
 }) {
+  const scaffold = phase ? parseSupportScaffold(phase.support) : null;
   const heading = phase
     ? `第 ${phaseIndex} 阶段 · ${phase.name}`
     : finalOfMixed
@@ -446,11 +491,9 @@ function PhaseFocus({
   return (
     <section className={styles.phaseFocus} aria-label={heading}>
       <div className={styles.phaseFocusHeading}>
-        <h2>{heading}</h2>
-        <p
-          className={styles.phaseDue}
-          data-late={isPastDue ? "true" : undefined}
-        >
+        <p>{heading}</p>
+        <span data-late={isPastDue ? "true" : undefined}>
+          <CalendarClockIcon aria-hidden="true" className="size-3.5" />
           {dueAt ? (
             <>
               截止 <LocalizedDateTime dateTime={dueAt} />
@@ -458,46 +501,76 @@ function PhaseFocus({
           ) : (
             "不限截止时间"
           )}
-        </p>
+        </span>
       </div>
       {phase ? (
         <>
-          {/* 首句是情境，不是标签 —— 学生先读到自己在这个故事里要干什么。 */}
+          {/* 标题就是这一阶段要做的事；情境在下面一句交代「为什么」。 */}
+          <h2 className={styles.phaseHeadline}>{phase.action}</h2>
           <p className={styles.phaseStory}>{phase.context}</p>
-          <p className={styles.taskLine}>
-            <strong>要做</strong>
-            {phase.action}
-          </p>
           {checklistShown ? null : (
-            <p className={styles.taskLine}>
-              <strong>要交</strong>
-              {phase.evidence
-                .map(
-                  (evidence) =>
-                    `${evidence.description}（${evidenceTypeLabel(evidence.type)}）`,
-                )
-                .join("；")}
-            </p>
+            <div className={styles.taskBlock}>
+              <p>
+                <PackageCheckIcon aria-hidden="true" className="size-4" />
+                要交
+              </p>
+              <ul>
+                {phase.evidence.map((evidence) => (
+                  <li key={evidence.description}>
+                    {evidence.description}
+                    <small>{evidenceTypeLabel(evidence.type)}</small>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
-          <p className={styles.taskLine} data-quiet="true">
-            <strong>老师会看</strong>
-            {phase.evaluationFocus}
-          </p>
-          <details className={styles.inlineDisclosure}>
-            <summary>需要提示？</summary>
-            <p className="pt-2 text-sm leading-relaxed">{phase.support}</p>
-          </details>
+          {scaffold && scaffold.steps.length > 0 ? (
+            <div className={styles.stepsBlock}>
+              <p>
+                <FootprintsIcon aria-hidden="true" className="size-4" />
+                分 {scaffold.steps.length} 步做
+              </p>
+              <ol>
+                {scaffold.steps.map((step, index) => (
+                  <li key={`${index}-${step}`}>
+                    <span aria-hidden="true">{index + 1}</span>
+                    {step}
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ) : null}
+          <div className={styles.criteriaBlock}>
+            <p>
+              <TargetIcon aria-hidden="true" className="size-4" />
+              老师会看
+            </p>
+            <p>{phase.evaluationFocus}</p>
+          </div>
+          {/* 按约定写的支架已经拆成上面的步骤和作答区的开头句；只有剩下的
+              说明（或旧式整段支架）才收进提示。 */}
+          {scaffold && scaffold.notes.length > 0 ? (
+            <details
+              className={styles.hintDisclosure}
+              open={scaffold.steps.length === 0 ? undefined : true}
+            >
+              <summary>
+                <LightbulbIcon aria-hidden="true" className="size-4" />
+                {scaffold.steps.length === 0 ? "卡住了？看看提示" : "提示"}
+              </summary>
+              {scaffold.notes.map((note, index) => (
+                <p key={`${index}-${note}`}>{note}</p>
+              ))}
+            </details>
+          ) : null}
         </>
       ) : (
         <>
-          {finalOfMixed ? (
-            <p className={styles.phaseStory}>
-              各阶段都已提交。把最终成果整理好，交一份完整的终稿。
-            </p>
-          ) : null}
-          <p className={styles.taskLine}>
-            <strong>要做</strong>
-            <span className="whitespace-pre-wrap">{wholeTaskInstructions}</span>
+          <h2 className={styles.phaseHeadline}>
+            {finalOfMixed ? "把各阶段的成果整理成一份终稿" : "完成这项活动"}
+          </h2>
+          <p className="text-sm leading-relaxed whitespace-pre-wrap">
+            {wholeTaskInstructions}
           </p>
         </>
       )}
@@ -688,58 +761,63 @@ export default async function StudentReleasePage({
           selectedPhaseIndex={selectedPhaseIndex}
         />
 
-        <div className={styles.workspaceColumn}>
-          <TeacherResponse
-            submission={selectedSubmission}
-            feedbackWorkspace={feedbackWorkspace}
-            phase={selectedPhase}
-            finalSubmission={finalSubmission}
-            nextPhaseHref={nextPhase?.href ?? null}
-            nextPhaseLabel={nextPhase?.label ?? null}
-          />
-          {selectedSubmission?.workingCopy === null &&
-          (selectedSubmission?.latestRevisionNumber ?? 0) > 0 ? null : (
-            <PhaseFocus
+        <div className={styles.workspaceGrid}>
+          <div className={styles.workspaceColumn}>
+            <TeacherResponse
+              submission={selectedSubmission}
+              feedbackWorkspace={feedbackWorkspace}
               phase={selectedPhase}
-              phaseIndex={selectedPhaseIndex}
-              wholeTaskInstructions={content.taskInstructions}
-              finalOfMixed={
-                workspace.execution.version === 1 && selectedPhaseIndex === 0
-              }
-              checklistShown={canWrite && selectedPhase !== null}
-              dueAt={dueAt}
-              isPastDue={isPastDue}
-              showLateWarning={isPastDue && isActive && canWrite}
+              finalSubmission={finalSubmission}
+              nextPhaseHref={nextPhase?.href ?? null}
+              nextPhaseLabel={nextPhase?.label ?? null}
             />
-          )}
-          <SubmissionEditor
-            releaseId={releaseId}
-            phaseIndex={selectedPhaseIndex}
-            phase={selectedPhase}
-            submission={selectedSubmission}
-            canWrite={canWrite}
-            isPastDue={isPastDue}
-            attachmentUpload={attachmentUpload}
-            readOnlyMessage={readOnlyMessage}
-            workingCopyUpdatedLabel={
-              selectedSubmission?.workingCopy
-                ? <LocalizedDateTime
-                    dateTime={selectedSubmission.workingCopy.updatedAt}
-                  />
-                : null
-            }
-            idempotencySeeds={{
-              save: `save_${randomUUID()}`,
-              submit: `submit_${randomUUID()}`,
-              resubmit: `resubmit_${randomUUID()}`,
-            }}
-          />
-          <EarlierVersions
-            submission={selectedSubmission}
-            feedbackWorkspace={feedbackWorkspace}
-            phase={selectedPhase}
-          />
+            {selectedSubmission?.workingCopy === null &&
+            (selectedSubmission?.latestRevisionNumber ?? 0) > 0 ? null : (
+              <PhaseFocus
+                phase={selectedPhase}
+                phaseIndex={selectedPhaseIndex}
+                wholeTaskInstructions={content.taskInstructions}
+                finalOfMixed={
+                  workspace.execution.version === 1 && selectedPhaseIndex === 0
+                }
+                checklistShown={canWrite && selectedPhase !== null}
+                dueAt={dueAt}
+                isPastDue={isPastDue}
+                showLateWarning={isPastDue && isActive && canWrite}
+              />
+            )}
+          </div>
+          <div className={styles.workColumn}>
+            <SubmissionEditor
+              releaseId={releaseId}
+              phaseIndex={selectedPhaseIndex}
+              phase={selectedPhase}
+              submission={selectedSubmission}
+              canWrite={canWrite}
+              isPastDue={isPastDue}
+              attachmentUpload={attachmentUpload}
+              readOnlyMessage={readOnlyMessage}
+              workingCopyUpdatedLabel={
+                selectedSubmission?.workingCopy
+                  ? <LocalizedDateTime
+                      dateTime={selectedSubmission.workingCopy.updatedAt}
+                    />
+                  : null
+              }
+              idempotencySeeds={{
+                save: `save_${randomUUID()}`,
+                submit: `submit_${randomUUID()}`,
+                resubmit: `resubmit_${randomUUID()}`,
+              }}
+            />
+          </div>
         </div>
+
+        <EarlierVersions
+          submission={selectedSubmission}
+          feedbackWorkspace={feedbackWorkspace}
+          phase={selectedPhase}
+        />
 
         <ReleaseBrief
           snapshot={workspace.release.snapshot}

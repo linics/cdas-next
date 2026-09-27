@@ -8,7 +8,12 @@ import {
   useTransition,
 } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRightIcon, SparklesIcon } from "lucide-react";
+import {
+  ArrowRightIcon,
+  CircleCheckIcon,
+  CircleDashedIcon,
+  SparklesIcon,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { LocalizedDateTime } from "../../../_components/localized-date-time";
@@ -483,11 +488,15 @@ export function EvaluationComposer({
     [dimensionDrafts, rubricDimensions],
   );
 
-  const dimensionsReady = dimensionDrafts.every((draft) => {
-    if (draft.status === "INSUFFICIENT_EVIDENCE") return true;
-    if (draft.status !== "LEVEL" || !draft.level) return false;
-    return citationsFromDraft(draft).length > 0;
-  });
+  const dimensionDone = (draft: DimensionDraft) =>
+    draft.status === "INSUFFICIENT_EVIDENCE" ||
+    (draft.status === "LEVEL" &&
+      draft.level !== "" &&
+      citationsFromDraft(draft).length > 0);
+  const remainingDimensions = dimensionDrafts.filter(
+    (draft) => !dimensionDone(draft),
+  ).length;
+  const dimensionsReady = remainingDimensions === 0;
 
   const requestSuggestion = (formData: FormData) => {
     startSuggestionTransition(async () => {
@@ -650,7 +659,22 @@ export function EvaluationComposer({
               <ChoiceGroup
                 detached
                 disabled={anyPending}
-                legend={`${index + 1}. ${dimension.name}`}
+                legend={
+                  <span className="inline-flex items-center gap-1.5">
+                    {dimensionDone(draft) ? (
+                      <CircleCheckIcon
+                        aria-label="已定级"
+                        className="size-4 text-status-done-foreground"
+                      />
+                    ) : (
+                      <CircleDashedIcon
+                        aria-hidden="true"
+                        className="size-4 text-muted-foreground"
+                      />
+                    )}
+                    {index + 1}. {dimension.name}
+                  </span>
+                }
                 name={`teacher-evaluation-dimension-${index + 1}`}
                 onChange={(next) =>
                   setDimensionDrafts((current) =>
@@ -741,7 +765,16 @@ export function EvaluationComposer({
           评价内容需经确认后才会保存；形成性下一步在上方反馈中单独确认。
         </p>
 
-        <PrepareRow note="学生会看到每个维度的等级和综合评价。">
+        <PrepareRow
+          note={
+            remainingDimensions > 0
+              ? `还差 ${remainingDimensions} 个维度没定级。`
+              : !summaryHasVisibleText
+                ? "再写一段综合评价就可以保存。"
+                : "学生会看到每个维度的等级和综合评价。"
+          }
+          tone={dimensionsReady && summaryHasVisibleText ? "ready" : "pending"}
+        >
           <Button
             type="submit"
             disabled={

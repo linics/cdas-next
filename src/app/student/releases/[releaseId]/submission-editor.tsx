@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { useRouter } from "next/navigation";
+import { PencilLineIcon } from "lucide-react";
 import { ConfirmDialog, InlineAlert } from "../../../_components/ui";
 import {
   evidenceTypeLabel,
@@ -30,6 +31,7 @@ import {
 } from "./submission-action-state";
 import { Textarea } from "@/components/ui/textarea";
 import { styles } from "./submission-ui";
+import { parseSupportScaffold } from "../../../../domain/activity/support-scaffold";
 import type { AttachmentUploadStrategy } from "../../../../server/attachments/attachment-storage-factory";
 
 type Submission = StudentReleaseWorkspace["submission"];
@@ -275,9 +277,33 @@ export function SubmissionEditor({
           : "已自动保存"
         : "写下的内容会自动保存；提交前只有你能看到";
 
+  // 支架里的开头句（D-080）：点一下接到正文末尾，学生不必从空白开始。
+  const starters =
+    canWrite && phase ? parseSupportScaffold(phase.support).starters : [];
   const writingField = (
     <div className={styles.writingField}>
       <label htmlFor="text-evidence">写下你的记录和说明</label>
+      {starters.length > 0 ? (
+        <div className={styles.starterRow}>
+          <span>可以这样开头</span>
+          {starters.map((starter) => (
+            <button
+              key={starter}
+              type="button"
+              disabled={anyPending}
+              onClick={() =>
+                setEditedText(
+                  text.trim().length === 0
+                    ? starter
+                    : `${text.replace(/\s+$/, "")}\n${starter}`,
+                )
+              }
+            >
+              {starter}
+            </button>
+          ))}
+        </div>
+      ) : null}
       <Textarea
         className="min-h-56 text-base leading-7"
         id="text-evidence"
@@ -330,7 +356,8 @@ export function SubmissionEditor({
   return (
     <section className={styles.editorSection} aria-labelledby="submission-title">
       <div className={styles.sectionHeading}>
-        <h2 id="submission-title">
+        <h2 className="flex items-center gap-2" id="submission-title">
+          <PencilLineIcon aria-hidden="true" className="size-4 text-primary" />
           {workingCopy && workingCopy.baseRevisionNumber > 0
             ? `修改第 ${workingCopy.baseRevisionNumber} 版`
             : "我的作答"}

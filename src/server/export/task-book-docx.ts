@@ -43,7 +43,13 @@ function body(text: string) {
 
 function labelled(label: string, text: string) {
   return new Paragraph({
-    children: [new TextRun({ text: `${label}：`, bold: true }), new TextRun(text)],
+    children: [
+      new TextRun({ text: `${label}：`, bold: true }),
+      // Phase support is written one step per line (D-080); Word ignores "\n".
+      ...text
+        .split(/\r?\n/)
+        .map((line, index) => new TextRun({ text: line, break: index > 0 ? 1 : undefined })),
+    ],
     spacing: { after: 60 },
   });
 }

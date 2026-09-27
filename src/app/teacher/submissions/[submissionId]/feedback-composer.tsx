@@ -2,7 +2,7 @@
 
 import { useActionState, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRightIcon, SparklesIcon } from "lucide-react";
+import { SparklesIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { LocalizedDateTime } from "../../../_components/localized-date-time";
@@ -34,7 +34,6 @@ import {
   ChoiceGroup,
   ComposerFrame,
   FieldHead,
-  PrepareRow,
   ReviewNotice,
 } from "./review-ui";
 
@@ -165,6 +164,8 @@ export function FeedbackComposer({
   const startingSupportLevel = initialSupportLevel ?? "STANDARD";
   const router = useRouter();
   const [draftBody, setDraftBody] = useState(initialBody);
+  const [submittedNextStep, setSubmittedNextStep] =
+    useState<TeacherFeedbackNextStep | null>(null);
   const [draftNextStep, setDraftNextStep] = useState<
     TeacherFeedbackNextStep | ""
   >("");
@@ -352,21 +353,6 @@ export function FeedbackComposer({
 
         <ChoiceGroup
           disabled={anyPending}
-          legend="下一步"
-          name="nextStep"
-          onChange={setDraftNextStep}
-          options={[
-            {
-              value: "CONTINUE",
-              label: finalSubmission ? "完成，无需重交" : "进入下一阶段",
-            },
-            { value: "REVISE", label: "修改后重交" },
-          ]}
-          required
-          value={draftNextStep}
-        />
-        <ChoiceGroup
-          disabled={anyPending}
           legend={
             <span>
               支架{" "}
@@ -387,21 +373,45 @@ export function FeedbackComposer({
           value={draftSupportLevel}
         />
 
-        <PrepareRow note="保存前会再请你确认一次。">
-          <Button
-            type="submit"
-            disabled={
-              anyPending ||
-              bodyOverLimit ||
-              !bodyHasVisibleText ||
-              !draftNextStep ||
-              !draftSupportLevel
-            }
-          >
-            {preparePending ? "正在准备…" : "保存反馈"}
-            <ArrowRightIcon />
-          </Button>
-        </PrepareRow>
+        {/* 下一步就是保存按钮本身（参考 Teams 的「退回 / 退回修改」）：
+            点哪一个，就以哪一个下一步准备确认。AI 建议的那个是实心按钮。 */}
+        <div className="flex flex-col gap-2 border-t pt-4">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {(["CONTINUE", "REVISE"] as const).map((step) => {
+              const emphasized = (draftNextStep || "CONTINUE") === step;
+              return (
+                <Button
+                  disabled={
+                    anyPending ||
+                    bodyOverLimit ||
+                    !bodyHasVisibleText ||
+                    !draftSupportLevel
+                  }
+                  key={step}
+                  name="nextStep"
+                  onClick={() => setSubmittedNextStep(step)}
+                  type="submit"
+                  value={step}
+                  variant={emphasized ? "default" : "outline"}
+                >
+                  {preparePending && submittedNextStep === step
+                    ? "正在准备…"
+                    : step === "REVISE"
+                      ? "保存 · 请学生修改"
+                      : finalSubmission
+                        ? "保存 · 完成"
+                        : "保存 · 进入下一阶段"}
+                </Button>
+              );
+            })}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {draftNextStep
+              ? `AI 建议：${draftNextStep === "REVISE" ? "请学生修改" : finalSubmission ? "完成" : "进入下一阶段"}。`
+              : ""}
+            保存前会再请你确认一次。
+          </p>
+        </div>
       </form>
     </ComposerFrame>
   );
