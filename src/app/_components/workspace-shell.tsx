@@ -28,6 +28,7 @@ import {
   logoutAction,
 } from "../auth/local-login-actions";
 import { isDevelopmentQuickLoginEnabled } from "../../server/auth/development-quick-login";
+import { BrandMark } from "./brand-mark";
 import { DismissibleDetails } from "./dismissible-details";
 import { WorkspaceNavigation } from "./workspace-navigation";
 
@@ -47,14 +48,6 @@ function workspaceHrefFor(audience: Audience) {
     : audience === "学生"
       ? "/student"
       : "/admin";
-}
-
-function BrandMark() {
-  return (
-    <span className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-xs font-semibold text-primary-foreground">
-      CD
-    </span>
-  );
 }
 
 function WorkspaceBreadcrumb({ items }: { items: readonly WorkspaceCrumb[] }) {

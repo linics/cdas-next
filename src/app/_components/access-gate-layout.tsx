@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Card, CardContent } from "@/components/ui/card";
+import { BrandMark } from "./brand-mark";
 
 /**
  * 教师、学生、管理员三个登录门禁共用的版式（shadcn login-04 的两栏卡片）：
@@ -30,9 +31,7 @@ export function AccessGateLayout({
         className="flex items-center gap-2 font-medium"
         href="/"
       >
-        <span className="flex size-7 items-center justify-center rounded-md bg-primary text-xs font-semibold text-primary-foreground">
-          CD
-        </span>
+        <BrandMark className="size-7" />
         CDAS Next
       </Link>
       <Card className="w-full max-w-sm overflow-hidden p-0 md:max-w-3xl">

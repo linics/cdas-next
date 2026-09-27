@@ -16,6 +16,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { BrandMark } from "./_components/brand-mark";
 
 export const metadata: Metadata = {
   title: "CDAS Next | 跨学科学习活动工作台",
@@ -71,9 +72,7 @@ export default function HomePage() {
             className="flex items-center gap-2 font-semibold"
             href="/"
           >
-            <span className="flex size-7 items-center justify-center rounded-md bg-primary text-xs text-primary-foreground">
-              CD
-            </span>
+            <BrandMark className="size-7" />
             CDAS Next
           </Link>
           <p className="text-sm text-muted-foreground">选择工作台</p>
