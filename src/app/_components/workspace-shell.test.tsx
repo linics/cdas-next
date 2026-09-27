@@ -55,6 +55,9 @@ describe("workspace shell", () => {
     expect(markup).toContain("当前账号：林老师 · 教师");
     expect(markup).toContain("退出登录");
     expect(markup).toContain("<form");
+    expect(markup).toContain('id="workspace-navigation"');
+    expect(markup).not.toContain('data-slot="sidebar');
+    expect(markup).not.toContain('aria-label="面包屑"');
     expect(markup).not.toContain("学生端预览");
     expect(markup).not.toContain("评阅名册");
   });
