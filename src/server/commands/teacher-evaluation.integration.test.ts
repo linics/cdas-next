@@ -124,14 +124,52 @@ async function createEvaluationFixture(options?: {
     publishedAt: minutesAfter(baseTime, -20),
     content: options?.content,
   });
+  // D-077: only the final submission takes an evaluation, so a phased
+  // fixture first walks the earlier phases. Each submission prepares the
+  // next phase's working copy, which the following save must build on.
+  const existingWorkingCopy = async (index: number) =>
+    (
+      await database!.submission.findFirst({
+        where: { releaseId: published.releaseId, studentId, phaseIndex: index },
+        select: { workingCopy: { select: { id: true, version: true } } },
+      })
+    )?.workingCopy ?? null;
+  for (let earlier = 1; earlier < phaseIndex; earlier += 1) {
+    const prepared = await existingWorkingCopy(earlier);
+    const earlierCopy = await saveSubmissionWorkingCopy(
+      database,
+      commandContext(studentId, minutesAfter(baseTime, -15 + earlier)),
+      {
+        releaseId: published.releaseId,
+        phaseIndex: earlier,
+        expectedWorkingCopyId: prepared?.id ?? null,
+        expectedWorkingVersion: prepared?.version ?? null,
+        textEvidence: `第 ${earlier} 阶段证据。`,
+        completedEvidenceIndexes: [],
+        idempotencyKey: `save_${randomUUID()}`,
+      },
+    );
+    await submitSubmissionRevision(
+      database,
+      commandContext(studentId, minutesAfter(baseTime, -14 + earlier)),
+      {
+        releaseId: published.releaseId,
+        phaseIndex: earlier,
+        expectedWorkingCopyId: earlierCopy.workingCopyId,
+        expectedWorkingVersion: earlierCopy.workingVersion,
+        idempotencyKey: `submit_${randomUUID()}`,
+      },
+    );
+  }
+  const preparedCopy = await existingWorkingCopy(phaseIndex);
   const workingCopy = await saveSubmissionWorkingCopy(
     database,
     commandContext(studentId, minutesAfter(baseTime, -5)),
     {
       releaseId: published.releaseId,
       phaseIndex,
-      expectedWorkingCopyId: null,
-      expectedWorkingVersion: null,
+      expectedWorkingCopyId: preparedCopy?.id ?? null,
+      expectedWorkingVersion: preparedCopy?.version ?? null,
       textEvidence: "第一版节水观察证据。",
       completedEvidenceIndexes: options?.completedEvidenceIndexes ?? [],
       idempotencyKey: `save_${randomUUID()}`,
@@ -229,12 +267,46 @@ describeWithDatabase("teacher evaluation commands", () => {
     await database?.$disconnect();
   });
 
+  it("refuses an evaluation on a phase before the final one (D-077)", async () => {
+    const fixture = await createEvaluationFixture({
+      content: waterConservationTaskBook,
+      phaseIndex: 1,
+    });
+
+    await expect(
+      prepareTeacherEvaluationIntent(
+        database!,
+        commandContext(fixture.teacherId, minutesAfter(fixture.baseTime, 1)),
+        {
+          submissionId: fixture.submissionId,
+          expectedSubmissionRevisionId: fixture.submissionRevisionId,
+          expectedSubmissionRevisionNumber: 1,
+          expectedEvaluationVersion: 0,
+          summary: "阶段提交不应写入量规评价。",
+          outcomes: coveringOutcomes(),
+          suggestionAgentRunId: null,
+          idempotencyKey: `prepare_evaluation_${randomUUID()}`,
+        },
+      ),
+    ).rejects.toEqual(
+      new PrepareTeacherEvaluationIntentError("EVALUATION_NOT_OPEN"),
+    );
+    expect(
+      await database!.actionIntent.count({
+        where: {
+          actorId: fixture.teacherId,
+          actionName: "save_teacher_evaluation",
+        },
+      }),
+    ).toBe(0);
+  });
+
   it("saves staging-shaped mixed citation outcomes through DB triggers", async () => {
     const fixture = await createEvaluationFixture({
       withReadyAttachment: true,
       completedEvidenceIndexes: [1],
       content: waterConservationTaskBook,
-      phaseIndex: 1,
+      phaseIndex: waterConservationTaskBook.phases.length,
     });
     expect(fixture.attachmentId).toBeTruthy();
 

@@ -3,6 +3,8 @@ import { waterConservationTaskBook } from "../../fixtures/water-conservation";
 import { waterConservationTaskBookV3 } from "../../fixtures/water-conservation-v3";
 import {
   executionVersionForContent,
+  isFinalSubmission,
+  isRubricEvaluationOpen,
   resolveSubmissionExecutionScope,
   SubmissionExecutionError,
 } from "./sequential-execution";
@@ -76,5 +78,25 @@ describe("sequential submission execution", () => {
     expect(() =>
       resolveSubmissionExecutionScope(0, waterConservationTaskBook, 1),
     ).toThrowError(new SubmissionExecutionError("INVALID_PHASE"));
+  });
+
+  it("opens rubric evaluation only on the final submission (D-077)", () => {
+    const phased = {
+      ...waterConservationTaskBookV3,
+      submissionMode: "phased" as const,
+    };
+    const last = phased.phases.length;
+    expect(isRubricEvaluationOpen(1, phased, 1)).toBe(false);
+    expect(isRubricEvaluationOpen(1, phased, last)).toBe(true);
+
+    const mixed = { ...phased, submissionMode: "mixed" as const };
+    expect(isRubricEvaluationOpen(1, mixed, last)).toBe(false);
+    expect(isRubricEvaluationOpen(1, mixed, 0)).toBe(true);
+
+    const once = { ...phased, submissionMode: "once" as const };
+    expect(isRubricEvaluationOpen(0, once, 0)).toBe(true);
+
+    // Legacy phased releases published before sequential execution are whole-task.
+    expect(isFinalSubmission(0, phased, 0)).toBe(true);
   });
 });

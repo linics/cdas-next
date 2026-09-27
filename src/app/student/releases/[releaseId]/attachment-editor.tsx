@@ -88,9 +88,9 @@ function formattedBytes(bytes: number): string {
 
 const statusCopy = {
   UPLOAD_PENDING: "等待上传",
-  SCAN_PENDING: "内容验证中",
-  READY: "可正式提交",
-  REJECTED: "内容验证未通过",
+  SCAN_PENDING: "正在检查",
+  READY: "已就绪",
+  REJECTED: "文件有问题，请移除",
 } as const;
 
 const subscribeToHydration = () => () => {};
@@ -165,7 +165,7 @@ export function AttachmentEditor({
           throw new Error(`${file.name} 的内容与声明格式不一致，请移除后重新选择文件。`);
         }
       }
-      setMessage("文件已上传并完成内容验证，可正式提交。");
+      setMessage("文件已上传。");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "附件上传失败。");
     } finally {
@@ -203,7 +203,7 @@ export function AttachmentEditor({
       workingVersion: workingCopy.version,
       idempotencyKey: `remove_attachment_${crypto.randomUUID()}`,
     });
-    setMessage(result.ok ? "附件已从工作草稿移除。" : result.message);
+    setMessage(result.ok ? "附件已移除。" : result.message);
     setBusy(false);
     router.refresh();
   }
@@ -216,10 +216,7 @@ export function AttachmentEditor({
       data-hydrated={hydrated ? "true" : "false"}
     >
       <div className={styles.attachmentHeading}>
-        <div>
-          <p className={styles.eyebrow}>附件证据</p>
-          <h3 id="attachment-title">图片、PDF 或 Word</h3>
-        </div>
+        <h3 id="attachment-title">附件（可选）</h3>
         <span>{attachments.length} / {MAX_SUBMISSION_ATTACHMENTS}</span>
       </div>
 
@@ -256,13 +253,11 @@ export function AttachmentEditor({
             </li>
           ))}
         </ul>
-      ) : (
-        <p className={styles.attachmentEmpty}>当前工作草稿还没有附件。</p>
-      )}
+      ) : null}
 
       {canWrite && uploadStrategy && attachments.length < MAX_SUBMISSION_ATTACHMENTS ? (
         <label className={styles.attachmentPicker}>
-          <span>{busy ? "正在处理…" : "选择附件"}</span>
+          <span>{busy ? "正在上传…" : "添加图片或文件"}</span>
           <input
             ref={inputRef}
             type="file"
@@ -273,9 +268,11 @@ export function AttachmentEditor({
           />
         </label>
       ) : canWrite && !uploadStrategy ? (
-        <p className={styles.attachmentEmpty}>附件存储尚未启用，文字提交不受影响。</p>
+        <p className={styles.attachmentEmpty}>暂时不能上传附件，文字作答不受影响。</p>
       ) : null}
-      <p className={styles.attachmentHelp}>单文件最大 20 MB；未通过内容验证的文件不能进入正式修订。</p>
+      {canWrite ? (
+        <p className={styles.attachmentHelp}>图片、PDF 或 Word，每个不超过 20 MB。</p>
+      ) : null}
       {message ? <p className={styles.attachmentMessage} role="status">{message}</p> : null}
     </section>
   );

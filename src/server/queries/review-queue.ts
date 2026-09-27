@@ -20,6 +20,7 @@ export function reviewQueueItems(
     submissionId: submission.submissionId,
     phaseIndex: submission.phaseIndex,
     hasFeedback: submission.currentRevision.feedback !== null,
+    evaluationOpen: submission.evaluationOpen,
     hasEvaluation: submission.currentRevision.evaluation !== null,
     awaitingResubmission:
       submission.currentRevision.followUp === "AWAITING_RESUBMISSION",
@@ -45,6 +46,5 @@ export async function getReviewQueuePosition(
     reviewQueueItems(workspace),
     input.submissionId,
     input.filter,
-    workspace.release.rubricAvailable,
   );
 }

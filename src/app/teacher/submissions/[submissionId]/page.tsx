@@ -36,6 +36,9 @@ import { parseReviewQueueFilter, reviewQueueQuery } from "../../../../domain/rev
 import { getReviewQueuePosition } from "../../../../server/queries/review-queue";
 import { SubmissionWorkspaceQueryError } from "../../../../server/queries/submission-workspace";
 import { ReviewQueueNav } from "./review-queue-nav";
+import { ArrowRightIcon } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 /* 评阅页的版式：只用 Tailwind 语义类，颜色全部来自主题 token。 */
 const styles = {
@@ -45,6 +48,7 @@ const styles = {
   contextLine: "text-sm text-muted-foreground",
   railNote:
     "flex flex-col gap-1 rounded-lg border bg-muted/40 p-3 text-sm text-muted-foreground",
+  railHint: "px-1 text-xs text-muted-foreground",
   historyHeading: "flex items-center justify-between gap-3",
   phaseContext: "rounded-lg bg-muted/50 p-3 text-sm text-muted-foreground",
   submissionRevision: "flex flex-col gap-4",
@@ -59,7 +63,6 @@ const styles = {
   historyDisclosure:
     "group glass rounded-2xl [&>summary]:cursor-pointer [&>summary]:px-4 [&>summary]:py-3 [&>summary]:text-sm [&>summary]:font-medium [&[open]>summary]:border-b",
   revisionList: "flex flex-col gap-6 p-4",
-  statusLine: "grid grid-cols-2 gap-3",
   feedbackHistory: "flex flex-col gap-3 p-4 text-sm",
   feedbackVersions: "flex flex-col gap-3",
   feedbackMeta: "flex items-center gap-2 text-xs text-muted-foreground",
@@ -385,16 +388,17 @@ export default async function TeacherSubmissionPage({
     (revision) => revision.id !== currentRevision.id,
   );
   const feedbackStatus = latestFeedbackRevision
-    ? latestFeedbackRevision.nextStep && latestFeedbackRevision.supportLevel
-      ? `已确认 v${latestFeedbackRevision.version} · ${teacherFeedbackNextStepLabels[latestFeedbackRevision.nextStep]}`
-      : `已确认 v${latestFeedbackRevision.version}`
-    : "尚无反馈";
-  const evaluationStatus =
-    !isStructuredContent(content)
-      ? "旧版任务书无量规"
-      : latestEvaluationRevision
-        ? `已确认 v${latestEvaluationRevision.version}`
-        : "尚无评价";
+    ? `v${latestFeedbackRevision.version}`
+    : "无";
+  const evaluationStatus = latestEvaluationRevision
+    ? `v${latestEvaluationRevision.version}`
+    : "无";
+  const isFinalSubmission = submission.evaluationOpen || (
+    !isStructuredContent(content) && submission.phaseIndex === 0
+  );
+  const reviewDone =
+    Boolean(currentRevision.feedback) &&
+    (!submission.evaluationOpen || Boolean(currentRevision.evaluation));
 
   return (
     <TeacherPage
@@ -506,87 +510,101 @@ export default async function TeacherSubmissionPage({
           </section>
         }
       >
-          <dl className={styles.statusLine}>
-              <div className="rounded-lg border bg-card p-3">
-                <dt className="text-xs text-muted-foreground">形成性反馈</dt>
-                <dd className="text-sm font-medium">{feedbackStatus}</dd>
-              </div>
-              <div className="rounded-lg border bg-card p-3">
-                <dt className="text-xs text-muted-foreground">量规评价</dt>
-                <dd className="text-sm font-medium">{evaluationStatus}</dd>
-              </div>
-            </dl>
+          {reviewDone && queuePosition?.nextId ? (
             <a
-              className="w-fit text-sm font-medium underline-offset-4 hover:underline"
-              href={`/print/submissions/${submission.id}`}
+              className={cn(buttonVariants(), "w-full")}
+              href={`/teacher/submissions/${queuePosition.nextId}${reviewQueueQuery(queueFilter)}`}
             >
-              打印学习成果报告
+              这一份已完成 · 下一份
+              <ArrowRightIcon />
             </a>
-            <details className={styles.historyDisclosure}>
-              <summary>已确认记录</summary>
-              <FeedbackHistory revision={currentRevision} />
-              {isStructuredContent(content) ? (
-                <EvaluationHistory revision={currentRevision} />
-              ) : null}
-            </details>
-            <FeedbackComposer
-              key={`${currentRevision.id}:${currentRevision.feedback?.currentVersion ?? 0}`}
+          ) : reviewDone ? (
+            <p className={styles.railNote} role="status">
+              这一份已完成反馈{submission.evaluationOpen ? "和评价" : ""}。
+            </p>
+          ) : null}
+          <FeedbackComposer
+            key={`${currentRevision.id}:${currentRevision.feedback?.currentVersion ?? 0}`}
+            submissionId={submission.id}
+            submissionRevisionId={currentRevision.id}
+            submissionRevisionNumber={currentRevision.revisionNumber}
+            expectedFeedbackVersion={
+              currentRevision.feedback?.currentVersion ?? 0
+            }
+            initialBody={latestFeedbackRevision?.body ?? ""}
+            initialSupportLevel={latestFeedbackRevision?.supportLevel ?? null}
+            finalSubmission={isFinalSubmission}
+            prepareIdempotencySeed={`prepare_teacher_feedback_${randomUUID()}`}
+            assistantEnabled={assistantEnabled}
+          />
+          {isStructuredContent(content) && submission.evaluationOpen ? (
+            <EvaluationComposer
+              key={`evaluation:${currentRevision.id}:${currentRevision.evaluation?.currentVersion ?? 0}`}
               submissionId={submission.id}
               submissionRevisionId={currentRevision.id}
               submissionRevisionNumber={currentRevision.revisionNumber}
-              expectedFeedbackVersion={
-                currentRevision.feedback?.currentVersion ?? 0
+              expectedEvaluationVersion={
+                currentRevision.evaluation?.currentVersion ?? 0
               }
-              initialBody={latestFeedbackRevision?.body ?? ""}
-              prepareIdempotencySeed={`prepare_teacher_feedback_${randomUUID()}`}
+              rubricDimensions={content.rubricDimensions}
+              hasTextEvidence={hasMeaningfulTextEvidence(
+                currentRevision.textEvidence,
+              )}
+              attachments={currentRevision.attachments.map((attachment) => ({
+                id: attachment.id,
+                filename: attachment.filename,
+              }))}
+              checkpoints={
+                phase
+                  ? currentRevision.completedEvidenceIndexes.flatMap(
+                      (evidenceIndex) => {
+                        const evidence = phase.evidence[evidenceIndex - 1];
+                        return evidence
+                          ? [
+                              {
+                                evidenceIndex,
+                                description: evidence.description,
+                              },
+                            ]
+                          : [];
+                      },
+                    )
+                  : []
+              }
+              initialSummary={latestEvaluationRevision?.summary ?? ""}
+              prepareIdempotencySeed={`prepare_teacher_evaluation_${randomUUID()}`}
               assistantEnabled={assistantEnabled}
             />
-            {isStructuredContent(content) ? (
-              <EvaluationComposer
-                key={`evaluation:${currentRevision.id}:${currentRevision.evaluation?.currentVersion ?? 0}`}
-                submissionId={submission.id}
-                submissionRevisionId={currentRevision.id}
-                submissionRevisionNumber={currentRevision.revisionNumber}
-                expectedEvaluationVersion={
-                  currentRevision.evaluation?.currentVersion ?? 0
-                }
-                rubricDimensions={content.rubricDimensions}
-                hasTextEvidence={hasMeaningfulTextEvidence(
-                  currentRevision.textEvidence,
-                )}
-                attachments={currentRevision.attachments.map((attachment) => ({
-                  id: attachment.id,
-                  filename: attachment.filename,
-                }))}
-                checkpoints={
-                  phase
-                    ? currentRevision.completedEvidenceIndexes.flatMap(
-                        (evidenceIndex) => {
-                          const evidence = phase.evidence[evidenceIndex - 1];
-                          return evidence
-                            ? [
-                                {
-                                  evidenceIndex,
-                                  description: evidence.description,
-                                },
-                              ]
-                            : [];
-                        },
-                      )
-                    : []
-                }
-                initialSummary={latestEvaluationRevision?.summary ?? ""}
-                prepareIdempotencySeed={`prepare_teacher_evaluation_${randomUUID()}`}
-                assistantEnabled={assistantEnabled}
-              />
-            ) : (
-              <div className={styles.railNote} role="note">
-                <p className={styles.eyebrow}>量规评价</p>
-                <p>
-                  该活动使用旧版任务书，未包含量规，无法进行量规评价；形成性反馈仍可正常撰写。
-                </p>
-              </div>
-            )}
+          ) : isStructuredContent(content) ? (
+            <p className={styles.railHint}>
+              阶段提交只需反馈；量规评价在最终提交时进行。
+            </p>
+          ) : (
+            <p className={styles.railHint}>
+              旧版任务书没有量规，只需反馈。
+            </p>
+          )}
+          {currentRevision.feedback || currentRevision.evaluation ? (
+            <details className={styles.historyDisclosure}>
+              <summary>
+                已保存的记录（反馈 {feedbackStatus}
+                {currentRevision.evaluation || submission.evaluationOpen
+                  ? ` · 评价 ${evaluationStatus}`
+                  : ""}
+                ）
+              </summary>
+              <FeedbackHistory revision={currentRevision} />
+              {currentRevision.evaluation ? (
+                <EvaluationHistory revision={currentRevision} />
+              ) : null}
+            </details>
+          ) : null}
+          <a
+            className="w-fit text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+            href={`/print/submissions/${submission.id}`}
+          >
+            打印学习成果报告
+          </a>
       </FeedbackWorkspacePanes>
     </TeacherPage>
   );

@@ -188,7 +188,7 @@ def switch_account(
 
 
 def open_confirmed_records(page: Page) -> None:
-    summary = page.locator("summary").filter(has_text="已确认记录")
+    summary = page.locator("summary").filter(has_text="已保存的记录")
     summary.wait_for(state="visible", timeout=30_000)
     if not summary.evaluate("element => element.parentElement.open"):
         summary.click()
@@ -288,6 +288,29 @@ def expand_submission_history(page: Page) -> None:
         closed.first.click()
 
 
+def wait_for_autosave(page: Page) -> None:
+    """The student draft saves itself once typing pauses (no save button).
+
+    Wait for the edit to register as unsaved first; otherwise the check could
+    pass on the status left over from the previous save.
+    """
+    page.locator('[data-dirty="true"]').wait_for(timeout=10_000)
+    page.locator('[data-dirty="false"]').filter(has_text="已自动保存").wait_for(
+        timeout=30_000
+    )
+
+
+def submit_to_teacher(page: Page, revision_number: int) -> None:
+    page.get_by_role("button", name="提交给老师", exact=True).click()
+    confirm_dialog(page, "提交给老师？", "确认提交")
+    wait_for_text(page, f"第 {revision_number} 版已提交给老师")
+
+
+def choose(page: Page, name: str, value: str) -> None:
+    """Pick one of the review page's segmented choices (native radios)."""
+    page.locator("label", has=page.locator(f'input[name="{name}"][value="{value}"]')).click()
+
+
 def fill_feedback_when_ready(
     page: Page,
     body: str,
@@ -297,26 +320,26 @@ def fill_feedback_when_ready(
     """Fill after hydration and prove React enabled the confirmation action.
 
     The structured next step and support level are frozen with the body, so
-    the confirmation stays disabled until both are chosen.
+    saving stays disabled until the next step is chosen.
     """
     textarea = page.locator("#teacher-feedback-body")
-    next_step_select = page.locator("#teacher-feedback-next-step")
-    support_level_select = page.locator("#teacher-feedback-support-level")
-    button = page.get_by_role("button", name="准备确认", exact=True)
+    next_step_radio = page.locator(f'input[name="nextStep"][value="{next_step}"]')
+    support_radio = page.locator(
+        f'input[name="supportLevel"][value="{support_level}"]'
+    )
+    button = page.get_by_role("button", name="保存反馈", exact=True)
     textarea.wait_for(state="visible")
-    next_step_select.wait_for(state="visible")
-    support_level_select.wait_for(state="visible")
     button.wait_for(state="visible")
 
     deadline = time.monotonic() + 30
     while time.monotonic() < deadline:
         textarea.fill(body)
-        next_step_select.select_option(next_step)
-        support_level_select.select_option(support_level)
+        choose(page, "nextStep", next_step)
+        choose(page, "supportLevel", support_level)
         if (
             textarea.input_value() == body
-            and next_step_select.input_value() == next_step
-            and support_level_select.input_value() == support_level
+            and next_step_radio.is_checked()
+            and support_radio.is_checked()
             and button.is_enabled()
         ):
             return
@@ -428,11 +451,8 @@ def run_browser_flow(
                 raise E2eFailure("STUDENT_RELEASE_LINK_MISSING")
             student_release_link.click()
             page.locator("#text-evidence").fill(first_evidence)
-            page.get_by_role("button", name="保存草稿", exact=True).click()
-            wait_for_text(page, "草稿已保存")
-            page.get_by_role("button", name="正式提交", exact=True).click()
-            confirm_dialog(page, "确认正式提交？", "确认正式提交")
-            wait_for_text(page, "第 1 版已正式提交")
+            wait_for_autosave(page)
+            submit_to_teacher(page, 1)
             screenshot(page, artifacts, "03-student-submitted-v1")
 
             denied_response = page.goto(
@@ -446,14 +466,14 @@ def run_browser_flow(
             switch_account(page, base_url, "teacher", credentials)
             page.goto(f"{base_url}{release_href}", wait_until="domcontentloaded")
             submission_link = page.get_by_role(
-                "link", name=re.compile("查看反馈与评价")
+                "link", name=re.compile("去评阅")
             ).first
             submission_href = submission_link.get_attribute("href")
             if not submission_href:
                 raise E2eFailure("SUBMISSION_LINK_MISSING")
             submission_link.click()
             fill_feedback_when_ready(page, first_feedback)
-            page.get_by_role("button", name="准备确认", exact=True).click()
+            page.get_by_role("button", name="保存反馈", exact=True).click()
             confirm_dialog(page, "确认并保存最终反馈", "确认并保存最终反馈")
             open_confirmed_records(page)
             page.get_by_text(first_feedback, exact=True).last.wait_for(state="visible")
@@ -461,20 +481,17 @@ def run_browser_flow(
             switch_account(page, base_url, "student", credentials)
             page.goto(f"{base_url}{student_release_href}", wait_until="domcontentloaded")
             wait_for_text(page, first_feedback)
-            page.get_by_role("button", name="开始重交", exact=True).click()
+            page.get_by_role("button", name="按老师的反馈修改", exact=True).click()
             page.locator("#text-evidence").wait_for(state="visible")
             page.locator("#text-evidence").fill(second_evidence)
-            page.get_by_role("button", name="保存草稿", exact=True).click()
-            wait_for_text(page, "草稿已保存")
-            page.get_by_role("button", name="正式提交", exact=True).click()
-            confirm_dialog(page, "确认正式提交？", "确认正式提交")
-            wait_for_text(page, "第 2 版已正式提交")
+            wait_for_autosave(page)
+            submit_to_teacher(page, 2)
             screenshot(page, artifacts, "04-student-resubmitted-v2")
 
             switch_account(page, base_url, "teacher", credentials)
             page.goto(f"{base_url}{submission_href}", wait_until="domcontentloaded")
             fill_feedback_when_ready(page, second_feedback)
-            page.get_by_role("button", name="准备确认", exact=True).click()
+            page.get_by_role("button", name="保存反馈", exact=True).click()
             confirm_dialog(page, "确认并保存最终反馈", "确认并保存最终反馈")
             open_confirmed_records(page)
             page.get_by_text(second_feedback, exact=True).last.wait_for(state="visible")
@@ -484,10 +501,9 @@ def run_browser_flow(
                 f"{base_url}{student_release_href}",
                 wait_until="domcontentloaded",
             )
-            page.get_by_role("button", name="开始重交", exact=True).click()
+            page.get_by_role("button", name="按老师的反馈修改", exact=True).click()
             page.locator("#text-evidence").fill(third_evidence)
-            page.get_by_role("button", name="保存草稿", exact=True).click()
-            wait_for_text(page, "草稿已保存")
+            wait_for_autosave(page)
 
             membership_result = run_command(
                 [
@@ -521,10 +537,11 @@ def run_browser_flow(
             ):
                 raise E2eFailure("HISTORICAL_MEMBER_WORKING_COPY_NOT_READONLY")
             for action_label in (
-                "保存草稿",
-                "正式提交",
-                "正式迟交",
-                "开始重交",
+                "保存",
+                "提交给老师",
+                "迟交给老师",
+                "按老师的反馈修改",
+                "重新提交一版",
             ):
                 if page.get_by_role(
                     "button", name=action_label, exact=True
@@ -547,7 +564,7 @@ def run_browser_flow(
             switch_account(page, base_url, "student", credentials)
             page.goto(f"{base_url}{student_release_href}", wait_until="domcontentloaded")
             wait_for_text(page, "已关闭 · 只读")
-            wait_for_text(page, "活动已关闭，草稿与已提交内容仍可查看")
+            wait_for_text(page, "活动已结束，内容仍可查看")
             closed_textarea = page.locator("#text-evidence")
             closed_textarea.wait_for(state="visible")
             if (
@@ -556,10 +573,11 @@ def run_browser_flow(
             ):
                 raise E2eFailure("CLOSED_RELEASE_WORKING_COPY_NOT_READONLY")
             for action_label in (
-                "保存草稿",
-                "正式提交",
-                "正式迟交",
-                "开始重交",
+                "保存",
+                "提交给老师",
+                "迟交给老师",
+                "按老师的反馈修改",
+                "重新提交一版",
             ):
                 if page.get_by_role("button", name=action_label, exact=True).count() != 0:
                     raise E2eFailure("CLOSED_RELEASE_WRITE_ACTION_VISIBLE")
@@ -853,27 +871,22 @@ def run_real_model_browser_flow(
                 f"{marker} 我在教学楼三楼记录了两次水表读数，第二次比第一次多，"
                 "具体差值、柱状图和漏水备注都在附件里，请结合附件判断。"
             )
-            page.get_by_role("button", name="保存草稿", exact=True).click()
-            wait_for_text(page, "草稿已保存")
+            wait_for_autosave(page)
             page.locator('input[type="file"]').set_input_files(
                 str(attachment_fixture)
             )
-            wait_for_text(page, "文件已上传并完成内容验证，可正式提交。")
-            # Assert the attachment row itself reached READY, by structure. A
-            # bare text match on the status word now resolves to two elements —
-            # the row's own "67 KB · 可正式提交" and the message above — and a
-            # copy change would move it again.
+            wait_for_text(page, "文件已上传。")
+            # Assert the attachment row itself reached READY, by structure, not
+            # by the status word — a copy change would move it again.
             page.locator(
                 '[data-attachment-editor] li[data-status="READY"]'
             ).filter(has_text=attachment_fixture.name).wait_for()
-            page.get_by_role("button", name="正式提交", exact=True).click()
-            confirm_dialog(page, "确认正式提交？", "确认正式提交")
-            wait_for_text(page, "第 1 版已正式提交")
+            submit_to_teacher(page, 1)
 
             switch_account(page, base_url, "teacher", credentials)
             page.goto(f"{base_url}{release_href}", wait_until="domcontentloaded")
             page.get_by_role(
-                "link", name=re.compile("查看反馈与评价")
+                "link", name=re.compile("去评阅")
             ).first.click()
 
             # D-052: the feedback drafter must fill the real form, and the
@@ -882,18 +895,15 @@ def run_real_model_browser_flow(
                 "button", name="让助手起草这一版反馈", exact=True
             ).click()
             page.get_by_text(
-                "AI 建议已填入当前表单。请核对、修改后，再准备反馈确认。",
+                "AI 建议已填入当前表单。请核对、修改后，再保存反馈。",
                 exact=True,
             ).wait_for(timeout=120_000)
             drafted_feedback = page.locator("#teacher-feedback-body").input_value()
             if len(drafted_feedback) < 40:
                 raise E2eFailure("REAL_MODEL_FEEDBACK_DRAFT_TOO_SHORT")
-            if page.locator("#teacher-feedback-next-step").input_value() not in (
-                "CONTINUE",
-                "REVISE",
-            ):
+            if page.locator('input[name="nextStep"]:checked').count() != 1:
                 raise E2eFailure("REAL_MODEL_FEEDBACK_DRAFT_NEXT_STEP_MISSING")
-            if page.locator("#teacher-feedback-support-level").input_value() == "":
+            if page.locator('input[name="supportLevel"]:checked').count() != 1:
                 raise E2eFailure("REAL_MODEL_FEEDBACK_DRAFT_SUPPORT_LEVEL_MISSING")
             if not any(
                 fact in drafted_feedback
@@ -905,12 +915,12 @@ def run_real_model_browser_flow(
                 drafted_feedback, encoding="utf-8"
             )
             screenshot(page, artifacts, "05-real-model-feedback-draft")
-            page.get_by_role("button", name="准备确认", exact=True).click()
+            page.get_by_role("button", name="保存反馈", exact=True).click()
             confirm_dialog(page, "确认并保存最终反馈", "确认并保存最终反馈")
             # Confirmed records live in a native <details> that CLASSICAL.md
             # requires to start collapsed, so the provenance line is in the DOM
             # but not visible. Open it the way a teacher would, then assert.
-            page.locator("summary").filter(has_text="已确认记录").click()
+            page.locator("summary").filter(has_text="已保存的记录").click()
             page.get_by_text("AI 建议 · 教师已确认").first.wait_for(
                 timeout=120_000
             )
@@ -920,12 +930,12 @@ def run_real_model_browser_flow(
                 "button", name="让助手起草这一版评价", exact=True
             ).click()
             page.get_by_text(
-                "AI 建议已填入当前表单。请逐维核对、修改后，再准备评价确认。",
+                "AI 建议已填入当前表单。请逐维核对、修改后，再保存评价。",
                 exact=True,
             ).wait_for(timeout=120_000)
             attachment_citations = page.get_by_role(
                 "checkbox",
-                name=f"引用附件 {attachment_fixture.name}",
+                name=f"附件 {attachment_fixture.name}",
                 exact=True,
             )
             if attachment_citations.count() == 0 or not attachment_citations.evaluate_all(
@@ -934,7 +944,7 @@ def run_real_model_browser_flow(
                 raise E2eFailure("REAL_MODEL_EVALUATION_ATTACHMENT_CITATION_MISSING")
             screenshot(page, artifacts, "06-real-model-evaluation-draft")
             prepare_evaluation = page.get_by_role(
-                "button", name="准备评价确认", exact=True
+                "button", name="保存评价", exact=True
             )
             if not prepare_evaluation.is_enabled():
                 raise E2eFailure("REAL_MODEL_EVALUATION_DRAFT_INCOMPLETE")

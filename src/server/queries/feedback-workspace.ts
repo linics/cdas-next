@@ -11,6 +11,7 @@ import {
   teacherFeedbackNextSteps,
   teacherFeedbackSupportLevels,
 } from "../../domain/feedback/teacher-feedback-policy";
+import { isRubricEvaluationOpen } from "../../domain/submission/sequential-execution";
 import { hasMeaningfulTextEvidence } from "../../domain/submission/text-evidence";
 import type { PrismaClient } from "../../generated/prisma/client";
 import {
@@ -211,6 +212,8 @@ const submissionHistorySchema = z
     id: z.uuid(),
     phaseIndex: z.int().nonnegative(),
     phaseName: visibleTextSchema.nullable(),
+    /** D-077: only the final submission takes a rubric evaluation. */
+    evaluationOpen: z.boolean(),
     latestRevisionNumber: z.int().nonnegative(),
     release: releaseSchema,
     revisions: z.array(formalSubmissionRevisionSchema),
@@ -291,6 +294,7 @@ const safeSubmissionSelect = {
   release: {
     select: {
       id: true,
+      executionVersion: true,
       status: true,
       publishedAt: true,
       dueAt: true,
@@ -391,6 +395,7 @@ function mapSubmissionHistory(
     latestRevisionNumber: number;
     release: {
       id: string;
+      executionVersion: number;
       status: "ACTIVE" | "CLOSED" | "ARCHIVED";
       publishedAt: Date;
       dueAt: Date | null;
@@ -465,6 +470,11 @@ function mapSubmissionHistory(
         : isStructuredContent(content)
           ? (content.phases[submission.phaseIndex - 1]?.name ?? null)
           : null,
+    evaluationOpen: isRubricEvaluationOpen(
+      submission.release.executionVersion,
+      content,
+      submission.phaseIndex,
+    ),
     latestRevisionNumber: submission.latestRevisionNumber,
     release: {
       id: submission.release.id,

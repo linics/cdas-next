@@ -10,18 +10,16 @@ import {
 import { useRouter } from "next/navigation";
 import { ArrowRightIcon, SparklesIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  NativeSelect,
-  NativeSelectOption,
-} from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import { LocalizedDateTime } from "../../../_components/localized-date-time";
 import { ConfirmDialog, InlineAlert, PayloadHashDetails } from "../../../_components/ui";
 import type { TeacherEvaluationCitation } from "../../../../domain/evaluation/teacher-evaluation-intent";
 import {
+  TEACHER_EVALUATION_MAX_CITATIONS,
   TEACHER_EVALUATION_SUMMARY_MAX_LENGTH,
   teacherEvaluationCitationKindLabels,
   teacherEvaluationLevelLabels,
+  teacherEvaluationLevels,
   teacherEvaluationOutcomeStatusLabels,
   type TeacherEvaluationLevel,
   type TeacherEvaluationOutcomeStatus,
@@ -43,7 +41,7 @@ import {
 } from "./evaluation-suggestion-action-state";
 import { useUnsavedChangesWarning } from "./unsaved-changes";
 import {
-  AiNote,
+  ChoiceGroup,
   ComposerFrame,
   FieldHead,
   PrepareRow,
@@ -100,6 +98,88 @@ function citationsFromDraft(draft: DimensionDraft): TeacherEvaluationCitation[] 
     citations.push({ kind: "checkpoint", evidenceIndex });
   }
   return citations;
+}
+
+type DimensionChoice = TeacherEvaluationLevel | "INSUFFICIENT_EVIDENCE";
+
+const dimensionChoices: ReadonlyArray<{ value: DimensionChoice; label: string }> =
+  [
+    ...teacherEvaluationLevels.map((level) => ({
+      value: level,
+      label: teacherEvaluationLevelLabels[level],
+    })),
+    {
+      value: "INSUFFICIENT_EVIDENCE",
+      label: teacherEvaluationOutcomeStatusLabels.INSUFFICIENT_EVIDENCE,
+    },
+  ];
+
+type EvidenceSource = Readonly<{
+  key: string;
+  label: string;
+  citation: TeacherEvaluationCitation;
+}>;
+
+function sameCitation(
+  left: TeacherEvaluationCitation,
+  right: TeacherEvaluationCitation,
+): boolean {
+  if (left.kind === "text" || right.kind === "text") {
+    return left.kind === right.kind;
+  }
+  if (left.kind === "attachment" && right.kind === "attachment") {
+    return left.attachmentId === right.attachmentId;
+  }
+  return (
+    left.kind === "checkpoint" &&
+    right.kind === "checkpoint" &&
+    left.evidenceIndex === right.evidenceIndex
+  );
+}
+
+function toggleCitation(
+  draft: DimensionDraft,
+  citation: TeacherEvaluationCitation,
+  on: boolean,
+): DimensionDraft {
+  if (citation.kind === "text") return { ...draft, citeText: on };
+  if (citation.kind === "attachment") {
+    return {
+      ...draft,
+      attachmentIds: on
+        ? [...draft.attachmentIds, citation.attachmentId]
+        : draft.attachmentIds.filter((id) => id !== citation.attachmentId),
+    };
+  }
+  return {
+    ...draft,
+    evidenceIndexes: on
+      ? [...draft.evidenceIndexes, citation.evidenceIndex]
+      : draft.evidenceIndexes.filter((value) => value !== citation.evidenceIndex),
+  };
+}
+
+/**
+ * Picking a level for the first time cites every piece of this revision's
+ * evidence (up to the limit); the teacher only unticks what does not apply.
+ */
+function chooseDimension(
+  draft: DimensionDraft,
+  choice: DimensionChoice,
+  sources: readonly EvidenceSource[],
+): DimensionDraft {
+  if (choice === "INSUFFICIENT_EVIDENCE") {
+    return { ...emptyDimensionDraft(), status: "INSUFFICIENT_EVIDENCE" };
+  }
+  if (draft.status === "LEVEL" && citationsFromDraft(draft).length > 0) {
+    return { ...draft, level: choice };
+  }
+  return sources
+    .slice(0, TEACHER_EVALUATION_MAX_CITATIONS)
+    .reduce(
+      (next, source) => toggleCitation(next, source.citation, true),
+      { ...emptyDimensionDraft(), status: "LEVEL", level: choice } as DimensionDraft,
+    );
 }
 
 function ActionNotice({
@@ -233,10 +313,7 @@ function ConfirmationPanel({
         title="确认并保存量规评价"
         detail={
           <div className="flex flex-col gap-3 text-sm">
-            <p>
-              将对第 {confirmation.submissionRevisionNumber} 版正式提交创建评价版本{" "}
-              {confirmation.expectedEvaluationVersion + 1}。
-            </p>
+            <p>学生会看到每个维度的等级和综合评价。</p>
             <ul className="flex flex-col divide-y rounded-md border">
               {confirmation.outcomes.map((outcome) => (
                 <li className="flex flex-wrap items-baseline gap-x-3 gap-y-1 p-2" key={outcome.dimensionIndex}>
@@ -354,6 +431,27 @@ export function EvaluationComposer({
     codePointCount > TEACHER_EVALUATION_SUMMARY_MAX_LENGTH;
   const summaryHasVisibleText = hasMeaningfulTextEvidence(draftSummary);
   const anyPending = preparePending || decisionPending || suggestionPending;
+  const evidenceSources = useMemo<EvidenceSource[]>(
+    () => [
+      ...(hasTextEvidence
+        ? [{ key: "text", label: "本版文字", citation: { kind: "text" } as const }]
+        : []),
+      ...attachments.map((attachment) => ({
+        key: `attachment:${attachment.id}`,
+        label: `附件 ${attachment.filename}`,
+        citation: { kind: "attachment", attachmentId: attachment.id } as const,
+      })),
+      ...checkpoints.map((checkpoint) => ({
+        key: `checkpoint:${checkpoint.evidenceIndex}`,
+        label: checkpoint.description,
+        citation: {
+          kind: "checkpoint",
+          evidenceIndex: checkpoint.evidenceIndex,
+        } as const,
+      })),
+    ],
+    [attachments, checkpoints, hasTextEvidence],
+  );
   const relatedDecisionState =
     activeConfirmation &&
     decisionState.resolvedIntentId === activeConfirmation.actionIntentId
@@ -450,11 +548,11 @@ export function EvaluationComposer({
     <ComposerFrame
       assistantEnabled={assistantEnabled}
       busy={preparePending || suggestionPending}
-      lead={`第 ${submissionRevisionNumber} 版提交 · ${
+      lead={
         expectedEvaluationVersion > 0
-          ? `第 ${expectedEvaluationVersion + 1} 版评价`
-          : "第一版评价"
-      } · 每个维度给出等级并引用证据，或标为证据不足`}
+          ? `终稿评价 · 修改后保存为第 ${expectedEvaluationVersion + 1} 版`
+          : "终稿评价 · 每个维度点选一个等级"
+      }
       suggestion={
         assistantEnabled ? (
           <form action={requestSuggestion}>
@@ -473,6 +571,7 @@ export function EvaluationComposer({
               aria-label="让助手起草这一版评价"
               disabled={anyPending}
               size="sm"
+              title="AI 只读取本版提交的文字、已确认检查点、量规和可解析附件；起草结果需你确认后才保存。"
               type="submit"
               variant="outline"
             >
@@ -482,14 +581,9 @@ export function EvaluationComposer({
           </form>
         ) : null
       }
-      title={expectedEvaluationVersion > 0 ? "修改量规评价" : "撰写量规评价"}
+      title={expectedEvaluationVersion > 0 ? "修改量规评价" : "量规评价"}
       titleId="evaluation-editor-title"
     >
-      {assistantEnabled ? (
-        <AiNote>
-          AI 建议需你确认后才保存。助手只读取本版正式提交的文字、已确认检查点、量规和可解析附件。
-        </AiNote>
-      ) : null}
       {assistantEnabled ? (
         <SuggestionNotice
           state={suggestionState}
@@ -537,198 +631,91 @@ export function EvaluationComposer({
 
         {rubricDimensions.map((dimension, index) => {
           const draft = dimensionDrafts[index] ?? emptyDimensionDraft();
-          const statusId = `teacher-evaluation-status-${index + 1}`;
-          const levelId = `teacher-evaluation-level-${index + 1}`;
+          const choice: DimensionChoice | "" =
+            draft.status === "INSUFFICIENT_EVIDENCE"
+              ? "INSUFFICIENT_EVIDENCE"
+              : draft.status === "LEVEL" && draft.level
+                ? draft.level
+                : "";
+          const descriptor =
+            choice === "" || choice === "INSUFFICIENT_EVIDENCE"
+              ? null
+              : dimension[choice];
+          const citations = citationsFromDraft(draft);
           return (
-            <fieldset
-              className="flex flex-col gap-3 rounded-lg border p-3"
+            <div
+              className="flex flex-col gap-2 border-b pb-4 last:border-b-0 last:pb-0"
               key={`${dimension.name}:${index}`}
             >
-              <legend className="px-1 text-sm font-semibold">
-                维度 {index + 1}：{dimension.name}
-              </legend>
-              <dl className="grid grid-cols-1 gap-1.5 text-xs sm:grid-cols-2">
-                <div className="rounded-md bg-muted/60 p-2">
-                  <dt className="font-medium">优秀</dt>
-                  <dd className="text-muted-foreground">{dimension.excellent}</dd>
-                </div>
-                <div className="rounded-md bg-muted/60 p-2">
-                  <dt className="font-medium">良好</dt>
-                  <dd className="text-muted-foreground">{dimension.good}</dd>
-                </div>
-                <div className="rounded-md bg-muted/60 p-2">
-                  <dt className="font-medium">合格</dt>
-                  <dd className="text-muted-foreground">{dimension.pass}</dd>
-                </div>
-                <div className="rounded-md bg-muted/60 p-2">
-                  <dt className="font-medium">需改进</dt>
-                  <dd className="text-muted-foreground">{dimension.improve}</dd>
-                </div>
-              </dl>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium" htmlFor={statusId}>判断方式</label>
-                  <NativeSelect
-                    className="w-full"
-                    id={statusId}
-                    value={draft.status}
-                    onChange={(event) => {
-                      const status = event.target
-                        .value as TeacherEvaluationOutcomeStatus | "";
-                      setDimensionDrafts((current) =>
-                        current.map((item, itemIndex) =>
-                          itemIndex === index
-                            ? {
-                                ...item,
-                                status,
-                                level: status === "LEVEL" ? item.level : "",
-                                citeText:
-                                  status === "INSUFFICIENT_EVIDENCE"
-                                    ? false
-                                    : item.citeText,
-                                attachmentIds:
-                                  status === "INSUFFICIENT_EVIDENCE"
-                                    ? []
-                                    : item.attachmentIds,
-                                evidenceIndexes:
-                                  status === "INSUFFICIENT_EVIDENCE"
-                                    ? []
-                                    : item.evidenceIndexes,
-                              }
-                            : item,
-                        ),
-                      );
-                    }}
-                    disabled={anyPending}
-                    required
-                  >
-                    <NativeSelectOption value="" disabled>
-                      请选择判断方式
-                    </NativeSelectOption>
-                    <NativeSelectOption value="LEVEL">给出等级</NativeSelectOption>
-                    <NativeSelectOption value="INSUFFICIENT_EVIDENCE">证据不足</NativeSelectOption>
-                  </NativeSelect>
-                </div>
-                {draft.status === "LEVEL" ? (
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-sm font-medium" htmlFor={levelId}>达成等级</label>
-                    <NativeSelect
-                      className="w-full"
-                      id={levelId}
-                      value={draft.level}
-                      onChange={(event) => {
-                        const level = event.target
-                          .value as TeacherEvaluationLevel | "";
-                        setDimensionDrafts((current) =>
-                          current.map((item, itemIndex) =>
-                            itemIndex === index ? { ...item, level } : item,
-                          ),
-                        );
-                      }}
-                      disabled={anyPending}
-                      required
-                    >
-                      <NativeSelectOption value="" disabled>
-                        请选择等级
-                      </NativeSelectOption>
-                      <NativeSelectOption value="excellent">优秀</NativeSelectOption>
-                      <NativeSelectOption value="good">良好</NativeSelectOption>
-                      <NativeSelectOption value="pass">合格</NativeSelectOption>
-                      <NativeSelectOption value="improve">需改进</NativeSelectOption>
-                    </NativeSelect>
-                  </div>
-                ) : null}
-              </div>
-              {draft.status === "LEVEL" ? (
-                  <fieldset className="flex flex-col gap-2 rounded-md bg-muted/40 p-3">
-                    <legend className="text-xs font-medium text-muted-foreground">引用本版证据（1–5 项）</legend>
-                    {hasTextEvidence ? (
-                      <label className="flex items-start gap-2 text-sm">
-                        <input
-                          className="mt-0.5 size-4 accent-primary"
-                          type="checkbox"
-                          checked={draft.citeText}
-                          onChange={(event) => {
-                            const checked = event.target.checked;
-                            setDimensionDrafts((current) =>
-                              current.map((item, itemIndex) =>
-                                itemIndex === index
-                                  ? { ...item, citeText: checked }
-                                  : item,
-                              ),
-                            );
-                          }}
-                          disabled={anyPending}
-                        />
-                        引用本版文字证据
-                      </label>
-                    ) : null}
-                    {attachments.map((attachment) => (
-                      <label className="flex items-start gap-2 text-sm" key={attachment.id}>
-                        <input
-                          className="mt-0.5 size-4 accent-primary"
-                          type="checkbox"
-                          checked={draft.attachmentIds.includes(attachment.id)}
-                          onChange={(event) => {
-                            const checked = event.target.checked;
-                            setDimensionDrafts((current) =>
-                              current.map((item, itemIndex) =>
-                                itemIndex === index
-                                  ? {
-                                      ...item,
-                                      attachmentIds: checked
-                                        ? [...item.attachmentIds, attachment.id]
-                                        : item.attachmentIds.filter(
-                                            (id) => id !== attachment.id,
-                                          ),
-                                    }
-                                  : item,
-                              ),
-                            );
-                          }}
-                          disabled={anyPending}
-                        />
-                        引用附件 {attachment.filename}
-                      </label>
-                    ))}
-                    {checkpoints.map((checkpoint) => (
-                      <label className="flex items-start gap-2 text-sm" key={checkpoint.evidenceIndex}>
-                        <input
-                          className="mt-0.5 size-4 accent-primary"
-                          type="checkbox"
-                          checked={draft.evidenceIndexes.includes(
-                            checkpoint.evidenceIndex,
-                          )}
-                          onChange={(event) => {
-                            const checked = event.target.checked;
-                            setDimensionDrafts((current) =>
-                              current.map((item, itemIndex) =>
-                                itemIndex === index
-                                  ? {
-                                      ...item,
-                                      evidenceIndexes: checked
-                                        ? [
-                                            ...item.evidenceIndexes,
-                                            checkpoint.evidenceIndex,
-                                          ]
-                                        : item.evidenceIndexes.filter(
-                                            (value) =>
-                                              value !== checkpoint.evidenceIndex,
-                                          ),
-                                    }
-                                  : item,
-                              ),
-                            );
-                          }}
-                          disabled={anyPending}
-                        />
-                        引用检查点 {checkpoint.evidenceIndex}：
-                        {checkpoint.description}
-                      </label>
-                    ))}
-                  </fieldset>
+              <ChoiceGroup
+                detached
+                disabled={anyPending}
+                legend={`${index + 1}. ${dimension.name}`}
+                name={`teacher-evaluation-dimension-${index + 1}`}
+                onChange={(next) =>
+                  setDimensionDrafts((current) =>
+                    current.map((item, itemIndex) =>
+                      itemIndex === index
+                        ? chooseDimension(item, next, evidenceSources)
+                        : item,
+                    ),
+                  )
+                }
+                options={dimensionChoices.map((item) => ({
+                  ...item,
+                  hint:
+                    item.value === "INSUFFICIENT_EVIDENCE"
+                      ? "本版证据不足以判断这一维度"
+                      : dimension[item.value],
+                }))}
+                required
+                size="sm"
+                value={choice}
+              />
+              {descriptor ? (
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                  {descriptor}
+                </p>
               ) : null}
-            </fieldset>
+              {draft.status === "LEVEL" && evidenceSources.length > 1 ? (
+                <fieldset className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                  <legend className="sr-only">
+                    {dimension.name}引用的本版证据（1–5 项）
+                  </legend>
+                  <span aria-hidden="true">依据</span>
+                  {evidenceSources.map((source) => {
+                    const checked = citations.some((citation) =>
+                      sameCitation(citation, source.citation),
+                    );
+                    return (
+                      <label className="inline-flex items-center gap-1.5" key={source.key}>
+                        <input
+                          checked={checked}
+                          className="size-3.5 accent-primary"
+                          disabled={anyPending}
+                          onChange={(event) => {
+                            const on = event.target.checked;
+                            setDimensionDrafts((current) =>
+                              current.map((item, itemIndex) =>
+                                itemIndex === index
+                                  ? toggleCitation(item, source.citation, on)
+                                  : item,
+                              ),
+                            );
+                          }}
+                          type="checkbox"
+                        />
+                        {source.label}
+                      </label>
+                    );
+                  })}
+                </fieldset>
+              ) : draft.status === "LEVEL" && evidenceSources.length === 1 ? (
+                <p className="text-xs text-muted-foreground">
+                  依据：{evidenceSources[0]!.label}
+                </p>
+              ) : null}
+            </div>
           );
         })}
 
@@ -745,7 +732,7 @@ export function EvaluationComposer({
           name="summary"
           value={draftSummary}
           onChange={(event) => setDraftSummary(event.target.value)}
-          placeholder="说明这次量规判断的依据、不足与下一步关注点…"
+          placeholder="写给学生：这份成果做得好的地方、还差什么…"
           aria-describedby="teacher-evaluation-help teacher-evaluation-count"
           spellCheck="true"
           disabled={anyPending}
@@ -754,13 +741,7 @@ export function EvaluationComposer({
           评价内容需经确认后才会保存；形成性下一步在上方反馈中单独确认。
         </p>
 
-        <PrepareRow
-          note={
-            expectedEvaluationVersion > 0
-              ? `确认后保存为第 ${expectedEvaluationVersion + 1} 版评价，旧版保留。`
-              : "确认后才会保存。"
-          }
-        >
+        <PrepareRow note="学生会看到每个维度的等级和综合评价。">
           <Button
             type="submit"
             disabled={
@@ -770,7 +751,7 @@ export function EvaluationComposer({
               !dimensionsReady
             }
           >
-            {preparePending ? "正在准备…" : "准备评价确认"}
+            {preparePending ? "正在准备…" : "保存评价"}
             <ArrowRightIcon />
           </Button>
         </PrepareRow>

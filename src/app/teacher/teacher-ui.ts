@@ -112,6 +112,8 @@ export const styles = {
 
   // 提交列表
   progressSection: `${card} flex flex-col gap-4 p-5`,
+  settingsDisclosure:
+    "rounded-2xl border border-dashed p-4 [&>summary]:cursor-pointer [&>summary]:text-sm [&>summary]:font-medium [&>summary]:text-muted-foreground",
   submissionList: "flex flex-col divide-y",
   submissionRow:
     "flex flex-col gap-2 py-3 transition-colors hover:bg-muted/40 sm:flex-row sm:items-center sm:justify-between sm:px-2 [&_h2]:text-sm [&_h2]:font-medium [&_p]:text-xs [&_p]:text-muted-foreground",

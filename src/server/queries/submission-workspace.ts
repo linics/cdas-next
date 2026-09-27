@@ -21,6 +21,7 @@ import {
   membershipOverlapsRelease,
 } from "./release-membership-visibility";
 import { reviewFollowUp } from "../../domain/feedback/review-follow-up";
+import { isRubricEvaluationOpen } from "../../domain/submission/sequential-execution";
 import { isSubmissionAudienceMemberWhere } from "../submissions/submission-audience";
 import { isActiveSchoolMember } from "../school/teacher-authorization";
 import { compactOutcomes } from "./teacher-insights";
@@ -49,6 +50,11 @@ const studentSubmissionSchema = z.strictObject({
   id: z.uuid(),
   phaseIndex: z.int().nonnegative(),
   latestRevisionNumber: z.int().nonnegative(),
+  /** Whether the current formal revision has teacher feedback yet. */
+  hasCurrentFeedback: z.boolean(),
+  followUp: z
+    .enum(["AWAITING_RESUBMISSION", "RESUBMISSION_IN_PROGRESS"])
+    .nullable(),
   workingCopy: z
     .strictObject({
       id: z.uuid(),
@@ -143,6 +149,8 @@ const teacherReleaseSubmissionsSchema = z.strictObject({
       submissionId: z.uuid(),
       phaseIndex: z.int().nonnegative(),
       phaseName: preservedNonBlankTextSchema.nullable(),
+      /** D-077: only the final submission is asked for a rubric evaluation. */
+      evaluationOpen: z.boolean(),
       student: z.strictObject({
         id: z.uuid(),
         displayName: preservedNonBlankTextSchema,
@@ -201,6 +209,8 @@ const teacherReleaseSubmissionsSchema = z.strictObject({
   reviewCoverage: z.strictObject({
     currentRevisionCount: z.int().nonnegative(),
     feedbackCount: z.int().nonnegative(),
+    /** Current revisions that take a rubric evaluation (final submissions). */
+    evaluableCount: z.int().nonnegative(),
     evaluationCount: z.int().nonnegative(),
   }),
 });
@@ -326,6 +336,15 @@ export async function getStudentReleaseWorkspace(
                 completedEvidenceIndexes: true,
                 isLate: true,
                 submittedAt: true,
+                feedback: {
+                  select: {
+                    revisions: {
+                      orderBy: { version: "desc" },
+                      take: 1,
+                      select: { nextStep: true },
+                    },
+                  },
+                },
                 attachments: {
                   orderBy: { position: "asc" },
                   select: {
@@ -413,6 +432,11 @@ export async function getStudentReleaseWorkspace(
     id: submission.id,
     phaseIndex: submission.phaseIndex,
     latestRevisionNumber: submission.latestRevisionNumber,
+    hasCurrentFeedback: Boolean(submission.revisions.at(-1)?.feedback),
+    followUp: reviewFollowUp({
+      nextStep: submission.revisions.at(-1)?.feedback?.revisions[0]?.nextStep,
+      hasWorkingCopy: submission.workingCopy !== null,
+    }),
     workingCopy: submission.workingCopy
       ? {
           id: submission.workingCopy.id,
@@ -669,6 +693,11 @@ export async function getTeacherReleaseSubmissions(
           : isStructuredContent(content)
             ? (content.phases[submission.phaseIndex - 1]?.name ?? null)
             : null,
+      evaluationOpen: isRubricEvaluationOpen(
+        release.executionVersion,
+        content,
+        submission.phaseIndex,
+      ),
       student: submission.student ?? {
         id: submission.group?.id ?? submission.id,
         displayName: submission.group?.name ?? "小组提交",
@@ -808,8 +837,11 @@ export async function getTeacherReleaseSubmissions(
     feedbackCount: submissions.filter(
       (submission) => submission.currentRevision.feedback !== null,
     ).length,
+    evaluableCount: submissions.filter((submission) => submission.evaluationOpen)
+      .length,
     evaluationCount: submissions.filter(
-      (submission) => submission.currentRevision.evaluation !== null,
+      (submission) =>
+        submission.evaluationOpen && submission.currentRevision.evaluation !== null,
     ).length,
   };
 

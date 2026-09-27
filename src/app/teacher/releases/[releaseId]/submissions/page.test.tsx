@@ -91,6 +91,7 @@ const workspace = {
       submissionId,
       phaseIndex: 0,
       phaseName: null,
+      evaluationOpen: false,
       student: { id: studentId, displayName: "陈同学" },
       group: null,
       workingCopy: { textEvidence: "学生工作副本正文" },
@@ -124,6 +125,7 @@ const workspace = {
   reviewCoverage: {
     currentRevisionCount: 1,
     feedbackCount: 1,
+    evaluableCount: 0,
     evaluationCount: 0,
   },
 };
@@ -193,8 +195,7 @@ describe("teacher release submissions page boundary", () => {
     expect(markup).toContain("正式修订 2");
     expect(markup).toContain("已反馈 v3");
     expect(markup).toContain("已反馈 1/1");
-    expect(markup).toContain("无量规");
-    expect(markup).toContain("查看反馈与评价");
+    expect(markup).toContain("查看 →");
     expect(markup).toContain(
       `href="/teacher/releases/${releaseId}/submissions/export"`,
     );
@@ -213,6 +214,25 @@ describe("teacher release submissions page boundary", () => {
     expect(markup).not.toContain("确认并关闭活动");
   });
 
+  it("asks for an evaluation only on final submissions (D-077)", async () => {
+    mocks.getTeacherReleaseSubmissions.mockResolvedValue({
+      ...workspace,
+      release: { ...workspace.release, rubricAvailable: true },
+      submissions: [
+        {
+          ...workspace.submissions[0],
+          phaseIndex: 1,
+          phaseName: "发现问题",
+          evaluationOpen: false,
+        },
+      ],
+    });
+
+    const staged = await renderPage();
+    expect(staged).not.toContain("待评价");
+    expect(staged).not.toContain("已评价");
+  });
+
   it("shows pending or confirmed evaluation status only for schema v2 releases", async () => {
     mocks.getTeacherReleaseSubmissions.mockResolvedValue({
       ...workspace,
@@ -220,6 +240,7 @@ describe("teacher release submissions page boundary", () => {
       submissions: [
         {
           ...workspace.submissions[0],
+          evaluationOpen: true,
           currentRevision: {
             ...workspace.submissions[0]!.currentRevision,
             evaluation: null,
@@ -229,13 +250,15 @@ describe("teacher release submissions page boundary", () => {
       reviewCoverage: {
         currentRevisionCount: 1,
         feedbackCount: 1,
+        evaluableCount: 1,
         evaluationCount: 0,
       },
     });
 
-    expect(await renderPage()).toContain("待评价");
-    expect(await renderPage()).toContain("已评价 0/1");
-    expect(await renderPage()).not.toContain("无量规");
+    const pending = await renderPage();
+    expect(pending).toContain("待评价");
+    expect(pending).toContain("终稿已评价 0/1");
+    expect(pending).toContain("去评阅 →");
 
     mocks.getTeacherReleaseSubmissions.mockResolvedValue({
       ...workspace,
@@ -243,6 +266,7 @@ describe("teacher release submissions page boundary", () => {
       submissions: [
         {
           ...workspace.submissions[0],
+          evaluationOpen: true,
           currentRevision: {
             ...workspace.submissions[0]!.currentRevision,
             evaluation: { currentVersion: 1, summary: "不应出现在列表" },
@@ -252,13 +276,14 @@ describe("teacher release submissions page boundary", () => {
       reviewCoverage: {
         currentRevisionCount: 1,
         feedbackCount: 1,
+        evaluableCount: 1,
         evaluationCount: 1,
       },
     });
 
     const confirmed = await renderPage();
     expect(confirmed).toContain("已评价 v1");
-    expect(confirmed).toContain("已评价 1/1");
+    expect(confirmed).toContain("终稿已评价 1/1");
     expect(confirmed).not.toContain("不应出现在列表");
     expect(confirmed).not.toContain("待评价");
     expect(confirmed).not.toContain("已评价 0/1");

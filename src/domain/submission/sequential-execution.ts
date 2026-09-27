@@ -45,6 +45,43 @@ export function executionVersionForContent(content: ActivityContent): 0 | 1 {
     : 0;
 }
 
+/**
+ * The submission that closes the activity: the whole submission for `once`
+ * and legacy releases, the last phase for `phased`, the 整项终稿 for `mixed`.
+ */
+export function isFinalSubmission(
+  executionVersion: number,
+  content: ActivityContent,
+  phaseIndex: number,
+): boolean {
+  if (
+    executionVersion !== 1 ||
+    !isStructuredContent(content) ||
+    content.submissionMode === "once"
+  ) {
+    return phaseIndex === 0;
+  }
+  return content.submissionMode === "mixed"
+    ? phaseIndex === 0
+    : phaseIndex === content.phases.length;
+}
+
+/**
+ * D-077: phases get formative feedback only; the rubric is judged once, on
+ * the final submission. Evaluations already confirmed on earlier phases stay
+ * readable but are no longer asked for or accepted.
+ */
+export function isRubricEvaluationOpen(
+  executionVersion: number,
+  content: ActivityContent,
+  phaseIndex: number,
+): boolean {
+  return (
+    isStructuredContent(content) &&
+    isFinalSubmission(executionVersion, content, phaseIndex)
+  );
+}
+
 export function resolveSubmissionExecutionScope(
   executionVersion: number,
   rawContent: unknown,

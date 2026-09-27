@@ -357,8 +357,8 @@ export async function submitRevisionAction(
       operation,
       "success",
       result.isLate
-        ? `第 ${result.revisionNumber} 版已正式迟交，修订内容与迟交标记都已保留。${result.nextPhaseIndex !== null ? " 下一阶段草稿已经准备好。" : ""}`
-        : `第 ${result.revisionNumber} 版已正式提交。${result.nextPhaseIndex !== null ? " 下一阶段草稿已经准备好。" : "之后的修改需另开重交草稿。"}`,
+        ? `第 ${result.revisionNumber} 版已迟交给老师。${result.nextPhaseIndex !== null ? "下一阶段已经开放。" : ""}`
+        : `第 ${result.revisionNumber} 版已提交给老师。${result.nextPhaseIndex !== null ? "下一阶段已经开放。" : ""}`,
       createIdempotencyKey(operation),
     );
   } catch (error) {
@@ -398,7 +398,7 @@ export async function startResubmissionAction(
     return actionState(
       operation,
       "success",
-      `已从第 ${input.version} 版创建重交草稿，旧修订不会被覆盖。`,
+      `可以开始修改了，第 ${input.version} 版和老师的反馈都保留着。`,
       createIdempotencyKey(operation),
     );
   } catch (error) {

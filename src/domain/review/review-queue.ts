@@ -38,6 +38,8 @@ export type ReviewQueueItem = Readonly<{
   submissionId: string;
   phaseIndex: number;
   hasFeedback: boolean;
+  /** D-077: whether this submission takes a rubric evaluation at all. */
+  evaluationOpen: boolean;
   hasEvaluation: boolean;
   awaitingResubmission: boolean;
   lowDimensionIndexes: readonly number[];
@@ -81,7 +83,6 @@ export function reviewQueueQuery(filter: ReviewQueueFilter): string {
 export function matchesReviewQueue(
   item: ReviewQueueItem,
   filter: ReviewQueueFilter,
-  rubricAvailable: boolean,
 ): boolean {
   if (filter.phase !== null && item.phaseIndex !== filter.phase) return false;
   if (
@@ -96,7 +97,7 @@ export function matchesReviewQueue(
     case "feedback":
       return !item.hasFeedback;
     case "evaluation":
-      return rubricAvailable && !item.hasEvaluation;
+      return item.evaluationOpen && !item.hasEvaluation;
     case "resubmit":
       return item.awaitingResubmission;
   }
@@ -118,10 +119,8 @@ export function reviewQueuePosition(
   ordered: readonly ReviewQueueItem[],
   currentId: string,
   filter: ReviewQueueFilter,
-  rubricAvailable: boolean,
 ): ReviewQueuePosition {
-  const matches = (item: ReviewQueueItem) =>
-    matchesReviewQueue(item, filter, rubricAvailable);
+  const matches = (item: ReviewQueueItem) => matchesReviewQueue(item, filter);
   const total = ordered.filter(matches).length;
   const index = ordered.findIndex((item) => item.submissionId === currentId);
   if (index === -1) {
