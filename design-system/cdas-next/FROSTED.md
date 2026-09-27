@@ -30,8 +30,8 @@
 
 ## 标志
 
-- 三个互相重叠的圆 + 正中实心点（D-082）：几门学科在一个活动里交汇，中心是共同成果。组件在 `src/app/_components/brand-mark.tsx`，页面只用 `<BrandMark />`，不再手写「CD」字块。
-- 不写死颜色：底块取 `--primary`，图形取 `--primary-foreground`，换配色时自动跟随；`tone="mono"` 为无底块单色版，随当前文字色。
+- 三个互相重叠的圆环 + 正中四角星（D-082）：几门学科在一个活动里交汇，中心是共同成果；底块是主色渐变加玻璃高光描边。组件在 `src/app/_components/brand-mark.tsx`，页面只用 `<BrandMark />`，不再手写「CD」字块。
+- 不写死颜色：底块渐变由 `--primary` 混白 / 混黑算出，图形取 `--primary-foreground`，换配色时自动跟随；`tone="mono"` 为无底块单色版，随当前文字色。
 - 浏览器标签页图标 `src/app/icon.svg` 读不到 CSS 变量，写的是当前两色的 sRGB 值；换配色时同步改。
 
 ## 材质
