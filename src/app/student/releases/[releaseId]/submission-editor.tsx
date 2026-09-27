@@ -116,15 +116,25 @@ export function SubmissionEditor({
   const workingCopy = submission?.workingCopy ?? null;
   const latestRevisionNumber = submission?.latestRevisionNumber ?? 0;
   const savedText = workingCopy?.textEvidence ?? "";
-  const [editedText, setEditedText] = useState<string | null>(null);
-  const [editedEvidenceIndexes, setEditedEvidenceIndexes] = useState<
-    number[] | null
-  >(null);
-  const text = editedText ?? savedText;
+  // Local edits belong to the working copy they were typed into. After a
+  // formal submission the server hands back another working copy (the next
+  // phase, or none); edits made against the old one must not leak into it or
+  // keep reporting "unsaved". The component stays mounted so the submit
+  // notice survives.
+  const baseline = `${phaseIndex}:${workingCopy?.id ?? "none"}:${latestRevisionNumber}`;
+  const [textEdit, setTextEdit] = useState<{ baseline: string; value: string } | null>(null);
+  const [evidenceEdit, setEvidenceEdit] = useState<{
+    baseline: string;
+    value: number[];
+  } | null>(null);
+  const setEditedText = (value: string) => setTextEdit({ baseline, value });
+  const setEditedEvidenceIndexes = (value: number[]) =>
+    setEvidenceEdit({ baseline, value });
+  const text = textEdit?.baseline === baseline ? textEdit.value : savedText;
   const savedEvidenceIndexes =
     workingCopy?.completedEvidenceIndexes ?? [];
   const completedEvidenceIndexes =
-    editedEvidenceIndexes ?? savedEvidenceIndexes;
+    evidenceEdit?.baseline === baseline ? evidenceEdit.value : savedEvidenceIndexes;
   const codePointCount = Array.from(text).length;
   const textOverLimit = codePointCount > MAX_TEXT_EVIDENCE_CODE_POINTS;
   const hasVisibleSavedText = hasMeaningfulTextEvidence(savedText);

@@ -301,9 +301,12 @@ function SidebarRail({ className, ...props }: React.ComponentProps<"button">) {
   )
 }
 
-function SidebarInset({ className, ...props }: React.ComponentProps<"main">) {
+// A div, not shadcn's <main>: the workspace shell renders the page's single
+// <main id="main-content"> inside the inset, and two main landmarks confuse
+// screen-reader navigation.
+function SidebarInset({ className, ...props }: React.ComponentProps<"div">) {
   return (
-    <main
+    <div
       data-slot="sidebar-inset"
       className={cn(
         "relative flex w-full flex-1 flex-col bg-transparent md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-2xl md:peer-data-[variant=inset]:glass md:peer-data-[variant=inset]:peer-data-[state=collapsed]:ml-2",

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useActionState, useRef, useState } from "react";
 import { LocalizedDateTime } from "../../../../_components/localized-date-time";
-import { ConfirmDialog, InlineAlert } from "../../../../_components/ui";
+import { ConfirmDialog, InlineAlert, PayloadHashDetails } from "../../../../_components/ui";
 import type { TeacherActivityPreview } from "../../../../../server/queries/teacher-activity-workspace";
 import { styles } from "../../../teacher-ui";
 import {
@@ -42,6 +42,9 @@ export function PublishPanel({
     dueAtInstant !== null;
 
   const isConfirmDialogOpen = Boolean(confirmation) && dismissedConfirmationId !== confirmation?.actionIntentId;
+  // Once published, earlier step messages ("not published yet", "sealed")
+  // are history; only the outcome and where to go next remain.
+  const published = decisionState.status === "published";
 
   return (
     <>
@@ -56,7 +59,7 @@ export function PublishPanel({
           <p className={styles.configurationNote} role="note">
             暂无你管理的班级。请联系管理员完成班级配置后再发布。
           </p>
-        ) : workspace.draft.status !== "READY_FOR_PREVIEW" ? (
+        ) : published ? null : workspace.draft.status !== "READY_FOR_PREVIEW" ? (
           <p className={styles.configurationNote} role="note">
             {workspace.draft.status === "SEALED"
               ? "这份草稿已封存，不能再次准备发布。"
@@ -116,8 +119,8 @@ export function PublishPanel({
           </form>
         )}
 
-        {preparationState.status !== "idle" ? <InlineAlert tone={preparationState.status === "prepared" ? "success" : "danger"}>{preparationState.message}</InlineAlert> : null}
-        {confirmation ? <button className={styles.secondaryButton} onClick={() => setDismissedConfirmationId(null)} type="button">查看发布确认</button> : null}
+        {preparationState.status !== "idle" && !published ? <InlineAlert tone={preparationState.status === "prepared" ? "success" : "danger"}>{preparationState.message}</InlineAlert> : null}
+        {confirmation && !published ? <button className={styles.secondaryButton} onClick={() => setDismissedConfirmationId(null)} type="button">查看发布确认</button> : null}
       </aside>
 
       {confirmation ? (
@@ -130,7 +133,7 @@ export function PublishPanel({
           <ConfirmDialog
             open={isConfirmDialogOpen}
             title="确认发布活动"
-            detail={<div className={styles.dialogDetail}><p>将草稿版本 {confirmation.draftVersion} 发布给 {confirmation.classroom.name}。发布后内容不可修改。</p><dl><div><dt>截止时间</dt><dd>{confirmation.dueAt ? <LocalizedDateTime dateTime={confirmation.dueAt} /> : "未设置"}</dd></div><div><dt>确认有效至</dt><dd><LocalizedDateTime dateTime={confirmation.expiresAt} includeSeconds /></dd></div></dl><p>参数摘要：<code>{confirmation.payloadHash}</code></p></div>}
+            detail={<div className={styles.dialogDetail}><p>将草稿版本 {confirmation.draftVersion} 发布给 {confirmation.classroom.name}。发布后内容不可修改。</p><dl><div><dt>截止时间</dt><dd>{confirmation.dueAt ? <LocalizedDateTime dateTime={confirmation.dueAt} /> : "未设置"}</dd></div><div><dt>确认有效至</dt><dd><LocalizedDateTime dateTime={confirmation.expiresAt} includeSeconds /></dd></div></dl><PayloadHashDetails hash={confirmation.payloadHash} /></div>}
             confirmLabel="确认并发布"
             pending={decisionPending}
             onCancel={() => setDismissedConfirmationId(confirmation.actionIntentId)}
