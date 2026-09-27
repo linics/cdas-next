@@ -36,8 +36,10 @@ export type InsightsReleaseInput = Readonly<{
   classroomName: string;
   executionVersion: 0 | 1;
   submissionMode: "once" | "phased" | "mixed";
-  phases: readonly { name: string }[];
-  rubricDimensions: readonly { name: string }[] | null;
+  phases: readonly { name: string; learningGoalIds?: readonly string[] }[];
+  rubricDimensions:
+    | readonly { name: string; learningGoalIds?: readonly string[] }[]
+    | null;
   groups: readonly { id: string; memberIds: readonly string[] }[];
   currentMemberIds: readonly string[];
   submissions: readonly InsightsSubmissionInput[];
@@ -52,6 +54,8 @@ export type InsightsReleaseOption = Readonly<{
 export type InsightsRubricDimension = Readonly<{
   dimensionIndex: number;
   dimensionName: string;
+  /** Evaluations in which this dimension was relevant to the phase (D-076). */
+  sampleCount: number;
   excellent: number;
   good: number;
   pass: number;
@@ -189,6 +193,22 @@ export function isLowBandOutcome(
   );
 }
 
+/**
+ * Whether a rubric dimension speaks to a submission's phase (D-076). A v3
+ * phase and a dimension both name the learning goals they serve; a phase-1
+ * submission cannot show evidence for a dimension that only judges goals of
+ * later phases, so its "证据不足" there says nothing about the student. The
+ * whole-task submission (phase 0), v2 content and missing links count every
+ * dimension.
+ */
+export function isDimensionRelevantToPhase(
+  phaseGoalIds: readonly string[] | undefined,
+  dimensionGoalIds: readonly string[] | undefined,
+): boolean {
+  if (!phaseGoalIds?.length || !dimensionGoalIds?.length) return true;
+  return dimensionGoalIds.some((id) => phaseGoalIds.includes(id));
+}
+
 export function aggregateRubricCard(
   release: InsightsReleaseInput,
 ): InsightsRubricCard {
@@ -204,13 +224,21 @@ export function aggregateRubricCard(
     };
   }
 
-  const samples = release.submissions
-    .map((submission) => currentRevision(submission)?.outcomes)
-    .filter((outcomes): outcomes is readonly InsightsOutcome[] => outcomes !== null && outcomes !== undefined);
+  const samples = release.submissions.flatMap((submission) => {
+    const outcomes = currentRevision(submission)?.outcomes;
+    if (!outcomes) return [];
+    const phaseGoalIds =
+      submission.phaseIndex > 0
+        ? release.phases[submission.phaseIndex - 1]?.learningGoalIds
+        : undefined;
+    return [{ outcomes, phaseGoalIds }];
+  });
 
   const tallies = dimensions.map((dimension, index) => ({
     dimensionIndex: index + 1,
     dimensionName: dimension.name,
+    goalIds: dimension.learningGoalIds,
+    sampleCount: 0,
     excellent: 0,
     good: 0,
     pass: 0,
@@ -218,8 +246,11 @@ export function aggregateRubricCard(
     insufficient: 0,
   }));
 
-  for (const outcomes of samples) {
+  for (const { outcomes, phaseGoalIds } of samples) {
     for (const tally of tallies) {
+      if (!isDimensionRelevantToPhase(phaseGoalIds, tally.goalIds)) {
+        continue;
+      }
       const outcome = outcomes.find(
         (item) =>
           item.dimensionIndex === tally.dimensionIndex &&
@@ -228,6 +259,7 @@ export function aggregateRubricCard(
       if (!outcome) {
         continue;
       }
+      tally.sampleCount += 1;
       if (outcome.status === "INSUFFICIENT_EVIDENCE") {
         tally.insufficient += 1;
       } else {
@@ -265,7 +297,14 @@ export function aggregateRubricCard(
     status: samples.length === 0 ? "no_evaluations" : "ready",
     sampleCount: samples.length,
     dimensions: tallies.map((tally, index) => ({
-      ...tally,
+      dimensionIndex: tally.dimensionIndex,
+      dimensionName: tally.dimensionName,
+      sampleCount: tally.sampleCount,
+      excellent: tally.excellent,
+      good: tally.good,
+      pass: tally.pass,
+      improve: tally.improve,
+      insufficient: tally.insufficient,
       weak: hasLowBand && index === weakIndex,
     })),
   };

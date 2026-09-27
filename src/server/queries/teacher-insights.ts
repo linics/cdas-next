@@ -36,6 +36,7 @@ const rubricDimensionSchema = z
   .object({
     dimensionIndex: z.int().positive(),
     dimensionName: z.string().trim().min(1),
+    sampleCount: z.int().nonnegative(),
     excellent: z.int().nonnegative(),
     good: z.int().nonnegative(),
     pass: z.int().nonnegative(),
@@ -282,11 +283,19 @@ export async function getTeacherInsights(
         : "once";
     const phases =
       executionVersion === 1 && isStructuredContent(content)
-        ? content.phases.map((phase) => ({ name: phase.name }))
+        ? content.phases.map((phase) => ({
+            name: phase.name,
+            learningGoalIds:
+              "learningGoalIds" in phase ? phase.learningGoalIds : undefined,
+          }))
         : [];
     const rubricDimensions =
       isStructuredContent(content)
-        ? content.rubricDimensions.map((dimension) => ({ name: dimension.name }))
+        ? content.rubricDimensions.map((dimension) => ({
+            name: dimension.name,
+            learningGoalIds:
+              "learningGoalIds" in dimension ? dimension.learningGoalIds : undefined,
+          }))
         : null;
     return [
       {

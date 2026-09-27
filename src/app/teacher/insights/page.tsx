@@ -139,9 +139,14 @@ function RubricCard({
                 {dimension.dimensionIndex}. {dimension.dimensionName}
               </strong>
               {dimension.weak ? <span className={styles.weakMark}>薄弱维度</span> : null}
+              {dimension.sampleCount < card.sampleCount ? (
+                <span className="text-xs text-muted-foreground">
+                  {dimension.sampleCount} 份相关评价
+                </span>
+              ) : null}
             </div>
             <StackedBar
-              total={card.sampleCount}
+              total={dimension.sampleCount}
               segments={LEVEL_SEGMENTS.map(([key, label]) => ({
                 key,
                 label,
