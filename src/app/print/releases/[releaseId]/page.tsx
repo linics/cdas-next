@@ -40,5 +40,5 @@ export default async function PrintReleasePage({
     }
     throw error;
   }
-  return <TaskBookSheet backHref={backHref} taskBook={taskBook} />;
+  return <TaskBookSheet backHref={backHref} docxHref={`/print/releases/${releaseId}/docx`} taskBook={taskBook} />;
 }

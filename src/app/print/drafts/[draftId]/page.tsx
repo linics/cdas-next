@@ -49,5 +49,5 @@ export default async function PrintDraftPage({
     }
     throw error;
   }
-  return <TaskBookSheet backHref={`/teacher/activities/${draftId}`} taskBook={taskBook} />;
+  return <TaskBookSheet backHref={`/teacher/activities/${draftId}`} docxHref={`/print/drafts/${draftId}/docx?version=${taskBook.version}`} taskBook={taskBook} />;
 }
