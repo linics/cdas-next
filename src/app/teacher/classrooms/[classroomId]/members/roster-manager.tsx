@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useSyncExternalStore } from "react";
 import { LocalizedDateTime } from "../../../../_components/localized-date-time";
-import { ConfirmDialog, InlineAlert } from "../../../../_components/ui";
+import { ConfirmDialog, InlineAlert, PayloadHashDetails } from "../../../../_components/ui";
 import type { TeacherClassroomRoster } from "../../../../../server/queries/teacher-classroom-roster";
 import { StudentImportPanel } from "./student-import-panel";
 import { styles } from "../../../teacher-ui";
@@ -349,7 +349,7 @@ export function RosterManager({
             <p>学生：{confirmationStudents}</p>
             <p>{confirmation.operation === "ADD" ? "将把以上学生加入当前成员名单。" : "将结束该学生的当前成员关系；其历史活动与提交记录会保留。"}</p>
             <p>确认有效至 <LocalizedDateTime dateTime={confirmation.expiresAt} includeSeconds />。</p>
-            <p>参数摘要：<code>{confirmation.payloadHash}</code></p>
+            <PayloadHashDetails hash={confirmation.payloadHash} />
           </div>
         ) : null}
         confirmLabel={confirmation?.operation === "ADD" ? "确认加入" : "确认结束关系"}

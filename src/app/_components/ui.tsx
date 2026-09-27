@@ -120,3 +120,16 @@ export function EmptyState({
     </Empty>
   );
 }
+
+/**
+ * The signed parameter digest of a confirmation. It is audit evidence, not
+ * something a teacher reads, so it stays collapsed unless asked for.
+ */
+export function PayloadHashDetails({ hash }: { hash: string }) {
+  return (
+    <details className="text-xs text-muted-foreground">
+      <summary className="cursor-pointer">校验信息</summary>
+      <code className="font-mono break-all">{hash}</code>
+    </details>
+  );
+}

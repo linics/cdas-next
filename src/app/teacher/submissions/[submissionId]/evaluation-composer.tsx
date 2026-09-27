@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import { LocalizedDateTime } from "../../../_components/localized-date-time";
-import { ConfirmDialog, InlineAlert } from "../../../_components/ui";
+import { ConfirmDialog, InlineAlert, PayloadHashDetails } from "../../../_components/ui";
 import type { TeacherEvaluationCitation } from "../../../../domain/evaluation/teacher-evaluation-intent";
 import {
   TEACHER_EVALUATION_SUMMARY_MAX_LENGTH,
@@ -269,9 +269,7 @@ function ConfirmationPanel({
               />
               。
             </p>
-            <p>
-              参数摘要：<code className="font-mono text-xs break-all">{confirmation.payloadHash}</code>
-            </p>
+            <PayloadHashDetails hash={confirmation.payloadHash} />
           </div>
         }
         confirmLabel="确认并保存量规评价"

@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 import { LocalizedDateTime } from "../../../../_components/localized-date-time";
-import { ConfirmDialog, InlineAlert } from "../../../../_components/ui";
+import { ConfirmDialog, InlineAlert, PayloadHashDetails } from "../../../../_components/ui";
 import { styles } from "../../../teacher-ui";
 import {
   decideStudentImportAction,
@@ -198,7 +198,7 @@ export function StudentImportPanel({
             </p>
             <p>新建账号的初始密码为 <code>cdas</code> + 学号，学生首次登录必须修改；已有的 {reuseCount} 个账号保持原有姓名和密码。</p>
             <p>确认有效至 <LocalizedDateTime dateTime={confirmation.expiresAt} includeSeconds />。</p>
-            <p>参数摘要：<code>{confirmation.payloadHash}</code></p>
+            <PayloadHashDetails hash={confirmation.payloadHash} />
           </div>
         ) : null}
         disabled={busy}

@@ -2,7 +2,7 @@
 
 import { useActionState, useRef, useState } from "react";
 import { LocalizedDateTime } from "../../../../_components/localized-date-time";
-import { ConfirmDialog, InlineAlert } from "../../../../_components/ui";
+import { ConfirmDialog, InlineAlert, PayloadHashDetails } from "../../../../_components/ui";
 import { styles } from "../../../teacher-ui";
 import {
   decideCloseActivityAction,
@@ -119,7 +119,7 @@ export function CloseActivityPanel({
       <ConfirmDialog
         open={isConfirmDialogOpen}
         title="确认关闭这个活动"
-        detail={<div className={styles.dialogDetail}><p>将停止接收 {confirmation.classroomName || classroomName} 的新提交。关闭后不可重新开放，但仍可查看并反馈已有提交。</p><p>{confirmation.impact}</p><p>确认有效至 <LocalizedDateTime dateTime={confirmation.expiresAt} includeSeconds />。</p><p>参数摘要：<code>{confirmation.payloadHash}</code></p></div>}
+        detail={<div className={styles.dialogDetail}><p>将停止接收 {confirmation.classroomName || classroomName} 的新提交。关闭后不可重新开放，但仍可查看并反馈已有提交。</p><p>{confirmation.impact}</p><p>确认有效至 <LocalizedDateTime dateTime={confirmation.expiresAt} includeSeconds />。</p><PayloadHashDetails hash={confirmation.payloadHash} /></div>}
         confirmLabel="确认并关闭活动"
         tone="danger"
         pending={decisionPending}

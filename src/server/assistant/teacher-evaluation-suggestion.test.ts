@@ -560,3 +560,21 @@ describe("teacher evaluation suggestion boundary", () => {
     );
   });
 });
+
+describe("student-facing evaluation summary (walkthrough 2026-09-28)", () => {
+  const outcomes = [1, 2, 3, 4].map((dimensionIndex) => ({
+    dimensionIndex,
+    dimensionName: `维度${dimensionIndex}`,
+    status: "INSUFFICIENT_EVIDENCE" as const,
+    citations: [],
+  }));
+
+  it("rejects a summary that leaks raw level codes", () => {
+    expect(
+      teacherEvaluationSuggestionModelOutputSchema.safeParse({ outcomes, summary: "方法较清楚，故暂按 good 提出建议。" }).success,
+    ).toBe(false);
+    expect(
+      teacherEvaluationSuggestionModelOutputSchema.safeParse({ outcomes, summary: "方法较清楚，记录质量还缺少实际填写的记录表。" }).success,
+    ).toBe(true);
+  });
+});
