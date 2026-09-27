@@ -7,6 +7,7 @@ import {
   type ActivityContent,
 } from "../../domain/activity/activity-content";
 import {
+  isDimensionRelevantToPhase,
   isLowBandOutcome,
   stageBucketKey,
 } from "../../domain/insights/teacher-insights";
@@ -486,6 +487,7 @@ export async function getStudentReleaseWorkspace(
 
 function lowDimensionIndexes(
   content: ActivityContent,
+  phaseIndex: number,
   evaluation: {
     version: number;
     revisions: { version: number; outcomes: unknown }[];
@@ -501,9 +503,16 @@ function lowDimensionIndexes(
     return [];
   }
   const outcomes = compactOutcomes(current.outcomes);
-  return content.rubricDimensions.flatMap(
-    (dimension, index) =>
-      isLowBandOutcome(outcomes, index + 1, dimension.name) ? [index + 1] : [],
+  const v3 = content.schemaVersion === 3 ? content : null;
+  const phaseGoalIds =
+    v3 && phaseIndex > 0 ? v3.phases[phaseIndex - 1]?.learningGoalIds : undefined;
+  return content.rubricDimensions.flatMap((dimension, index) =>
+    isDimensionRelevantToPhase(
+      phaseGoalIds,
+      v3?.rubricDimensions[index]?.learningGoalIds,
+    ) && isLowBandOutcome(outcomes, index + 1, dimension.name)
+      ? [index + 1]
+      : [],
   );
 }
 
@@ -683,6 +692,7 @@ export async function getTeacherReleaseSubmissions(
         }),
         lowDimensionIndexes: lowDimensionIndexes(
           content,
+          submission.phaseIndex,
           currentRevision.evaluation,
         ),
       },
