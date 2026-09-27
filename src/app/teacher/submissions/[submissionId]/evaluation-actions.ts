@@ -232,14 +232,20 @@ function failedActionState(
     });
   }
 
-  if (code === "RUBRIC_UNAVAILABLE" || code === "INVALID_EVALUATION") {
+  if (
+    code === "RUBRIC_UNAVAILABLE" ||
+    code === "EVALUATION_NOT_OPEN" ||
+    code === "INVALID_EVALUATION"
+  ) {
     return actionState({
       operation,
       status: "validation_error",
       message:
         code === "RUBRIC_UNAVAILABLE"
           ? "当前发布快照没有四档量规，不能写入证据绑定评价。"
-          : "量规评价必须覆盖全部冻结维度，等级判断需引用本版证据，综评必须包含可见文字。",
+          : code === "EVALUATION_NOT_OPEN"
+            ? "量规评价只在最终提交时进行；阶段提交请给出反馈。"
+            : "量规评价必须覆盖全部冻结维度，等级判断需引用本版证据，综评必须包含可见文字。",
       resolvedIntentId,
       nextPrepareIdempotencyKey: createIdempotencyKey("prepare"),
     });
@@ -395,7 +401,7 @@ export async function suggestTeacherEvaluationAction(
     return suggestionState({
       status: "suggested",
       message:
-        "AI 建议已填入当前表单。请逐维核对、修改后，再准备评价确认。",
+        "AI 建议已填入当前表单。请逐维核对、修改后，再保存评价。",
       suggestion,
     });
   } catch (error) {
@@ -442,6 +448,12 @@ export async function suggestTeacherEvaluationAction(
           status: "error",
           message:
             "当前发布快照没有可用的四档量规，因此不能起草评价建议。",
+        });
+      }
+      if (error.code === "EVALUATION_NOT_OPEN") {
+        return suggestionState({
+          status: "error",
+          message: "量规评价只在最终提交时进行，这一份不需要起草评价。",
         });
       }
       if (error.code === "INVALID_OUTPUT") {

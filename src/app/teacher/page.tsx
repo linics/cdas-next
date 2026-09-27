@@ -171,7 +171,7 @@ export default async function TeacherDashboardPage() {
   const statCards = (
     [
       ["待反馈", totals.feedback, "学生已提交，等你写反馈"],
-      ["待评价", totals.evaluation, "已反馈，还没做量规评价"],
+      ["待评价", totals.evaluation, "终稿还没做量规评价"],
       ["待重交", totals.resubmission, "已要求修改，等学生重交"],
     ] as const
   ).filter(([, count]) => count > 0);

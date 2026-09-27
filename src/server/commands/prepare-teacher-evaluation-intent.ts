@@ -19,6 +19,7 @@ import {
   type ResolvedCommandContext,
   resolveCommandContext,
 } from "./command-context";
+import { isRubricEvaluationOpen } from "../../domain/submission/sequential-execution";
 import { isActiveSchoolMember } from "../school/teacher-authorization";
 import { teacherEvaluationSuggestionActionName } from "./complete-teacher-evaluation-suggestion";
 import {
@@ -64,6 +65,7 @@ export class PrepareTeacherEvaluationIntentError extends Error {
       | "STALE_SUBMISSION_REVISION"
       | "EVALUATION_VERSION_CONFLICT"
       | "RUBRIC_UNAVAILABLE"
+      | "EVALUATION_NOT_OPEN"
       | "INVALID_EVALUATION"
       | "INVALID_AGENT_RUN"
       | "IDEMPOTENCY_MISMATCH"
@@ -153,9 +155,11 @@ async function runTransaction(
         where: { id: input.submissionId },
         select: {
           id: true,
+          phaseIndex: true,
           latestRevisionNumber: true,
           release: {
             select: {
+              executionVersion: true,
               publisherId: true,
               classroom: { select: { managerId: true } },
               snapshot: { select: { content: true } },
@@ -225,6 +229,15 @@ async function runTransaction(
       }
       if (!isStructuredContent(content)) {
         throw new PrepareTeacherEvaluationIntentError("RUBRIC_UNAVAILABLE");
+      }
+      if (
+        !isRubricEvaluationOpen(
+          submission.release.executionVersion,
+          content,
+          submission.phaseIndex,
+        )
+      ) {
+        throw new PrepareTeacherEvaluationIntentError("EVALUATION_NOT_OPEN");
       }
 
       const evaluation = await transaction.teacherEvaluation.findUnique({

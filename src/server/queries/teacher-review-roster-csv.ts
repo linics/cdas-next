@@ -7,6 +7,7 @@ export type TeacherReviewRosterCsvInput = {
   submissions: ReadonlyArray<{
     phaseIndex: number;
     phaseName: string | null;
+    evaluationOpen: boolean;
     student: { id?: string; displayName: string };
     group: { name: string } | null;
     currentRevision: {
@@ -55,11 +56,13 @@ export function formatTeacherReviewRosterCsv(
       submission.currentRevision.feedback
         ? `已反馈 v${submission.currentRevision.feedback.currentVersion}`
         : "待反馈",
-      input.release.rubricAvailable
-        ? submission.currentRevision.evaluation
+      !input.release.rubricAvailable
+        ? "无量规"
+        : submission.currentRevision.evaluation
           ? `已评价 v${submission.currentRevision.evaluation.currentVersion}`
-          : "待评价"
-        : "无量规",
+          : submission.evaluationOpen
+            ? "待评价"
+            : "终稿时评价",
       submission.currentRevision.followUp === "AWAITING_RESUBMISSION"
         ? "待重交"
         : submission.currentRevision.followUp === "RESUBMISSION_IN_PROGRESS"

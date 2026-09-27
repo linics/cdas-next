@@ -131,6 +131,7 @@ const workspace = {
     id: submissionId,
     phaseIndex: 0,
     phaseName: null,
+    evaluationOpen: false,
     latestRevisionNumber: 1,
     release: {
       id: "40000000-0000-4000-8000-000000000004",
@@ -247,7 +248,7 @@ describe("teacher feedback page access boundary", () => {
     expect(markup).toContain("当前账号：林老师 · 教师");
     expect(markup).toContain("退出登录");
     expect(markup).toContain("学生证据");
-    expect(markup).toContain("已确认记录");
+    expect(markup).toContain("已保存的记录");
     expect(markup).toContain("收起评阅");
     expect(markup).toContain('data-rail-open="true"');
     expect(markup).toContain('aria-expanded="true"');
@@ -262,7 +263,7 @@ describe("teacher feedback page access boundary", () => {
     expect(markup).toContain('data-revision="1"');
     expect(markup).toContain('data-feedback-version="1"');
     expect(markup).toContain(`data-initial-body="${currentFeedbackBody}"`);
-    expect(markup).toContain("该活动使用旧版任务书，未包含量规");
+    expect(markup).toContain("旧版任务书没有量规，只需反馈");
     expect(markup).not.toContain("data-evaluation-composer");
   });
 
@@ -273,6 +274,7 @@ describe("teacher feedback page access boundary", () => {
         ...workspace.submission,
         phaseIndex: 3,
         phaseName: "建议与公开表达",
+        evaluationOpen: true,
         release: {
           ...workspace.submission.release,
           snapshot: {
@@ -366,6 +368,7 @@ describe("teacher feedback page access boundary", () => {
       ...workspace,
       submission: {
         ...workspace.submission,
+        evaluationOpen: true,
         release: {
           ...workspace.submission.release,
           snapshot: {
@@ -381,6 +384,31 @@ describe("teacher feedback page access boundary", () => {
     expect(markup).toContain('data-evaluation-composer="true"');
     expect(markup).toContain('data-assistant-enabled="true"');
     expect(markup).toContain('data-feedback-composer="true"');
+  });
+
+  it("asks only for feedback on a phase before the final submission (D-077)", async () => {
+    mocks.getTeacherFeedbackWorkspace.mockResolvedValue({
+      ...workspace,
+      submission: {
+        ...workspace.submission,
+        phaseIndex: 1,
+        phaseName: "发现问题",
+        evaluationOpen: false,
+        release: {
+          ...workspace.submission.release,
+          snapshot: {
+            ...workspace.submission.release.snapshot,
+            content: waterConservationTaskBook,
+          },
+        },
+      },
+    });
+
+    const markup = await renderPage();
+
+    expect(markup).toContain('data-feedback-composer="true"');
+    expect(markup).not.toContain("data-evaluation-composer");
+    expect(markup).toContain("阶段提交只需反馈；量规评价在最终提交时进行。");
   });
 
   it("labels shared group feedback with every member and role", async () => {

@@ -58,6 +58,9 @@ export const styles = {
   dangerButton: button({ variant: "destructive" }),
   rowLink:
     "text-sm font-medium underline-offset-4 hover:underline",
+  // 列表行的操作：需要处理时是实心主按钮，只是查看时是描边按钮。
+  rowAction: `${button({ size: "sm" })} shrink-0 px-4`,
+  rowView: `${button({ variant: "outline", size: "sm" })} shrink-0 px-4`,
   conflictLink: "text-sm font-medium underline underline-offset-4",
 
   // 状态标签：data-tone 映射到四档状态色
@@ -112,13 +115,28 @@ export const styles = {
 
   // 提交列表
   progressSection: `${card} flex flex-col gap-4 p-5`,
+  settingsDisclosure:
+    "rounded-2xl border border-dashed p-4 [&>summary]:cursor-pointer [&>summary]:text-sm [&>summary]:font-medium [&>summary]:text-muted-foreground",
   submissionList: "flex flex-col divide-y",
+  reviewSection: `${card} flex flex-col gap-4 p-5`,
+  // 状态格：数字大、标签小；有待办时整格着状态色，处理完变灰。当前筛选加主色描边。
+  statTiles: "grid grid-cols-2 gap-2 sm:grid-cols-4",
+  statTile:
+    "flex flex-col gap-0.5 rounded-xl border bg-background/60 px-3 py-2.5 transition-colors hover:border-foreground/25 aria-[current=true]:border-primary aria-[current=true]:ring-1 aria-[current=true]:ring-primary [&>span]:text-xs [&>span]:font-medium [&>strong]:text-2xl [&>strong]:font-semibold data-[tone=pending]:border-transparent data-[tone=pending]:bg-status-pending data-[tone=pending]:text-status-pending-foreground data-[tone=resubmit]:border-transparent data-[tone=resubmit]:bg-status-resubmit data-[tone=resubmit]:text-status-resubmit-foreground data-[tone=clear]:text-muted-foreground",
+  reviewList: "flex flex-col divide-y rounded-xl border bg-background/50",
+  reviewRow:
+    "flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-3 sm:flex-nowrap",
+  avatar:
+    "flex size-9 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-medium text-muted-foreground data-[active=true]:bg-primary/12 data-[active=true]:text-primary",
+  reviewName: "text-sm font-medium",
+  reviewMeta: "truncate text-xs text-muted-foreground",
+  reviewBadges: "flex flex-wrap items-center gap-1.5",
+  progressBar:
+    "h-1.5 w-full overflow-hidden rounded-full bg-muted [&>span]:block [&>span]:h-full [&>span]:rounded-full [&>span]:bg-primary",
   submissionRow:
     "flex flex-col gap-2 py-3 transition-colors hover:bg-muted/40 sm:flex-row sm:items-center sm:justify-between sm:px-2 [&_h2]:text-sm [&_h2]:font-medium [&_p]:text-xs [&_p]:text-muted-foreground",
   submissionMeta:
     "flex flex-wrap items-center gap-2 text-xs text-muted-foreground [&_strong]:font-medium [&_strong]:text-foreground [&_small]:text-xs",
-  rowProgress:
-    "flex items-center gap-2 text-xs tabular-nums text-muted-foreground",
   closeActivityPanel: `${card} flex flex-col gap-3 p-5 [&_h2]:text-base [&_h2]:font-semibold [&>p:not(:first-child)]:text-sm [&>p:not(:first-child)]:text-muted-foreground`,
 
   // 小组
@@ -181,10 +199,11 @@ export const styles = {
   dimensionRow: "grid gap-2",
   dimensionHead:
     "flex flex-wrap items-baseline justify-between gap-2 text-sm [&_strong]:font-medium",
-  // 堆叠条：优秀用主色实底，其余各档用浅底深字的状态色，保证条上的数字可读。
+  // 堆叠条：等级是一条从强到弱的刻度 —— 优秀主色实底、良好主色浅底、达标灰、
+  // 需改进珊瑚（与「需修改」同色）；条上的数字都是浅底深字，保证可读。
   barTrack: "flex min-h-6 w-full overflow-hidden rounded-md border bg-muted",
   barFill:
-    "grid min-w-0 place-items-center text-xs font-medium tabular-nums [&+&]:border-l [&+&]:border-background data-[tone=excellent]:bg-primary data-[tone=excellent]:text-primary-foreground data-[tone=good]:bg-status-pending data-[tone=good]:text-status-pending-foreground data-[tone=pass]:bg-status-done data-[tone=pass]:text-status-done-foreground data-[tone=improve]:bg-status-resubmit data-[tone=improve]:text-status-resubmit-foreground data-[tone=insufficient]:bg-background data-[tone=insufficient]:text-muted-foreground data-[tone=stage]:bg-status-pending data-[tone=stage]:text-status-pending-foreground",
+    "grid min-w-0 place-items-center text-xs font-medium tabular-nums [&+&]:border-l [&+&]:border-background data-[tone=excellent]:bg-primary data-[tone=excellent]:text-primary-foreground data-[tone=good]:bg-accent data-[tone=good]:text-accent-foreground data-[tone=pass]:bg-status-closed data-[tone=pass]:text-status-closed-foreground data-[tone=improve]:bg-status-resubmit data-[tone=improve]:text-status-resubmit-foreground data-[tone=insufficient]:bg-background data-[tone=insufficient]:text-muted-foreground data-[tone=stage]:bg-accent data-[tone=stage]:text-accent-foreground",
   weakMark:
     "inline-flex h-5 items-center rounded-4xl bg-status-resubmit px-2 text-xs font-medium text-status-resubmit-foreground",
   legend: "flex flex-wrap gap-x-3 gap-y-1 text-xs tabular-nums text-muted-foreground",

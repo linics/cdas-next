@@ -872,14 +872,6 @@ async function main(): Promise<void> {
       "STANDARD",
       clock,
     );
-    await giveEvaluation(
-      database,
-      teacher.id,
-      chenP1,
-      "问题来自真实洗手间场景。现在的记录还不够支撑总务处做决定。",
-      covering(COMPLETE_TITLE, ["good", "pass", "good", "pass"]),
-      clock,
-    );
 
     const chenP2v1 = await submitPhase(
       database,
@@ -896,14 +888,6 @@ async function main(): Promise<void> {
       "证据偏少。请补一组下午观察，或加简单问卷，再用来说服总务处。",
       "REVISE",
       "FOUNDATION",
-      clock,
-    );
-    await giveEvaluation(
-      database,
-      teacher.id,
-      chenP2v1,
-      "问题清楚，但还说服不了总务处。",
-      covering(COMPLETE_TITLE, ["good", "improve", "pass", "improve"]),
       clock,
     );
     const resubmit = await startSubmissionResubmission(
@@ -950,14 +934,6 @@ async function main(): Promise<void> {
       "STANDARD",
       clock,
     );
-    await giveEvaluation(
-      database,
-      teacher.id,
-      chenP2v2,
-      "重交后证据明显增强。跨学科连接还可以写得更清楚，方便公示。",
-      covering(COMPLETE_TITLE, ["good", "good", "pass", "good"]),
-      clock,
-    );
 
     const chenP3 = await submitPhase(
       database,
@@ -1002,14 +978,6 @@ async function main(): Promise<void> {
       "STANDARD",
       clock,
     );
-    await giveEvaluation(
-      database,
-      teacher.id,
-      liP1,
-      "问题钉在浇灌区，证据还可以更量化。",
-      covering(COMPLETE_TITLE, ["excellent", "good", "good", "good"]),
-      clock,
-    );
     const liP2 = await submitPhase(
       database,
       liMingId,
@@ -1025,14 +993,6 @@ async function main(): Promise<void> {
       "数据已经能说明问题，可以把建议写给物业和总务处了。",
       "CONTINUE",
       "STANDARD",
-      clock,
-    );
-    await giveEvaluation(
-      database,
-      teacher.id,
-      liP2,
-      "证据充分，总务处能看懂浪费发生在超时喷灌。",
-      covering(COMPLETE_TITLE, ["excellent", "excellent", "good", "good"]),
       clock,
     );
     const liP3 = await submitPhase(
@@ -1052,6 +1012,16 @@ async function main(): Promise<void> {
       "STANDARD",
       clock,
     );
+    // D-077: only the final submission (phase 3 of this phased activity)
+    // takes a rubric evaluation; earlier phases get formative feedback only.
+    await giveEvaluation(
+      database,
+      teacher.id,
+      liP3,
+      "建议对着喷灌超时的证据，方向可行；执行对象和步骤还要写具体。",
+      covering(COMPLETE_TITLE, ["good", "good", "pass", "improve"]),
+      clock,
+    );
 
     const wangP1 = await submitPhase(
       database,
@@ -1068,14 +1038,6 @@ async function main(): Promise<void> {
       "方向对。请补观察记录后再用数据说明，总务处现在还看不出规模。",
       "CONTINUE",
       "FOUNDATION",
-      clock,
-    );
-    await giveEvaluation(
-      database,
-      teacher.id,
-      wangP1,
-      "问题与饮水区有关，证据还不足。",
-      covering(COMPLETE_TITLE, ["pass", "improve", "pass", "improve"]),
       clock,
     );
     const wangPhase2 = await database.submission.findUnique({

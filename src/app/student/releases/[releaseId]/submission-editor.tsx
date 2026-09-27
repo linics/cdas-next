@@ -1,7 +1,14 @@
 "use client";
 
-import { useActionState, useRef, useState, type ReactNode } from "react";
+import {
+  useActionState,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { useRouter } from "next/navigation";
+import { PencilLineIcon } from "lucide-react";
 import { ConfirmDialog, InlineAlert } from "../../../_components/ui";
 import {
   evidenceTypeLabel,
@@ -24,6 +31,7 @@ import {
 } from "./submission-action-state";
 import { Textarea } from "@/components/ui/textarea";
 import { styles } from "./submission-ui";
+import { parseSupportScaffold } from "../../../../domain/activity/support-scaffold";
 import type { AttachmentUploadStrategy } from "../../../../server/attachments/attachment-storage-factory";
 
 type Submission = StudentReleaseWorkspace["submission"];
@@ -45,9 +53,18 @@ type SubmissionEditorProps = Readonly<{
   }>;
 }>;
 
-function ActionNotice({ state }: { state: SubmissionActionState }) {
+/** Quiet period after the last keystroke before the draft saves itself. */
+const AUTOSAVE_DELAY_MS = 1_200;
+
+function ActionNotice({
+  state,
+  quietOnSuccess = false,
+}: {
+  state: SubmissionActionState;
+  quietOnSuccess?: boolean;
+}) {
   const router = useRouter();
-  if (state.status === "idle") {
+  if (state.status === "idle" || (quietOnSuccess && state.status === "success")) {
     return null;
   }
 
@@ -115,6 +132,7 @@ export function SubmissionEditor({
 }: SubmissionEditorProps) {
   const workingCopy = submission?.workingCopy ?? null;
   const latestRevisionNumber = submission?.latestRevisionNumber ?? 0;
+  const revisionRequested = submission?.followUp === "AWAITING_RESUBMISSION";
   const savedText = workingCopy?.textEvidence ?? "";
   // Local edits belong to the working copy they were typed into. After a
   // formal submission the server hands back another working copy (the next
@@ -164,6 +182,7 @@ export function SubmissionEditor({
     startResubmissionAction,
     initialSubmissionActionState,
   );
+  const saveFormRef = useRef<HTMLFormElement>(null);
   const submitFormRef = useRef<HTMLFormElement>(null);
   const [submitConfirmationOpen, setSubmitConfirmationOpen] = useState(false);
   const anyPending = savePending || submitPending || resubmitPending;
@@ -175,18 +194,38 @@ export function SubmissionEditor({
   const resubmitIdempotencyKey =
     resubmitState.nextIdempotencyKey ?? idempotencySeeds.resubmit;
 
-  const draftKind =
-    workingCopy && workingCopy.baseRevisionNumber > 0
-      ? `第 ${workingCopy.baseRevisionNumber + 1} 版重交草稿`
-      : "未提交草稿";
+  // The draft saves itself once typing pauses. A failed save is not retried
+  // until the draft changes again, and a version conflict stops autosave
+  // until the student refreshes — retrying could only fail the same way.
+  const draftKey = `${baseline}|${text}|${completedEvidenceIndexes.join(",")}`;
+  const [lastAttemptedDraft, setLastAttemptedDraft] = useState<string | null>(
+    null,
+  );
+  const autosaveBlocked =
+    saveState.status === "conflict" ||
+    (saveState.status === "error" && lastAttemptedDraft === draftKey);
+  const canAutosave =
+    canWrite &&
+    hasUnsavedChanges &&
+    !anyPending &&
+    !textOverLimit &&
+    !autosaveBlocked;
+  useEffect(() => {
+    if (!canAutosave) return;
+    const timer = window.setTimeout(() => {
+      setLastAttemptedDraft(draftKey);
+      saveFormRef.current?.requestSubmit();
+    }, AUTOSAVE_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [canAutosave, draftKey]);
 
-  // 已正式提交且没有在改的草稿时，这一段只剩一个动作，而且这个动作是针对第 N 版的 ——
-  // 状态本身由下面的「我的提交与反馈」时间线负责讲，不再重复一张卡。
+  // 已提交、没有在改的草稿：这里只剩「再改一版」这一个动作。
+  // 老师要求修改时它是主按钮；否则只是一个不抢眼的入口。
   if (!workingCopy && latestRevisionNumber > 0) {
     return (
-      <section className={styles.editorSection} aria-labelledby="submission-title">
+      <section className={styles.resubmitSection} aria-labelledby="submission-title">
         <h2 className={styles.visuallyHidden} id="submission-title">
-          第 {latestRevisionNumber} 版已正式提交
+          第 {latestRevisionNumber} 版已提交
         </h2>
 
         {canWrite ? (
@@ -197,36 +236,74 @@ export function SubmissionEditor({
               version={latestRevisionNumber}
               idempotencyKey={resubmitIdempotencyKey}
             />
-            <div>
-              <strong>第 {latestRevisionNumber} 版 · 开始下一版</strong>
-              <p>
-                已提交的版本不可修改。重交会以第 {latestRevisionNumber} 版为底稿新建草稿，原版本和反馈都保留。
-              </p>
-            </div>
             <button
-              className={styles.secondaryButton}
+              className={
+                revisionRequested ? styles.primaryButton : styles.ghostButton
+              }
               type="submit"
               disabled={anyPending}
             >
-              {resubmitPending ? "正在创建…" : "开始重交"}
+              {resubmitPending
+                ? "正在准备…"
+                : revisionRequested
+                  ? "按老师的反馈修改"
+                  : "重新提交一版"}
             </button>
+            <p>
+              会在第 {latestRevisionNumber} 版的基础上修改，已提交的版本和老师的反馈都会保留。
+            </p>
           </form>
         ) : (
           <div className={styles.readOnlyNotice} role="note">
-            <span aria-hidden="true">◇</span>
             <p>{readOnlyMessage}</p>
           </div>
         )}
-        <ActionNotice state={saveState} />
+        <ActionNotice state={saveState} quietOnSuccess />
         <ActionNotice state={submitState} />
         <ActionNotice state={resubmitState} />
       </section>
     );
   }
 
+  const saveStatus = savePending
+    ? "正在保存…"
+    : hasUnsavedChanges
+      ? autosaveBlocked
+        ? "没有保存"
+        : "有修改，稍后自动保存"
+      : workingCopy
+        ? workingCopyUpdatedLabel
+          ? <>已自动保存 · {workingCopyUpdatedLabel}</>
+          : "已自动保存"
+        : "写下的内容会自动保存；提交前只有你能看到";
+
+  // 支架里的开头句（D-080）：点一下接到正文末尾，学生不必从空白开始。
+  const starters =
+    canWrite && phase ? parseSupportScaffold(phase.support).starters : [];
   const writingField = (
     <div className={styles.writingField}>
-      <label htmlFor="text-evidence">文字证据</label>
+      <label htmlFor="text-evidence">写下你的记录和说明</label>
+      {starters.length > 0 ? (
+        <div className={styles.starterRow}>
+          <span>可以这样开头</span>
+          {starters.map((starter) => (
+            <button
+              key={starter}
+              type="button"
+              disabled={anyPending}
+              onClick={() =>
+                setEditedText(
+                  text.trim().length === 0
+                    ? starter
+                    : `${text.replace(/\s+$/, "")}\n${starter}`,
+                )
+              }
+            >
+              {starter}
+            </button>
+          ))}
+        </div>
+      ) : null}
       <Textarea
         className="min-h-56 text-base leading-7"
         id="text-evidence"
@@ -245,19 +322,17 @@ export function SubmissionEditor({
         }}
         placeholder={
           canWrite
-            ? "在这里整理你的观察、数据与说明…"
+            ? "你观察到了什么、数据是多少、你怎么想…"
             : "当前没有保存的草稿。"
         }
         readOnly={!canWrite}
-        aria-describedby="text-evidence-help text-evidence-count"
+        aria-describedby="text-evidence-count"
         spellCheck="true"
       />
       <div className={styles.fieldMeta}>
-        <p id="text-evidence-help">
-          {canWrite
-            ? "按 ⌘ / Ctrl + Enter 保存草稿；正式提交以最近一次保存的内容为准。"
-            : readOnlyMessage}
-        </p>
+        <span aria-live="polite" data-dirty={hasUnsavedChanges ? "true" : "false"}>
+          {canWrite ? saveStatus : null}
+        </span>
         <span
           id="text-evidence-count"
           data-over-limit={textOverLimit ? "true" : "false"}
@@ -268,31 +343,30 @@ export function SubmissionEditor({
     </div>
   );
 
+  const submitBlocker = hasUnsavedChanges
+    ? autosaveBlocked
+      ? "这次修改没有保存成功，请先点「保存」。"
+      : "正在保存最新修改…"
+    : !attachmentsReady
+      ? "附件还在检查，或有文件需要移除。"
+      : !hasSavedEvidence
+        ? "写点内容、勾选一项或上传一个附件后，就可以提交。"
+        : null;
+
   return (
     <section className={styles.editorSection} aria-labelledby="submission-title">
       <div className={styles.sectionHeading}>
-        <div>
-          <p className={styles.eyebrow}>作业内容</p>
-          <h2 id="submission-title">{draftKind}</h2>
-        </div>
-        <span className={styles.draftBadge}>尚未正式提交</span>
+        <h2 className="flex items-center gap-2" id="submission-title">
+          <PencilLineIcon aria-hidden="true" className="size-4 text-primary" />
+          {workingCopy && workingCopy.baseRevisionNumber > 0
+            ? `修改第 ${workingCopy.baseRevisionNumber} 版`
+            : "我的作答"}
+        </h2>
       </div>
-      <p className={styles.sectionLead}>
-        {workingCopy ? (
-          <>
-            工作草稿版本 {workingCopy.version}
-            {workingCopyUpdatedLabel ? (
-              <> · {workingCopyUpdatedLabel} 保存</>
-            ) : null}
-          </>
-        ) : (
-          "草稿只有你能看到，正式提交后老师才看得到。"
-        )}
-      </p>
-      <ActionNotice state={resubmitState} />
+      <ActionNotice state={resubmitState} quietOnSuccess />
 
       {canWrite ? (
-        <form className={styles.writerForm} action={saveAction}>
+        <form className={styles.writerForm} action={saveAction} ref={saveFormRef}>
           <HiddenActionFields
             releaseId={releaseId}
             phaseIndex={phaseIndex}
@@ -307,10 +381,7 @@ export function SubmissionEditor({
           />
           {phase ? (
             <fieldset className={styles.checkpointFieldset}>
-              <legend>阶段证据检查点</legend>
-              <p>
-                勾选本阶段已完成的证据要求。
-              </p>
+              <legend>要交的内容 · 完成一项勾一项</legend>
               {phase.evidence.map((evidence, index) => {
                 const evidenceIndex = index + 1;
                 const checked =
@@ -341,33 +412,25 @@ export function SubmissionEditor({
             </fieldset>
           ) : null}
           {writingField}
-          <div className={styles.saveRow}>
-            <span data-dirty={hasUnsavedChanges ? "true" : "false"}>
-              {hasUnsavedChanges
-                ? "有尚未保存的修改"
-                : workingCopy
-                  ? "所有修改已保存"
-                  : "尚未创建草稿"}
-            </span>
+          {autosaveBlocked && hasUnsavedChanges ? (
             <button
-              className={styles.secondaryButton}
+              className={`${styles.secondaryButton} self-start`}
               type="submit"
               disabled={anyPending || textOverLimit}
             >
-              {savePending ? "正在保存…" : "保存草稿"}
+              保存
             </button>
-          </div>
+          ) : null}
         </form>
       ) : (
         <div className={styles.readOnlyEditor}>
           {writingField}
           <div className={styles.readOnlyNotice} role="note">
-            <span aria-hidden="true">◇</span>
             <p>{readOnlyMessage}</p>
           </div>
         </div>
       )}
-      <ActionNotice state={saveState} />
+      <ActionNotice state={saveState} quietOnSuccess />
 
       {workingCopy ? (
         <AttachmentEditor
@@ -380,17 +443,6 @@ export function SubmissionEditor({
 
       {canWrite && workingCopy ? (
         <div className={styles.commitArea}>
-          <div>
-            <p className={styles.eyebrow}>正式提交</p>
-            <h3>
-              {isPastDue
-                ? `提交第 ${latestRevisionNumber + 1} 版（迟交）`
-                : `提交第 ${latestRevisionNumber + 1} 版`}
-            </h3>
-            <p>
-              以最近一次保存的草稿为准。提交后不可修改，需要调整时可以重交。
-            </p>
-          </div>
           <form action={submitAction} ref={submitFormRef}>
             <HiddenActionFields
               releaseId={releaseId}
@@ -403,30 +455,28 @@ export function SubmissionEditor({
               className={styles.primaryButton}
               type="button"
               onClick={() => setSubmitConfirmationOpen(true)}
-              disabled={
-                anyPending ||
-                hasUnsavedChanges ||
-                !attachmentsReady ||
-                !hasSavedEvidence ||
-                textOverLimit
-              }
+              disabled={anyPending || submitBlocker !== null || textOverLimit}
             >
               {submitPending
-                ? "正在正式提交…"
+                ? "正在提交…"
                 : isPastDue
-                  ? "正式迟交"
-                  : "正式提交"}
+                  ? "迟交给老师"
+                  : "提交给老师"}
               <span aria-hidden="true">→</span>
             </button>
           </form>
+          <p className={styles.commitHint}>
+            {submitBlocker ??
+              (isPastDue
+                ? "已过截止时间，这一版会标记为迟交。"
+                : "提交后老师就能看到。")}
+          </p>
           <ConfirmDialog
-            cancelLabel="继续修改"
-            confirmLabel={isPastDue ? "确认正式迟交" : "确认正式提交"}
-            detail={
-              isPastDue
-                ? `将把当前草稿提交为第 ${latestRevisionNumber + 1} 版，并标记为迟交。提交后该版本不可修改。`
-                : `将把当前草稿提交为第 ${latestRevisionNumber + 1} 版。提交后该版本不可修改。`
-            }
+            cancelLabel="再改改"
+            confirmLabel={isPastDue ? "确认迟交" : "确认提交"}
+            detail={`这是你的第 ${latestRevisionNumber + 1} 版。提交后这一版不能再改，之后可以按老师的反馈再交一版。${
+              isPastDue ? "已过截止时间，会标记为迟交。" : ""
+            }`}
             onCancel={() => setSubmitConfirmationOpen(false)}
             onConfirm={() => {
               setSubmitConfirmationOpen(false);
@@ -434,15 +484,8 @@ export function SubmissionEditor({
             }}
             open={submitConfirmationOpen}
             pending={submitPending}
-            title="确认正式提交？"
+            title="提交给老师？"
           />
-          {hasUnsavedChanges ? (
-            <p className={styles.commitHint}>请先保存当前修改，再正式提交。</p>
-          ) : !attachmentsReady ? (
-            <p className={styles.commitHint}>请等待附件完成内容验证，或移除未通过的附件。</p>
-          ) : !hasSavedEvidence ? (
-            <p className={styles.commitHint}>请至少保存一段文字、一个已完成检查点，或一个验证通过的附件，再正式提交。</p>
-          ) : null}
         </div>
       ) : null}
       <ActionNotice state={submitState} />

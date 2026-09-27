@@ -8,12 +8,8 @@ import {
   isStructuredContent,
   type ActivityTaskPhase,
 } from "../../../../domain/activity/activity-content";
+import { isFinalSubmission } from "../../../../domain/submission/sequential-execution";
 import {
-  teacherFeedbackNextStepLabels,
-  teacherFeedbackSupportLevelLabels,
-} from "../../../../domain/feedback/teacher-feedback-policy";
-import {
-  teacherEvaluationCitationKindLabels,
   teacherEvaluationLevelLabels,
   teacherEvaluationOutcomeStatusLabels,
 } from "../../../../domain/evaluation/teacher-evaluation-policy";
@@ -37,7 +33,18 @@ import {
 } from "../../../../server/queries/submission-workspace";
 import { SubmissionEditor } from "./submission-editor";
 import { StudentAccessGate } from "../../_components/student-shell";
+import {
+  CalendarClockIcon,
+  CheckIcon,
+  FootprintsIcon,
+  HourglassIcon,
+  LightbulbIcon,
+  LockIcon,
+  PackageCheckIcon,
+  TargetIcon,
+} from "lucide-react";
 import { styles } from "./submission-ui";
+import { parseSupportScaffold } from "../../../../domain/activity/support-scaffold";
 import { TaskBookV3View } from "../../../_components/task-book-v3-view";
 
 const studentNavigation = [
@@ -46,19 +53,24 @@ const studentNavigation = [
 
 function ReleaseBrief({
   snapshot,
+  includeBackground,
 }: {
   snapshot: StudentReleaseWorkspace["release"]["snapshot"];
+  includeBackground: boolean;
 }) {
   const { content } = snapshot;
   return (
     <details className={styles.releaseBrief}>
       <summary className={styles.briefHeading}>
-        <span>查看完整任务书</span>
-        <span className={styles.briefVersion}>
-          发布快照 · 版本 {snapshot.sourceDraftVersion}
+        <span>
+          {includeBackground ? "活动背景与完整任务书" : "完整任务书"}
         </span>
+        <span className={styles.briefVersion}>所有阶段与评价标准</span>
       </summary>
       <div className={styles.briefBody}>
+        {includeBackground && isStructuredContent(content) ? (
+          <section><h3>活动背景</h3><p>{content.backgroundSetting}</p></section>
+        ) : null}
         {content.schemaVersion === 2 ? <>
           <section><h3>总体任务</h3><p>{content.taskInstructions}</p></section>
           <section><h3>任务链</h3><ol>{content.phases.map((phase) => <li key={phase.name}><strong>{phase.name}</strong><br />任务：{phase.action}<br />情境：{phase.context}<br />学习支持：{phase.support}<br />需提交：{phase.evidence.map((evidence) => `${evidenceTypeLabel(evidence.type)}：${evidence.description}`).join("；")}<br />评价要点：{phase.evaluationFocus}</li>)}</ol></section>
@@ -74,9 +86,10 @@ function ReleaseBrief({
   );
 }
 
-// 背景设定是整个故事的开头 —— 收进折叠里，学生就直接从「第 3 阶段」读起，
-// 没头没尾。所以它常驻，其余（总体任务、任务链、评价标准）留在折叠里。
-// 三维目标、任务设置、跨学科概念、快照摘要是教学设计与审计用的，学生端不展示。
+// 背景设定是整个故事的开头：第一次进入（第 1 阶段或整项提交）时常驻，
+// 学生不会没头没尾地从任务读起；到了后面的阶段它已经读过，收进任务书折叠里，
+// 把首屏留给当前要做的事。三维目标、任务设置、跨学科概念、快照摘要是教学设计
+// 与审计用的，学生端不展示。
 function ActivityBackground({
   snapshot,
 }: {
@@ -94,7 +107,215 @@ function ActivityBackground({
   );
 }
 
-function RevisionHistory({
+type FormalRevision = NonNullable<
+  StudentReleaseWorkspace["submission"]
+>["revisions"][number];
+type QueriedRevision =
+  StudentFeedbackWorkspace["submission"]["revisions"][number];
+
+function RevisionContent({
+  revision,
+  phase,
+}: {
+  revision: FormalRevision;
+  phase: ActivityTaskPhase | null;
+}) {
+  return (
+    <>
+      {revision.textEvidence ? (
+        <div className={styles.revisionText}>{revision.textEvidence}</div>
+      ) : null}
+      {phase && revision.completedEvidenceIndexes.length > 0 ? (
+        <ul className={styles.completedCheckpoints}>
+          {revision.completedEvidenceIndexes.map((evidenceIndex) => {
+            const evidence = phase.evidence[evidenceIndex - 1];
+            return evidence ? (
+              <li key={evidenceIndex}>已完成：{evidence.description}</li>
+            ) : null;
+          })}
+        </ul>
+      ) : null}
+      {revision.attachments.length > 0 ? (
+        <ul className={styles.formalAttachmentList}>
+          {revision.attachments.map((attachment) => (
+            <li key={attachment.id}>
+              <div>
+                <strong>{attachment.filename}</strong>
+                <span>{Math.ceil(attachment.byteSize / 1024)} KB</span>
+              </div>
+              <div className={styles.attachmentActions}>
+                <AttachmentPreview attachment={attachment} />
+                <a
+                  href={`/attachments/${attachment.id}/download`}
+                  download={attachment.filename}
+                >
+                  下载
+                </a>
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </>
+  );
+}
+
+/** 学生只需要老师现在怎么说：当前版本的反馈正文，不带版本号和来源。 */
+function FeedbackText({
+  feedback,
+}: {
+  feedback: NonNullable<QueriedRevision["feedback"]>;
+}) {
+  const current =
+    feedback.revisions.find(
+      (entry) => entry.version === feedback.currentVersion,
+    ) ?? feedback.revisions.at(-1);
+  return current ? (
+    <div className={styles.feedbackBody}>{current.body}</div>
+  ) : null;
+}
+
+function EvaluationResult({
+  evaluation,
+}: {
+  evaluation: NonNullable<QueriedRevision["evaluation"]>;
+}) {
+  const current =
+    evaluation.revisions.find(
+      (entry) => entry.version === evaluation.currentVersion,
+    ) ?? evaluation.revisions.at(-1);
+  if (!current) return null;
+  return (
+    <div className="flex flex-col gap-3">
+      <ul className={styles.evaluationOutcomeList}>
+        {current.outcomes.map((outcome) => (
+          <li key={outcome.dimensionIndex}>
+            <strong>{outcome.dimensionName}</strong>
+            <span>
+              {outcome.status === "LEVEL" && "level" in outcome
+                ? teacherEvaluationLevelLabels[outcome.level]
+                : teacherEvaluationOutcomeStatusLabels.INSUFFICIENT_EVIDENCE}
+            </span>
+          </li>
+        ))}
+      </ul>
+      <div className={styles.feedbackBody}>{current.summary}</div>
+    </div>
+  );
+}
+
+function queriedRevisionFor(
+  revision: FormalRevision,
+  feedbackWorkspace: StudentFeedbackWorkspace | null,
+): QueriedRevision | null {
+  const queried = feedbackWorkspace?.submission.revisions.find(
+    (item) => item.id === revision.id,
+  );
+  return queried?.revisionNumber === revision.revisionNumber ? queried : null;
+}
+
+/**
+ * 老师对当前这一版说了什么，放在页面最上面：学生回到这一页，最先要知道的
+ * 就是「老师怎么说、我接下来做什么」。还没反馈时，只说一句在等。
+ */
+function TeacherResponse({
+  submission,
+  feedbackWorkspace,
+  phase,
+  finalSubmission,
+  nextPhaseHref,
+  nextPhaseLabel,
+}: {
+  submission: StudentReleaseWorkspace["submission"];
+  feedbackWorkspace: StudentFeedbackWorkspace | null;
+  phase: ActivityTaskPhase | null;
+  finalSubmission: boolean;
+  nextPhaseHref: string | null;
+  nextPhaseLabel: string | null;
+}) {
+  const latest = submission?.revisions.at(-1);
+  if (!submission || !latest) return null;
+  const queried = queriedRevisionFor(latest, feedbackWorkspace);
+  const feedback = queried?.feedback ?? null;
+  const evaluation = queried?.evaluation ?? null;
+  const currentFeedback = feedback
+    ? (feedback.revisions.find(
+        (entry) => entry.version === feedback.currentVersion,
+      ) ?? feedback.revisions.at(-1))
+    : null;
+  const nextStep = currentFeedback?.nextStep ?? null;
+  const resubmitting = submission.workingCopy !== null;
+
+  return (
+    <section
+      aria-labelledby="teacher-response-title"
+      className={styles.teacherResponse}
+      data-next-step={nextStep ?? "NONE"}
+    >
+      <div className={styles.teacherResponseHeading}>
+        <span aria-hidden="true" data-avatar="">
+          {feedback ? (
+            Array.from(feedback.teacher.displayName)[0]
+          ) : (
+            <HourglassIcon className="size-4" />
+          )}
+        </span>
+        <h2 id="teacher-response-title">
+          {feedback ? `${feedback.teacher.displayName}的反馈` : "已提交，等老师反馈"}
+        </h2>
+        {nextStep === "REVISE" ? (
+          <StatusBadge tone="resubmit">
+            {resubmitting ? "修改中" : "需要修改"}
+          </StatusBadge>
+        ) : nextStep === "CONTINUE" ? (
+          <StatusBadge tone="done">{finalSubmission ? "已完成" : "通过"}</StatusBadge>
+        ) : !feedback ? (
+          <StatusBadge tone="pending">等待反馈</StatusBadge>
+        ) : null}
+        <span>
+          第 {latest.revisionNumber} 版 ·{" "}
+          <LocalizedDateTime dateTime={latest.submittedAt} />
+          {latest.isLate ? " · 迟交" : ""}
+        </span>
+      </div>
+
+      {feedback ? <FeedbackText feedback={feedback} /> : null}
+
+      {nextStep === "REVISE" ? (
+        <p className={styles.nextStepLine}>
+          {resubmitting
+            ? "你正在按这条反馈修改，改好后再提交。"
+            : "老师希望你按这条反馈修改后，再交一版。"}
+        </p>
+      ) : nextStep === "CONTINUE" ? (
+        finalSubmission ? (
+          <p className={styles.nextStepLine}>这项活动已经完成。</p>
+        ) : nextPhaseHref ? (
+          <p className={styles.nextStepLine}>
+            这一阶段可以了。
+            <Link href={nextPhaseHref}>去{nextPhaseLabel} →</Link>
+          </p>
+        ) : null
+      ) : null}
+
+      {evaluation ? (
+        <div className="flex flex-col gap-2 border-t pt-4">
+          <h3 className="text-sm font-semibold">评价</h3>
+          <EvaluationResult evaluation={evaluation} />
+        </div>
+      ) : null}
+
+      <details className={styles.inlineDisclosure}>
+        <summary>我提交的内容</summary>
+        <div className="flex flex-col gap-3 pt-3">
+          <RevisionContent revision={latest} phase={phase} />
+        </div>
+      </details>
+    </section>
+  );
+}
+
+function EarlierVersions({
   submission,
   feedbackWorkspace,
   phase,
@@ -103,274 +324,39 @@ function RevisionHistory({
   feedbackWorkspace: StudentFeedbackWorkspace | null;
   phase: ActivityTaskPhase | null;
 }) {
-  const revisions = submission ? [...submission.revisions].reverse() : [];
-  const feedbackByRevisionId = new Map(
-    feedbackWorkspace?.submission.revisions.map((revision) => [
-      revision.id,
-      revision,
-    ]) ?? [],
-  );
-
+  const earlier = submission ? submission.revisions.slice(0, -1).reverse() : [];
+  if (earlier.length === 0) return null;
   return (
-    <section className={styles.historySection} aria-labelledby="history-title">
-      <div className={styles.historyHeading}>
-        <div>
-          <p className={styles.eyebrow}>提交历史</p>
-          <h2 id="history-title">我的提交与反馈</h2>
-        </div>
-        <span>{revisions.length} 版</span>
+    <details className={styles.historyDisclosure}>
+      <summary>之前提交的版本（{earlier.length}）</summary>
+      <div className={styles.revisionList}>
+        {earlier.map((revision) => {
+          const queried = queriedRevisionFor(revision, feedbackWorkspace);
+          return (
+            <article className={styles.revision} key={revision.id}>
+              <h3>
+                第 {revision.revisionNumber} 版 ·{" "}
+                <LocalizedDateTime dateTime={revision.submittedAt} />
+                {revision.isLate ? " · 迟交" : ""}
+              </h3>
+              <RevisionContent revision={revision} phase={phase} />
+              {queried?.feedback ? (
+                <div className="flex flex-col gap-1">
+                  <p className={styles.eyebrow}>老师的反馈</p>
+                  <FeedbackText feedback={queried.feedback} />
+                </div>
+              ) : null}
+              {queried?.evaluation ? (
+                <div className="flex flex-col gap-1">
+                  <p className={styles.eyebrow}>评价</p>
+                  <EvaluationResult evaluation={queried.evaluation} />
+                </div>
+              ) : null}
+            </article>
+          );
+        })}
       </div>
-
-      {revisions.length === 0 ? (
-        <p className={styles.emptyHistory}>
-          尚无正式提交。未提交的草稿不会显示在历史中。
-        </p>
-      ) : (
-        <div className={styles.revisionList}>
-          {revisions.map((revision, index) => {
-            const queriedRevision = feedbackByRevisionId.get(revision.id);
-            const feedback =
-              queriedRevision?.revisionNumber === revision.revisionNumber
-                ? queriedRevision.feedback
-                : null;
-            const evaluation =
-              queriedRevision?.revisionNumber === revision.revisionNumber
-                ? queriedRevision.evaluation
-                : null;
-            const feedbackHeadingId = `feedback-${revision.id}`;
-            const evaluationHeadingId = `evaluation-${revision.id}`;
-
-            return (
-              <details
-                className={styles.revision}
-                key={revision.id}
-                open={index === 0}
-              >
-                <summary>
-                  <div>
-                    <span className={styles.revisionNumber}>
-                      {String(revision.revisionNumber).padStart(2, "0")}
-                    </span>
-                    <div>
-                      <h3>第 {revision.revisionNumber} 版</h3>
-                      <p>
-                        <LocalizedDateTime dateTime={revision.submittedAt} />
-                      </p>
-                    </div>
-                  </div>
-                  <div className={styles.revisionBadges}>
-                    {index === 0 ? <span>当前正式版</span> : null}
-                    <span data-late={revision.isLate ? "true" : "false"}>
-                      {revision.isLate ? "迟交" : "期限内"}
-                    </span>
-                  </div>
-                </summary>
-                <p className={styles.formalNote}>正式提交 · 不可修改</p>
-                {revision.textEvidence ? (
-                  <div className={styles.revisionText}>
-                    {revision.textEvidence}
-                  </div>
-                ) : null}
-                {phase && revision.completedEvidenceIndexes.length > 0 ? (
-                  <ul className={styles.completedCheckpoints}>
-                    {revision.completedEvidenceIndexes.map((evidenceIndex) => {
-                      const evidence = phase.evidence[evidenceIndex - 1];
-                      return evidence ? (
-                        <li key={evidenceIndex}>
-                          已确认：{evidence.description}（{evidenceTypeLabel(evidence.type)}）
-                        </li>
-                      ) : null;
-                    })}
-                  </ul>
-                ) : null}
-                {revision.attachments.length > 0 ? (
-                  <ul className={styles.formalAttachmentList}>
-                    {revision.attachments.map((attachment) => (
-                      <li key={attachment.id}>
-                        <div>
-                          <strong>{attachment.filename}</strong>
-                          <span>{Math.ceil(attachment.byteSize / 1024)} KB</span>
-                        </div>
-                        <div className={styles.attachmentActions}>
-                          <AttachmentPreview attachment={attachment} />
-                          <a
-                            href={`/attachments/${attachment.id}/download`}
-                            download={attachment.filename}
-                          >
-                            下载
-                          </a>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                ) : null}
-
-                <section
-                  className={styles.feedbackSection}
-                  aria-labelledby={feedbackHeadingId}
-                >
-                  <div className={styles.feedbackHeading}>
-                    <div>
-                      <p className={styles.eyebrow}>教师反馈</p>
-                      <h4 id={feedbackHeadingId}>
-                        {feedback ? feedback.teacher.displayName : "待确认"}
-                      </h4>
-                    </div>
-                    {feedback ? (
-                      <span>当前第 {feedback.currentVersion} 版</span>
-                    ) : null}
-                  </div>
-
-                  {feedback ? (
-                    <ol className={styles.feedbackVersions}>
-                      {[...feedback.revisions].reverse().map((entry) => (
-                        <li
-                          className={styles.feedbackVersion}
-                          data-current={
-                            entry.version === feedback.currentVersion
-                              ? "true"
-                              : "false"
-                          }
-                          key={entry.id}
-                        >
-                          <div className={styles.feedbackVersionMeta}>
-                            <strong>反馈第 {entry.version} 版</strong>
-                            {entry.version === feedback.currentVersion ? (
-                              <span>当前版本</span>
-                            ) : null}
-                            <p>
-                              {feedback.teacher.displayName} · {entry.source ===
-                              "MANUAL"
-                                ? "教师撰写"
-                                : "AI 建议，教师已确认"}
-                            </p>
-                            <LocalizedDateTime dateTime={entry.confirmedAt} />
-                          </div>
-                          <div className={styles.feedbackBody}>{entry.body}</div>
-                          {entry.nextStep && entry.supportLevel ? (
-                            <div className={styles.feedbackStructure}>
-                              <span>
-                                形成性下一步：
-                                {teacherFeedbackNextStepLabels[entry.nextStep]}
-                              </span>
-                              <span>
-                                支架层级：
-                                {teacherFeedbackSupportLevelLabels[
-                                  entry.supportLevel
-                                ]}
-                              </span>
-                            </div>
-                          ) : (
-                            <p className={styles.legacyFeedbackStructure}>
-                              早期反馈未包含下一步与支架信息
-                            </p>
-                          )}
-                        </li>
-                      ))}
-                    </ol>
-                  ) : (
-                    <p className={styles.emptyFeedback}>
-                      该版本尚无教师反馈。
-                    </p>
-                  )}
-                </section>
-
-                <section
-                  className={styles.feedbackSection}
-                  aria-labelledby={evaluationHeadingId}
-                >
-                  <div className={styles.feedbackHeading}>
-                    <div>
-                      <p className={styles.eyebrow}>量规评价</p>
-                      <h4 id={evaluationHeadingId}>
-                        {evaluation ? evaluation.teacher.displayName : "待确认"}
-                      </h4>
-                    </div>
-                    {evaluation ? (
-                      <span>当前第 {evaluation.currentVersion} 版</span>
-                    ) : null}
-                  </div>
-
-                  {evaluation ? (
-                    <ol className={styles.feedbackVersions}>
-                      {[...evaluation.revisions].reverse().map((entry) => (
-                        <li
-                          className={styles.feedbackVersion}
-                          data-current={
-                            entry.version === evaluation.currentVersion
-                              ? "true"
-                              : "false"
-                          }
-                          key={entry.id}
-                        >
-                          <div className={styles.feedbackVersionMeta}>
-                            <strong>评价第 {entry.version} 版</strong>
-                            {entry.version === evaluation.currentVersion ? (
-                              <span>当前版本</span>
-                            ) : null}
-                            <p>
-                              {evaluation.teacher.displayName} · {entry.source ===
-                              "MANUAL"
-                                ? "教师撰写"
-                                : "AI 建议，教师已确认"}
-                            </p>
-                            <LocalizedDateTime dateTime={entry.confirmedAt} />
-                          </div>
-                          <div>
-                            <ul className={styles.evaluationOutcomeList}>
-                              {entry.outcomes.map((outcome) => (
-                                <li key={outcome.dimensionIndex}>
-                                  <strong>
-                                    {outcome.dimensionIndex}. {outcome.dimensionName}
-                                  </strong>
-                                  <span>
-                                    {outcome.status === "LEVEL" &&
-                                    "level" in outcome
-                                      ? teacherEvaluationLevelLabels[outcome.level]
-                                      : teacherEvaluationOutcomeStatusLabels.INSUFFICIENT_EVIDENCE}
-                                  </span>
-                                  {outcome.citations.length > 0 ? (
-                                    <small>
-                                      {outcome.citations
-                                        .map((citation) => {
-                                          if (citation.kind === "text") {
-                                            return teacherEvaluationCitationKindLabels.text;
-                                          }
-                                          if (citation.kind === "attachment") {
-                                            const filename =
-                                              revision.attachments.find(
-                                                (item) =>
-                                                  item.id === citation.attachmentId,
-                                              )?.filename ?? citation.attachmentId;
-                                            return `${teacherEvaluationCitationKindLabels.attachment}：${filename}`;
-                                          }
-                                          return `${teacherEvaluationCitationKindLabels.checkpoint} ${citation.evidenceIndex}`;
-                                        })
-                                        .join("；")}
-                                    </small>
-                                  ) : null}
-                                </li>
-                              ))}
-                            </ul>
-                            <div className={styles.feedbackBody}>
-                              {entry.summary}
-                            </div>
-                          </div>
-                        </li>
-                      ))}
-                    </ol>
-                  ) : (
-                    <p className={styles.emptyFeedback}>
-                      该版本尚无量规评价。
-                    </p>
-                  )}
-                </section>
-              </details>
-            );
-          })}
-        </div>
-      )}
-    </section>
+    </details>
   );
 }
 
@@ -410,16 +396,44 @@ function PhaseNavigator({
           submission !== undefined ||
           (entry.phaseIndex > 0 &&
             entry.phaseIndex < workspace.execution.currentPhaseIndex);
-        const state = submitted
-          ? "已提交"
-          : unlocked
-            ? "进行中"
-            : "待解锁";
+        const tone =
+          submission?.followUp === "AWAITING_RESUBMISSION" ||
+          submission?.followUp === "RESUBMISSION_IN_PROGRESS"
+            ? "revise"
+            : submitted
+              ? "done"
+              : unlocked
+                ? "active"
+                : "locked";
+        const state =
+          submission?.followUp === "AWAITING_RESUBMISSION"
+            ? "老师请你修改"
+            : submission?.followUp === "RESUBMISSION_IN_PROGRESS"
+              ? "修改中"
+              : submitted
+                ? submission?.hasCurrentFeedback
+                  ? "已有反馈"
+                  : "已提交"
+                : unlocked
+                  ? "进行中"
+                  : "待解锁";
         const content = (
           <>
-            <span>{entry.phaseIndex === 0 ? "终" : entry.phaseIndex}</span>
-            <strong>{entry.label}</strong>
-            <small>{state}</small>
+            <span aria-hidden="true" data-bubble="">
+              {tone === "done" ? (
+                <CheckIcon className="size-3.5" />
+              ) : tone === "locked" ? (
+                <LockIcon className="size-3" />
+              ) : entry.phaseIndex === 0 ? (
+                "终"
+              ) : (
+                entry.phaseIndex
+              )}
+            </span>
+            <span className="flex min-w-0 flex-col">
+              <strong className="truncate">{entry.label}</strong>
+              <small>{state}</small>
+            </span>
           </>
         );
         // 一行一档：只有当前阶段在下方展开详情，其余靠点击切换。
@@ -431,13 +445,14 @@ function PhaseNavigator({
             data-current={
               entry.phaseIndex === selectedPhaseIndex ? "true" : "false"
             }
+            data-tone={tone}
             href={`/student/releases/${workspace.release.id}?phase=${entry.phaseIndex}`}
             key={entry.phaseIndex}
           >
             {content}
           </Link>
         ) : (
-          <span data-locked="true" key={entry.phaseIndex}>
+          <span data-tone="locked" key={entry.phaseIndex}>
             {content}
           </span>
         );
@@ -449,63 +464,119 @@ function PhaseNavigator({
 function PhaseFocus({
   phase,
   phaseIndex,
+  wholeTaskInstructions,
+  finalOfMixed,
+  checklistShown,
   dueAt,
   isPastDue,
   showLateWarning,
 }: {
   phase: ActivityTaskPhase | null;
   phaseIndex: number;
+  wholeTaskInstructions: string;
+  finalOfMixed: boolean;
+  /** The editor below lists what to hand in as a checklist; don't say it twice. */
+  checklistShown: boolean;
   dueAt: string | null;
   isPastDue: boolean;
   showLateWarning: boolean;
 }) {
-  if (!phase) {
-    return phaseIndex === 0 ? (
-      <section className={styles.phaseFocus} aria-label="整项终稿">
-        <p className={styles.eyebrow}>混合提交 / 整项终稿</p>
-        <p className={styles.phaseStory}>
-          各阶段均已正式提交。请整理最终成果与必要附件，完成整项终稿。
-        </p>
-      </section>
-    ) : null;
-  }
+  const scaffold = phase ? parseSupportScaffold(phase.support) : null;
+  const heading = phase
+    ? `第 ${phaseIndex} 阶段 · ${phase.name}`
+    : finalOfMixed
+      ? "整项终稿"
+      : "活动任务";
 
   return (
-    <section className={styles.phaseFocus} aria-label={`第 ${phaseIndex} 阶段：${phase.name}`}>
-      <p className={styles.eyebrow}>
-        第 {phaseIndex} 阶段 · {phase.name}
-      </p>
-      {/* 首句是情境，不是标签 —— 学生先读到自己在这个故事里要干什么。 */}
-      <p className={styles.phaseStory}>{phase.context}</p>
-      <dl>
-        <div><dt>任务内容</dt><dd>{phase.action}</dd></div>
-        <div>
-          <dt>需提交的证据</dt>
-          <dd>
-            {phase.evidence
-              .map(
-                (evidence) =>
-                  `${evidenceTypeLabel(evidence.type)}：${evidence.description}`,
-              )
-              .join("；")}
-          </dd>
-        </div>
-        <div><dt>学习支持</dt><dd>{phase.support}</dd></div>
-        <div><dt>评价要点</dt><dd>{phase.evaluationFocus}</dd></div>
-      </dl>
-      <p className={styles.phaseDue} data-late={isPastDue ? "true" : undefined}>
-        {dueAt ? (
-          <>
-            截止 <LocalizedDateTime dateTime={dueAt} />
-          </>
-        ) : (
-          "未设置截止时间"
-        )}
-      </p>
+    <section className={styles.phaseFocus} aria-label={heading}>
+      <div className={styles.phaseFocusHeading}>
+        <p>{heading}</p>
+        <span data-late={isPastDue ? "true" : undefined}>
+          <CalendarClockIcon aria-hidden="true" className="size-3.5" />
+          {dueAt ? (
+            <>
+              截止 <LocalizedDateTime dateTime={dueAt} />
+            </>
+          ) : (
+            "不限截止时间"
+          )}
+        </span>
+      </div>
+      {phase ? (
+        <>
+          {/* 标题就是这一阶段要做的事；情境在下面一句交代「为什么」。 */}
+          <h2 className={styles.phaseHeadline}>{phase.action}</h2>
+          <p className={styles.phaseStory}>{phase.context}</p>
+          {checklistShown ? null : (
+            <div className={styles.taskBlock}>
+              <p>
+                <PackageCheckIcon aria-hidden="true" className="size-4" />
+                要交
+              </p>
+              <ul>
+                {phase.evidence.map((evidence) => (
+                  <li key={evidence.description}>
+                    {evidence.description}
+                    <small>{evidenceTypeLabel(evidence.type)}</small>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {scaffold && scaffold.steps.length > 0 ? (
+            <div className={styles.stepsBlock}>
+              <p>
+                <FootprintsIcon aria-hidden="true" className="size-4" />
+                分 {scaffold.steps.length} 步做
+              </p>
+              <ol>
+                {scaffold.steps.map((step, index) => (
+                  <li key={`${index}-${step}`}>
+                    <span aria-hidden="true">{index + 1}</span>
+                    {step}
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ) : null}
+          <div className={styles.criteriaBlock}>
+            <p>
+              <TargetIcon aria-hidden="true" className="size-4" />
+              老师会看
+            </p>
+            <p>{phase.evaluationFocus}</p>
+          </div>
+          {/* 按约定写的支架已经拆成上面的步骤和作答区的开头句；只有剩下的
+              说明（或旧式整段支架）才收进提示。 */}
+          {scaffold && scaffold.notes.length > 0 ? (
+            <details
+              className={styles.hintDisclosure}
+              open={scaffold.steps.length === 0 ? undefined : true}
+            >
+              <summary>
+                <LightbulbIcon aria-hidden="true" className="size-4" />
+                {scaffold.steps.length === 0 ? "卡住了？看看提示" : "提示"}
+              </summary>
+              {scaffold.notes.map((note, index) => (
+                <p key={`${index}-${note}`}>{note}</p>
+              ))}
+            </details>
+          ) : null}
+        </>
+      ) : (
+        <>
+          <h2 className={styles.phaseHeadline}>
+            {finalOfMixed ? "把各阶段的成果整理成一份终稿" : "完成这项活动"}
+          </h2>
+          <p className="text-sm leading-relaxed whitespace-pre-wrap">
+            {wholeTaskInstructions}
+          </p>
+        </>
+      )}
       {showLateWarning ? (
         <InlineAlert tone="warning">
-          <strong>截止时间已过，活动仍开放。</strong>{" "}
-          你仍可保存并正式提交，但新提交会标记为迟交。
+          截止时间已过，活动仍开放。你仍可以提交，会标记为迟交。
         </InlineAlert>
       ) : null}
     </section>
@@ -603,9 +674,35 @@ export default async function StudentReleasePage({
     isStructuredContent(content) && selectedPhaseIndex > 0
       ? (content.phases[selectedPhaseIndex - 1] ?? null)
       : null;
+  // The story opens the activity; after the first phase it has been read and
+  // moves into the task-book fold.
+  const showBackground =
+    isStructuredContent(content) && selectedPhaseIndex <= 1;
+  const finalSubmission = isFinalSubmission(
+    workspace.execution.version,
+    content,
+    selectedPhaseIndex,
+  );
+  const nextPhaseIndex =
+    workspace.execution.version !== 1 || finalSubmission
+      ? null
+      : selectedPhaseIndex > 0 &&
+          selectedPhaseIndex < workspace.execution.phaseCount
+        ? selectedPhaseIndex + 1
+        : 0;
+  const nextPhase =
+    nextPhaseIndex === null
+      ? null
+      : {
+          href: `/student/releases/${releaseId}?phase=${nextPhaseIndex}`,
+          label:
+            nextPhaseIndex === 0
+              ? "整项终稿"
+              : `第 ${nextPhaseIndex} 阶段`,
+        };
   const readOnlyMessage = isActive
     ? "你已不是该班级的当前成员，仍可查看这份活动与自己的提交，但不能再修改。"
-    : "活动已关闭，草稿与已提交内容仍可查看，但不能再保存或提交。";
+    : "活动已结束，内容仍可查看，但不能再修改或提交。";
   const statusLabel = !isActive
     ? workspace.release.status === "ARCHIVED"
       ? "已封存 · 只读"
@@ -613,8 +710,8 @@ export default async function StudentReleasePage({
     : !canWrite
       ? "历史成员 · 只读"
       : isPastDue
-        ? "截止已过 · 可迟交"
-        : "开放提交";
+        ? "已过截止 · 可迟交"
+        : "进行中";
   // The browser cannot work out how to upload on its own: one backend presigns
   // and is written directly, the other takes the bytes through this app.
   const attachmentUpload = attachmentUploadStrategy();
@@ -630,7 +727,6 @@ export default async function StudentReleasePage({
       navigation={studentNavigation}
     >
       <div className={styles.releasePage}>
-        <Link className={styles.backLink} href="/student">← 返回我的活动</Link>
         <header className={styles.releaseHeader}>
           <div>
             <h1>{content.title}</h1>
@@ -642,43 +738,56 @@ export default async function StudentReleasePage({
         </header>
 
         {workspace.group ? (
-          <section className={styles.groupNotice} aria-labelledby="student-group-title">
-            <div>
-              <p className={styles.eyebrow}>作业小组 / 全组共享</p>
-              <h2 id="student-group-title">{workspace.group.name}</h2>
-            </div>
-            <p>
-              {workspace.group.members
-                .map(
-                  (member) =>
-                    `${member.student.displayName}${
-                      member.roleLabel ? `（${member.roleLabel}）` : ""
-                    }`,
-                )
-                .join("、")}
-            </p>
-            <p>
-              全组共用同一份草稿、附件、提交记录和教师反馈；有人保存后，其他成员刷新即可看到。
-            </p>
-          </section>
+          <p className={styles.groupNotice} aria-label="作业小组">
+            <strong>{workspace.group.name}</strong>
+            {workspace.group.members
+              .map(
+                (member) =>
+                  `${member.student.displayName}${
+                    member.roleLabel ? `（${member.roleLabel}）` : ""
+                  }`,
+              )
+              .join("、")}
+            <span>全组共用一份作答和老师的反馈，别人保存后刷新就能看到。</span>
+          </p>
         ) : null}
 
-        <ActivityBackground snapshot={workspace.release.snapshot} />
-        <ReleaseBrief snapshot={workspace.release.snapshot} />
+        {showBackground ? (
+          <ActivityBackground snapshot={workspace.release.snapshot} />
+        ) : null}
 
         <PhaseNavigator
           workspace={workspace}
           selectedPhaseIndex={selectedPhaseIndex}
         />
 
-        <div className={styles.workspaceColumn}>
-            <PhaseFocus
+        <div className={styles.workspaceGrid}>
+          <div className={styles.workspaceColumn}>
+            <TeacherResponse
+              submission={selectedSubmission}
+              feedbackWorkspace={feedbackWorkspace}
               phase={selectedPhase}
-              phaseIndex={selectedPhaseIndex}
-              dueAt={dueAt}
-              isPastDue={isPastDue}
-              showLateWarning={isPastDue && isActive && canWrite}
+              finalSubmission={finalSubmission}
+              nextPhaseHref={nextPhase?.href ?? null}
+              nextPhaseLabel={nextPhase?.label ?? null}
             />
+            {selectedSubmission?.workingCopy === null &&
+            (selectedSubmission?.latestRevisionNumber ?? 0) > 0 ? null : (
+              <PhaseFocus
+                phase={selectedPhase}
+                phaseIndex={selectedPhaseIndex}
+                wholeTaskInstructions={content.taskInstructions}
+                finalOfMixed={
+                  workspace.execution.version === 1 && selectedPhaseIndex === 0
+                }
+                checklistShown={canWrite && selectedPhase !== null}
+                dueAt={dueAt}
+                isPastDue={isPastDue}
+                showLateWarning={isPastDue && isActive && canWrite}
+              />
+            )}
+          </div>
+          <div className={styles.workColumn}>
             <SubmissionEditor
               releaseId={releaseId}
               phaseIndex={selectedPhaseIndex}
@@ -701,12 +810,19 @@ export default async function StudentReleasePage({
                 resubmit: `resubmit_${randomUUID()}`,
               }}
             />
-            <RevisionHistory
-              submission={selectedSubmission}
-              feedbackWorkspace={feedbackWorkspace}
-              phase={selectedPhase}
-            />
+          </div>
         </div>
+
+        <EarlierVersions
+          submission={selectedSubmission}
+          feedbackWorkspace={feedbackWorkspace}
+          phase={selectedPhase}
+        />
+
+        <ReleaseBrief
+          snapshot={workspace.release.snapshot}
+          includeBackground={!showBackground}
+        />
       </div>
     </WorkspaceShell>
   );

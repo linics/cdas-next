@@ -67,7 +67,7 @@ export const releaseRosterOutputSchema = z.discriminatedUnion("status", [
                   isLate: z.boolean(),
                   feedback: z.enum(["PENDING", "DONE"]),
                   feedbackVersion: z.int().positive().nullable(),
-                  evaluation: z.enum(["PENDING", "DONE", "NO_RUBRIC"]),
+                  evaluation: z.enum(["PENDING", "DONE", "NO_RUBRIC", "FINAL_ONLY"]),
                   evaluationVersion: z.int().positive().nullable(),
                   followUp: z
                     .enum(["AWAITING_RESUBMISSION", "RESUBMISSION_IN_PROGRESS"])
@@ -83,6 +83,7 @@ export const releaseRosterOutputSchema = z.discriminatedUnion("status", [
         .object({
           currentRevisionCount: z.int().nonnegative(),
           feedbackCount: z.int().nonnegative(),
+          evaluableCount: z.int().nonnegative(),
           evaluationCount: z.int().nonnegative(),
         })
         .strict(),
@@ -160,7 +161,9 @@ function mapRoster(
               ? "NO_RUBRIC"
               : submission.currentRevision.evaluation
                 ? "DONE"
-                : "PENDING",
+                : submission.evaluationOpen
+                  ? "PENDING"
+                  : "FINAL_ONLY",
             evaluationVersion:
               submission.currentRevision.evaluation?.currentVersion ?? null,
             followUp: submission.currentRevision.followUp,

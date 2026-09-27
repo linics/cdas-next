@@ -19,6 +19,7 @@ describe("teacher review roster CSV", () => {
         {
           phaseIndex: 0,
           phaseName: null,
+          evaluationOpen: false,
           student: { id: studentId, displayName: "陈同学" },
           group: null,
           currentRevision: {
@@ -57,6 +58,7 @@ describe("teacher review roster CSV", () => {
         {
           phaseIndex: 3,
           phaseName: "形成方案",
+          evaluationOpen: true,
           student: { id: studentId, displayName: "陈同学" },
           group: { name: '调查组, "甲"' },
           currentRevision: {

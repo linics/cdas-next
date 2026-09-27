@@ -2,12 +2,8 @@
 
 import { useActionState, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRightIcon, SparklesIcon } from "lucide-react";
+import { SparklesIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  NativeSelect,
-  NativeSelectOption,
-} from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import { LocalizedDateTime } from "../../../_components/localized-date-time";
 import { ConfirmDialog, InlineAlert, PayloadHashDetails } from "../../../_components/ui";
@@ -35,10 +31,9 @@ import {
 } from "./feedback-suggestion-action-state";
 import { useUnsavedChangesWarning } from "./unsaved-changes";
 import {
-  AiNote,
+  ChoiceGroup,
   ComposerFrame,
   FieldHead,
-  PrepareRow,
   ReviewNotice,
 } from "./review-ui";
 
@@ -48,6 +43,10 @@ type FeedbackComposerProps = Readonly<{
   submissionRevisionNumber: number;
   expectedFeedbackVersion: number;
   initialBody: string;
+  /** The last confirmed support level; a new version starts from it. */
+  initialSupportLevel: TeacherFeedbackSupportLevel | null;
+  /** The final submission has no later phase to continue to. */
+  finalSubmission: boolean;
   prepareIdempotencySeed: string;
   assistantEnabled: boolean;
 }>;
@@ -125,7 +124,7 @@ function ConfirmationPanel({
 
   return (
     <section className="flex flex-col gap-3 glass rounded-2xl p-4" aria-label="最终反馈确认">
-      <InlineAlert tone="warning">反馈已准备待确认；确认前不会保存，学生重新提交会使该确认失效。</InlineAlert>
+      <InlineAlert tone="warning">反馈还没保存，确认后才会保存。</InlineAlert>
       <Button onClick={() => setConfirmDialogOpen(true)} type="button" variant="outline">查看最终反馈确认</Button>
       <form action={decisionAction} className="sr-only" ref={feedbackFormRef}>
         <input type="hidden" name="actionIntentId" value={confirmation.actionIntentId} />
@@ -135,7 +134,7 @@ function ConfirmationPanel({
       <ConfirmDialog
         open={isConfirmDialogOpen}
         title="确认并保存最终反馈"
-        detail={<div className="flex flex-col gap-3 text-sm"><p>将对第 {confirmation.submissionRevisionNumber} 版正式提交创建反馈版本 {confirmation.expectedFeedbackVersion + 1}。</p><dl className="grid grid-cols-2 gap-2"><div className="rounded-md bg-muted p-2"><dt className="text-xs text-muted-foreground">形成性下一步</dt><dd className="font-medium">{teacherFeedbackNextStepLabels[confirmation.nextStep]}</dd></div><div className="rounded-md bg-muted p-2"><dt className="text-xs text-muted-foreground">支架层级</dt><dd className="font-medium">{teacherFeedbackSupportLevelLabels[confirmation.supportLevel]}</dd></div></dl><div className="max-h-48 overflow-auto rounded-md border p-3 whitespace-pre-wrap text-foreground">{confirmation.body}</div><p>确认有效至 <LocalizedDateTime dateTime={confirmation.expiresAt} includeSeconds />。</p><PayloadHashDetails hash={confirmation.payloadHash} /></div>}
+        detail={<div className="flex flex-col gap-3 text-sm"><p>学生会看到这条反馈和下一步。</p><dl className="grid grid-cols-2 gap-2"><div className="rounded-md bg-muted p-2"><dt className="text-xs text-muted-foreground">下一步</dt><dd className="font-medium">{teacherFeedbackNextStepLabels[confirmation.nextStep]}</dd></div><div className="rounded-md bg-muted p-2"><dt className="text-xs text-muted-foreground">支架</dt><dd className="font-medium">{teacherFeedbackSupportLevelLabels[confirmation.supportLevel]}</dd></div></dl><div className="max-h-48 overflow-auto rounded-md border p-3 whitespace-pre-wrap text-foreground">{confirmation.body}</div><p>确认有效至 <LocalizedDateTime dateTime={confirmation.expiresAt} includeSeconds />。</p><PayloadHashDetails hash={confirmation.payloadHash} /></div>}
         confirmLabel="确认并保存最终反馈"
         pending={pending}
         disabled={blocked}
@@ -157,17 +156,22 @@ export function FeedbackComposer({
   submissionRevisionNumber,
   expectedFeedbackVersion,
   initialBody,
+  initialSupportLevel,
+  finalSubmission,
   prepareIdempotencySeed,
   assistantEnabled,
 }: FeedbackComposerProps) {
+  const startingSupportLevel = initialSupportLevel ?? "STANDARD";
   const router = useRouter();
   const [draftBody, setDraftBody] = useState(initialBody);
+  const [submittedNextStep, setSubmittedNextStep] =
+    useState<TeacherFeedbackNextStep | null>(null);
   const [draftNextStep, setDraftNextStep] = useState<
     TeacherFeedbackNextStep | ""
   >("");
   const [draftSupportLevel, setDraftSupportLevel] = useState<
     TeacherFeedbackSupportLevel | ""
-  >("");
+  >(startingSupportLevel);
   const [suggestionAgentRunId, setSuggestionAgentRunId] = useState<
     string | null
   >(null);
@@ -209,7 +213,7 @@ export function FeedbackComposer({
     decisionState.status !== "saved" &&
       (draftBody !== initialBody ||
         draftNextStep !== "" ||
-        draftSupportLevel !== ""),
+        draftSupportLevel !== startingSupportLevel),
   );
 
   const requestSuggestion = (formData: FormData) => {
@@ -248,11 +252,11 @@ export function FeedbackComposer({
     <ComposerFrame
       assistantEnabled={assistantEnabled}
       busy={preparePending}
-      lead={`第 ${submissionRevisionNumber} 版提交 · ${
+      lead={
         expectedFeedbackVersion > 0
-          ? `第 ${expectedFeedbackVersion + 1} 版反馈`
-          : "第一版反馈"
-      }`}
+          ? `修改后保存为第 ${expectedFeedbackVersion + 1} 版，学生看到最新一版`
+          : "学生会看到反馈正文和你选的下一步"
+      }
       suggestion={
         assistantEnabled ? (
           <form action={requestSuggestion}>
@@ -271,6 +275,7 @@ export function FeedbackComposer({
               aria-label="让助手起草这一版反馈"
               disabled={anyPending}
               size="sm"
+              title="AI 只读取本版提交的文字、已确认检查点和可解析附件；起草结果需你确认后才保存。"
               type="submit"
               variant="outline"
             >
@@ -280,14 +285,9 @@ export function FeedbackComposer({
           </form>
         ) : null
       }
-      title={expectedFeedbackVersion > 0 ? "修改教师反馈" : "撰写教师反馈"}
+      title={expectedFeedbackVersion > 0 ? "修改反馈" : "反馈"}
       titleId="feedback-editor-title"
     >
-      {assistantEnabled ? (
-        <AiNote>
-          AI 建议需你确认后才保存。助手只读取本版正式提交的文字、已确认检查点和可解析附件。
-        </AiNote>
-      ) : null}
       {assistantEnabled ? (
         <SuggestionNotice
           state={suggestionState}
@@ -337,7 +337,7 @@ export function FeedbackComposer({
           overLimit={bodyOverLimit}
         />
         <Textarea
-          className="min-h-40"
+          className="min-h-32"
           id="teacher-feedback-body"
           name="body"
           value={draftBody}
@@ -351,74 +351,67 @@ export function FeedbackComposer({
           反馈内容需经确认后才会保存。
         </p>
 
-        <fieldset className="flex flex-col gap-2">
-          <legend className="sr-only">形成性下一步与支架</legend>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium" htmlFor="teacher-feedback-next-step">形成性下一步</label>
-              <NativeSelect
-              className="w-full"
-                id="teacher-feedback-next-step"
-                name="nextStep"
-                value={draftNextStep}
-                onChange={(event) =>
-                  setDraftNextStep(
-                    event.target.value as TeacherFeedbackNextStep | "",
-                  )
-                }
-                disabled={anyPending}
-                required
-              >
-                <NativeSelectOption value="" disabled>请选择下一步</NativeSelectOption>
-                <NativeSelectOption value="CONTINUE">继续后续阶段</NativeSelectOption>
-                <NativeSelectOption value="REVISE">按反馈修改并重交</NativeSelectOption>
-              </NativeSelect>
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium" htmlFor="teacher-feedback-support-level">支架层级</label>
-              <NativeSelect
-              className="w-full"
-                id="teacher-feedback-support-level"
-                name="supportLevel"
-                value={draftSupportLevel}
-                onChange={(event) =>
-                  setDraftSupportLevel(
-                    event.target.value as TeacherFeedbackSupportLevel | "",
-                  )
-                }
-                disabled={anyPending}
-                required
-              >
-                <NativeSelectOption value="" disabled>请选择支架层级</NativeSelectOption>
-                <NativeSelectOption value="FOUNDATION">基础支持</NativeSelectOption>
-                <NativeSelectOption value="STANDARD">标准任务</NativeSelectOption>
-                <NativeSelectOption value="CHALLENGE">挑战拓展</NativeSelectOption>
-              </NativeSelect>
-            </div>
-          </div>
-        </fieldset>
-
-        <PrepareRow
-          note={
-            expectedFeedbackVersion > 0
-              ? `确认后保存为第 ${expectedFeedbackVersion + 1} 版，旧版保留。`
-              : "确认后才会保存。"
+        <ChoiceGroup
+          disabled={anyPending}
+          legend={
+            <span>
+              支架{" "}
+              <span className="font-normal text-muted-foreground">
+                · 调整下一步建议的难度，不给学生显示
+              </span>
+            </span>
           }
-        >
-          <Button
-            type="submit"
-            disabled={
-              anyPending ||
-              bodyOverLimit ||
-              !bodyHasVisibleText ||
-              !draftNextStep ||
-              !draftSupportLevel
-            }
-          >
-            {preparePending ? "正在准备…" : "准备确认"}
-            <ArrowRightIcon />
-          </Button>
-        </PrepareRow>
+          name="supportLevel"
+          onChange={setDraftSupportLevel}
+          options={[
+            { value: "FOUNDATION", label: "基础支持" },
+            { value: "STANDARD", label: "标准任务" },
+            { value: "CHALLENGE", label: "挑战拓展" },
+          ]}
+          required
+          size="sm"
+          value={draftSupportLevel}
+        />
+
+        {/* 下一步就是保存按钮本身（参考 Teams 的「退回 / 退回修改」）：
+            点哪一个，就以哪一个下一步准备确认。AI 建议的那个是实心按钮。 */}
+        <div className="flex flex-col gap-2 border-t pt-4">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {(["CONTINUE", "REVISE"] as const).map((step) => {
+              const emphasized = (draftNextStep || "CONTINUE") === step;
+              return (
+                <Button
+                  disabled={
+                    anyPending ||
+                    bodyOverLimit ||
+                    !bodyHasVisibleText ||
+                    !draftSupportLevel
+                  }
+                  key={step}
+                  name="nextStep"
+                  onClick={() => setSubmittedNextStep(step)}
+                  type="submit"
+                  value={step}
+                  variant={emphasized ? "default" : "outline"}
+                >
+                  {preparePending && submittedNextStep === step
+                    ? "正在准备…"
+                    : step === "REVISE"
+                      ? "保存 · 请学生修改"
+                      : finalSubmission
+                        ? "保存 · 完成"
+                        : "保存 · 进入下一阶段"}
+                </Button>
+              );
+            })}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {draftNextStep
+              ? `AI 建议：${draftNextStep === "REVISE" ? "请学生修改" : finalSubmission ? "完成" : "进入下一阶段"}。`
+              : ""}
+            保存前会再请你确认一次。
+          </p>
+        </div>
       </form>
     </ComposerFrame>
   );

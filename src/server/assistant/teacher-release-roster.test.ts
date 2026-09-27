@@ -49,11 +49,12 @@ const agentContext: CommandContext = {
   clock: () => now,
 };
 
-function submissionRow(seed: number, studentId: string) {
+function submissionRow(seed: number, studentId: string, evaluationOpen = false) {
   return {
     submissionId: uuid(seed),
-    phaseIndex: 1,
-    phaseName: "观察与问题界定",
+    phaseIndex: evaluationOpen ? 3 : 1,
+    phaseName: evaluationOpen ? "形成方案" : "观察与问题界定",
+    evaluationOpen,
     student: { id: studentId, displayName: "陈同学" },
     group: null,
     currentRevision: {
@@ -71,6 +72,7 @@ function submissionRow(seed: number, studentId: string) {
 function rosterWorkspace(overrides?: {
   progressCount?: number;
   rubricAvailable?: boolean;
+  finalSubmission?: boolean;
 }) {
   const count = overrides?.progressCount ?? 2;
   const students = Array.from({ length: count }, (_, index) => uuid(index + 1));
@@ -88,7 +90,9 @@ function rosterWorkspace(overrides?: {
       phaseCount: 3,
       rubricAvailable: overrides?.rubricAvailable ?? true,
     },
-    submissions: [submissionRow(1, students[0]!)],
+    submissions: [
+      submissionRow(1, students[0]!, overrides?.finalSubmission ?? false),
+    ],
     progress: students.map((id, index) => ({
       student: { id, displayName: `学生${index + 1}` },
       started: index === 0,
@@ -102,6 +106,7 @@ function rosterWorkspace(overrides?: {
     reviewCoverage: {
       currentRevisionCount: 1,
       feedbackCount: 0,
+      evaluableCount: overrides?.finalSubmission ? 1 : 0,
       evaluationCount: 0,
     },
   };
@@ -167,7 +172,7 @@ describe("teacher release roster reader", () => {
         isLate: false,
         feedback: "PENDING",
         feedbackVersion: null,
-        evaluation: "PENDING",
+        evaluation: "FINAL_ONLY",
         evaluationVersion: null,
         followUp: null,
         reviewHref: `/teacher/submissions/${uuid(1)}`,
@@ -176,6 +181,23 @@ describe("teacher release roster reader", () => {
     expect(
       output.status === "FOUND" && output.objects[1]?.submissions,
     ).toEqual([]);
+  });
+
+  it("asks for an evaluation only on the final submission (D-077)", async () => {
+    getSubmissions.mockResolvedValue(
+      rosterWorkspace({ finalSubmission: true }),
+    );
+
+    const output = await reader()(releaseId);
+
+    expect(
+      output.status === "FOUND" &&
+        output.objects[0]?.submissions[0]?.evaluation,
+    ).toBe("PENDING");
+    expect(output.status === "FOUND" && output.reviewCoverage).toMatchObject({
+      evaluableCount: 1,
+      evaluationCount: 0,
+    });
   });
 
   it("marks evaluation unavailable when the snapshot froze no rubric", async () => {

@@ -135,6 +135,7 @@ export class TeacherEvaluationSuggestionError extends Error {
       | "NOT_FOUND"
       | "STALE_SUBMISSION_REVISION"
       | "RUBRIC_UNAVAILABLE"
+      | "EVALUATION_NOT_OPEN"
       | "INVALID_OUTPUT"
       | "PROVIDER_FAILED",
   ) {
@@ -233,6 +234,9 @@ function assertCurrentRevision(
   }
   if (!isStructuredContent(workspace.submission.release.snapshot.content)) {
     throw new TeacherEvaluationSuggestionError("RUBRIC_UNAVAILABLE");
+  }
+  if (!workspace.submission.evaluationOpen) {
+    throw new TeacherEvaluationSuggestionError("EVALUATION_NOT_OPEN");
   }
   return revision;
 }

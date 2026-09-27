@@ -801,7 +801,7 @@ def run() -> None:
             wait_text(student, "草稿已保存")
             student.get_by_role("button", name="正式提交", exact=True).click()
             confirm(student, "确认正式提交？", "确认正式提交")
-            wait_text(student, "下一阶段草稿已经准备好")
+            wait_text(student, "下一阶段已经开放")
 
             sign_in(other_student, remote, "other_student")
             groupmate_visible = other_student.goto(f"{remote}{activity_href}", wait_until="domcontentloaded")
@@ -824,7 +824,7 @@ def run() -> None:
             wait_text(other_student, "草稿已保存")
             other_student.get_by_role("button", name="正式提交", exact=True).click()
             confirm(other_student, "确认正式提交？", "确认正式提交")
-            wait_text(other_student, "下一阶段草稿已经准备好")
+            wait_text(other_student, "下一阶段已经开放")
             checks.append({"code": "GROUPMATE_SHARED_PHASE_WRITE", "status": "PASS"})
 
             student.goto(f"{remote}{activity_href}", wait_until="domcontentloaded")

@@ -349,6 +349,8 @@ describeWithDatabase("submission workspace queries", () => {
         submissionId: fixture.submissionId,
         phaseIndex: 0,
         phaseName: null,
+        // A structured whole-task submission is the final one (D-077).
+        evaluationOpen: true,
         student: {
           id: fixture.studentId,
           displayName: "当前学生",
@@ -396,6 +398,7 @@ describeWithDatabase("submission workspace queries", () => {
     expect(result.reviewCoverage).toEqual({
       currentRevisionCount: 1,
       feedbackCount: 1,
+      evaluableCount: 1,
       evaluationCount: 0,
     });
   });

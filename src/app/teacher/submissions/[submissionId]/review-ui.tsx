@@ -5,10 +5,8 @@ import {
   CircleAlertIcon,
   CircleCheckIcon,
   RefreshCwIcon,
-  SparklesIcon,
 } from "lucide-react";
 import { Alert, AlertAction, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -78,27 +76,10 @@ export function ComposerFrame({
           </h2>
           <p className="text-xs text-muted-foreground">{lead}</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Badge variant="outline">
-            {assistantEnabled ? "教师终审 · AI 可选" : "手动撰写 · 未启用 AI"}
-          </Badge>
-          {suggestion}
-        </div>
+        {assistantEnabled ? suggestion : null}
       </header>
       {children}
     </section>
-  );
-}
-
-export function AiNote({ children }: { children: ReactNode }) {
-  return (
-    <p
-      className="flex gap-2 rounded-lg border border-dashed p-3 text-xs leading-relaxed text-muted-foreground"
-      role="note"
-    >
-      <SparklesIcon className="mt-0.5 size-3.5 shrink-0" />
-      {children}
-    </p>
   );
 }
 
@@ -135,16 +116,96 @@ export function FieldHead({
   );
 }
 
+/**
+ * 一排可点的选项，代替「先点开下拉框再选」。底下仍是原生单选框，
+ * 表单提交、键盘方向键和读屏都按单选组工作。
+ */
+export function ChoiceGroup<T extends string>({
+  legend,
+  name,
+  value,
+  options,
+  onChange,
+  disabled,
+  required,
+  size = "default",
+  className,
+  detached = false,
+}: {
+  legend: ReactNode;
+  name: string;
+  value: T | "";
+  options: ReadonlyArray<{ value: T; label: string; hint?: string }>;
+  onChange: (value: T) => void;
+  disabled?: boolean;
+  required?: boolean;
+  size?: "default" | "sm";
+  className?: string;
+  /**
+   * Keep the radios out of the surrounding form's payload when the value
+   * travels another way (the server actions accept an exact field set).
+   */
+  detached?: boolean;
+}) {
+  return (
+    <fieldset className={cn("flex min-w-0 flex-col gap-1.5", className)}>
+      <legend className="mb-1.5 text-sm font-medium">{legend}</legend>
+      <div className="flex flex-wrap gap-1.5">
+        {options.map((option) => {
+          const checked = value === option.value;
+          return (
+            <label
+              className={cn(
+                "inline-flex cursor-pointer items-center rounded-lg border bg-background px-3 text-sm transition-colors select-none hover:bg-muted has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring/50 has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-60",
+                size === "sm" ? "h-7 px-2.5 text-xs" : "h-9",
+                checked &&
+                  "border-primary bg-primary text-primary-foreground hover:bg-primary/90",
+              )}
+              key={option.value}
+              title={option.hint}
+            >
+              <input
+                checked={checked}
+                className="sr-only"
+                disabled={disabled}
+                form={detached ? `${name}-detached` : undefined}
+                name={name}
+                onChange={() => onChange(option.value)}
+                required={required}
+                type="radio"
+                value={option.value}
+              />
+              {option.label}
+            </label>
+          );
+        })}
+      </div>
+    </fieldset>
+  );
+}
+
 export function PrepareRow({
   note,
+  tone,
   children,
 }: {
   note: string;
+  /** "pending" marks the note as what still blocks saving. */
+  tone?: "pending" | "ready";
   children: ReactNode;
 }) {
   return (
     <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
-      <p className="text-xs text-muted-foreground">{note}</p>
+      <p
+        aria-live="polite"
+        className={cn(
+          "text-xs text-muted-foreground",
+          tone === "pending" &&
+            "w-fit rounded-full bg-status-pending px-2.5 py-1 font-medium text-status-pending-foreground",
+        )}
+      >
+        {note}
+      </p>
       {children}
     </div>
   );

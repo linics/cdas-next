@@ -52,6 +52,7 @@ function workspace(overrides?: {
   completedEvidenceIndexes?: number[];
   content?: unknown;
   evaluationVersion?: number;
+  evaluationOpen?: boolean;
 }) {
   const revisionNumber = overrides?.revisionNumber ?? 1;
   return {
@@ -65,6 +66,7 @@ function workspace(overrides?: {
       id: submissionId,
       phaseIndex: 1,
       phaseName: "发现问题",
+      evaluationOpen: overrides?.evaluationOpen ?? true,
       latestRevisionNumber: revisionNumber,
       release: {
         id: "70000000-0000-4000-8000-000000000007",
@@ -342,6 +344,21 @@ describe("teacher evaluation suggestion boundary", () => {
         dependencies(),
       ),
     ).rejects.toEqual(new TeacherEvaluationSuggestionError("RUBRIC_UNAVAILABLE"));
+
+    // D-077: a phase submission before the final one takes no evaluation.
+    mocks.getWorkspace.mockResolvedValueOnce(workspace({ evaluationOpen: false }));
+    await expect(
+      suggestTeacherEvaluation(
+        database,
+        context,
+        {
+          submissionId,
+          submissionRevisionId: revisionId,
+          submissionRevisionNumber: 1,
+        },
+        dependencies(),
+      ),
+    ).rejects.toEqual(new TeacherEvaluationSuggestionError("EVALUATION_NOT_OPEN"));
 
     mocks.getWorkspace.mockResolvedValueOnce(workspace({ revisionNumber: 2 }));
     await expect(

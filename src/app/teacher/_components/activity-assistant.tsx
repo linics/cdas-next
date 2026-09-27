@@ -194,7 +194,7 @@ type ReleaseRosterOutput =
           isLate: boolean;
           feedback: "PENDING" | "DONE";
           feedbackVersion: number | null;
-          evaluation: "PENDING" | "DONE" | "NO_RUBRIC";
+          evaluation: "PENDING" | "DONE" | "NO_RUBRIC" | "FINAL_ONLY";
           evaluationVersion: number | null;
           followUp:
             | "AWAITING_RESUBMISSION"
@@ -206,6 +206,7 @@ type ReleaseRosterOutput =
       reviewCoverage: {
         currentRevisionCount: number;
         feedbackCount: number;
+        evaluableCount: number;
         evaluationCount: number;
       };
     }
@@ -1169,7 +1170,7 @@ export function ActivityAssistant({
                             {roster.reviewCoverage.feedbackCount}/
                             {roster.reviewCoverage.currentRevisionCount} · 已评价{" "}
                             {roster.reviewCoverage.evaluationCount}/
-                            {roster.reviewCoverage.currentRevisionCount}
+                            {roster.reviewCoverage.evaluableCount}
                           </p>
                           {roster.truncated ? (
                             <p>只列出前 {roster.objects.length} 个对象，其余请在名册页查看。</p>
@@ -1203,8 +1204,9 @@ export function ActivityAssistant({
                                       {submission.feedback === "DONE"
                                         ? ` · 已反馈 v${submission.feedbackVersion}`
                                         : " · 待反馈"}
-                                      {submission.evaluation === "NO_RUBRIC"
-                                        ? " · 无量规"
+                                      {submission.evaluation === "NO_RUBRIC" ||
+                                      submission.evaluation === "FINAL_ONLY"
+                                        ? ""
                                         : submission.evaluation === "DONE"
                                           ? ` · 已评价 v${submission.evaluationVersion}`
                                           : " · 待评价"}

@@ -3,7 +3,6 @@ import "server-only";
 import { z } from "zod";
 import {
   activityContentSchema,
-  isStructuredContent,
   type ActivityContent,
 } from "../../domain/activity/activity-content";
 import {
@@ -12,6 +11,7 @@ import {
 } from "../../domain/activity/prepare-publish-intent";
 import type { PrismaClient } from "../../generated/prisma/client";
 import { reviewFollowUp } from "../../domain/feedback/review-follow-up";
+import { isRubricEvaluationOpen } from "../../domain/submission/sequential-execution";
 import {
   type CommandContext,
   resolveCommandContext,
@@ -199,8 +199,9 @@ function isCurrentMembership(
 
 function releaseAttention(
   releaseId: string,
-  rubricAvailable: boolean,
+  evaluationOpen: (phaseIndex: number) => boolean,
   submissions: ReadonlyArray<{
+    phaseIndex: number;
     latestRevisionNumber: number;
     workingCopy: { id: string } | null;
     revisions: ReadonlyArray<{
@@ -250,7 +251,7 @@ function releaseAttention(
     if (!currentFeedback) {
       pendingFeedbackCount += 1;
     }
-    if (rubricAvailable && !revision.evaluation) {
+    if (evaluationOpen(submission.phaseIndex) && !revision.evaluation) {
       pendingEvaluationCount += 1;
     }
     if (
@@ -342,6 +343,7 @@ export async function getTeacherActivityDashboard(
       select: {
         id: true,
         status: true,
+        executionVersion: true,
         publishedAt: true,
         dueAt: true,
         classroom: {
@@ -356,6 +358,7 @@ export async function getTeacherActivityDashboard(
           select: {
             studentId: true,
             groupId: true,
+            phaseIndex: true,
             latestRevisionNumber: true,
             workingCopy: { select: { id: true } },
             revisions: {
@@ -436,7 +439,12 @@ export async function getTeacherActivityDashboard(
         attention: canViewSubmissions
           ? releaseAttention(
               release.id,
-              isStructuredContent(content),
+              (phaseIndex) =>
+                isRubricEvaluationOpen(
+                  release.executionVersion,
+                  content,
+                  phaseIndex,
+                ),
               release.submissions,
             )
           : null,

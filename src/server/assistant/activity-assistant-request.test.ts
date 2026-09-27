@@ -637,6 +637,7 @@ describe("activity assistant request validation", () => {
                   reviewCoverage: {
                     currentRevisionCount: 99,
                     feedbackCount: 0,
+                    evaluableCount: 0,
                     evaluationCount: 0,
                   },
                 },

@@ -127,6 +127,8 @@ const submittedSubmission = {
   id: submissionId,
   phaseIndex: 0,
   latestRevisionNumber: 2,
+  hasCurrentFeedback: false,
+  followUp: null,
   workingCopy: null,
   revisions: [
     {
@@ -307,7 +309,8 @@ describe("student release page access boundary", () => {
 
     expect(markup).toContain("当前账号：陈同学 · 学生");
     expect(markup).toContain("退出登录");
-    expect(markup).toContain("尚无正式提交");
+    expect(markup).toContain("活动任务");
+    expect(markup).not.toContain("等老师反馈");
     expect(mocks.getStudentFeedbackWorkspace).not.toHaveBeenCalled();
   });
 
@@ -338,7 +341,7 @@ describe("student release page access boundary", () => {
     expect(markup).toContain("校园调查组");
     expect(markup).toContain("陈同学（记录）");
     expect(markup).toContain("周同学（汇报）");
-    expect(markup).toContain("同一份草稿、附件、提交记录和教师反馈");
+    expect(markup).toContain("全组共用一份作答和老师的反馈");
   });
 
   it("renders the complete structured task book from the immutable release snapshot", async () => {
@@ -387,26 +390,24 @@ describe("student release page access boundary", () => {
     expect(markup).toContain('data-can-write="false"');
     expect(markup).toContain("第一版正式观察记录");
     expect(markup).toContain("第二版正式观察记录");
-    expect(markup).toContain("林老师");
-    expect(markup).toContain("反馈第 2 版");
-    expect(markup).toContain("反馈第 1 版");
-    expect(markup).toContain("教师撰写");
-    expect(markup).toContain("AI 建议，教师已确认");
-    expect(markup).toContain("按反馈修改并重交");
-    expect(markup).toContain("基础支持");
-    expect(markup).toContain("早期反馈未包含下一步与支架信息");
-    expect(markup).toContain(
-      'dateTime="2026-08-18T11:00:00.000Z"',
-    );
-    expect(markup).not.toContain(`台${"北"}时间`);
+    // The latest version has no feedback yet: the page says so up top.
+    expect(markup).toContain("已提交，等老师反馈");
+    // Earlier versions carry the teacher's current words only — no version
+    // numbers, source, or the support level meant for the teacher.
+    expect(markup).toContain("之前提交的版本（1）");
     expect(markup).toContain("单位已补齐，再说明两次数据的差值。");
-    expect(markup).toContain("先补上两次读数的单位。");
-    expect(markup).toContain("该版本尚无教师反馈");
-    expect(markup).toContain("评价第 1 版");
+    expect(markup).not.toContain("先补上两次读数的单位。");
+    expect(markup).not.toContain("反馈第 2 版");
+    expect(markup).not.toContain("教师撰写");
+    expect(markup).not.toContain("AI 建议，教师已确认");
+    expect(markup).not.toContain("基础支持");
+    expect(markup).not.toContain("支架");
+    expect(markup).not.toContain("发布快照");
+    expect(markup).not.toContain(`台${"北"}时间`);
     expect(markup).toContain("第一版量规综评：问题清楚，证据仍不足。");
     expect(markup).toContain("证据不足");
     expect(markup).toContain("优秀");
-    expect(markup).toContain("该版本尚无量规评价");
+    expect(markup).not.toContain("本版文字证据");
     expect(markup).not.toContain("feedback-payload-hash-secret");
     expect(markup).not.toContain("agent-run-secret");
     expect(markup).not.toContain("尚未确认的反馈不能显示");
@@ -422,6 +423,40 @@ describe("student release page access boundary", () => {
       mocks.database,
       trustedContext,
       { submissionId },
+    );
+  });
+
+  it("puts the teacher's request to revise at the top of the page", async () => {
+    const revising = {
+      ...submittedSubmission,
+      hasCurrentFeedback: true,
+      followUp: "AWAITING_RESUBMISSION",
+    };
+    mocks.getStudentReleaseWorkspace.mockResolvedValue({
+      ...workspace,
+      submission: revising,
+      submissions: [revising],
+    });
+    mocks.getStudentFeedbackWorkspace.mockResolvedValue({
+      submission: {
+        ...confirmedFeedbackWorkspace.submission,
+        revisions: [
+          confirmedFeedbackWorkspace.submission.revisions[0],
+          {
+            ...confirmedFeedbackWorkspace.submission.revisions[1],
+            feedback: confirmedFeedbackWorkspace.submission.revisions[0]!.feedback,
+          },
+        ],
+      },
+    });
+
+    const markup = await renderPage();
+
+    expect(markup).toContain("林老师的反馈");
+    expect(markup).toContain('data-next-step="REVISE"');
+    expect(markup).toContain("老师希望你按这条反馈修改后，再交一版。");
+    expect(markup.indexOf("林老师的反馈")).toBeLessThan(
+      markup.indexOf("data-submission-editor"),
     );
   });
 
