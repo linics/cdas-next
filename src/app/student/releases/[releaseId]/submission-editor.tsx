@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { useRouter } from "next/navigation";
+import { PencilLineIcon } from "lucide-react";
 import { ConfirmDialog, InlineAlert } from "../../../_components/ui";
 import {
   evidenceTypeLabel,
@@ -330,7 +331,8 @@ export function SubmissionEditor({
   return (
     <section className={styles.editorSection} aria-labelledby="submission-title">
       <div className={styles.sectionHeading}>
-        <h2 id="submission-title">
+        <h2 className="flex items-center gap-2" id="submission-title">
+          <PencilLineIcon aria-hidden="true" className="size-4 text-primary" />
           {workingCopy && workingCopy.baseRevisionNumber > 0
             ? `修改第 ${workingCopy.baseRevisionNumber} 版`
             : "我的作答"}

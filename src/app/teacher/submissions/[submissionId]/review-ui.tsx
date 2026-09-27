@@ -186,14 +186,26 @@ export function ChoiceGroup<T extends string>({
 
 export function PrepareRow({
   note,
+  tone,
   children,
 }: {
   note: string;
+  /** "pending" marks the note as what still blocks saving. */
+  tone?: "pending" | "ready";
   children: ReactNode;
 }) {
   return (
     <div className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
-      <p className="text-xs text-muted-foreground">{note}</p>
+      <p
+        aria-live="polite"
+        className={cn(
+          "text-xs text-muted-foreground",
+          tone === "pending" &&
+            "w-fit rounded-full bg-status-pending px-2.5 py-1 font-medium text-status-pending-foreground",
+        )}
+      >
+        {note}
+      </p>
       {children}
     </div>
   );

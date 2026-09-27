@@ -1,0 +1,71 @@
+- generic [active] [ref=f1e1]:
+  - button "Open Next.js Dev Tools" [ref=f1e76] [cursor=pointer]
+  - alert [ref=f1e80]
+  - generic [ref=f1e81]:
+    - link "跳到主要内容" [ref=f1e82] [cursor=pointer]:
+      - /url: "#main-content"
+    - complementary [ref=f1e83]:
+      - link "CDAS Next 教师工作台" [ref=f1e84] [cursor=pointer]:
+        - /url: /teacher
+        - strong [ref=f1e85]: CDAS
+        - generic [ref=f1e86]: 跨学科学习活动
+      - navigation "教师工作台导航" [ref=f1e88]:
+        - link "工作台" [ref=f1e89] [cursor=pointer]:
+          - /url: /teacher
+        - link "活动设计" [ref=f1e96] [cursor=pointer]:
+          - /url: /teacher/activities
+        - link "过程诊断" [ref=f1e101] [cursor=pointer]:
+          - /url: /teacher/insights
+        - link "课程依据" [ref=f1e106] [cursor=pointer]:
+          - /url: /teacher/knowledge
+      - paragraph [ref=f1e110]: AI 仅辅助准备内容，发布与评价均由教师确认。
+    - generic [ref=f1e111]:
+      - banner [ref=f1e112]:
+        - navigation "面包屑" [ref=f1e113]:
+          - list [ref=f1e114]:
+            - listitem [ref=f1e115]:
+              - link "教师工作台" [ref=f1e116] [cursor=pointer]:
+                - /url: /teacher
+            - listitem [ref=f1e117]:
+              - generic [aria-hidden] [ref=f1e118]: ›
+              - link "活动设计" [ref=f1e119] [cursor=pointer]:
+                - /url: /teacher/activities
+            - listitem [ref=f1e120]:
+              - generic [aria-hidden] [ref=f1e121]: ›
+              - generic [ref=f1e122]: 复用活动
+        - generic [ref=f1e123]:
+          - generic [ref=f1e124]: 当前账号：复用验收教师 · 教师
+          - button "退出登录" [ref=f1e126] [cursor=pointer]
+      - main [ref=f1e127]:
+        - generic [ref=f1e128]:
+          - generic [ref=f1e129]:
+            - generic [ref=f1e130]:
+              - paragraph [ref=f1e131]: 活动设计 / 复用
+              - heading "复用已有活动" [level=1] [ref=f1e132]
+              - paragraph [ref=f1e133]: 选择一份仍可访问的 v3 草稿或发布快照，先核对任务书，再以新标题创建编辑中的草稿。 班级、截止时间、提交与反馈不会带入新草稿。
+            - link "返回活动设计" [ref=f1e134] [cursor=pointer]:
+              - /url: /teacher/activities
+          - generic [ref=f1e135]:
+            - complementary "可复用活动来源" [ref=f1e136]:
+              - generic [ref=f1e137]:
+                - paragraph [ref=f1e138]: 选择来源
+                - heading "我的可复用活动" [level=2] [ref=f1e139]
+                - paragraph [ref=f1e140]: 只显示本人未封存的 v3 草稿，以及本人仍管理班级的发布快照。
+              - generic [ref=f1e141]:
+                - heading "草稿" [level=3] [ref=f1e142]
+                - link "待复用的节水任务 草稿版本 1" [ref=f1e144] [cursor=pointer]:
+                  - /url: /teacher/activities/copy?kind=DRAFT&id=ec201bba-18ea-4c75-87e2-ed7b0c0e81b9&version=1
+                  - generic [ref=f1e145]: 待复用的节水任务
+                  - generic [ref=f1e146]: 草稿版本 1
+              - generic [ref=f1e147]:
+                - heading "已发布快照" [level=3] [ref=f1e148]
+                - link "已发布的节水任务 发布快照 v1 · 复用合成班级" [ref=f1e150] [cursor=pointer]:
+                  - /url: /teacher/activities/copy?kind=RELEASE&id=cead74d4-dced-4668-91eb-82be822cfe3b&version=1
+                  - generic [ref=f1e151]: 已发布的节水任务
+                  - generic [ref=f1e152]: 发布快照 v1 · 复用合成班级
+              - paragraph [ref=f1e153]: 旧版任务书不会自动转换。新草稿只保留 v3 任务内容，并重新开始发布与学生提交流程。
+            - region [ref=f1e154]:
+              - generic [ref=f1e155]:
+                - paragraph [ref=f1e156]: 核对任务书
+                - heading "先从左侧选择来源" [level=2] [ref=f1e157]
+                - paragraph [ref=f1e158]: 复制前会显示精确的 v3 任务书；确认后只创建新的草稿。

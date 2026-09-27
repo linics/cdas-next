@@ -13,12 +13,12 @@ const button = (...args: Parameters<typeof buttonVariants>) =>
  */
 export const styles = {
   // 页面骨架
-  releasePage: `mx-auto flex w-full max-w-4xl flex-col gap-6 ${revealChildren}`,
+  releasePage: `mx-auto flex w-full max-w-6xl flex-col gap-6 ${revealChildren}`,
   backLink: `${button({ variant: "ghost", size: "sm" })} -ml-2 w-fit`,
   releaseHeader:
     "flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between [&_h1]:type-page-title [&_p:last-child]:mt-1 [&_p:last-child]:text-sm [&_p:last-child]:text-muted-foreground",
   eyebrow: "text-xs font-medium text-muted-foreground",
-  workspaceColumn: "flex flex-col gap-6",
+  workspaceColumn: "flex min-w-0 flex-col gap-6",
   groupNotice:
     "flex flex-wrap items-baseline gap-x-2 gap-y-1 rounded-xl border bg-muted/40 px-4 py-3 text-sm [&>strong]:font-semibold [&>span]:w-full [&>span]:text-xs [&>span]:text-muted-foreground",
   activityBackground:
@@ -34,22 +34,31 @@ export const styles = {
     "flex flex-col gap-5 p-5 text-sm leading-relaxed [&_h3]:mb-2 [&_h3]:text-sm [&_h3]:font-semibold [&_ol]:list-decimal [&_ol]:space-y-3 [&_ol]:pl-5 [&_ul]:list-disc [&_ul]:space-y-3 [&_ul]:pl-5 [&_strong]:font-medium [&_p]:text-muted-foreground",
 
   // 阶段导航与当前阶段
-  phaseNavigator:
-    "grid auto-cols-fr grid-flow-col gap-2 overflow-x-auto [&>*]:flex [&>*]:min-w-32 [&>*]:flex-col [&>*]:gap-1 [&>*]:rounded-lg [&>*]:border [&>*]:bg-card [&>*]:p-3 [&>*]:text-sm [&>a]:transition-colors [&>a:hover]:bg-muted/60 [&>[data-current=true]]:border-primary [&>[data-current=true]]:ring-1 [&>[data-current=true]]:ring-primary [&>[data-locked=true]]:opacity-50 [&>[data-attention=true]]:border-status-resubmit-foreground/50 [&>[data-attention=true]]:bg-status-resubmit/60 [&_span:first-child]:flex [&_span:first-child]:size-6 [&_span:first-child]:items-center [&_span:first-child]:justify-center [&_span:first-child]:rounded-full [&_span:first-child]:bg-muted [&_span:first-child]:text-xs [&_strong]:font-medium [&_small]:text-xs [&_small]:text-muted-foreground",
-  phaseFocus: "flex flex-col gap-3 glass rounded-2xl p-5",
-  phaseFocusHeading:
-    "flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 [&_h2]:text-base [&_h2]:font-semibold",
+  phaseNavigator: "grid auto-cols-fr grid-flow-col gap-2 overflow-x-auto pb-1 [&>*]:flex [&>*]:min-w-40 [&>*]:items-center [&>*]:gap-2.5 [&>*]:rounded-xl [&>*]:border [&>*]:bg-card [&>*]:px-3 [&>*]:py-2.5 [&>*]:text-sm [&>*]:transition-colors [&>a:hover]:border-foreground/25 [&>[aria-current=step]]:border-primary [&>[aria-current=step]]:ring-1 [&>[aria-current=step]]:ring-primary [&_strong]:font-medium [&_small]:text-xs [&_small]:text-muted-foreground [&_[data-bubble]]:flex [&_[data-bubble]]:size-7 [&_[data-bubble]]:shrink-0 [&_[data-bubble]]:items-center [&_[data-bubble]]:justify-center [&_[data-bubble]]:rounded-full [&_[data-bubble]]:text-xs [&_[data-bubble]]:font-semibold [&>[data-tone=active]_[data-bubble]]:bg-primary [&>[data-tone=active]_[data-bubble]]:text-primary-foreground [&>[data-tone=done]_[data-bubble]]:bg-status-done [&>[data-tone=done]_[data-bubble]]:text-status-done-foreground [&>[data-tone=revise]]:border-status-resubmit-foreground/40 [&>[data-tone=revise]]:bg-status-resubmit [&>[data-tone=revise]_[data-bubble]]:bg-status-resubmit-foreground [&>[data-tone=revise]_[data-bubble]]:text-status-resubmit [&>[data-tone=revise]_small]:font-medium [&>[data-tone=revise]_small]:text-status-resubmit-foreground [&>[data-tone=locked]]:border-dashed [&>[data-tone=locked]]:bg-transparent [&>[data-tone=locked]]:text-muted-foreground [&>[data-tone=locked]_[data-bubble]]:bg-muted",
+  phaseFocus: "flex flex-col gap-4 glass rounded-2xl p-5 sm:p-6",
+  phaseFocusHeading: "flex flex-wrap items-center justify-between gap-2 [&>p]:text-xs [&>p]:font-medium [&>p]:tracking-wide [&>p]:text-primary [&>span]:inline-flex [&>span]:items-center [&>span]:gap-1 [&>span]:rounded-full [&>span]:bg-muted [&>span]:px-2.5 [&>span]:py-0.5 [&>span]:text-xs [&>span]:tabular-nums [&>span]:text-muted-foreground [&>span[data-late=true]]:bg-status-resubmit [&>span[data-late=true]]:text-status-resubmit-foreground",
+  phaseHeadline: "text-xl leading-snug font-semibold text-balance",
+  // 任务卡里的块：标题一行图标 + 小字，正文用正常字号。「老师会看」用完成色，
+  // 让学生知道「做到这些就算好」。
+  taskBlock:
+    "flex flex-col gap-1.5 [&>p]:flex [&>p]:items-center [&>p]:gap-1.5 [&>p]:text-xs [&>p]:font-medium [&>p]:text-muted-foreground [&_ul]:flex [&_ul]:flex-col [&_ul]:gap-1 [&_li]:text-sm [&_small]:ml-2 [&_small]:text-xs [&_small]:text-muted-foreground",
+  criteriaBlock:
+    "flex flex-col gap-1 rounded-xl bg-status-done px-4 py-3 text-sm text-status-done-foreground [&>p:first-child]:flex [&>p:first-child]:items-center [&>p:first-child]:gap-1.5 [&>p:first-child]:text-xs [&>p:first-child]:font-semibold",
+  hintDisclosure:
+    "rounded-xl border border-dashed px-4 py-2.5 text-sm [&>summary]:flex [&>summary]:w-fit [&>summary]:cursor-pointer [&>summary]:items-center [&>summary]:gap-1.5 [&>summary]:font-medium [&>summary]:text-muted-foreground [&>summary:hover]:text-foreground [&[open]>summary]:text-foreground [&>p]:pt-2 [&>p]:leading-relaxed",
+  workspaceGrid:
+    "grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(380px,440px)]",
+  workColumn: "flex min-w-0 flex-col gap-4 lg:sticky lg:top-4",
   taskLine:
     "flex flex-col gap-0.5 text-sm leading-relaxed sm:flex-row sm:gap-3 [&>strong]:w-16 [&>strong]:shrink-0 [&>strong]:font-medium [&>strong]:text-muted-foreground data-[quiet=true]:text-muted-foreground",
   inlineDisclosure:
     "text-sm [&>summary]:w-fit [&>summary]:cursor-pointer [&>summary]:text-sm [&>summary]:font-medium [&>summary]:text-muted-foreground [&>summary:hover]:text-foreground",
-  phaseStory: "text-base leading-7",
+  phaseStory: "text-sm leading-relaxed text-muted-foreground",
   phaseDue:
     "text-sm tabular-nums text-muted-foreground data-[late=true]:font-medium data-[late=true]:text-status-resubmit-foreground",
 
   // 编辑区
-  editorSection:
-    "flex flex-col gap-4 glass rounded-2xl p-5",
+  editorSection: "flex flex-col gap-4 rounded-2xl border border-primary/30 bg-card p-5 shadow-sm ring-1 ring-primary/10 backdrop-blur-xl",
   sectionHeading:
     "flex items-start justify-between gap-3 [&_h2]:text-base [&_h2]:font-semibold",
   sectionLead: "text-sm text-muted-foreground",
@@ -70,7 +79,7 @@ export const styles = {
   resubmitSection: "flex flex-col gap-3",
   resubmitForm:
     "flex flex-col items-start gap-2 [&>p]:text-xs [&>p]:text-muted-foreground",
-  commitArea: "flex flex-col gap-2 border-t pt-4",
+  commitArea: "flex flex-col gap-2 border-t pt-4 [&_form]:flex [&_form>button]:w-full [&_form>button]:h-10 [&_form>button]:text-base",
   commitHint: "text-xs text-muted-foreground",
   primaryButton: button(),
   secondaryButton: button({ variant: "outline" }),
@@ -92,10 +101,8 @@ export const styles = {
   attachmentMessage: "text-sm text-muted-foreground",
 
   // 老师的反馈（页首）
-  teacherResponse:
-    "flex flex-col gap-3 rounded-2xl border bg-card p-5 data-[next-step=REVISE]:border-status-resubmit-foreground/40 data-[next-step=REVISE]:bg-status-resubmit/40",
-  teacherResponseHeading:
-    "flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 [&_h2]:text-base [&_h2]:font-semibold [&>span]:text-xs [&>span]:text-muted-foreground",
+  teacherResponse: "flex flex-col gap-3 rounded-2xl border bg-card p-5 backdrop-blur-xl data-[next-step=REVISE]:border-status-resubmit-foreground/40 data-[next-step=REVISE]:bg-status-resubmit/60 data-[next-step=CONTINUE]:border-status-done-foreground/30",
+  teacherResponseHeading: "flex flex-wrap items-center gap-x-2.5 gap-y-1 [&_h2]:text-base [&_h2]:font-semibold [&>span:last-child]:ml-auto [&>span:last-child]:text-xs [&>span:last-child]:text-muted-foreground [&_[data-avatar]]:flex [&_[data-avatar]]:size-8 [&_[data-avatar]]:items-center [&_[data-avatar]]:justify-center [&_[data-avatar]]:rounded-full [&_[data-avatar]]:bg-primary [&_[data-avatar]]:text-sm [&_[data-avatar]]:font-semibold [&_[data-avatar]]:text-primary-foreground",
   nextStepLine:
     "text-sm font-medium [&_a]:ml-2 [&_a]:underline [&_a]:underline-offset-4",
 

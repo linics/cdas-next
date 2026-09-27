@@ -1,0 +1,655 @@
+- generic [active] [ref=f1e1]:
+  - button "Open Next.js Dev Tools" [ref=f1e76] [cursor=pointer]
+  - alert [ref=f1e80]: CDAS Next
+  - generic [ref=f1e227]:
+    - link "跳到主要内容" [ref=f1e228] [cursor=pointer]:
+      - /url: "#main-content"
+    - complementary [ref=f1e229]:
+      - link "CDAS Next 教师工作台" [ref=f1e230] [cursor=pointer]:
+        - /url: /teacher
+        - strong [ref=f1e231]: CDAS
+        - generic [ref=f1e232]: 跨学科学习活动
+      - navigation "教师工作台导航" [ref=f1e234]:
+        - link "工作台" [ref=f1e235] [cursor=pointer]:
+          - /url: /teacher
+        - link "活动设计" [ref=f1e242] [cursor=pointer]:
+          - /url: /teacher/activities
+        - link "过程诊断" [ref=f1e247] [cursor=pointer]:
+          - /url: /teacher/insights
+        - link "课程依据" [ref=f1e252] [cursor=pointer]:
+          - /url: /teacher/knowledge
+      - paragraph [ref=f1e256]: AI 仅辅助准备内容，发布与评价均由教师确认。
+    - generic [ref=f1e257]:
+      - banner [ref=f1e258]:
+        - navigation "面包屑" [ref=f1e259]:
+          - list [ref=f1e260]:
+            - listitem [ref=f1e261]:
+              - link "教师工作台" [ref=f1e262] [cursor=pointer]:
+                - /url: /teacher
+            - listitem [ref=f1e263]:
+              - generic [aria-hidden] [ref=f1e264]: ›
+              - link "活动设计" [ref=f1e265] [cursor=pointer]:
+                - /url: /teacher/activities
+            - listitem [ref=f1e266]:
+              - generic [aria-hidden] [ref=f1e267]: ›
+              - generic [ref=f1e268]: 新学期节水任务
+        - generic [ref=f1e269]:
+          - generic [ref=f1e270]: 当前账号：复用验收教师 · 教师
+          - button "退出登录" [ref=f1e272] [cursor=pointer]
+      - main [ref=f1e273]:
+        - generic [ref=f1e274]:
+          - generic [ref=f1e275]:
+            - generic [ref=f1e276]:
+              - paragraph [ref=f1e277]: 活动设计 / 草稿版本 1
+              - heading "新学期节水任务" [level=1] [ref=f1e278]
+              - paragraph [ref=f1e279]:
+                - text: 当前内容创建于
+                - time [ref=f1e280]: 2026年9月24日 18:28
+                - text: ；每次保存都会生成新版本，历史版本保留。
+            - link "复制为新活动" [ref=f1e281] [cursor=pointer]:
+              - /url: /teacher/activities/copy?kind=DRAFT&id=85a41582-e227-47a5-a30e-501af3710a43&version=1
+          - paragraph [ref=f1e282]: 来源活动：草稿「待复用的节水任务」· 版本 1
+          - generic [ref=f1e283]:
+            - generic [ref=f1e284]:
+              - generic [ref=f1e285]:
+                - generic [aria-hidden] [ref=f1e286]: "01"
+                - generic [ref=f1e287]:
+                  - generic [ref=f1e288]: 基本信息
+                  - generic [ref=f1e289]: 设置学段、学科、任务类型与周期；截止时间在发布时设置。
+                  - generic [ref=f1e290]:
+                    - generic [ref=f1e291]:
+                      - text: 任务标题
+                      - textbox "任务标题" [ref=f1e292]: 新学期节水任务
+                    - generic [ref=f1e293]:
+                      - text: 任务主题
+                      - textbox "任务主题" [ref=f1e294]: 校园用水调查与改善
+                  - generic [ref=f1e295]:
+                    - text: 任务描述
+                    - textbox "任务描述" [ref=f1e296]: 学生以真实校园用水场景为对象，形成可核验的节水建议。
+                  - generic [ref=f1e297]:
+                    - generic [ref=f1e298]:
+                      - text: 学段
+                      - combobox "学段" [ref=f1e299]:
+                        - option "小学"
+                        - option "初中" [selected]
+                    - generic [ref=f1e300]:
+                      - text: 年级
+                      - combobox "年级" [ref=f1e301]:
+                        - option "7 年级" [selected]
+                        - option "8 年级"
+                        - option "9 年级"
+                    - generic [ref=f1e302]:
+                      - text: 主学科
+                      - combobox "主学科" [ref=f1e303]:
+                        - option "道德与法治"
+                        - option "语文"
+                        - option "数学"
+                        - option "英语"
+                        - option "历史"
+                        - option "地理"
+                        - option "物理" [selected]
+                        - option "化学"
+                        - option "生物学"
+                        - option "信息科技"
+                        - option "劳动"
+                        - option "艺术"
+                        - option "体育与健康"
+                        - option "综合实践活动"
+                    - generic [ref=f1e304]:
+                      - text: 任务类型
+                      - combobox "任务类型" [ref=f1e305]:
+                        - option "实践性作业"
+                        - option "探究性作业" [selected]
+                        - option "项目式作业"
+                    - generic [ref=f1e306]:
+                      - text: 任务子类型
+                      - combobox "任务子类型" [ref=f1e307]:
+                        - option "文献探究"
+                        - option "调查探究" [selected]
+                        - option "实验探究"
+                    - generic [ref=f1e308]:
+                      - text: 探究深度
+                      - combobox "探究深度" [ref=f1e309]:
+                        - option "基础探究"
+                        - option "中等探究" [selected]
+                        - option "深度探究"
+                    - generic [ref=f1e310]:
+                      - text: 提交模式
+                      - combobox "提交模式" [ref=f1e311]:
+                        - option "过程性提交"
+                        - option "一次性提交" [selected]
+                        - option "混合提交"
+                    - generic [ref=f1e312]:
+                      - text: 周期（周）
+                      - spinbutton "周期（周）" [ref=f1e313]: "2"
+                  - group "融合学科（至少一项）" [ref=f1e314]:
+                    - generic [ref=f1e316]:
+                      - generic [ref=f1e317] [cursor=pointer]:
+                        - checkbox "道德与法治"
+                        - text: 道德与法治
+                      - generic [ref=f1e318] [cursor=pointer]:
+                        - checkbox "语文" [checked]
+                        - text: 语文
+                      - generic [ref=f1e319] [cursor=pointer]:
+                        - checkbox "数学" [checked]
+                        - text: 数学
+                      - generic [ref=f1e320] [cursor=pointer]:
+                        - checkbox "英语"
+                        - text: 英语
+                      - generic [ref=f1e321] [cursor=pointer]:
+                        - checkbox "历史"
+                        - text: 历史
+                      - generic [ref=f1e322] [cursor=pointer]:
+                        - checkbox "地理"
+                        - text: 地理
+                      - generic [ref=f1e323] [cursor=pointer]:
+                        - checkbox "化学"
+                        - text: 化学
+                      - generic [ref=f1e324] [cursor=pointer]:
+                        - checkbox "生物学"
+                        - text: 生物学
+                      - generic [ref=f1e325] [cursor=pointer]:
+                        - checkbox "信息科技"
+                        - text: 信息科技
+                      - generic [ref=f1e326] [cursor=pointer]:
+                        - checkbox "劳动"
+                        - text: 劳动
+                      - generic [ref=f1e327] [cursor=pointer]:
+                        - checkbox "艺术"
+                        - text: 艺术
+                      - generic [ref=f1e328] [cursor=pointer]:
+                        - checkbox "体育与健康"
+                        - text: 体育与健康
+                      - generic [ref=f1e329] [cursor=pointer]:
+                        - checkbox "综合实践活动"
+                        - text: 综合实践活动
+              - generic [ref=f1e330]:
+                - generic [aria-hidden] [ref=f1e331]: "02"
+                - generic [ref=f1e332]:
+                  - generic [ref=f1e333]: 学习目标与跨学科设计
+                  - generic [ref=f1e334]: 每条目标关联 1–3 条适配学段年级的官方核心素养；每门已选学科都要说明贡献与不可替代性。
+                  - generic [ref=f1e335]:
+                    - text: 背景设定
+                    - textbox "背景设定" [ref=f1e336]: 学校希望根据学生调查改进用水管理。
+                  - list [ref=f1e337]:
+                    - listitem [ref=f1e338]:
+                      - paragraph [ref=f1e339]: 物理
+                      - generic [ref=f1e340]:
+                        - text: 学科贡献
+                        - textbox "学科贡献" [ref=f1e341]: 观察用水现象并解释流量、装置与节水措施。
+                      - generic [ref=f1e342]:
+                        - text: 不可替代性
+                        - textbox "不可替代性" [ref=f1e343]: 没有物理解释，建议不能说明其节水机理。
+                    - listitem [ref=f1e344]:
+                      - paragraph [ref=f1e345]: 数学
+                      - generic [ref=f1e346]:
+                        - text: 学科贡献
+                        - textbox "学科贡献" [ref=f1e347]: 整理、比较用水数据并呈现变化。
+                      - generic [ref=f1e348]:
+                        - text: 不可替代性
+                        - textbox "不可替代性" [ref=f1e349]: 没有数据分析，问题判断与建议效果无法核验。
+                    - listitem [ref=f1e350]:
+                      - paragraph [ref=f1e351]: 语文
+                      - generic [ref=f1e352]:
+                        - text: 学科贡献
+                        - textbox "学科贡献" [ref=f1e353]: 面向真实对象清晰表达调查结论和建议。
+                      - generic [ref=f1e354]:
+                        - text: 不可替代性
+                        - textbox "不可替代性" [ref=f1e355]: 没有公共表达，方案无法被理解、讨论和采纳。
+                  - list [ref=f1e356]:
+                    - listitem [ref=f1e357]:
+                      - paragraph [ref=f1e358]: 学习目标 1
+                      - generic [ref=f1e359]:
+                        - text: 可观察目标
+                        - textbox "可观察目标" [ref=f1e360]: 能基于观察说明一个校园用水问题及其可能机理。
+                      - group "课程依据（核心素养，1–3 条）" [ref=f1e361]:
+                        - generic [ref=f1e363]:
+                          - generic [ref=f1e364] [cursor=pointer]:
+                            - checkbox "物理·物理观念"
+                            - text: 物理·物理观念
+                          - generic [ref=f1e365] [cursor=pointer]:
+                            - checkbox "物理·科学思维"
+                            - text: 物理·科学思维
+                          - generic [ref=f1e366] [cursor=pointer]:
+                            - checkbox "物理·科学探究" [checked]
+                            - text: 物理·科学探究
+                          - generic [ref=f1e367] [cursor=pointer]:
+                            - checkbox "物理·科学态度与责任"
+                            - text: 物理·科学态度与责任
+                          - generic [ref=f1e368] [cursor=pointer]:
+                            - checkbox "数学·抽象能力"
+                            - text: 数学·抽象能力
+                          - generic [ref=f1e369] [cursor=pointer]:
+                            - checkbox "数学·运算能力"
+                            - text: 数学·运算能力
+                          - generic [ref=f1e370] [cursor=pointer]:
+                            - checkbox "数学·几何直观"
+                            - text: 数学·几何直观
+                          - generic [ref=f1e371] [cursor=pointer]:
+                            - checkbox "数学·空间观念"
+                            - text: 数学·空间观念
+                          - generic [ref=f1e372] [cursor=pointer]:
+                            - checkbox "数学·量感"
+                            - text: 数学·量感
+                          - generic [ref=f1e373] [cursor=pointer]:
+                            - checkbox "数学·推理能力"
+                            - text: 数学·推理能力
+                          - generic [ref=f1e374] [cursor=pointer]:
+                            - checkbox "数学·数据观念"
+                            - text: 数学·数据观念
+                          - generic [ref=f1e375] [cursor=pointer]:
+                            - checkbox "数学·模型观念"
+                            - text: 数学·模型观念
+                          - generic [ref=f1e376] [cursor=pointer]:
+                            - checkbox "数学·应用意识"
+                            - text: 数学·应用意识
+                          - generic [ref=f1e377] [cursor=pointer]:
+                            - checkbox "数学·创新意识"
+                            - text: 数学·创新意识
+                          - generic [ref=f1e378] [cursor=pointer]:
+                            - checkbox "语文·文化自信"
+                            - text: 语文·文化自信
+                          - generic [ref=f1e379] [cursor=pointer]:
+                            - checkbox "语文·语言运用"
+                            - text: 语文·语言运用
+                          - generic [ref=f1e380] [cursor=pointer]:
+                            - checkbox "语文·思维能力"
+                            - text: 语文·思维能力
+                          - generic [ref=f1e381] [cursor=pointer]:
+                            - checkbox "语文·审美创造"
+                            - text: 语文·审美创造
+                      - button "删除本目标" [ref=f1e382] [cursor=pointer]
+                    - listitem [ref=f1e383]:
+                      - paragraph [ref=f1e384]: 学习目标 2
+                      - generic [ref=f1e385]:
+                        - text: 可观察目标
+                        - textbox "可观察目标" [ref=f1e386]: 能整理并解释调查数据，以数据支持判断。
+                      - group "课程依据（核心素养，1–3 条）" [ref=f1e387]:
+                        - generic [ref=f1e389]:
+                          - generic [ref=f1e390] [cursor=pointer]:
+                            - checkbox "物理·物理观念"
+                            - text: 物理·物理观念
+                          - generic [ref=f1e391] [cursor=pointer]:
+                            - checkbox "物理·科学思维"
+                            - text: 物理·科学思维
+                          - generic [ref=f1e392] [cursor=pointer]:
+                            - checkbox "物理·科学探究"
+                            - text: 物理·科学探究
+                          - generic [ref=f1e393] [cursor=pointer]:
+                            - checkbox "物理·科学态度与责任"
+                            - text: 物理·科学态度与责任
+                          - generic [ref=f1e394] [cursor=pointer]:
+                            - checkbox "数学·抽象能力" [checked]
+                            - text: 数学·抽象能力
+                          - generic [ref=f1e395] [cursor=pointer]:
+                            - checkbox "数学·运算能力"
+                            - text: 数学·运算能力
+                          - generic [ref=f1e396] [cursor=pointer]:
+                            - checkbox "数学·几何直观"
+                            - text: 数学·几何直观
+                          - generic [ref=f1e397] [cursor=pointer]:
+                            - checkbox "数学·空间观念"
+                            - text: 数学·空间观念
+                          - generic [ref=f1e398] [cursor=pointer]:
+                            - checkbox "数学·量感"
+                            - text: 数学·量感
+                          - generic [ref=f1e399] [cursor=pointer]:
+                            - checkbox "数学·推理能力"
+                            - text: 数学·推理能力
+                          - generic [ref=f1e400] [cursor=pointer]:
+                            - checkbox "数学·数据观念"
+                            - text: 数学·数据观念
+                          - generic [ref=f1e401] [cursor=pointer]:
+                            - checkbox "数学·模型观念"
+                            - text: 数学·模型观念
+                          - generic [ref=f1e402] [cursor=pointer]:
+                            - checkbox "数学·应用意识"
+                            - text: 数学·应用意识
+                          - generic [ref=f1e403] [cursor=pointer]:
+                            - checkbox "数学·创新意识"
+                            - text: 数学·创新意识
+                          - generic [ref=f1e404] [cursor=pointer]:
+                            - checkbox "语文·文化自信"
+                            - text: 语文·文化自信
+                          - generic [ref=f1e405] [cursor=pointer]:
+                            - checkbox "语文·语言运用"
+                            - text: 语文·语言运用
+                          - generic [ref=f1e406] [cursor=pointer]:
+                            - checkbox "语文·思维能力"
+                            - text: 语文·思维能力
+                          - generic [ref=f1e407] [cursor=pointer]:
+                            - checkbox "语文·审美创造"
+                            - text: 语文·审美创造
+                      - button "删除本目标" [ref=f1e408] [cursor=pointer]
+                    - listitem [ref=f1e409]:
+                      - paragraph [ref=f1e410]: 学习目标 3
+                      - generic [ref=f1e411]:
+                        - text: 可观察目标
+                        - textbox "可观察目标" [ref=f1e412]: 能面向校园管理者清楚表达有依据的节水建议。
+                      - group "课程依据（核心素养，1–3 条）" [ref=f1e413]:
+                        - generic [ref=f1e415]:
+                          - generic [ref=f1e416] [cursor=pointer]:
+                            - checkbox "物理·物理观念"
+                            - text: 物理·物理观念
+                          - generic [ref=f1e417] [cursor=pointer]:
+                            - checkbox "物理·科学思维"
+                            - text: 物理·科学思维
+                          - generic [ref=f1e418] [cursor=pointer]:
+                            - checkbox "物理·科学探究"
+                            - text: 物理·科学探究
+                          - generic [ref=f1e419] [cursor=pointer]:
+                            - checkbox "物理·科学态度与责任"
+                            - text: 物理·科学态度与责任
+                          - generic [ref=f1e420] [cursor=pointer]:
+                            - checkbox "数学·抽象能力"
+                            - text: 数学·抽象能力
+                          - generic [ref=f1e421] [cursor=pointer]:
+                            - checkbox "数学·运算能力"
+                            - text: 数学·运算能力
+                          - generic [ref=f1e422] [cursor=pointer]:
+                            - checkbox "数学·几何直观"
+                            - text: 数学·几何直观
+                          - generic [ref=f1e423] [cursor=pointer]:
+                            - checkbox "数学·空间观念"
+                            - text: 数学·空间观念
+                          - generic [ref=f1e424] [cursor=pointer]:
+                            - checkbox "数学·量感"
+                            - text: 数学·量感
+                          - generic [ref=f1e425] [cursor=pointer]:
+                            - checkbox "数学·推理能力"
+                            - text: 数学·推理能力
+                          - generic [ref=f1e426] [cursor=pointer]:
+                            - checkbox "数学·数据观念"
+                            - text: 数学·数据观念
+                          - generic [ref=f1e427] [cursor=pointer]:
+                            - checkbox "数学·模型观念"
+                            - text: 数学·模型观念
+                          - generic [ref=f1e428] [cursor=pointer]:
+                            - checkbox "数学·应用意识"
+                            - text: 数学·应用意识
+                          - generic [ref=f1e429] [cursor=pointer]:
+                            - checkbox "数学·创新意识"
+                            - text: 数学·创新意识
+                          - generic [ref=f1e430] [cursor=pointer]:
+                            - checkbox "语文·文化自信"
+                            - text: 语文·文化自信
+                          - generic [ref=f1e431] [cursor=pointer]:
+                            - checkbox "语文·语言运用" [checked]
+                            - text: 语文·语言运用
+                          - generic [ref=f1e432] [cursor=pointer]:
+                            - checkbox "语文·思维能力"
+                            - text: 语文·思维能力
+                          - generic [ref=f1e433] [cursor=pointer]:
+                            - checkbox "语文·审美创造"
+                            - text: 语文·审美创造
+                      - button "删除本目标" [ref=f1e434] [cursor=pointer]
+                  - button "添加学习目标" [ref=f1e435] [cursor=pointer]
+              - generic [ref=f1e436]:
+                - generic [aria-hidden] [ref=f1e437]: "03"
+                - generic [ref=f1e438]:
+                  - generic [ref=f1e439]: 阶段任务与学习证据
+                  - generic [ref=f1e440]: 每个阶段说明它服务哪些目标；证据只用当前真实支持的四种类型。
+                  - generic [ref=f1e441]:
+                    - text: 总体任务说明
+                    - textbox "总体任务说明" [ref=f1e442]: 完成用水观察和数据整理，形成一份有证据的节水建议。
+                  - list [ref=f1e443]:
+                    - listitem [ref=f1e444]:
+                      - paragraph [ref=f1e445]: 阶段 1
+                      - generic [ref=f1e446]:
+                        - generic [ref=f1e447]:
+                          - text: 阶段名称
+                          - textbox "阶段名称" [ref=f1e448]: 观察与问题界定
+                        - generic [ref=f1e449]:
+                          - text: 课时建议
+                          - spinbutton "课时建议" [ref=f1e450]: "1"
+                      - generic [ref=f1e451]:
+                        - text: 核心动作
+                        - textbox "核心动作" [ref=f1e452]: 记录校园用水现象并提出可调查的问题。
+                      - generic [ref=f1e453]:
+                        - text: 情境承接
+                        - textbox "情境承接" [ref=f1e454]: 从日常用水点位出发。
+                      - generic [ref=f1e455]:
+                        - text: 学习支架
+                        - textbox "学习支架" [ref=f1e456]: 提供观察记录表。
+                      - generic [ref=f1e457]:
+                        - text: 评价要点
+                        - textbox "评价要点" [ref=f1e458]: 问题具体且基于观察。
+                      - group "本阶段服务的学习目标" [ref=f1e459]:
+                        - generic [ref=f1e461]:
+                          - generic [ref=f1e462] [cursor=pointer]:
+                            - checkbox "目标 1" [checked]
+                            - text: 目标 1
+                          - generic [ref=f1e463] [cursor=pointer]:
+                            - checkbox "目标 2"
+                            - text: 目标 2
+                          - generic [ref=f1e464] [cursor=pointer]:
+                            - checkbox "目标 3"
+                            - text: 目标 3
+                      - group "需提交的学习证据" [ref=f1e465]:
+                        - generic [ref=f1e467]:
+                          - generic [ref=f1e468]:
+                            - text: 证据类型
+                            - combobox "证据类型" [ref=f1e469]:
+                              - option "文字记录" [selected]
+                              - option "PDF / DOC / DOCX 文档"
+                              - option "图片"
+                              - option "现场确认"
+                          - generic [ref=f1e470]:
+                            - text: 任务要求
+                            - textbox "任务要求" [ref=f1e471]: 观察记录与问题说明
+                        - button "添加证据要求" [ref=f1e472] [cursor=pointer]
+                    - listitem [ref=f1e473]:
+                      - paragraph [ref=f1e474]: 阶段 2
+                      - generic [ref=f1e475]:
+                        - generic [ref=f1e476]:
+                          - text: 阶段名称
+                          - textbox "阶段名称" [ref=f1e477]: 调查与分析
+                        - generic [ref=f1e478]:
+                          - text: 课时建议
+                          - spinbutton "课时建议" [ref=f1e479]: "2"
+                      - generic [ref=f1e480]:
+                        - text: 核心动作
+                        - textbox "核心动作" [ref=f1e481]: 收集、整理并解释用水数据。
+                      - generic [ref=f1e482]:
+                        - text: 情境承接
+                        - textbox "情境承接" [ref=f1e483]: 比较不同时间或点位的数据。
+                      - generic [ref=f1e484]:
+                        - text: 学习支架
+                        - textbox "学习支架" [ref=f1e485]: 提供数据整理模板。
+                      - generic [ref=f1e486]:
+                        - text: 评价要点
+                        - textbox "评价要点" [ref=f1e487]: 数据完整，解释有依据。
+                      - group "本阶段服务的学习目标" [ref=f1e488]:
+                        - generic [ref=f1e490]:
+                          - generic [ref=f1e491] [cursor=pointer]:
+                            - checkbox "目标 1" [checked]
+                            - text: 目标 1
+                          - generic [ref=f1e492] [cursor=pointer]:
+                            - checkbox "目标 2" [checked]
+                            - text: 目标 2
+                          - generic [ref=f1e493] [cursor=pointer]:
+                            - checkbox "目标 3"
+                            - text: 目标 3
+                      - group "需提交的学习证据" [ref=f1e494]:
+                        - generic [ref=f1e496]:
+                          - generic [ref=f1e497]:
+                            - text: 证据类型
+                            - combobox "证据类型" [ref=f1e498]:
+                              - option "文字记录"
+                              - option "PDF / DOC / DOCX 文档" [selected]
+                              - option "图片"
+                              - option "现场确认"
+                          - generic [ref=f1e499]:
+                            - text: 任务要求
+                            - textbox "任务要求" [ref=f1e500]: 数据表与分析说明
+                        - button "添加证据要求" [ref=f1e501] [cursor=pointer]
+                    - listitem [ref=f1e502]:
+                      - paragraph [ref=f1e503]: 阶段 3
+                      - generic [ref=f1e504]:
+                        - generic [ref=f1e505]:
+                          - text: 阶段名称
+                          - textbox "阶段名称" [ref=f1e506]: 建议与公开表达
+                        - generic [ref=f1e507]:
+                          - text: 课时建议
+                          - spinbutton "课时建议" [ref=f1e508]: "1"
+                      - generic [ref=f1e509]:
+                        - text: 核心动作
+                        - textbox "核心动作" [ref=f1e510]: 形成并说明一项可行的节水建议。
+                      - generic [ref=f1e511]:
+                        - text: 情境承接
+                        - textbox "情境承接" [ref=f1e512]: 面向校园管理者或班级。
+                      - generic [ref=f1e513]:
+                        - text: 学习支架
+                        - textbox "学习支架" [ref=f1e514]: 提供建议稿结构。
+                      - generic [ref=f1e515]:
+                        - text: 评价要点
+                        - textbox "评价要点" [ref=f1e516]: 建议可行，表达清晰。
+                      - group "本阶段服务的学习目标" [ref=f1e517]:
+                        - generic [ref=f1e519]:
+                          - generic [ref=f1e520] [cursor=pointer]:
+                            - checkbox "目标 1"
+                            - text: 目标 1
+                          - generic [ref=f1e521] [cursor=pointer]:
+                            - checkbox "目标 2" [checked]
+                            - text: 目标 2
+                          - generic [ref=f1e522] [cursor=pointer]:
+                            - checkbox "目标 3" [checked]
+                            - text: 目标 3
+                      - group "需提交的学习证据" [ref=f1e523]:
+                        - generic [ref=f1e525]:
+                          - generic [ref=f1e526]:
+                            - text: 证据类型
+                            - combobox "证据类型" [ref=f1e527]:
+                              - option "文字记录" [selected]
+                              - option "PDF / DOC / DOCX 文档"
+                              - option "图片"
+                              - option "现场确认"
+                          - generic [ref=f1e528]:
+                            - text: 任务要求
+                            - textbox "任务要求" [ref=f1e529]: 节水建议稿
+                        - button "添加证据要求" [ref=f1e530] [cursor=pointer]
+                  - button "添加阶段" [ref=f1e531] [cursor=pointer]
+              - generic [ref=f1e532]:
+                - generic [aria-hidden] [ref=f1e533]: "04"
+                - generic [ref=f1e534]:
+                  - generic [ref=f1e535]: 评价量规
+                  - generic [ref=f1e536]: 每个维度关联至少一个学习目标；学生端显示优秀／良好／达标／需改进。
+                  - list [ref=f1e537]:
+                    - listitem [ref=f1e538]:
+                      - generic [ref=f1e539]:
+                        - text: 评价维度
+                        - textbox "评价维度" [ref=f1e540]: 问题与机理
+                      - generic [ref=f1e541]:
+                        - text: 优秀
+                        - textbox "优秀" [ref=f1e542]: 问题具体，能用观察和机理充分解释。
+                      - generic [ref=f1e543]:
+                        - text: 良好
+                        - textbox "良好" [ref=f1e544]: 问题明确，解释基本合理。
+                      - generic [ref=f1e545]:
+                        - text: 达标
+                        - textbox "达标" [ref=f1e546]: 能说明问题。
+                      - generic [ref=f1e547]:
+                        - text: 需改进
+                        - textbox "需改进" [ref=f1e548]: 问题或解释需要补充。
+                      - group "本维度评价的学习目标" [ref=f1e549]:
+                        - generic [ref=f1e551]:
+                          - generic [ref=f1e552] [cursor=pointer]:
+                            - checkbox "目标 1" [checked]
+                            - text: 目标 1
+                          - generic [ref=f1e553] [cursor=pointer]:
+                            - checkbox "目标 2"
+                            - text: 目标 2
+                          - generic [ref=f1e554] [cursor=pointer]:
+                            - checkbox "目标 3"
+                            - text: 目标 3
+                    - listitem [ref=f1e555]:
+                      - generic [ref=f1e556]:
+                        - text: 评价维度
+                        - textbox "评价维度" [ref=f1e557]: 数据与证据
+                      - generic [ref=f1e558]:
+                        - text: 优秀
+                        - textbox "优秀" [ref=f1e559]: 数据完整，分析准确且能支持判断。
+                      - generic [ref=f1e560]:
+                        - text: 良好
+                        - textbox "良好" [ref=f1e561]: 数据较完整，分析基本支持判断。
+                      - generic [ref=f1e562]:
+                        - text: 达标
+                        - textbox "达标" [ref=f1e563]: 有基本数据和判断。
+                      - generic [ref=f1e564]:
+                        - text: 需改进
+                        - textbox "需改进" [ref=f1e565]: 数据或分析需要补充。
+                      - group "本维度评价的学习目标" [ref=f1e566]:
+                        - generic [ref=f1e568]:
+                          - generic [ref=f1e569] [cursor=pointer]:
+                            - checkbox "目标 1"
+                            - text: 目标 1
+                          - generic [ref=f1e570] [cursor=pointer]:
+                            - checkbox "目标 2" [checked]
+                            - text: 目标 2
+                          - generic [ref=f1e571] [cursor=pointer]:
+                            - checkbox "目标 3"
+                            - text: 目标 3
+                    - listitem [ref=f1e572]:
+                      - generic [ref=f1e573]:
+                        - text: 评价维度
+                        - textbox "评价维度" [ref=f1e574]: 跨学科连接
+                      - generic [ref=f1e575]:
+                        - text: 优秀
+                        - textbox "优秀" [ref=f1e576]: 能清晰连接物理解释、数据分析与表达。
+                      - generic [ref=f1e577]:
+                        - text: 良好
+                        - textbox "良好" [ref=f1e578]: 能连接主要学科方法。
+                      - generic [ref=f1e579]:
+                        - text: 达标
+                        - textbox "达标" [ref=f1e580]: 能识别部分连接。
+                      - generic [ref=f1e581]:
+                        - text: 需改进
+                        - textbox "需改进" [ref=f1e582]: 连接需要补充。
+                      - group "本维度评价的学习目标" [ref=f1e583]:
+                        - generic [ref=f1e585]:
+                          - generic [ref=f1e586] [cursor=pointer]:
+                            - checkbox "目标 1" [checked]
+                            - text: 目标 1
+                          - generic [ref=f1e587] [cursor=pointer]:
+                            - checkbox "目标 2" [checked]
+                            - text: 目标 2
+                          - generic [ref=f1e588] [cursor=pointer]:
+                            - checkbox "目标 3" [checked]
+                            - text: 目标 3
+                    - listitem [ref=f1e589]:
+                      - generic [ref=f1e590]:
+                        - text: 评价维度
+                        - textbox "评价维度" [ref=f1e591]: 建议表达
+                      - generic [ref=f1e592]:
+                        - text: 优秀
+                        - textbox "优秀" [ref=f1e593]: 建议具体可行，表达有说服力。
+                      - generic [ref=f1e594]:
+                        - text: 良好
+                        - textbox "良好" [ref=f1e595]: 建议较可行，表达清楚。
+                      - generic [ref=f1e596]:
+                        - text: 达标
+                        - textbox "达标" [ref=f1e597]: 能提出基本建议。
+                      - generic [ref=f1e598]:
+                        - text: 需改进
+                        - textbox "需改进" [ref=f1e599]: 建议或表达需要改进。
+                      - group "本维度评价的学习目标" [ref=f1e600]:
+                        - generic [ref=f1e602]:
+                          - generic [ref=f1e603] [cursor=pointer]:
+                            - checkbox "目标 1"
+                            - text: 目标 1
+                          - generic [ref=f1e604] [cursor=pointer]:
+                            - checkbox "目标 2"
+                            - text: 目标 2
+                          - generic [ref=f1e605] [cursor=pointer]:
+                            - checkbox "目标 3" [checked]
+                            - text: 目标 3
+                  - button "添加评价维度" [ref=f1e606] [cursor=pointer]
+              - generic [ref=f1e607]:
+                - button "保存为编辑中" [ref=f1e608] [cursor=pointer]
+                - button "保存并标记可预览" [ref=f1e609] [cursor=pointer]
+            - complementary [ref=f1e610]:
+              - paragraph [ref=f1e611]: v3 草稿状态
+              - heading "编辑中" [level=2] [ref=f1e612]
+              - paragraph [ref=f1e613]: 保存会生成新修订；已封存的历史和哈希不会被改写。
+              - link "返回跨学科任务" [ref=f1e614] [cursor=pointer]:
+                - /url: /teacher/activities

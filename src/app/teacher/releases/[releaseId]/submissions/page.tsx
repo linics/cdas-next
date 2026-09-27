@@ -17,6 +17,7 @@ import {
   teacherHomeCrumb,
 } from "../../../_components/teacher-shell";
 import { styles } from "../../../teacher-ui";
+import { StatusBadge } from "../../../../_components/ui";
 import { CloseActivityPanel } from "./close-activity-panel";
 import { ReleaseGroupManager } from "./release-group-manager";
 import {
@@ -163,154 +164,171 @@ export default async function TeacherReleaseSubmissionsPage({
         </header>
 
         <section className={styles.submissionPage}>
-          <header className={styles.sectionHeader}>
-            <div>
-              <p className={styles.eyebrow}>评阅</p>
-              <h2>学生提交</h2>
-            </div>
-            <span>
-              {workspace.submissions.length} 份
-              {workspace.reviewCoverage.currentRevisionCount > 0
-                ? ` · 已反馈 ${workspace.reviewCoverage.feedbackCount}/${workspace.reviewCoverage.currentRevisionCount}`
-                : ""}
-              {evaluationAsked
-                ? ` · 终稿已评价 ${workspace.reviewCoverage.evaluationCount}/${workspace.reviewCoverage.evaluableCount}`
-                : ""}
-              {awaitingResubmissionCount > 0
-                ? ` · 待重交 ${awaitingResubmissionCount}`
-                : ""}
-            </span>
-          </header>
-
-          {workspace.submissions.length > 0 ? (
-            <nav aria-label="评阅筛选" className="flex flex-col gap-2">
-              <div className="flex flex-wrap gap-2">
-                {reviewQueueStatuses
-                  // An empty status is noise; keep "全部" and whatever is selected.
-                  .filter(
-                    (status) =>
-                      (status.code !== "evaluation" || evaluationAsked) &&
-                      (status.code === "all" ||
-                        status.code === filter.status ||
-                        countFor({ ...filter, status: status.code }) > 0),
-                  )
-                  .map((status) => {
-                    const next = { ...filter, status: status.code };
-                    return (
-                      <Link
-                        aria-current={filter.status === status.code ? "true" : undefined}
-                        className={chip(filter.status === status.code)}
-                        href={rosterHref(next)}
-                        key={status.code}
-                      >
-                        {status.label}
-                        <span className="tabular-nums">{countFor(next)}</span>
-                      </Link>
-                    );
-                  })}
+          <section className={styles.reviewSection} aria-labelledby="review-title">
+            <header className={styles.sectionHeader}>
+              <div>
+                <p className={styles.eyebrow}>评阅</p>
+                <h2 id="review-title">学生提交</h2>
               </div>
-              {phaseOptions.length > 1 ? (
-                <div className="flex flex-wrap gap-2">
-                  <Link
-                    className={chip(filter.phase === null)}
-                    href={rosterHref({ ...filter, phase: null })}
-                  >
-                    全部阶段
-                  </Link>
-                  {phaseOptions.map(([phaseIndex, phaseName]) => (
-                    <Link
-                      className={chip(filter.phase === phaseIndex)}
-                      href={rosterHref({ ...filter, phase: phaseIndex })}
-                      key={phaseIndex}
-                    >
-                      {phaseIndex > 0 ? `第 ${phaseIndex} 阶段 · ${phaseName}` : phaseName}
-                    </Link>
-                  ))}
+              <span>{workspace.submissions.length} 份当前版本</span>
+            </header>
+
+            {workspace.submissions.length > 0 ? (
+              <nav aria-label="评阅筛选" className="flex flex-col gap-3">
+                <div className={styles.statTiles}>
+                  {reviewQueueStatuses
+                    .filter(
+                      (status) =>
+                        status.code !== "evaluation" || evaluationAsked,
+                    )
+                    .map((status) => {
+                      const next = { ...filter, status: status.code };
+                      const count = countFor(next);
+                      return (
+                        <Link
+                          aria-current={
+                            filter.status === status.code ? "true" : undefined
+                          }
+                          className={styles.statTile}
+                          data-tone={
+                            status.code === "all"
+                              ? "all"
+                              : count === 0
+                                ? "clear"
+                                : status.code === "resubmit"
+                                  ? "resubmit"
+                                  : "pending"
+                          }
+                          href={rosterHref(next)}
+                          key={status.code}
+                        >
+                          <span>{status.label}</span>
+                          <strong className="tabular-nums">{count}</strong>
+                        </Link>
+                      );
+                    })}
                 </div>
-              ) : null}
-            </nav>
-          ) : null}
+                {phaseOptions.length > 1 ? (
+                  <div className="flex flex-wrap gap-2">
+                    <Link
+                      className={chip(filter.phase === null)}
+                      href={rosterHref({ ...filter, phase: null })}
+                    >
+                      全部阶段
+                    </Link>
+                    {phaseOptions.map(([phaseIndex, phaseName]) => (
+                      <Link
+                        className={chip(filter.phase === phaseIndex)}
+                        href={rosterHref({ ...filter, phase: phaseIndex })}
+                        key={phaseIndex}
+                      >
+                        {phaseIndex > 0 ? `第 ${phaseIndex} 阶段 · ${phaseName}` : phaseName}
+                      </Link>
+                    ))}
+                  </div>
+                ) : null}
+              </nav>
+            ) : null}
 
-          {filter.dimension !== null ? (
-            <p className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/40 px-3 py-2 text-sm">
-              只看「{dimensionName ?? `评价维度 ${filter.dimension}`}」当前评价为待改进或证据不足的提交
-              <Link
-                className="font-medium underline-offset-4 hover:underline"
-                href={rosterHref({ ...filter, dimension: null })}
-              >
-                清除
-              </Link>
-            </p>
-          ) : null}
-
-          {workspace.submissions.length === 0 ? (
-            <p className={styles.emptyState}>
-              尚无正式提交。学生未提交的草稿不会显示在这里。
-            </p>
-          ) : visibleSubmissions.length === 0 ? (
-            <p className={styles.emptyState}>
-              当前筛选下没有提交。
-            </p>
-          ) : (
-            <div className={styles.submissionList}>
-              {visibleSubmissions.map((submission) => (
-                <article
-                  className={styles.submissionRow}
-                  key={submission.submissionId}
+            {filter.dimension !== null ? (
+              <p className="flex flex-wrap items-center gap-2 rounded-lg border bg-muted/40 px-3 py-2 text-sm">
+                只看「{dimensionName ?? `评价维度 ${filter.dimension}`}」当前评价为待改进或证据不足的提交
+                <Link
+                  className="font-medium underline-offset-4 hover:underline"
+                  href={rosterHref({ ...filter, dimension: null })}
                 >
-                  <div>
-                    <h2>
-                      {submission.group?.name ?? submission.student.displayName}
-                    </h2>
-                    <p>
-                      {submission.phaseName
-                        ? `第 ${submission.phaseIndex} 阶段 · ${submission.phaseName}`
-                        : "整项提交"}
-                      {submission.group
-                        ? ` · 小组共享 · ${submission.group.members
-                            .map((member) => member.student.displayName)
-                            .join("、")}`
-                        : ` · 学生编号 ${shortResourceId(submission.student.id)}`}
-                    </p>
-                  </div>
-                  <div className={styles.submissionMeta}>
-                    <strong>正式修订 {submission.currentRevision.revisionNumber}</strong>
-                    <small>
-                      <LocalizedDateTime
-                        dateTime={submission.currentRevision.submittedAt}
-                      />
-                      {submission.currentRevision.isLate ? " · 迟交" : ""}
-                      {submission.currentRevision.feedback
-                        ? ` · 已反馈 v${submission.currentRevision.feedback.currentVersion}`
-                        : " · 待反馈"}
-                      {submission.currentRevision.evaluation
-                        ? ` · 已评价 v${submission.currentRevision.evaluation.currentVersion}`
-                        : submission.evaluationOpen
-                          ? " · 待评价"
-                          : ""}
-                      {submission.currentRevision.followUp ===
-                      "AWAITING_RESUBMISSION"
-                        ? " · 待重交"
-                        : submission.currentRevision.followUp ===
-                            "RESUBMISSION_IN_PROGRESS"
-                          ? " · 重交中"
-                          : ""}
-                    </small>
-                  </div>
-                  <Link
-                    className={styles.rowLink}
-                    href={`/teacher/submissions/${submission.submissionId}${reviewQueueQuery(filter)}`}
-                  >
-                    {submission.currentRevision.feedback === null ||
-                    (submission.evaluationOpen &&
-                      submission.currentRevision.evaluation === null)
-                      ? "去评阅 →"
-                      : "查看 →"}
-                  </Link>
-                </article>
-              ))}
-            </div>
-          )}
+                  清除
+                </Link>
+              </p>
+            ) : null}
+
+            {workspace.submissions.length === 0 ? (
+              <p className={styles.emptyState}>
+                还没有学生提交。学生没提交的草稿不会出现在这里。
+              </p>
+            ) : visibleSubmissions.length === 0 ? (
+              <p className={styles.emptyState}>这一栏已经处理完了。</p>
+            ) : (
+              <ul className={styles.reviewList}>
+                {visibleSubmissions.map((submission) => {
+                  const name =
+                    submission.group?.name ?? submission.student.displayName;
+                  const needsFeedback =
+                    submission.currentRevision.feedback === null;
+                  const needsEvaluation =
+                    submission.evaluationOpen &&
+                    submission.currentRevision.evaluation === null;
+                  const awaiting =
+                    submission.currentRevision.followUp ===
+                    "AWAITING_RESUBMISSION";
+                  const resubmitting =
+                    submission.currentRevision.followUp ===
+                    "RESUBMISSION_IN_PROGRESS";
+                  const actionable = needsFeedback || needsEvaluation;
+                  return (
+                    <li className={styles.reviewRow} key={submission.submissionId}>
+                      <span
+                        aria-hidden="true"
+                        className={styles.avatar}
+                        data-active={actionable ? "true" : "false"}
+                      >
+                        {Array.from(name)[0]}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className={styles.reviewName}>{name}</p>
+                        <p className={styles.reviewMeta}>
+                          {submission.phaseName
+                            ? `第 ${submission.phaseIndex} 阶段 · ${submission.phaseName}`
+                            : "整项提交"}
+                          {` · 第 ${submission.currentRevision.revisionNumber} 版 · `}
+                          <LocalizedDateTime
+                            dateTime={submission.currentRevision.submittedAt}
+                          />
+                          {submission.group
+                            ? ` · 小组：${submission.group.members
+                                .map((member) => member.student.displayName)
+                                .join("、")}`
+                            : ` · 学生编号 ${shortResourceId(submission.student.id)}`}
+                        </p>
+                      </div>
+                      <div className={styles.reviewBadges}>
+                        {submission.currentRevision.isLate ? (
+                          <StatusBadge tone="resubmit">迟交</StatusBadge>
+                        ) : null}
+                        {needsFeedback ? (
+                          <StatusBadge tone="pending">待反馈</StatusBadge>
+                        ) : null}
+                        {needsEvaluation ? (
+                          <StatusBadge tone="pending">待评价</StatusBadge>
+                        ) : null}
+                        {awaiting ? (
+                          <StatusBadge tone="resubmit">待重交</StatusBadge>
+                        ) : resubmitting ? (
+                          <StatusBadge tone="resubmit">重交中</StatusBadge>
+                        ) : null}
+                        {!needsFeedback && submission.currentRevision.feedback ? (
+                          <StatusBadge tone={actionable || awaiting || resubmitting ? "neutral" : "done"}>
+                            {`已反馈 v${submission.currentRevision.feedback.currentVersion}`}
+                          </StatusBadge>
+                        ) : null}
+                        {submission.currentRevision.evaluation ? (
+                          <StatusBadge tone="neutral">
+                            {`已评价 v${submission.currentRevision.evaluation.currentVersion}`}
+                          </StatusBadge>
+                        ) : null}
+                      </div>
+                      <Link
+                        className={actionable ? styles.rowAction : styles.rowView}
+                        href={`/teacher/submissions/${submission.submissionId}${reviewQueueQuery(filter)}`}
+                      >
+                        {actionable ? "评阅" : "查看"}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
           {workspace.release.executionVersion === 1 ||
           stage !== null ||
           workspace.progress.some((entry) => entry.group !== null) ? (
@@ -341,75 +359,90 @@ export default async function TeacherReleaseSubmissionsPage({
                   </Link>
                 </p>
               ) : null}
-              <div className={styles.submissionList}>
-                {visibleProgress.map((progress) => (
-                  <article
-                    className={styles.submissionRow}
-                    key={progress.group?.id ?? progress.student.id}
-                  >
-                    <div>
-                      <h2>
-                        {progress.group?.name ?? progress.student.displayName}
-                      </h2>
-                      <p>
-                        {progress.group
-                          ? `小组 · ${progress.group.members
-                              .map(
-                                (member) =>
-                                  `${member.student.displayName}${
-                                    member.roleLabel
-                                      ? `（${member.roleLabel}）`
-                                      : ""
-                                  }`,
-                              )
-                              .join("、")}`
-                          : `个人提交 · 学生编号 ${shortResourceId(progress.student.id)}`}
-                      </p>
-                    </div>
-                    <div className={styles.submissionMeta}>
-                      <strong>
-                        {progress.complete
-                          ? workspace.release.executionVersion === 1
-                            ? "全部完成"
-                            : "已正式提交"
-                          : progress.started
-                            ? workspace.release.executionVersion === 0
-                              ? "已开始"
-                              : progress.currentPhaseIndex === 0
-                              ? "正在整理整项终稿"
-                              : `当前第 ${progress.currentPhaseIndex} 阶段`
-                            : "尚未开始"}
-                        {progress.awaitingFormalRevision
-                          ? " · 尚未正式提交"
-                          : ""}
-                      </strong>
-                      <small>
-                        {workspace.release.executionVersion === 1
-                          ? `已完成 ${progress.completedPhaseCount}/${progress.totalPhaseCount} 阶段`
-                          : progress.group
-                            ? `${progress.group.members.length} 名成员共享一份提交`
-                            : "个人提交"}
-                      </small>
-                    </div>
-                    {workspace.release.executionVersion === 1 &&
-                    progress.totalPhaseCount > 0 ? (
-                      <div aria-hidden="true" className={styles.rowProgress}>
-                        <span
-                          style={{
-                            width: `${Math.min(
+              <div className={styles.reviewList}>
+                {visibleProgress.map((progress) => {
+                  const name =
+                    progress.group?.name ?? progress.student.displayName;
+                  const stageLabel = progress.complete
+                    ? workspace.release.executionVersion === 1
+                      ? "全部完成"
+                      : "已提交"
+                    : progress.started
+                      ? workspace.release.executionVersion === 0
+                        ? "已开始"
+                        : progress.currentPhaseIndex === 0
+                          ? "在写整项终稿"
+                          : `在做第 ${progress.currentPhaseIndex} 阶段`
+                      : "尚未开始";
+                  const percent =
+                    progress.totalPhaseCount > 0
+                      ? Math.min(
+                          100,
+                          Math.round(
+                            (progress.completedPhaseCount /
+                              progress.totalPhaseCount) *
                               100,
-                              Math.round(
-                                (progress.completedPhaseCount /
-                                  progress.totalPhaseCount) *
-                                  100,
-                              ),
-                            )}%`,
-                          }}
-                        />
+                          ),
+                        )
+                      : progress.complete
+                        ? 100
+                        : 0;
+                  return (
+                    <article
+                      className={styles.reviewRow}
+                      key={progress.group?.id ?? progress.student.id}
+                    >
+                      <span aria-hidden="true" className={styles.avatar}>
+                        {Array.from(name)[0]}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <h3 className={styles.reviewName}>{name}</h3>
+                        <p className={styles.reviewMeta}>
+                          {progress.group
+                            ? `小组 · ${progress.group.members
+                                .map(
+                                  (member) =>
+                                    `${member.student.displayName}${
+                                      member.roleLabel
+                                        ? `（${member.roleLabel}）`
+                                        : ""
+                                    }`,
+                                )
+                                .join("、")}`
+                            : `个人提交 · 学生编号 ${shortResourceId(progress.student.id)}`}
+                        </p>
                       </div>
-                    ) : null}
-                  </article>
-                ))}
+                      <div className="flex w-40 shrink-0 flex-col gap-1">
+                        <div className={styles.progressBar} aria-hidden="true">
+                          <span style={{ width: `${percent}%` }} />
+                        </div>
+                        <span className="text-xs tabular-nums text-muted-foreground">
+                          {workspace.release.executionVersion === 1
+                            ? `已完成 ${progress.completedPhaseCount}/${progress.totalPhaseCount} 阶段`
+                            : progress.group
+                              ? `${progress.group.members.length} 人共享一份提交`
+                              : "个人提交"}
+                        </span>
+                      </div>
+                      <div className={styles.reviewBadges}>
+                        <StatusBadge
+                          tone={
+                            progress.complete
+                              ? "done"
+                              : progress.started
+                                ? "neutral"
+                                : "closed"
+                          }
+                        >
+                          {stageLabel}
+                        </StatusBadge>
+                        {progress.awaitingFormalRevision ? (
+                          <StatusBadge tone="pending">还没提交</StatusBadge>
+                        ) : null}
+                      </div>
+                    </article>
+                  );
+                })}
               </div>
             </section>
           ) : null}

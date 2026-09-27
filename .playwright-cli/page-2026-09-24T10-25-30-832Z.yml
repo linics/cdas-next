@@ -1,0 +1,42 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - link "返回 CDAS Next 首页" [ref=e4] [cursor=pointer]:
+      - /url: /
+      - strong [ref=e5]: CDAS
+      - generic [ref=e6]: 跨学科学习活动
+    - generic [ref=e7]:
+      - paragraph [ref=e8]: 教师工作台
+      - heading "设计一次活动，走完一整条反馈闭环" [level=1] [ref=e9]
+      - paragraph [ref=e10]: 从任务书草稿到确认发布，从学生的阶段证据到反馈与量规评价，每一步留存版本记录。
+    - list [ref=e11]:
+      - listitem [ref=e12]:
+        - generic [ref=e13]: "01"
+        - text: 设计任务书
+      - listitem [ref=e14]:
+        - generic [ref=e15]: "02"
+        - text: 确认发布
+      - listitem [ref=e16]:
+        - generic [ref=e17]: "03"
+        - text: 学生提交证据
+      - listitem [ref=e18]:
+        - generic [ref=e19]: "04"
+        - text: 反馈与评价
+  - main [ref=e20]:
+    - generic [ref=e21]:
+      - paragraph [ref=e22]: 需要登录
+      - heading "先确认教师身份" [level=2] [ref=e23]
+    - generic [ref=e24]:
+      - generic [ref=e25]:
+        - generic [ref=e26]: 学校代码
+        - textbox "学校代码" [ref=e27]
+      - generic [ref=e28]:
+        - generic [ref=e29]: 工号
+        - textbox "工号" [ref=e30]
+      - generic [ref=e31]:
+        - generic [ref=e32]: 密码
+        - textbox "密码" [ref=e33]
+      - button "进入工作台" [ref=e34] [cursor=pointer]:
+        - text: 进入工作台
+        - generic [aria-hidden] [ref=e35]: →
+      - link "使用邀请码开通教师账号" [ref=e36] [cursor=pointer]:
+        - /url: /teacher/register
