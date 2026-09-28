@@ -223,7 +223,10 @@ export function WorkspaceShell({
         </header>
         {crumbs.length > 1 ? (
           <div className="shrink-0 px-4 pt-3 md:px-6">
-            <WorkspaceBreadcrumb items={crumbs} />
+            {/* 与多数页面的内容列对齐；贴着窗口左缘是侧栏时代的位置。 */}
+            <div className="mx-auto w-full max-w-6xl">
+              <WorkspaceBreadcrumb items={crumbs} />
+            </div>
           </div>
         ) : null}
         <main
