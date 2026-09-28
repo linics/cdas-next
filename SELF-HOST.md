@@ -2,6 +2,8 @@
 
 Status: operator runbook for a single Ubuntu host running CDAS Next, PostgreSQL 17 and nginx.
 
+**On hold (2026-09-28):** the server is not usable for now; local development is the only working line. Self-hosting stays a later option. Before resuming, note that `main` marks the session cookie `Secure` in production, which browsers drop on a plain-HTTP origin; the unmerged branch `cursor/self-host-china-vps-9f08` (commit `eea62c6`) holds a fix that decides this from `CDAS_PUBLIC_ORIGIN`.
+
 The current default target is `122.51.77.121` (2C/2G). It is suitable only for a small demo or internal trial. Keep `AI_PROVIDER_DISABLED=1` on 2 GB RAM and never build on the VPS; build on a workstation or CI, then upload the standalone release.
 
 ## Storage
