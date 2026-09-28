@@ -30,9 +30,9 @@
 
 ## 标志
 
-- 三个互相重叠的圆环 + 正中四角星（D-082）：几门学科在一个活动里交汇，中心是共同成果；底块是主色渐变加玻璃高光描边。组件在 `src/app/_components/brand-mark.tsx`，页面只用 `<BrandMark />`，不再手写「CD」字块。
-- 不写死颜色：底块渐变由 `--primary` 混白 / 混黑算出，图形取 `--primary-foreground`，换配色时自动跟随；`tone="mono"` 为无底块单色版，随当前文字色。
-- 浏览器标签页图标 `src/app/icon.svg` 读不到 CSS 变量，写的是当前两色的 sRGB 值；换配色时同步改。
+- 当前标志是四片叠合的书页：深海青与橄榄色构成底页，雾蓝与淡紫色构成上层折页，表示不同学科汇入同一项学习活动。图形透明，无外框或底块。
+- 品牌图形保存在 `public/brand/cdas-logo.svg`，页面统一使用 `src/app/_components/brand-mark.tsx` 的 `<BrandMark />`。标志色是资产本身的固定配色，不承担页面状态含义；页面与组件的其余颜色仍使用语义 token。
+- `src/app/icon.svg` 与品牌图形保持一致，用于浏览器标签页。
 
 ## 材质
 
