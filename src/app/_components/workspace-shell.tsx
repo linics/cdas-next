@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Fragment, type ReactNode } from "react";
-import { LogOutIcon } from "lucide-react";
+import { ChevronDownIcon, LogOutIcon, RepeatIcon } from "lucide-react";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -19,18 +19,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarHeader,
-  SidebarInset,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarProvider,
-  SidebarRail,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import {
@@ -40,6 +28,8 @@ import {
   logoutAction,
 } from "../auth/local-login-actions";
 import { isDevelopmentQuickLoginEnabled } from "../../server/auth/development-quick-login";
+import { BrandMark } from "./brand-mark";
+import { DismissibleDetails } from "./dismissible-details";
 import { WorkspaceNavigation } from "./workspace-navigation";
 
 export type WorkspaceNavigationItem = { href: string; label: string };
@@ -58,14 +48,6 @@ function workspaceHrefFor(audience: Audience) {
     : audience === "学生"
       ? "/student"
       : "/admin";
-}
-
-function BrandMark() {
-  return (
-    <span className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-xs font-semibold text-primary-foreground">
-      CD
-    </span>
-  );
 }
 
 function WorkspaceBreadcrumb({ items }: { items: readonly WorkspaceCrumb[] }) {
@@ -123,117 +105,145 @@ export function WorkspaceShell({
       ? breadcrumb
       : [{ label: `${audience}工作台` }];
 
+  const accountLabel = actorName
+    ? `当前账号：${actorName} · ${actorAudience}`
+    : null;
+
+  // D-081：一条顶栏代替整列侧栏。每个角色只有一到四个去处，内容区拿满宽度。
   return (
     <TooltipProvider>
-      <SidebarProvider data-fill-viewport={fillViewport || undefined}>
+      <div
+        className={cn(
+          "flex flex-col",
+          fillViewport ? "h-svh min-h-0" : "min-h-svh",
+        )}
+        data-fill-viewport={fillViewport || undefined}
+      >
         <a
           className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-background focus:px-3 focus:py-2 focus:shadow"
           href="#main-content"
         >
           跳到主要内容
         </a>
-        {showNavigation ? (
-          <Sidebar collapsible="icon" variant="inset">
-            <SidebarHeader>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    className="hover:bg-foreground/5 active:bg-foreground/10"
-                    size="lg"
-                  >
-                    <Link
-                      aria-label={`CDAS Next ${audience}工作台`}
-                      href={workspaceHref}
-                    >
-                      <BrandMark />
-                      <span className="grid flex-1 text-left leading-tight">
-                        <span className="truncate font-semibold">
-                          CDAS Next
-                        </span>
-                        <span className="truncate text-xs text-muted-foreground">
-                          跨学科学习活动
-                        </span>
-                      </span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarHeader>
-            <SidebarContent>
-              <WorkspaceNavigation audience={audience} items={navigation} />
-            </SidebarContent>
-              <SidebarRail />
-          </Sidebar>
-        ) : null}
-        <SidebarInset className={cn(fillViewport && "min-h-0 overflow-hidden")}>
-          <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
+        <header
+          className={cn(
+            "z-40 shrink-0 px-3 pt-3 md:px-4",
+            !fillViewport && "sticky top-0",
+          )}
+        >
+          <div className="glass flex h-14 items-center gap-2 rounded-2xl px-2.5 sm:gap-4 sm:px-3">
+            <Link
+              aria-label={`CDAS Next ${audience}工作台`}
+              className="flex shrink-0 items-center gap-2 rounded-lg p-1 pr-2 transition-colors hover:bg-foreground/5"
+              href={workspaceHref}
+            >
+              <BrandMark />
+              <span className="hidden text-sm font-semibold lg:inline">
+                CDAS Next
+              </span>
+            </Link>
             {showNavigation ? (
               <>
-                <SidebarTrigger aria-label="展开或收起导航" className="-ml-1" />
                 <Separator
-                  className="mr-2 data-[orientation=vertical]:h-4"
+                  className="hidden data-[orientation=vertical]:h-5 sm:block"
                   orientation="vertical"
                 />
+                <WorkspaceNavigation audience={audience} items={navigation} />
               </>
-            ) : (
-              <Link
-                aria-label={`CDAS Next ${audience}工作台`}
-                className="mr-2"
-                href={workspaceHref}
-              >
-                <BrandMark />
-              </Link>
-            )}
-            <WorkspaceBreadcrumb items={crumbs} />
-            <div className="ml-auto flex items-center gap-2">
-              <span className="hidden text-sm text-muted-foreground sm:inline">
-                {actorName
-                  ? `当前账号：${actorName} · ${actorAudience}`
-                  : `${audience}工作台`}
-              </span>
+            ) : null}
+            <div className="ml-auto flex shrink-0 items-center gap-1.5">
               {toolbarAction}
-              {actorName && showDevelopmentSwitcher ? (
-                <>
-                  {(
-                    [
-                      ["教师", developmentQuickTeacherEntryAction],
-                      ["学生", developmentQuickStudentEntryAction],
-                      ["管理员", developmentQuickAdminEntryAction],
-                    ] as const
-                  )
-                    .filter(([role]) => role !== actorAudience)
-                    .map(([role, action]) => (
-                      <form action={action} key={role}>
-                        <Button size="sm" type="submit" variant="ghost">
-                          切换默认{role}
-                        </Button>
-                      </form>
-                    ))}
-                </>
-              ) : null}
-              {actorName ? (
-                <form action={logoutAction}>
-                  <Button size="sm" type="submit" variant="ghost">
-                    <LogOutIcon />
-                    退出登录
-                  </Button>
-                </form>
+              {actorName && accountLabel ? (
+                <DismissibleDetails className="group relative">
+                  <summary
+                    aria-label={accountLabel}
+                    className="flex cursor-pointer list-none items-center gap-2 rounded-full py-1 pr-2.5 pl-1 text-sm transition-colors hover:bg-foreground/5 [&::-webkit-details-marker]:hidden"
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="flex size-8 items-center justify-center rounded-full bg-primary/12 text-sm font-semibold text-primary"
+                    >
+                      {Array.from(actorName)[0]}
+                    </span>
+                    <span className="hidden max-w-32 truncate md:inline">
+                      {actorName}
+                    </span>
+                    <ChevronDownIcon
+                      aria-hidden="true"
+                      className="size-4 text-muted-foreground transition-transform group-open:rotate-180"
+                    />
+                  </summary>
+                  <div className="absolute top-full right-0 z-50 mt-2 flex w-64 flex-col gap-1 rounded-xl border bg-background p-2 text-foreground shadow-lg">
+                    <p className="px-2 py-1.5 text-xs text-muted-foreground">
+                      {accountLabel}
+                    </p>
+                    {showDevelopmentSwitcher ? (
+                      <>
+                        <Separator />
+                        {(
+                          [
+                            ["教师", developmentQuickTeacherEntryAction],
+                            ["学生", developmentQuickStudentEntryAction],
+                            ["管理员", developmentQuickAdminEntryAction],
+                          ] as const
+                        )
+                          .filter(([role]) => role !== actorAudience)
+                          .map(([role, action]) => (
+                            <form action={action} key={role}>
+                              <Button
+                                className="w-full justify-start"
+                                size="sm"
+                                type="submit"
+                                variant="ghost"
+                              >
+                                <RepeatIcon />
+                                切换默认{role}
+                              </Button>
+                            </form>
+                          ))}
+                      </>
+                    ) : null}
+                    <Separator />
+                    <form action={logoutAction}>
+                      <Button
+                        className="w-full justify-start"
+                        size="sm"
+                        type="submit"
+                        variant="ghost"
+                      >
+                        <LogOutIcon />
+                        退出登录
+                      </Button>
+                    </form>
+                  </div>
+                </DismissibleDetails>
               ) : null}
             </div>
-          </header>
-          <main
-            className={cn(
-              "flex flex-1 flex-col outline-none",
-              fillViewport ? "min-h-0" : "p-4 md:p-6",
-            )}
-            id="main-content"
-            tabIndex={-1}
-          >
-            {children}
-          </main>
-        </SidebarInset>
-      </SidebarProvider>
+          </div>
+        </header>
+        {crumbs.length > 1 ? (
+          <div className="shrink-0 px-4 pt-3 md:px-6">
+            <WorkspaceBreadcrumb items={crumbs} />
+          </div>
+        ) : null}
+        <main
+          className={cn(
+            "flex flex-1 flex-col outline-none",
+            fillViewport ? "min-h-0 p-3 md:px-4" : "p-4 md:p-6",
+          )}
+          id="main-content"
+          tabIndex={-1}
+        >
+          {/* 锁高的双栏页（评阅）放在一整块玻璃面上，两栏各自滚动。 */}
+          {fillViewport ? (
+            <div className="glass flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl">
+              {children}
+            </div>
+          ) : (
+            children
+          )}
+        </main>
+      </div>
     </TooltipProvider>
   );
 }
