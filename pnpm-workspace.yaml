@@ -15,3 +15,6 @@ overrides:
   # 在同一大版本内抬到已修复版本以通过 audit:prod。
   fast-uri@3: ^3.1.6
   mysql2@3: ^3.24.4
+  # GHSA-3wwx-pv8p-q78v：@vercel/blob 与 @ai-sdk/* 间接依赖的 undici，同大版本内抬到修复版。
+  undici@6: ^6.28.1
+  undici@7: ^7.29.1

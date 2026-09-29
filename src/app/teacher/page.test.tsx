@@ -183,6 +183,13 @@ describe("teacher dashboard role guidance", () => {
     expect(markup).toContain("七年一班");
     expect(markup).toContain("校园用水现场调查");
     expect(markup).toContain("4 名成员");
+    expect(markup).toContain(
+      'href="/teacher/releases/60000000-0000-4000-8000-000000000006/submissions?queue=feedback"',
+    );
+    expect(markup).toContain("开始评阅");
+    expect(markup).toContain(
+      'href="/teacher/insights?release=60000000-0000-4000-8000-000000000006"',
+    );
     expect(markup).not.toContain("饮水区用水记录");
     expect(markup).not.toContain("我的草稿");
     expect(markup).not.toContain("七年一班 · 校园用水现场调查");

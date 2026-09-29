@@ -1,10 +1,16 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronRightIcon, PlusIcon, UsersIcon } from "lucide-react";
+import {
+  ChartLineIcon,
+  ChevronRightIcon,
+  InboxIcon,
+  ListChecksIcon,
+  PlusIcon,
+  UsersIcon,
+} from "lucide-react";
 import { ZodError } from "zod";
 import { Badge } from "@/components/ui/badge";
 import { BorderBeam } from "@/components/ui/border-beam";
-import { NumberTicker } from "@/components/ui/number-ticker";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,19 +18,10 @@ import {
   CardAction,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { LocalizedDateTime } from "../_components/localized-date-time";
 import { PageHeader } from "../_components/page-header";
 import { Reveal } from "../_components/reveal";
@@ -49,70 +46,137 @@ const releaseStatus = {
   ARCHIVED: { label: "已封存", tone: "closed" },
 } as const satisfies Record<string, { label: string; tone: StatusTone }>;
 
+const releaseStatusOrder = { ACTIVE: 0, CLOSED: 1, ARCHIVED: 2 } as const;
+
 type DashboardRelease = TeacherActivityDashboard["releases"][number];
 type Attention = NonNullable<DashboardRelease["attention"]>;
 
-function attentionBadges(attention: Attention) {
-  return (
-    [
-      ["待反馈", attention.pendingFeedbackCount, "pending"],
-      ["待评价", attention.pendingEvaluationCount, "pending"],
-      ["待重交", attention.awaitingResubmissionCount, "resubmit"],
-    ] as const
-  )
-    .filter(([, count]) => count > 0)
-    .map(([label, count, tone]) => (
-      <StatusBadge key={label} tone={tone}>
-        {`${label} ${count}`}
-      </StatusBadge>
-    ));
+// 待重交在等学生，不是教师此刻能做的事；只有待反馈、待评价算「等你评阅」。
+const attentionKinds = [
+  { queue: "feedback", label: "待反馈", tone: "pending", key: "pendingFeedbackCount" },
+  { queue: "evaluation", label: "待评价", tone: "pending", key: "pendingEvaluationCount" },
+  { queue: "resubmit", label: "待重交", tone: "resubmit", key: "awaitingResubmissionCount" },
+] as const satisfies readonly {
+  queue: string;
+  label: string;
+  tone: StatusTone;
+  key: keyof Attention;
+}[];
+
+function rosterHref(releaseId: string, queue?: string) {
+  return `/teacher/releases/${releaseId}/submissions${queue ? `?queue=${queue}` : ""}`;
 }
 
-function ReleaseProgressRow({ release }: { release: DashboardRelease }) {
+function AttentionRow({
+  release,
+  attention,
+}: {
+  release: DashboardRelease;
+  attention: Attention;
+}) {
+  const kinds = attentionKinds.filter((kind) => attention[kind.key] > 0);
+  const reviewKind = kinds.find((kind) => kind.queue !== "resubmit");
+  return (
+    <li className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-w-0 space-y-0.5">
+        <p className="truncate font-medium">{release.title}</p>
+        <p className="type-caption text-muted-foreground">
+          {release.classroomName}
+          {release.dueAt ? (
+            <>
+              {" · "}
+              <LocalizedDateTime dateTime={release.dueAt} /> 截止
+            </>
+          ) : null}
+        </p>
+      </div>
+      <div className="flex shrink-0 flex-wrap items-center gap-2">
+        {kinds.map((kind) => (
+          <Link
+            className="rounded-4xl transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+            href={rosterHref(release.id, kind.queue)}
+            key={kind.queue}
+          >
+            <StatusBadge tone={kind.tone}>
+              {`${kind.label} ${attention[kind.key]}`}
+            </StatusBadge>
+          </Link>
+        ))}
+        {/* 有要评阅的就是实心主按钮，直接进对应队列；只剩待重交时只是去看看。 */}
+        <Button asChild size="sm" variant={reviewKind ? "default" : "outline"}>
+          <Link href={rosterHref(release.id, reviewKind?.queue ?? "resubmit")}>
+            {reviewKind ? "开始评阅" : "查看"}
+            <ChevronRightIcon />
+          </Link>
+        </Button>
+      </div>
+    </li>
+  );
+}
+
+function ReleaseTile({ release }: { release: DashboardRelease }) {
   const status = releaseStatus[release.status];
   const progress = release.progress;
   const percent =
     progress && progress.cohortSize > 0
       ? Math.round((progress.submittedCount / progress.cohortSize) * 100)
       : 0;
-  const body = (
-    <>
-      <div className="flex items-center justify-between gap-3">
-        <span className="truncate text-sm font-medium">{release.title}</span>
+  const ended = release.status !== "ACTIVE";
+  return (
+    <div
+      className={cn(
+        "flex flex-col gap-3 rounded-xl bg-foreground/[0.03] p-4 ring-1 ring-foreground/5",
+        ended && "opacity-75",
+      )}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <p className="line-clamp-2 font-medium">{release.title}</p>
         <StatusBadge tone={status.tone}>{status.label}</StatusBadge>
       </div>
       {progress ? (
-        <Progress
-          aria-label={`${release.title} 提交进度`}
-          className="h-1.5"
-          value={percent}
-        />
+        <div className="flex flex-col gap-1.5">
+          <Progress
+            aria-label={`${release.title} 提交进度`}
+            className="h-1.5"
+            value={percent}
+          />
+          <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+            <span className="tabular-nums">
+              {`${progress.submittedCount}/${progress.cohortSize} 已正式提交`}
+            </span>
+            {release.dueAt ? (
+              <span className="tabular-nums">
+                <LocalizedDateTime dateTime={release.dueAt} /> 截止
+              </span>
+            ) : null}
+          </div>
+        </div>
+      ) : (
+        <p className="text-xs text-muted-foreground">管理权已转交，不能再查看提交。</p>
+      )}
+      {release.canViewSubmissions ? (
+        <div className="mt-auto flex flex-wrap gap-2">
+          <Button asChild size="sm" variant="outline">
+            <Link href={rosterHref(release.id)}>
+              <ListChecksIcon />
+              名册
+            </Link>
+          </Button>
+          <Button asChild size="sm" variant="ghost">
+            <Link href={`/teacher/insights?release=${release.id}`}>
+              <ChartLineIcon />
+              过程诊断
+            </Link>
+          </Button>
+        </div>
       ) : null}
-      <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <span className="tabular-nums">
-          {progress
-            ? `${progress.submittedCount}/${progress.cohortSize} 已正式提交`
-            : "无查看权限"}
-        </span>
-        {release.dueAt ? (
-          <span className="tabular-nums">
-            <LocalizedDateTime dateTime={release.dueAt} /> 截止
-          </span>
-        ) : null}
-      </div>
-    </>
+    </div>
   );
+}
 
-  if (!release.canViewSubmissions) {
-    return <div className="flex flex-col gap-2 rounded-lg p-3">{body}</div>;
-  }
-  return (
-    <Link
-      className="flex flex-col gap-2 rounded-lg p-3 transition-colors hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-      href={`/teacher/releases/${release.id}/submissions`}
-    >
-      {body}
-    </Link>
+function sortReleases(releases: readonly DashboardRelease[]) {
+  return [...releases].sort(
+    (a, b) => releaseStatusOrder[a.status] - releaseStatusOrder[b.status],
   );
 }
 
@@ -154,13 +218,10 @@ export default async function TeacherDashboardPage() {
           release.attention.awaitingResubmissionCount > 0),
     )
     .map((release) => ({ release, attention: release.attention! }));
-  const totals = actionable.reduce(
-    (sum, { attention }) => ({
-      feedback: sum.feedback + attention.pendingFeedbackCount,
-      evaluation: sum.evaluation + attention.pendingEvaluationCount,
-      resubmission: sum.resubmission + attention.awaitingResubmissionCount,
-    }),
-    { feedback: 0, evaluation: 0, resubmission: 0 },
+  const reviewCount = actionable.reduce(
+    (sum, { attention }) =>
+      sum + attention.pendingFeedbackCount + attention.pendingEvaluationCount,
+    0,
   );
   const managedNames = new Set(
     dashboard.classrooms.map((classroom) => classroom.name),
@@ -168,20 +229,13 @@ export default async function TeacherDashboardPage() {
   const orphanReleases = dashboard.releases.filter(
     (release) => !managedNames.has(release.classroomName),
   );
-  const statCards = (
-    [
-      ["待反馈", totals.feedback, "学生已提交，等你写反馈"],
-      ["待评价", totals.evaluation, "终稿还没做量规评价"],
-      ["待重交", totals.resubmission, "已要求修改，等学生重交"],
-    ] as const
-  ).filter(([, count]) => count > 0);
 
   return (
     <TeacherPage
       actorName={dashboard.actor.displayName}
       breadcrumb={[{ label: "教师工作台" }]}
     >
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-8">
         <PageHeader
           actions={
             <>
@@ -194,154 +248,103 @@ export default async function TeacherDashboardPage() {
               <Button asChild>
                 <Link href="/teacher/activities/new">
                   <PlusIcon />
-                  设计新活动
+                  新建学习活动
                 </Link>
               </Button>
             </>
           }
-          title="待处理的提交与班级"
+          title={
+            reviewCount > 0 ? (
+              <>
+                <span className="tabular-nums">{reviewCount}</span> 份提交等你评阅
+              </>
+            ) : (
+              "没有等你评阅的提交"
+            )
+          }
         />
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {statCards.map(([label, count, hint], index) => (
-            <Reveal delay={0.06 + index * 0.05} key={label}>
-              <Card
-                className={cn(
-                  "relative h-full",
-                  index === 0 &&
-                    "border-transparent bg-linear-135 from-primary to-[color-mix(in_oklch,var(--primary),var(--aurora-1)_45%)] text-primary-foreground",
-                )}
-              >
-                <CardHeader>
-                  <CardDescription
-                    className={cn(index === 0 && "text-primary-foreground/80")}
-                  >
-                    {label}
-                  </CardDescription>
-                  <CardTitle className="text-3xl font-semibold">
-                    <NumberTicker value={count} />
-                  </CardTitle>
-                </CardHeader>
-                <CardFooter
-                  className={cn(
-                    "border-0 bg-transparent pt-0 text-sm text-muted-foreground",
-                    index === 0 && "text-primary-foreground/80",
-                  )}
-                >
-                  {hint}
-                </CardFooter>
-                {index === 0 ? (
-                  <BorderBeam
-                    colorFrom="oklch(1 0 0 / 0.9)"
-                    colorTo="var(--aurora-2)"
-                    duration={8}
-                    size={120}
-                  />
-                ) : null}
-              </Card>
-            </Reveal>
-          ))}
-          <Reveal delay={0.06 + statCards.length * 0.05}>
-            <Card className="h-full">
+        {/* 第一层：此刻要做的事。每一行直接进对应的评阅队列（D-069）。 */}
+        {actionable.length > 0 ? (
+          <Reveal delay={0.06}>
+            <Card className="relative">
               <CardHeader>
-                <CardDescription>任教班级</CardDescription>
-                <CardTitle className="text-3xl font-semibold">
-                  <NumberTicker value={dashboard.classrooms.length} />
+                <CardTitle className="flex items-center gap-2">
+                  <InboxIcon aria-hidden="true" className="size-4 text-muted-foreground" />
+                  待处理
                 </CardTitle>
+                <CardAction>
+                  <Badge variant="outline">{`${actionable.length} 个活动`}</Badge>
+                </CardAction>
               </CardHeader>
-              <CardFooter className="border-0 bg-transparent pt-0 text-sm text-muted-foreground">
-                {`共 ${dashboard.releases.length} 个已发布活动`}
-              </CardFooter>
+              <CardContent>
+                <ul className="divide-y divide-border">
+                  {actionable.map(({ release, attention }) => (
+                    <AttentionRow
+                      attention={attention}
+                      key={release.id}
+                      release={release}
+                    />
+                  ))}
+                </ul>
+              </CardContent>
+              {reviewCount > 0 ? (
+                <BorderBeam
+                  colorFrom="var(--primary)"
+                  colorTo="var(--aurora-2)"
+                  duration={10}
+                  size={120}
+                />
+              ) : null}
             </Card>
           </Reveal>
-        </div>
+        ) : null}
 
-        <Reveal delay={0.3}>
-        <Card>
-          <CardHeader>
-            <CardTitle>待办</CardTitle>
-            <CardAction>
-              <Badge variant="outline">{`${actionable.length} 项`}</Badge>
-            </CardAction>
-          </CardHeader>
-          <CardContent>
-            {actionable.length === 0 ? (
-              <EmptyState title="暂时没有待办">
-                当前没有待反馈、待评价或待重交的提交。
+        {/* 第二层：班级与发布。每个班一整行，活动按卡片平铺。 */}
+        <Reveal delay={0.14}>
+          <section aria-labelledby="classrooms-title" className="flex flex-col gap-4">
+            <div className="flex items-baseline justify-between gap-3">
+              <h2 className="type-section-title" id="classrooms-title">
+                我的班级
+              </h2>
+              {dashboard.releases.length > 0 ? (
+                <p className="type-caption text-muted-foreground">
+                  {`${dashboard.classrooms.length} 个班级 · ${dashboard.releases.length} 个已发布活动`}
+                </p>
+              ) : null}
+            </div>
+            {dashboard.classrooms.length === 0 ? (
+              <EmptyState
+                action={
+                  <Button asChild variant="outline">
+                    <Link href="/teacher/classrooms/new">新建班级</Link>
+                  </Button>
+                }
+                title="还没有班级"
+              >
+                新建一个班级后就能导入学生名单，再向这个班级发布活动。
               </EmptyState>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>活动</TableHead>
-                    <TableHead>班级</TableHead>
-                    <TableHead>待办</TableHead>
-                    <TableHead className="w-0">
-                      <span className="sr-only">操作</span>
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {actionable.map(({ release, attention }) => (
-                    <TableRow key={release.id}>
-                      <TableCell className="font-medium">
-                        {release.title}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {release.classroomName}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1.5">
-                          {attentionBadges(attention)}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Button asChild size="sm" variant="outline">
-                          <Link
-                            href={`/teacher/releases/${release.id}/submissions`}
-                          >
-                            去处理
-                            <ChevronRightIcon />
-                          </Link>
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
-        </Reveal>
-
-        <Reveal delay={0.38}>
-        <section aria-labelledby="classrooms-title" className="flex flex-col gap-4">
-          <h2 className="type-section-title" id="classrooms-title">
-            任教班级
-          </h2>
-          {dashboard.classrooms.length === 0 ? (
-            <EmptyState
-              action={
-                <Button asChild variant="outline">
-                  <Link href="/teacher/classrooms/new">新建班级</Link>
-                </Button>
-              }
-              title="还没有班级"
-            >
-              新建一个班级后就能导入学生名单，再向这个班级发布活动。
-            </EmptyState>
-          ) : (
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-              {dashboard.classrooms.map((classroom) => {
-                const releases = dashboard.releases.filter(
-                  (release) => release.classroomName === classroom.name,
+              dashboard.classrooms.map((classroom) => {
+                const releases = sortReleases(
+                  dashboard.releases.filter(
+                    (release) => release.classroomName === classroom.name,
+                  ),
                 );
                 return (
                   <Card key={classroom.id}>
                     <CardHeader>
-                      <CardTitle>{classroom.name}</CardTitle>
+                      <CardTitle className="flex items-center gap-3">
+                        <span
+                          aria-hidden="true"
+                          className="flex size-9 items-center justify-center rounded-full bg-primary/12 text-sm font-semibold text-primary"
+                        >
+                          {Array.from(classroom.name)[0]}
+                        </span>
+                        {classroom.name}
+                      </CardTitle>
                       <CardAction>
-                        <Button asChild size="sm" variant="ghost">
+                        <Button asChild size="sm" variant="outline">
                           <Link
                             href={`/teacher/classrooms/${classroom.id}/members`}
                           >
@@ -351,39 +354,46 @@ export default async function TeacherDashboardPage() {
                         </Button>
                       </CardAction>
                     </CardHeader>
-                    <CardContent className="flex flex-col gap-1">
+                    <CardContent>
                       {releases.length === 0 ? (
                         <p className="text-sm text-muted-foreground">
-                          还没有向这个班级发布活动。
+                          还没有向这个班级发布活动。在
+                          <Link
+                            className="mx-1 text-primary underline-offset-4 hover:underline"
+                            href="/teacher/activities"
+                          >
+                            活动设计
+                          </Link>
+                          里完成草稿后发布。
                         </p>
                       ) : (
-                        releases.map((release) => (
-                          <ReleaseProgressRow
-                            key={release.id}
-                            release={release}
-                          />
-                        ))
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                          {releases.map((release) => (
+                            <ReleaseTile key={release.id} release={release} />
+                          ))}
+                        </div>
                       )}
                     </CardContent>
                   </Card>
                 );
-              })}
-            </div>
-          )}
-          {orphanReleases.length > 0 ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>已不在管理范围的班级</CardTitle>
-                <CardDescription>管理权已转交，只保留发布记录，不能再查看提交。</CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-1">
-                {orphanReleases.map((release) => (
-                  <ReleaseProgressRow key={release.id} release={release} />
-                ))}
-              </CardContent>
-            </Card>
-          ) : null}
-        </section>
+              })
+            )}
+            {orphanReleases.length > 0 ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle>已不在管理范围的班级</CardTitle>
+                  <CardDescription>管理权已转交，只保留发布记录，不能再查看提交。</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {sortReleases(orphanReleases).map((release) => (
+                      <ReleaseTile key={release.id} release={release} />
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            ) : null}
+          </section>
         </Reveal>
       </div>
     </TeacherPage>
