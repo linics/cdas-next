@@ -164,6 +164,7 @@ model AppUser {
   adoptedSources          ActivityDraftSourceReference[]  @relation("SourceReferenceAdopter")
   withdrawnSources        ActivityDraftSourceWithdrawal[] @relation("SourceReferenceWithdrawer")
   requestedDiagnoses      ActivityDraftDiagnosis[]        @relation("DiagnosisRequester")
+  requestedAnswerSummaries ReleaseAnswerSummary[]         @relation("AnswerSummaryRequester")
   releases                ActivityRelease[]               @relation("ReleasePublisher")
   actionIntents           ActionIntent[]                  @relation("ActionIntentActor")
   actionDecisions         ActionIntent[]                  @relation("ActionIntentDecider")
@@ -323,6 +324,7 @@ model ActivityRelease {
   snapshot            ActivityReleaseSnapshot?
   submissions         Submission[]
   groups              ReleaseGroup[]
+  answerSummaries     ReleaseAnswerSummary[]
 
   @@unique([id, sourceDraftId])
   @@index([classroomId, status, publishedAt])
@@ -407,6 +409,27 @@ model ActivityDraftDiagnosis {
 
   @@index([draftId, createdAt])
   @@map("activity_draft_diagnoses")
+}
+
+/// What one phase's answers have in common, as the model described it on the
+/// teacher's request (D-086). Append-only: a new summary never replaces an old
+/// one, and each records exactly which formal revisions it read.
+model ReleaseAnswerSummary {
+  id               String          @id @default(uuid()) @db.Uuid
+  releaseId        String          @map("release_id") @db.Uuid
+  phaseIndex       Int             @map("phase_index")
+  agentRunId       String          @unique @map("agent_run_id") @db.Uuid
+  requestedById    String          @map("requested_by_id") @db.Uuid
+  summary          String
+  themes           Json
+  basisRevisionIds String[]        @map("basis_revision_ids") @db.Uuid
+  createdAt        DateTime        @default(now()) @map("created_at") @db.Timestamptz(3)
+  release          ActivityRelease @relation(fields: [releaseId], references: [id], onDelete: Restrict)
+  agentRun         AgentRun        @relation(fields: [agentRunId], references: [id], onDelete: Restrict)
+  requestedBy      AppUser         @relation("AnswerSummaryRequester", fields: [requestedById], references: [id], onDelete: Restrict)
+
+  @@index([releaseId, phaseIndex, createdAt])
+  @@map("release_answer_summaries")
 }
 
 model ActivityDraftSourceWithdrawal {
@@ -643,6 +666,7 @@ model AgentRun {
   draftRevision       ActivityDraftRevision?
   sourceReferences    ActivityDraftSourceReference[]
   diagnosis           ActivityDraftDiagnosis?
+  answerSummary       ReleaseAnswerSummary?
   intents             ActionIntent[]
   auditEntries        ActionAudit[]
   feedbackRevisions   TeacherFeedbackRevision[]

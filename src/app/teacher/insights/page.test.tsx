@@ -14,6 +14,8 @@ const mocks = vi.hoisted(() => ({
   getDatabaseClient: vi.fn(),
   getTeacherInsights: vi.fn(),
   getTeacherReleaseDiagnosis: vi.fn(),
+  getReleaseAnswerSummaries: vi.fn(),
+  isActivityAssistantEnabled: vi.fn(),
   notFound: vi.fn(() => {
     throw new Error("NEXT_NOT_FOUND");
   }),
@@ -68,6 +70,27 @@ vi.mock("../../../server/queries/teacher-insights", () => ({
 }));
 vi.mock("../../../server/queries/teacher-release-diagnosis", () => ({
   getTeacherReleaseDiagnosis: mocks.getTeacherReleaseDiagnosis,
+}));
+vi.mock("../../../server/queries/release-answer-summaries", () => ({
+  getReleaseAnswerSummaries: mocks.getReleaseAnswerSummaries,
+}));
+vi.mock("../../../server/assistant/assistant-config", () => ({
+  isActivityAssistantEnabled: mocks.isActivityAssistantEnabled,
+}));
+vi.mock("./answer-summary-trigger", () => ({
+  AnswerSummaryTrigger: ({
+    answerCount,
+    hasSummary,
+    phaseIndex,
+  }: {
+    answerCount: number;
+    hasSummary: boolean;
+    phaseIndex: number;
+  }) => (
+    <button data-phase={phaseIndex} type="button">
+      {hasSummary ? `重新归纳这 ${answerCount} 份` : `归纳这 ${answerCount} 份作答`}
+    </button>
+  ),
 }));
 vi.mock("../_components/teacher-shell", () => ({
   TeacherAccessGate: ({ code }: { code: string }) => (
@@ -327,6 +350,8 @@ describe("teacher insights page", () => {
     vi.clearAllMocks();
     mocks.createUiCommandContext.mockResolvedValue(mocks.context);
     mocks.getDatabaseClient.mockReturnValue(mocks.database);
+    mocks.getReleaseAnswerSummaries.mockResolvedValue([]);
+    mocks.isActivityAssistantEnabled.mockReturnValue(true);
   });
 
   it("shows the no-release empty state without asking for a diagnosis", async () => {
@@ -517,5 +542,76 @@ describe("teacher insights page", () => {
     expect(markup).toContain("安全门");
     expect(mocks.getTeacherInsights).not.toHaveBeenCalled();
     expect(mocks.getTeacherReleaseDiagnosis).not.toHaveBeenCalled();
+  });
+
+  const answerPhases = [
+    {
+      phaseIndex: 1,
+      phaseLabel: "现场认定",
+      answerCount: 4,
+      canSummarize: true,
+      latest: {
+        id: "70000000-0000-4000-8000-000000000001",
+        createdAt: "2026-10-01T08:00:00.000Z",
+        summary: "多数作答写了漏水点的位置，但很少说明是怎么判断的。",
+        basisCount: 3,
+        changedSinceCount: 1,
+        themes: [
+          {
+            kind: "GAP",
+            statement: "只写了位置，没有写判断依据",
+            sources: [
+              {
+                submissionId: "80000000-0000-4000-8000-000000000001",
+                audienceName: "陈同学",
+                quote: "二楼饮水机旁边在漏水",
+              },
+              {
+                submissionId: "80000000-0000-4000-8000-000000000004",
+                audienceName: "李明",
+                quote: "操场水龙头一直滴水",
+              },
+            ],
+          },
+        ],
+      },
+    },
+    { phaseIndex: 2, phaseLabel: "读数与估算", answerCount: 2, canSummarize: false, latest: null },
+    { phaseIndex: 3, phaseLabel: "建议书", answerCount: 0, canSummarize: false, latest: null },
+  ];
+
+  it("shows saved answer themes with named, checkable quotes", async () => {
+    mocks.getTeacherInsights.mockResolvedValue(
+      dashboard([{ id: ACTIVE_ID, title: "校园节水行动", status: "ACTIVE" }]),
+    );
+    mocks.getTeacherReleaseDiagnosis.mockResolvedValue(diagnosis());
+    mocks.getReleaseAnswerSummaries.mockResolvedValue(answerPhases);
+
+    const markup = await renderPage({ release: ACTIVE_ID });
+    expect(markup).toContain('id="answers"');
+    expect(markup).toContain("只写了位置，没有写判断依据");
+    expect(markup).toContain("多数没做到");
+    expect(markup).toContain("<q");
+    expect(markup).toContain("二楼饮水机旁边在漏水");
+    expect(markup).toContain("之后有 1 份新提交或重交，未计入");
+    expect(markup).toContain("重新归纳这 4 份");
+    // Too few answers: no button, and the reason is stated.
+    expect(markup).toContain("有文字的作答不足 3 份");
+    expect(markup).not.toContain('data-phase="2"');
+    // A phase with nothing to read and nothing saved is left out.
+    expect(markup).not.toContain("0 份有文字的作答");
+  });
+
+  it("keeps saved themes readable and offers no button when AI is off", async () => {
+    mocks.getTeacherInsights.mockResolvedValue(
+      dashboard([{ id: ACTIVE_ID, title: "校园节水行动", status: "ACTIVE" }]),
+    );
+    mocks.getTeacherReleaseDiagnosis.mockResolvedValue(diagnosis());
+    mocks.getReleaseAnswerSummaries.mockResolvedValue(answerPhases);
+    mocks.isActivityAssistantEnabled.mockReturnValue(false);
+
+    const markup = await renderPage({ release: ACTIVE_ID });
+    expect(markup).toContain("只写了位置，没有写判断依据");
+    expect(markup).not.toContain("归纳这");
   });
 });
