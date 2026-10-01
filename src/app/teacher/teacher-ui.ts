@@ -182,33 +182,6 @@ export const styles = {
   classroomCleanup:
     "col-span-full flex flex-col gap-3 border-t pt-6 [&_header]:flex [&_header]:flex-col [&_header]:gap-1 [&_h2]:type-section-title [&>p]:max-w-2xl [&>p]:text-sm [&>p]:text-muted-foreground [&>button]:w-fit",
 
-  // 过程诊断
-  insightsLayout: "mx-auto flex w-full max-w-6xl flex-col gap-6",
-  filterForm: `flex flex-wrap items-end gap-3 [&_label]:flex [&_label]:flex-col [&_label]:gap-1.5 [&_label]:text-sm [&_label]:font-medium ${nestedControls}`,
-  card: `${card} flex flex-col gap-4 p-5 [&_h2]:text-base [&_h2]:font-semibold`,
-  cardLead: "text-sm text-muted-foreground",
-  statGrid:
-    "grid grid-cols-2 gap-3 md:grid-cols-4 [&>div]:rounded-lg [&>div]:border [&>div]:p-3 [&_dt]:text-xs [&_dt]:text-muted-foreground [&_dd]:text-3xl [&_dd]:font-semibold [&_dd]:tabular-nums",
-  releaseBlock:
-    "flex flex-col gap-3 border-t pt-4 first:border-t-0 first:pt-0 [&>h3]:text-sm [&>h3]:font-semibold [&>p]:text-xs [&>p]:text-muted-foreground",
-  stageList: "flex flex-col gap-4",
-  stageRow: "grid gap-2",
-  stageHead:
-    "flex flex-wrap items-baseline justify-between gap-2 text-sm [&_strong]:font-medium [&>span]:text-xs [&>span]:tabular-nums [&>span]:text-muted-foreground",
-  dimensionList: "flex flex-col gap-4",
-  dimensionRow: "grid gap-2",
-  dimensionHead:
-    "flex flex-wrap items-baseline justify-between gap-2 text-sm [&_strong]:font-medium",
-  // 堆叠条：等级是一条从强到弱的刻度 —— 优秀主色实底、良好主色浅底、达标灰、
-  // 需改进珊瑚（与「需修改」同色）；条上的数字都是浅底深字，保证可读。
-  barTrack: "flex min-h-6 w-full overflow-hidden rounded-md border bg-muted",
-  barFill:
-    "grid min-w-0 place-items-center text-xs font-medium tabular-nums [&+&]:border-l [&+&]:border-background data-[tone=excellent]:bg-primary data-[tone=excellent]:text-primary-foreground data-[tone=good]:bg-accent data-[tone=good]:text-accent-foreground data-[tone=pass]:bg-status-closed data-[tone=pass]:text-status-closed-foreground data-[tone=improve]:bg-status-resubmit data-[tone=improve]:text-status-resubmit-foreground data-[tone=insufficient]:bg-background data-[tone=insufficient]:text-muted-foreground data-[tone=stage]:bg-accent data-[tone=stage]:text-accent-foreground",
-  weakMark:
-    "inline-flex h-5 items-center rounded-4xl bg-status-resubmit px-2 text-xs font-medium text-status-resubmit-foreground",
-  legend: "flex flex-wrap gap-x-3 gap-y-1 text-xs tabular-nums text-muted-foreground",
-  sampleNote: "text-xs text-muted-foreground",
-
   // 课程依据
   knowledgeLayout: "mx-auto flex w-full max-w-4xl flex-col gap-6",
   searchForm: `flex flex-wrap items-end gap-3 [&_label]:flex [&_label]:flex-1 [&_label]:flex-col [&_label]:gap-1.5 [&_label]:text-sm [&_label]:font-medium ${nestedControls}`,
