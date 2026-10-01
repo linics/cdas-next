@@ -31,6 +31,8 @@ import { SourceReferences } from "./source-references";
 import { DraftDiagnosis } from "./draft-diagnosis";
 import { getDraftDiagnoses } from "../../../../server/queries/activity-draft-diagnoses";
 import { getActivitySourceReferences } from "../../../../server/queries/activity-source-references";
+import { getDraftOriginSignals } from "../../../../server/queries/release-task-book-signals";
+import { OriginSignals } from "./origin-signals";
 
 export default async function TeacherActivityPage({
   params,
@@ -46,12 +48,20 @@ export default async function TeacherActivityPage({
   let originError = false;
   let sources: Awaited<ReturnType<typeof getActivitySourceReferences>> = null;
   let diagnoses: Awaited<ReturnType<typeof getDraftDiagnoses>> = null;
+  let originSignals: Awaited<ReturnType<typeof getDraftOriginSignals>> = null;
   try {
     const context = await createUiCommandContext();
     const database = getDatabaseClient();
     workspace = await getTeacherActivityDraft(database, context, { draftId });
     sources = await getActivitySourceReferences(database, context, draftId);
     diagnoses = await getDraftDiagnoses(database, context, draftId);
+    try {
+      originSignals = await getDraftOriginSignals(database, context, draftId);
+    } catch {
+      // The signals are a reading aid from another release; the draft must
+      // stay editable when they cannot be read.
+      originSignals = null;
+    }
     try {
       origin = await getActivityDraftOrigin(database, context, draftId);
     } catch (error) {
@@ -151,6 +161,12 @@ export default async function TeacherActivityPage({
             draftId={draft.id}
             editable={draft.status !== "SEALED"}
             references={sources.references}
+          />
+        ) : null}
+        {content.schemaVersion === 3 && draft.status !== "SEALED" && originSignals ? (
+          <OriginSignals
+            origin={originSignals}
+            usedByDiagnosis={isActivityAssistantEnabled()}
           />
         ) : null}
         {content.schemaVersion === 3 && diagnoses ? (

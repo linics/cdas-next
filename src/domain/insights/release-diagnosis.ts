@@ -339,7 +339,7 @@ function cellOf(outcome: InsightsOutcome): DiagnosisCell {
   return outcome.status === "INSUFFICIENT_EVIDENCE" ? "insufficient" : outcome.level;
 }
 
-function isMostlyLow(sampleCount: number, lowCount: number): boolean {
+export function isMostlyLow(sampleCount: number, lowCount: number): boolean {
   return sampleCount >= WEAK_MIN_SAMPLE && lowCount * 2 >= sampleCount;
 }
 

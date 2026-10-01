@@ -11,6 +11,13 @@ describe("diagnosis prompt", () => {
       targets: diagnosisTargets(content),
       taskBook: content,
       adoptedSources: [],
+      classroomSignals: [
+        {
+          target: "phases.2.evidence.1",
+          signal: "已交的 9 份里有 6 份没有勾选这项证据。",
+          editedSince: false,
+        },
+      ],
     });
     expect(prompt).toContain("JSON");
     expect(prompt).toContain("summary 和 findings");
@@ -20,5 +27,10 @@ describe("diagnosis prompt", () => {
     }
     expect(prompt).toContain("\"phases.2.evidence.1\"");
     expect(prompt).toContain("不要报告这些结构性覆盖问题");
+    // D-088: classroom data is named, and so is how far it may be taken.
+    expect(prompt).toContain("classroomSignals");
+    expect(prompt).toContain("editedSince");
+    expect(prompt).toContain("不要据此推断学生的能力");
+    expect(prompt).toContain("已交的 9 份里有 6 份没有勾选这项证据");
   });
 });

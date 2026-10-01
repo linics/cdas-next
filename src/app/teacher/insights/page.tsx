@@ -10,6 +10,7 @@ import {
   LifeBuoyIcon,
   ListChecksIcon,
   MessagesSquareIcon,
+  NotebookPenIcon,
   RepeatIcon,
 } from "lucide-react";
 import { z, ZodError } from "zod";
@@ -43,6 +44,10 @@ import {
   getReleaseAnswerSummaries,
   type ReleaseAnswerSummaryPhase,
 } from "../../../server/queries/release-answer-summaries";
+import {
+  getReleaseTaskBookSignals,
+  type ReleaseTaskBookSignals,
+} from "../../../server/queries/release-task-book-signals";
 import { isActivityAssistantEnabled } from "../../../server/assistant/assistant-config";
 import { answerThemeKindLabels } from "../../../domain/insights/answer-themes";
 import { AnswerSummaryTrigger } from "./answer-summary-trigger";
@@ -881,6 +886,48 @@ function AnswersCard({
   );
 }
 
+function TaskBookSignalsCard({ signals }: { signals: ReleaseTaskBookSignals }) {
+  if (signals.signals.length === 0 || !signals.copySource) {
+    return null;
+  }
+  const copyHref = `/teacher/activities/copy?${new URLSearchParams({
+    kind: "RELEASE",
+    id: signals.copySource.id,
+    version: String(signals.copySource.version),
+  }).toString()}`;
+  return (
+    <Card className="scroll-mt-24" id="task-book">
+      <CardHeader>
+        <SectionTitle icon={NotebookPenIcon}>带回任务书</SectionTitle>
+        <CardDescription>
+          上面的数据里，这几条多半与任务书的写法有关。已发布的任务书不会改动；复制成新草稿后，这些信号会显示在草稿页，版本检查也会参考。
+        </CardDescription>
+        <CardAction>
+          <Button asChild size="sm" variant="outline">
+            <Link href={copyHref}>
+              复制这份任务书去修改
+              <ChevronRightIcon />
+            </Link>
+          </Button>
+        </CardAction>
+      </CardHeader>
+      <CardContent>
+        <ul className="flex flex-col divide-y divide-border">
+          {signals.signals.map((signal, index) => (
+            <li
+              className="flex flex-col gap-1 py-2.5 first:pt-0 last:pb-0"
+              key={`${signal.target}-${signal.kind}-${index}`}
+            >
+              <p className="text-sm font-medium">{signal.sourceLabel}</p>
+              <p className="text-sm text-muted-foreground">{signal.text}</p>
+            </li>
+          ))}
+        </ul>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default async function TeacherInsightsPage({
   searchParams,
 }: {
@@ -892,6 +939,7 @@ export default async function TeacherInsightsPage({
   let dashboard: TeacherInsightsDashboard;
   let diagnosis: ReleaseDiagnosis | null = null;
   let answerPhases: ReleaseAnswerSummaryPhase[] | null = null;
+  let taskBookSignals: ReleaseTaskBookSignals | null = null;
   let selectedId: string | null = null;
   try {
     const context = await createUiCommandContext();
@@ -911,6 +959,7 @@ export default async function TeacherInsightsPage({
         releaseId: selectedId,
       });
       answerPhases = await getReleaseAnswerSummaries(database, context, selectedId);
+      taskBookSignals = await getReleaseTaskBookSignals(database, context, selectedId);
     }
   } catch (error) {
     if (error instanceof AuthenticationError) {
@@ -971,6 +1020,7 @@ export default async function TeacherInsightsPage({
             <MatrixCard diagnosis={diagnosis} />
             <ResubmissionCard diagnosis={diagnosis} />
             <SupportCard diagnosis={diagnosis} />
+            {taskBookSignals ? <TaskBookSignalsCard signals={taskBookSignals} /> : null}
           </>
         ) : null}
       </div>

@@ -79,8 +79,9 @@ export const diagnosisModelOutputSchema = z
             ),
             problem: z.string().trim().min(4).max(300),
             suggestion: z.string().trim().min(4).max(600),
-          })
-          .strict(),
+          }),
+        // Not strict: json_object mode sometimes echoes the target's label as
+        // an extra key. Unknown keys are dropped, never stored or shown.
       )
       .max(8),
   })

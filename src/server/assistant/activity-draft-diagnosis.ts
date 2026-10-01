@@ -27,6 +27,7 @@ import {
   RecordActivityDraftDiagnosisError,
 } from "../commands/record-activity-draft-diagnosis";
 import { getActivitySourceReferences } from "../queries/activity-source-references";
+import { getDraftOriginSignals } from "../queries/release-task-book-signals";
 import {
   getTeacherActivityDraft,
   TeacherActivityQueryError,
@@ -75,6 +76,17 @@ export type DiagnosisModelInput = Readonly<{
   targets: ReadonlyArray<{ target: string; label: string }>;
   taskBook: unknown;
   adoptedSources: ReadonlyArray<{ citation: string; rationale: string }>;
+  /**
+   * What happened in class the last time this task book was published
+   * (D-088). Empty unless the draft was copied from a release the teacher
+   * still manages.
+   */
+  classroomSignals: ReadonlyArray<{
+    target: string;
+    signal: string;
+    /** The teacher has already edited this field since that release. */
+    editedSince: boolean;
+  }>;
 }>;
 
 export type ActivityDraftDiagnosisDependencies = Readonly<{
@@ -82,6 +94,7 @@ export type ActivityDraftDiagnosisDependencies = Readonly<{
   createModel: (config: ActivityAssistantConfig) => LanguageModel;
   getDraft: typeof getTeacherActivityDraft;
   getSources: typeof getActivitySourceReferences;
+  getSignals: typeof getDraftOriginSignals;
   startRun: typeof startActivityAssistantRun;
   finishRun: typeof finishActivityAssistantRun;
   recordDiagnosis: typeof recordActivityDraftDiagnosis;
@@ -154,6 +167,7 @@ export function buildActivityDraftDiagnosisPrompt(input: DiagnosisModelInput): s
     "problem 用一两句话说明这一处具体哪里不好，引用任务书里的原话；suggestion 给出可以直接替换或补充的文字，不要只说「建议加强」。",
     "系统已经保证：每个学习目标都有阶段承担、有评价维度评价，每门学科都写了贡献与必要性，阶段和量规数量合规。不要报告这些结构性覆盖问题；要看的是结构看不出的质量：目标是否可观察、阶段任务是否真的在练这个目标、证据能否让教师看出学生达成与否、评价四档是否可区分、学科贡献是否在任务和证据里真正出现、情境是否真实、任务量与年级和课时是否匹配。",
     "adoptedSources 是教师已采纳的课标依据及理由，如任务书与这些依据明显脱节可以指出，但不要评判课标本身，也不要给出合规结论或分数。",
+    "classroomSignals 是这份任务书上一次发布后课堂上的实际数据，每条的 target 指向对应字段；数组为空表示没有这类数据。若该字段现在的文字能解释这条数据（例如证据要求含糊，所以多数人没交），就在同一个 target 下给出 finding，并在 problem 里引用这条数据。editedSince 为 true 表示教师已经改过这一处，先看现在的文字是否已经解决，解决了就不要再提。数据说明的是任务书哪里可能没写清，不要据此推断学生的能力，也不要为每条数据硬凑一条 finding。",
     "提到学习目标时用「目标 1」「目标 2」这样的编号。全程使用简体中文。",
     JSON.stringify(input, null, 2),
   ].join("\n\n");
@@ -184,6 +198,7 @@ const defaultDependencies: ActivityDraftDiagnosisDependencies = {
   createModel: createDeepSeekModel,
   getDraft: getTeacherActivityDraft,
   getSources: getActivitySourceReferences,
+  getSignals: getDraftOriginSignals,
   startRun: startActivityAssistantRun,
   finishRun: finishActivityAssistantRun,
   recordDiagnosis: recordActivityDraftDiagnosis,
@@ -276,6 +291,7 @@ export async function diagnoseActivityDraft(
 
   const content = await readDiagnosableDraft(database, context, dependencies, input);
   const sources = await dependencies.getSources(database, context, input.draftId);
+  const origin = await dependencies.getSignals(database, context, input.draftId);
 
   let model: LanguageModel;
   try {
@@ -300,6 +316,14 @@ export async function diagnoseActivityDraft(
           .map((reference) => ({
             citation: reference.citationLabel,
             rationale: reference.rationale,
+          })),
+        // A field that no longer exists has nothing left to check.
+        classroomSignals: (origin?.signals ?? [])
+          .filter((signal) => signal.state !== "removed")
+          .map((signal) => ({
+            target: signal.target,
+            signal: signal.text,
+            editedSince: signal.state === "changed",
           })),
       }),
     );
