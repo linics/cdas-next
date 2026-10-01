@@ -9,6 +9,7 @@ import {
   Grid3x3Icon,
   LifeBuoyIcon,
   ListChecksIcon,
+  MessagesSquareIcon,
   RepeatIcon,
 } from "lucide-react";
 import { z, ZodError } from "zod";
@@ -38,6 +39,13 @@ import {
   type TeacherInsightsDashboard,
 } from "../../../server/queries/teacher-insights";
 import { getTeacherReleaseDiagnosis } from "../../../server/queries/teacher-release-diagnosis";
+import {
+  getReleaseAnswerSummaries,
+  type ReleaseAnswerSummaryPhase,
+} from "../../../server/queries/release-answer-summaries";
+import { isActivityAssistantEnabled } from "../../../server/assistant/assistant-config";
+import { answerThemeKindLabels } from "../../../domain/insights/answer-themes";
+import { AnswerSummaryTrigger } from "./answer-summary-trigger";
 import { LocalizedDateTime } from "../../_components/localized-date-time";
 import { PageHeader } from "../../_components/page-header";
 import { revealChildren } from "../../_components/reveal";
@@ -764,6 +772,115 @@ function SupportCard({ diagnosis }: { diagnosis: ReleaseDiagnosis }) {
   );
 }
 
+function AnswersCard({
+  releaseId,
+  phases,
+  canSummarize,
+}: {
+  releaseId: string;
+  phases: readonly ReleaseAnswerSummaryPhase[];
+  canSummarize: boolean;
+}) {
+  // 没有任何可读的作答，也没有存过归纳时，这一块对教师没有用。
+  const shown = phases.filter((phase) => phase.answerCount > 0 || phase.latest);
+  if (shown.length === 0) {
+    return null;
+  }
+  return (
+    <Card className="scroll-mt-24" id="answers">
+      <CardHeader>
+        <SectionTitle icon={MessagesSquareIcon}>作答里的共同点</SectionTitle>
+        <CardDescription>
+          由 AI 通读当前正式提交的文字作答后归纳，只描述写了什么，不评价学生。每一条都附学生原文，可点开核对。不读附件。
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col divide-y divide-border">
+        {shown.map((phase) => (
+          <section
+            className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0"
+            key={phase.phaseIndex}
+          >
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <h3 className="flex items-baseline gap-2 text-sm font-medium">
+                {phase.phaseLabel}
+                <span className="text-xs font-normal text-muted-foreground tabular-nums">
+                  {`${phase.answerCount} 份有文字的作答`}
+                </span>
+              </h3>
+              {canSummarize && phase.canSummarize ? (
+                <AnswerSummaryTrigger
+                  answerCount={phase.answerCount}
+                  hasSummary={phase.latest !== null}
+                  phaseIndex={phase.phaseIndex}
+                  releaseId={releaseId}
+                />
+              ) : null}
+            </div>
+            {phase.latest ? (
+              <div className="flex flex-col gap-3">
+                <p className="text-sm">{phase.latest.summary}</p>
+                {phase.latest.themes.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    这批作答里没有归纳出反复出现的共同点。
+                  </p>
+                ) : (
+                  <ul className="flex flex-col gap-3">
+                    {phase.latest.themes.map((theme, index) => (
+                      <li
+                        className="flex flex-col gap-2 rounded-xl bg-foreground/[0.03] p-3 ring-1 ring-foreground/5"
+                        key={`${phase.latest!.id}-${index}`}
+                      >
+                        <p className="flex flex-wrap items-center gap-2 text-sm font-medium">
+                          <StatusBadge tone={theme.kind === "GAP" ? "pending" : "done"}>
+                            {answerThemeKindLabels[theme.kind]}
+                          </StatusBadge>
+                          {theme.statement}
+                        </p>
+                        <ul className="flex flex-col gap-1.5">
+                          {theme.sources.map((source) => (
+                            <li
+                              className="flex flex-wrap items-baseline gap-x-2 text-sm"
+                              key={source.submissionId}
+                            >
+                              <Link
+                                className="shrink-0 font-medium underline-offset-4 hover:underline"
+                                href={`/teacher/submissions/${source.submissionId}`}
+                              >
+                                {source.audienceName}
+                              </Link>
+                              <q className="text-muted-foreground">{source.quote}</q>
+                            </li>
+                          ))}
+                        </ul>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <p className="type-caption text-muted-foreground">
+                  {`基于 ${phase.latest.basisCount} 份作答 · `}
+                  <LocalizedDateTime dateTime={phase.latest.createdAt} />
+                  {" 生成"}
+                  {phase.latest.changedSinceCount > 0
+                    ? ` · 之后有 ${phase.latest.changedSinceCount} 份新提交或重交，未计入`
+                    : ""}
+                </p>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                {phase.canSummarize
+                  ? canSummarize
+                    ? "还没有归纳过。"
+                    : "还没有归纳过；AI 当前不可用。"
+                  : "有文字的作答不足 3 份，直接读原文更快。"}
+              </p>
+            )}
+          </section>
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default async function TeacherInsightsPage({
   searchParams,
 }: {
@@ -774,6 +891,7 @@ export default async function TeacherInsightsPage({
     .safeParse(one((await searchParams)?.release).trim());
   let dashboard: TeacherInsightsDashboard;
   let diagnosis: ReleaseDiagnosis | null = null;
+  let answerPhases: ReleaseAnswerSummaryPhase[] | null = null;
   let selectedId: string | null = null;
   try {
     const context = await createUiCommandContext();
@@ -792,6 +910,7 @@ export default async function TeacherInsightsPage({
       diagnosis = await getTeacherReleaseDiagnosis(database, context, {
         releaseId: selectedId,
       });
+      answerPhases = await getReleaseAnswerSummaries(database, context, selectedId);
     }
   } catch (error) {
     if (error instanceof AuthenticationError) {
@@ -842,6 +961,13 @@ export default async function TeacherInsightsPage({
             <AlertsCard diagnosis={diagnosis} />
             <LanesCard diagnosis={diagnosis} />
             <EvidenceCard diagnosis={diagnosis} />
+            {answerPhases ? (
+              <AnswersCard
+                canSummarize={isActivityAssistantEnabled()}
+                phases={answerPhases}
+                releaseId={diagnosis.releaseId}
+              />
+            ) : null}
             <MatrixCard diagnosis={diagnosis} />
             <ResubmissionCard diagnosis={diagnosis} />
             <SupportCard diagnosis={diagnosis} />
