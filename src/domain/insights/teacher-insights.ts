@@ -405,7 +405,7 @@ export function aggregateStageCard(
   };
 }
 
-function compareOutcomes(
+export function compareOutcomes(
   before: InsightsOutcome,
   after: InsightsOutcome,
 ): "rose" | "unchanged" | "fell" {

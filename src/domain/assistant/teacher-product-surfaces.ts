@@ -83,7 +83,7 @@ export const teacherProductSurfaces: readonly TeacherProductSurface[] = [
     kind: "TEACHER_INSIGHTS",
     label: "过程诊断",
     path: "/teacher/insights",
-    does: "一次看一个发布：此刻值得留意的提醒、谁停在哪个阶段、每份已评提交各维度的档位，以及重交前后的变化",
+    does: "一次看一个发布：此刻值得留意的提醒、谁停在哪个阶段、各项证据交齐情况、每份已评提交各维度的档位、重交前后的变化和支架层级",
   },
   {
     kind: "TEACHER_KNOWLEDGE",

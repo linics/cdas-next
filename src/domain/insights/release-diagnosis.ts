@@ -1,12 +1,17 @@
 import type { TeacherEvaluationLevel } from "../evaluation/teacher-evaluation-policy";
 import {
-  aggregateFeedbackImprovement,
+  teacherFeedbackSupportLevelLabels,
+  teacherFeedbackSupportLevels,
+  type TeacherFeedbackSupportLevel,
+} from "../feedback/teacher-feedback-policy";
+import {
   aggregateRubricCard,
   aggregateStageCard,
+  compareOutcomes,
   currentAudienceProgress,
   isDimensionRelevantToPhase,
   stageBucketKey,
-  type InsightsImprovement,
+  type InsightsOutcome,
   type InsightsReleaseInput,
   type InsightsRubricDimension,
   type InsightsSubmissionInput,
@@ -38,14 +43,24 @@ export type DiagnosisSubmissionInput = InsightsSubmissionInput &
       submittedAt: string;
       isLate: boolean;
       hasFeedback: boolean;
+      /** Evidence items (1-based, within the phase) the student ticked. */
+      completedEvidenceIndexes: readonly number[];
+      /** The scaffold tier on the current feedback, when one was chosen (D-034). */
+      supportLevel: TeacherFeedbackSupportLevel | null;
+      feedbackConfirmedAt: string | null;
     }> | null;
   }>;
 
 export type DiagnosisReleaseInput = Omit<
   InsightsReleaseInput,
-  "groups" | "submissions" | "currentMemberIds"
+  "groups" | "submissions" | "currentMemberIds" | "phases"
 > &
   Readonly<{
+    phases: readonly {
+      name: string;
+      learningGoalIds?: readonly string[];
+      evidence: readonly { description: string; typeLabel: string }[];
+    }[];
     status: "ACTIVE" | "CLOSED" | "ARCHIVED";
     dueAt: string | null;
     members: readonly { id: string; name: string }[];
@@ -101,12 +116,70 @@ export type DiagnosisAlert = Readonly<{
     | "stalled"
     | "awaiting_feedback"
     | "weak_dimension"
+    | "evidence_gap"
     | "awaiting_resubmission";
   /** urgent = act now; attention = worth a look; note = for awareness. */
   tone: "urgent" | "attention" | "note";
   text: string;
   basis: string;
-  action: Readonly<{ label: string; query: string; primary: boolean }>;
+  /**
+   * `roster` appends `query` to the release's roster URL; `page` is an anchor
+   * on the diagnosis page itself.
+   */
+  action: Readonly<{
+    label: string;
+    target: "roster" | "page";
+    query: string;
+    primary: boolean;
+  }>;
+}>;
+
+export type DiagnosisSubmissionRef = Readonly<{
+  submissionId: string;
+  audienceName: string;
+  /** Null for the final submission; the phase name otherwise. */
+  phaseLabel: string | null;
+}>;
+
+export type DiagnosisEvidencePhase = Readonly<{
+  phaseIndex: number;
+  phaseName: string;
+  /** Current formal revisions of this phase. */
+  submittedCount: number;
+  items: readonly Readonly<{
+    evidenceIndex: number;
+    description: string;
+    typeLabel: string;
+    doneCount: number;
+    missing: readonly DiagnosisSubmissionRef[];
+  }>[];
+}>;
+
+export type DiagnosisMove = Readonly<{
+  dimensionName: string;
+  before: DiagnosisCell;
+  after: DiagnosisCell;
+  movement: "rose" | "unchanged" | "fell";
+}>;
+
+export type DiagnosisResubmission = Readonly<{
+  reviseCount: number;
+  resubmittedCount: number;
+  /** Asked to revise and nothing formal has come back yet. */
+  awaiting: readonly DiagnosisSubmissionRef[];
+  /** Evaluated both before and after a requested revision. */
+  pairs: readonly (DiagnosisSubmissionRef & { moves: readonly DiagnosisMove[] })[];
+  rose: number;
+  unchanged: number;
+  fell: number;
+}>;
+
+export type DiagnosisSupport = Readonly<{
+  tiers: readonly Readonly<{
+    level: TeacherFeedbackSupportLevel;
+    label: string;
+    audiences: readonly { name: string; submissionId: string }[];
+  }>[];
 }>;
 
 export type ReleaseDiagnosis = Readonly<{
@@ -121,7 +194,10 @@ export type ReleaseDiagnosis = Readonly<{
   completeCount: number;
   lanes: readonly DiagnosisLane[];
   matrix: DiagnosisMatrix;
-  improvement: InsightsImprovement;
+  evidence: readonly DiagnosisEvidencePhase[];
+  resubmission: DiagnosisResubmission;
+  /** Null until some current feedback carries a scaffold tier. */
+  support: DiagnosisSupport | null;
   alerts: readonly DiagnosisAlert[];
 }>;
 
@@ -151,12 +227,9 @@ function reviewOrder(submission: { phaseIndex: number }): number {
   return submission.phaseIndex === 0 ? Number.MAX_SAFE_INTEGER : submission.phaseIndex;
 }
 
-function buildAudiences(
-  release: DiagnosisReleaseInput,
-  now: Date,
-): DiagnosisAudience[] {
+function audienceSubmissions(release: DiagnosisReleaseInput) {
   const groupedIds = new Set(release.groups.flatMap((group) => group.memberIds));
-  const raw = [
+  return [
     ...release.groups.map((group) => ({
       key: `group:${group.id}`,
       kind: "group" as const,
@@ -176,6 +249,13 @@ function buildAudiences(
         ),
       })),
   ];
+}
+
+function buildAudiences(
+  release: DiagnosisReleaseInput,
+  now: Date,
+): DiagnosisAudience[] {
+  const raw = audienceSubmissions(release);
 
   return raw
     .map((audience) => {
@@ -226,6 +306,39 @@ function audienceNameFor(
   );
 }
 
+function phaseLabelFor(
+  release: DiagnosisReleaseInput,
+  submission: DiagnosisSubmissionInput,
+): string | null {
+  if (submission.final || submission.phaseIndex === 0) return null;
+  return (
+    release.phases[submission.phaseIndex - 1]?.name ??
+    `第 ${submission.phaseIndex} 阶段`
+  );
+}
+
+function refFor(
+  release: DiagnosisReleaseInput,
+  submission: DiagnosisSubmissionInput,
+): DiagnosisSubmissionRef {
+  return {
+    submissionId: submission.id,
+    audienceName: audienceNameFor(release, submission),
+    phaseLabel: phaseLabelFor(release, submission),
+  };
+}
+
+function byAudienceName(
+  left: { audienceName: string },
+  right: { audienceName: string },
+): number {
+  return left.audienceName.localeCompare(right.audienceName, "zh-Hans-CN");
+}
+
+function cellOf(outcome: InsightsOutcome): DiagnosisCell {
+  return outcome.status === "INSUFFICIENT_EVIDENCE" ? "insufficient" : outcome.level;
+}
+
 function isMostlyLow(sampleCount: number, lowCount: number): boolean {
   return sampleCount >= WEAK_MIN_SAMPLE && lowCount * 2 >= sampleCount;
 }
@@ -253,11 +366,7 @@ function buildMatrix(release: DiagnosisReleaseInput): DiagnosisMatrix {
         {
           submissionId: submission.id,
           audienceName: audienceNameFor(release, submission),
-          phaseLabel:
-            final || submission.phaseIndex === 0
-              ? null
-              : (release.phases[submission.phaseIndex - 1]?.name ??
-                `第 ${submission.phaseIndex} 阶段`),
+          phaseLabel: phaseLabelFor(release, submission),
           evaluated: outcomes !== null,
           order: reviewOrder(submission),
           cells: dimensions.map((dimension, index): DiagnosisCell => {
@@ -325,6 +434,164 @@ function toInsightsInput(release: DiagnosisReleaseInput): InsightsReleaseInput {
   };
 }
 
+/**
+ * Which evidence items students ticked on the current formal revision of each
+ * phase. An item most submissions skip is usually a task-book problem (the
+ * requirement is unclear or too heavy), not a student one.
+ */
+function buildEvidence(release: DiagnosisReleaseInput): DiagnosisEvidencePhase[] {
+  if (release.executionVersion !== 1) return [];
+  return release.phases.flatMap((phase, index) => {
+    const submitted = release.submissions.filter(
+      (submission) =>
+        submission.phaseIndex === index + 1 && submission.currentRevision !== null,
+    );
+    if (submitted.length === 0 || phase.evidence.length === 0) return [];
+    return [
+      {
+        phaseIndex: index + 1,
+        phaseName: phase.name,
+        submittedCount: submitted.length,
+        items: phase.evidence.map((evidence, evidenceIndex) => {
+          const missing = submitted
+            .filter(
+              (submission) =>
+                !submission.currentRevision!.completedEvidenceIndexes.includes(
+                  evidenceIndex + 1,
+                ),
+            )
+            .map((submission) => ({
+              submissionId: submission.id,
+              audienceName: audienceNameFor(release, submission),
+              phaseLabel: null,
+            }))
+            .sort(byAudienceName);
+          return {
+            evidenceIndex: evidenceIndex + 1,
+            description: evidence.description,
+            typeLabel: evidence.typeLabel,
+            doneCount: submitted.length - missing.length,
+            missing,
+          };
+        }),
+      },
+    ];
+  });
+}
+
+/**
+ * What happened after "revise and resubmit". Pairing follows the aggregate
+ * (each REVISE revision against the first later evaluated one), but only
+ * dimensions relevant to the submission's phase are compared (D-076), so an
+ * irrelevant "证据不足 → 证据不足" never shows up as "no change".
+ */
+function buildResubmission(release: DiagnosisReleaseInput): DiagnosisResubmission {
+  const dimensions = release.rubricDimensions ?? [];
+  const awaiting: DiagnosisSubmissionRef[] = [];
+  const pairs: (DiagnosisSubmissionRef & { moves: DiagnosisMove[] })[] = [];
+  let reviseCount = 0;
+  let resubmittedCount = 0;
+
+  for (const submission of release.submissions) {
+    const ordered = [...submission.revisions].sort(
+      (left, right) => left.revisionNumber - right.revisionNumber,
+    );
+    const phaseGoalIds =
+      submission.phaseIndex > 0
+        ? release.phases[submission.phaseIndex - 1]?.learningGoalIds
+        : undefined;
+    for (const revision of ordered) {
+      if (revision.nextStep !== "REVISE") continue;
+      reviseCount += 1;
+      const later = ordered.filter(
+        (candidate) => candidate.revisionNumber > revision.revisionNumber,
+      );
+      if (later.length === 0) {
+        awaiting.push(refFor(release, submission));
+        continue;
+      }
+      resubmittedCount += 1;
+      const before = revision.outcomes;
+      const after = later.find((candidate) => candidate.outcomes !== null)?.outcomes;
+      if (!before || !after) continue;
+      const moves = dimensions.flatMap((dimension, index): DiagnosisMove[] => {
+        if (!isDimensionRelevantToPhase(phaseGoalIds, dimension.learningGoalIds)) {
+          return [];
+        }
+        const match = (outcome: InsightsOutcome) =>
+          outcome.dimensionIndex === index + 1 &&
+          outcome.dimensionName === dimension.name;
+        const beforeOutcome = before.find(match);
+        const afterOutcome = after.find(match);
+        if (!beforeOutcome || !afterOutcome) return [];
+        return [
+          {
+            dimensionName: dimension.name,
+            before: cellOf(beforeOutcome),
+            after: cellOf(afterOutcome),
+            movement: compareOutcomes(beforeOutcome, afterOutcome),
+          },
+        ];
+      });
+      pairs.push({ ...refFor(release, submission), moves });
+    }
+  }
+
+  const moves = pairs.flatMap((pair) => pair.moves);
+  const count = (movement: DiagnosisMove["movement"]) =>
+    moves.filter((move) => move.movement === movement).length;
+  return {
+    reviseCount,
+    resubmittedCount,
+    awaiting: awaiting.sort(byAudienceName),
+    pairs: pairs.sort(byAudienceName),
+    rose: count("rose"),
+    unchanged: count("unchanged"),
+    fell: count("fell"),
+  };
+}
+
+/**
+ * The scaffold tier the teacher last chose for each audience (D-034). It is
+ * the teacher's own record of how much help to give next, not a judgment of
+ * ability, and students never see it (D-078).
+ */
+function buildSupport(release: DiagnosisReleaseInput): DiagnosisSupport | null {
+  const latest = audienceSubmissions(release).flatMap((audience) => {
+    const tiered = audience.submissions
+      .flatMap((submission) =>
+        submission.currentRevision?.supportLevel &&
+        submission.currentRevision.feedbackConfirmedAt
+          ? [
+              {
+                submissionId: submission.id,
+                level: submission.currentRevision.supportLevel,
+                confirmedAt: Date.parse(submission.currentRevision.feedbackConfirmedAt),
+              },
+            ]
+          : [],
+      )
+      .sort((left, right) => right.confirmedAt - left.confirmedAt)[0];
+    return tiered ? [{ name: audience.name, ...tiered }] : [];
+  });
+  if (latest.length === 0) return null;
+  return {
+    tiers: teacherFeedbackSupportLevels.map((level) => ({
+      level,
+      label: teacherFeedbackSupportLevelLabels[level],
+      audiences: latest
+        .filter((item) => item.level === level)
+        .map((item) => ({ name: item.name, submissionId: item.submissionId }))
+        .sort(byName),
+    })),
+  };
+}
+
+function shorten(text: string, max = 24): string {
+  const chars = Array.from(text);
+  return chars.length <= max ? text : `${chars.slice(0, max).join("")}…`;
+}
+
 function unitFor(audiences: readonly DiagnosisAudience[]): string {
   const hasGroups = audiences.some((audience) => audience.kind === "group");
   const hasStudents = audiences.some((audience) => audience.kind === "student");
@@ -363,6 +630,8 @@ function buildAlerts(
   release: DiagnosisReleaseInput,
   lanes: readonly DiagnosisLane[],
   matrix: DiagnosisMatrix,
+  evidence: readonly DiagnosisEvidencePhase[],
+  resubmission: DiagnosisResubmission,
   unit: string,
   now: Date,
 ): DiagnosisAlert[] {
@@ -377,7 +646,12 @@ function buildAlerts(
       tone: due.soon ? "urgent" : "attention",
       text: `${notStarted.length} ${unit}还没开始`,
       basis: basis(nameList(notStarted), due.text),
-      action: { label: "查看是谁", query: "?stage=not_started#progress", primary: false },
+      action: {
+        label: "查看是谁",
+        target: "roster",
+        query: "?stage=not_started#progress",
+        primary: false,
+      },
     });
   }
 
@@ -392,6 +666,7 @@ function buildAlerts(
       basis: basis(nameList(stalled), `最久 ${longest} 天`, due.text),
       action: {
         label: "查看是谁",
+        target: "roster",
         query: `?stage=${encodeURIComponent(lane.key)}#progress`,
         primary: false,
       },
@@ -416,7 +691,12 @@ function buildAlerts(
         waitedDays === 0
           ? "最早的一份是今天提交的"
           : `最早的一份已经等了 ${waitedDays} 天`,
-      action: { label: "开始评阅", query: "?queue=feedback", primary: true },
+      action: {
+        label: "开始评阅",
+        target: "roster",
+        query: "?queue=feedback",
+        primary: true,
+      },
     });
   }
 
@@ -432,21 +712,46 @@ function buildAlerts(
           : "一个维度多数人偏弱，多半与任务或讲解有关，而不是个别学生的问题",
       action: {
         label: `看这 ${dimension.lowCount} 份`,
+        target: "roster",
         query: `?dim=${dimension.dimensionIndex}`,
         primary: false,
       },
     });
   }
 
-  const improvement = aggregateFeedbackImprovement([toInsightsInput(release)]);
-  const notResubmitted = improvement.reviseCount - improvement.resubmittedCount;
-  if (open && notResubmitted > 0) {
+  for (const phase of evidence) {
+    for (const item of phase.items) {
+      if (!isMostlyLow(phase.submittedCount, item.missing.length)) continue;
+      alerts.push({
+        kind: "evidence_gap",
+        tone: "attention",
+        text: `「${phase.phaseName}」的「${shorten(item.description)}」${phase.submittedCount} 份中 ${item.missing.length} 份没勾选`,
+        basis: "多数人没交这一项，可能是任务书没讲清要交什么，或这一项要求过重",
+        action: {
+          label: "看是哪几份",
+          target: "page",
+          query: "#evidence",
+          primary: false,
+        },
+      });
+    }
+  }
+
+  if (open && resubmission.awaiting.length > 0) {
     alerts.push({
       kind: "awaiting_resubmission",
       tone: "note",
-      text: `要求重交的 ${improvement.reviseCount} 份里 ${notResubmitted} 份还没重交`,
-      basis: basis("学生重交后会回到待反馈", due.text),
-      action: { label: "查看", query: "?queue=resubmit", primary: false },
+      text: `要求重交的 ${resubmission.reviseCount} 份里 ${resubmission.awaiting.length} 份还没重交`,
+      basis: basis(
+        resubmission.awaiting.map((item) => item.audienceName).join("、"),
+        due.text,
+      ),
+      action: {
+        label: "查看",
+        target: "roster",
+        query: "?queue=resubmit",
+        primary: false,
+      },
     });
   }
 
@@ -475,6 +780,8 @@ export function buildReleaseDiagnosis(
     }),
   );
   const matrix = buildMatrix(release);
+  const evidence = buildEvidence(release);
+  const resubmission = buildResubmission(release);
   const unit = unitFor(audiences);
 
   return {
@@ -489,7 +796,9 @@ export function buildReleaseDiagnosis(
       .length,
     lanes,
     matrix,
-    improvement: aggregateFeedbackImprovement([toInsightsInput(release)]),
-    alerts: buildAlerts(release, lanes, matrix, unit, now),
+    evidence,
+    resubmission,
+    support: buildSupport(release),
+    alerts: buildAlerts(release, lanes, matrix, evidence, resubmission, unit, now),
   };
 }

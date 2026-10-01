@@ -2,10 +2,13 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
 import {
+  ArrowRightIcon,
   BellRingIcon,
   ChevronRightIcon,
   FootprintsIcon,
   Grid3x3Icon,
+  LifeBuoyIcon,
+  ListChecksIcon,
   RepeatIcon,
 } from "lucide-react";
 import { z, ZodError } from "zod";
@@ -198,7 +201,13 @@ function AlertsCard({ diagnosis }: { diagnosis: ReleaseDiagnosis }) {
                   size="sm"
                   variant={alert.action.primary ? "default" : "outline"}
                 >
-                  <Link href={rosterHref(diagnosis.releaseId, alert.action.query)}>
+                  <Link
+                    href={
+                      alert.action.target === "page"
+                        ? alert.action.query
+                        : rosterHref(diagnosis.releaseId, alert.action.query)
+                    }
+                  >
                     {alert.action.label}
                     <ChevronRightIcon />
                   </Link>
@@ -487,42 +496,269 @@ function MatrixCard({ diagnosis }: { diagnosis: ReleaseDiagnosis }) {
   );
 }
 
-function ImprovementCard({ diagnosis }: { diagnosis: ReleaseDiagnosis }) {
-  const { improvement } = diagnosis;
-  if (improvement.reviseCount === 0) {
+function SubmissionChip({
+  submissionId,
+  name,
+  note,
+}: {
+  submissionId: string;
+  name: string;
+  note?: string | null;
+}) {
+  return (
+    <Link
+      className="flex max-w-56 items-center gap-1.5 rounded-full py-0.5 pr-2.5 pl-0.5 text-sm ring-1 ring-foreground/8 transition-colors hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+      href={`/teacher/submissions/${submissionId}`}
+    >
+      <span
+        aria-hidden="true"
+        className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/12 text-xs font-semibold text-primary"
+      >
+        {Array.from(name)[0]}
+      </span>
+      <span className="truncate">{name}</span>
+      {note ? (
+        <span className="shrink-0 text-xs text-muted-foreground">{note}</span>
+      ) : null}
+    </Link>
+  );
+}
+
+function EvidenceCard({ diagnosis }: { diagnosis: ReleaseDiagnosis }) {
+  if (diagnosis.evidence.length === 0) {
     return null;
   }
-  const moves = [
-    ["上升", improvement.rose],
-    ["持平", improvement.unchanged],
-    ["下降", improvement.fell],
-  ] as const;
+  return (
+    <Card className="scroll-mt-24" id="evidence">
+      <CardHeader>
+        <SectionTitle icon={ListChecksIcon}>证据交齐了吗</SectionTitle>
+        <CardDescription>
+          按各阶段当前正式提交里学生勾选的证据项统计。一项多数人没交，多半是任务书的问题。
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-5">
+        {diagnosis.evidence.map((phase) => (
+          <section className="flex flex-col gap-2" key={phase.phaseIndex}>
+            <h3 className="flex items-baseline gap-2 text-sm font-medium">
+              {phase.phaseName}
+              <span className="text-xs font-normal text-muted-foreground tabular-nums">
+                {`已交 ${phase.submittedCount} 份`}
+              </span>
+            </h3>
+            <ul className="flex flex-col divide-y divide-border">
+              {phase.items.map((item) => (
+                <li
+                  className="flex flex-col gap-2 py-2.5 first:pt-0 last:pb-0"
+                  key={item.evidenceIndex}
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5">
+                    <p className="min-w-0 text-sm">
+                      {item.description}
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        {item.typeLabel}
+                      </span>
+                    </p>
+                    <div className="flex shrink-0 items-center gap-2">
+                      {/* 一格一份提交：实心是勾选了，空心是没勾。 */}
+                      <span
+                        aria-hidden="true"
+                        className="flex flex-wrap gap-0.5"
+                      >
+                        {Array.from({ length: phase.submittedCount }, (_, index) => (
+                          <span
+                            className={cn(
+                              "h-4 w-2 rounded-sm",
+                              index < item.doneCount
+                                ? "bg-primary"
+                                : "bg-status-closed ring-1 ring-border ring-inset",
+                            )}
+                            key={index}
+                          />
+                        ))}
+                      </span>
+                      <span className="text-xs text-muted-foreground tabular-nums">
+                        {`${phase.submittedCount} 份中 ${item.doneCount} 份已勾选`}
+                      </span>
+                    </div>
+                  </div>
+                  {item.missing.length > 0 ? (
+                    <ul className="flex flex-wrap items-center gap-2">
+                      <li className="text-xs text-muted-foreground">没勾选：</li>
+                      {item.missing.map((submission) => (
+                        <li key={submission.submissionId}>
+                          <SubmissionChip
+                            name={submission.audienceName}
+                            submissionId={submission.submissionId}
+                          />
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
+
+const moveTone = {
+  rose: "text-status-done-foreground",
+  unchanged: "text-muted-foreground",
+  fell: "text-status-resubmit-foreground",
+} as const;
+
+function LevelPill({ cell }: { cell: DiagnosisCell }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex h-6 min-w-14 items-center justify-center rounded-md px-1.5 text-xs",
+        cellStyle[cell].className,
+      )}
+    >
+      {cellStyle[cell].label}
+    </span>
+  );
+}
+
+function ResubmissionCard({ diagnosis }: { diagnosis: ReleaseDiagnosis }) {
+  const { resubmission } = diagnosis;
+  if (resubmission.reviseCount === 0) {
+    return null;
+  }
   return (
     <Card>
       <CardHeader>
         <SectionTitle icon={RepeatIcon}>重交之后</SectionTitle>
         <CardDescription>
-          档位变化只比较重交前后都有量规评价的提交。
+          {`要求重交 ${resubmission.reviseCount} 份，其中 ${resubmission.resubmittedCount} 份已重交。档位变化只比较重交前后都有量规评价的提交。`}
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col gap-2 text-sm">
-        <p>
-          {`要求重交 ${improvement.reviseCount} 份，其中 ${improvement.resubmittedCount} 份已重交。`}
-        </p>
-        {improvement.evaluationPairs === 0 ? (
+      <CardContent className="flex flex-col gap-4 text-sm">
+        {resubmission.awaiting.length > 0 ? (
+          <ul className="flex flex-wrap items-center gap-2">
+            <li className="text-xs text-muted-foreground">还没重交：</li>
+            {resubmission.awaiting.map((submission) => (
+              <li key={submission.submissionId}>
+                <SubmissionChip
+                  name={submission.audienceName}
+                  note={submission.phaseLabel}
+                  submissionId={submission.submissionId}
+                />
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        {resubmission.pairs.length === 0 ? (
           <p className="text-muted-foreground">
             重交前后还没有成对的量规评价，暂时比较不了档位变化。
           </p>
         ) : (
-          <p className="flex flex-wrap gap-x-4 gap-y-1 tabular-nums">
-            <span className="text-muted-foreground">
-              {`${improvement.evaluationPairs} 份可比较，按维度：`}
-            </span>
-            {moves.map(([label, count]) => (
-              <span key={label}>{`${label} ${count}`}</span>
-            ))}
-          </p>
+          <>
+            <ul className="flex flex-col divide-y divide-border">
+              {resubmission.pairs.map((pair, index) => (
+                <li
+                  className="flex flex-col gap-2 py-3 first:pt-0 last:pb-0"
+                  key={`${pair.submissionId}-${index}`}
+                >
+                  <p>
+                    <Link
+                      className="font-medium underline-offset-4 hover:underline"
+                      href={`/teacher/submissions/${pair.submissionId}`}
+                    >
+                      {pair.audienceName}
+                    </Link>
+                    {pair.phaseLabel ? (
+                      <span className="ml-1.5 text-xs text-muted-foreground">
+                        {pair.phaseLabel}
+                      </span>
+                    ) : null}
+                  </p>
+                  <ul className="grid grid-cols-1 gap-x-6 gap-y-1.5 sm:grid-cols-2">
+                    {pair.moves.map((move) => (
+                      <li
+                        className="flex items-center justify-between gap-3"
+                        key={move.dimensionName}
+                      >
+                        <span className="min-w-0 truncate text-muted-foreground">
+                          {move.dimensionName}
+                        </span>
+                        <span className="flex shrink-0 items-center gap-1.5">
+                          <LevelPill cell={move.before} />
+                          <ArrowRightIcon
+                            aria-label={
+                              move.movement === "rose"
+                                ? "上升到"
+                                : move.movement === "fell"
+                                  ? "下降到"
+                                  : "保持"
+                            }
+                            className={cn("size-4", moveTone[move.movement])}
+                          />
+                          <LevelPill cell={move.after} />
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </li>
+              ))}
+            </ul>
+            <p className="type-caption text-muted-foreground tabular-nums">
+              {`按维度合计：上升 ${resubmission.rose}，持平 ${resubmission.unchanged}，下降 ${resubmission.fell}。`}
+            </p>
+          </>
         )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function SupportCard({ diagnosis }: { diagnosis: ReleaseDiagnosis }) {
+  if (!diagnosis.support) {
+    return null;
+  }
+  return (
+    <Card>
+      <CardHeader>
+        <SectionTitle icon={LifeBuoyIcon}>你给的支架</SectionTitle>
+        <CardDescription>
+          每个学生或小组最近一次反馈里你选的支架层级。这是你对下一步帮扶多少的记录，学生看不到。
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <ul className="flex flex-col divide-y divide-border">
+          {diagnosis.support.tiers.map((tier) => (
+            <li
+              className="grid grid-cols-1 gap-2 py-2.5 first:pt-0 last:pb-0 sm:grid-cols-[7rem_1fr] sm:items-start sm:gap-4"
+              key={tier.level}
+            >
+              <div className="flex items-baseline gap-2 sm:pt-1">
+                <span className="text-sm font-medium">{tier.label}</span>
+                <span className="text-xs text-muted-foreground tabular-nums">
+                  {tier.audiences.length}
+                </span>
+              </div>
+              {tier.audiences.length === 0 ? (
+                <span aria-hidden="true" className="text-sm text-muted-foreground sm:pt-1">
+                  —
+                </span>
+              ) : (
+                <ul className="flex flex-wrap gap-2">
+                  {tier.audiences.map((audience) => (
+                    <li key={audience.submissionId}>
+                      <SubmissionChip
+                        name={audience.name}
+                        submissionId={audience.submissionId}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          ))}
+        </ul>
       </CardContent>
     </Card>
   );
@@ -605,8 +841,10 @@ export default async function TeacherInsightsPage({
           <>
             <AlertsCard diagnosis={diagnosis} />
             <LanesCard diagnosis={diagnosis} />
+            <EvidenceCard diagnosis={diagnosis} />
             <MatrixCard diagnosis={diagnosis} />
-            <ImprovementCard diagnosis={diagnosis} />
+            <ResubmissionCard diagnosis={diagnosis} />
+            <SupportCard diagnosis={diagnosis} />
           </>
         ) : null}
       </div>
