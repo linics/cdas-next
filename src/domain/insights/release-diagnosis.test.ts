@@ -33,6 +33,20 @@ function outcomes(
   );
 }
 
+function revision(
+  overrides: Partial<NonNullable<DiagnosisSubmissionInput["currentRevision"]>> = {},
+): NonNullable<DiagnosisSubmissionInput["currentRevision"]> {
+  return {
+    submittedAt: daysAgo(1),
+    isLate: false,
+    hasFeedback: true,
+    completedEvidenceIndexes: [],
+    supportLevel: null,
+    feedbackConfirmedAt: null,
+    ...overrides,
+  };
+}
+
 function submission(
   overrides: Partial<DiagnosisSubmissionInput> & { id: string },
 ): DiagnosisSubmissionInput {
@@ -43,7 +57,7 @@ function submission(
     groupId: null,
     final: false,
     workingCopyUpdatedAt: null,
-    currentRevision: { submittedAt: daysAgo(1), isLate: false, hasFeedback: true },
+    currentRevision: revision(),
     revisions: [{ revisionNumber: 1, nextStep: "CONTINUE", outcomes: null }],
     ...overrides,
   };
@@ -61,8 +75,15 @@ function release(
     executionVersion: 1,
     submissionMode: "phased",
     phases: [
-      { name: "现场认定", learningGoalIds: ["g1"] },
-      { name: "读数与估算", learningGoalIds: ["g2"] },
+      {
+        name: "现场认定",
+        learningGoalIds: ["g1"],
+        evidence: [
+          { description: "漏水点的位置与照片", typeLabel: "图片" },
+          { description: "和同伴核对过位置", typeLabel: "现场确认" },
+        ],
+      },
+      { name: "读数与估算", learningGoalIds: ["g2"], evidence: [] },
     ],
     rubricDimensions: [
       { name: "问题与机理", learningGoalIds: ["g1"] },
@@ -121,11 +142,7 @@ describe("release diagnosis", () => {
             submission({
               id: "a1",
               studentId: "s-chen",
-              currentRevision: {
-                submittedAt: daysAgo(idle + 3),
-                isLate: false,
-                hasFeedback: true,
-              },
+              currentRevision: revision({ submittedAt: daysAgo(idle + 3), hasFeedback: true }),
               workingCopyUpdatedAt: daysAgo(idle),
             }),
           ],
@@ -151,7 +168,7 @@ describe("release diagnosis", () => {
     const quiet = submission({
       id: "a1",
       studentId: "s-chen",
-      currentRevision: { submittedAt: daysAgo(30), isLate: false, hasFeedback: true },
+      currentRevision: revision({ submittedAt: daysAgo(30), hasFeedback: true }),
     });
     const closed = buildReleaseDiagnosis(
       release({ status: "CLOSED", submissions: [quiet] }),
@@ -168,7 +185,7 @@ describe("release diagnosis", () => {
             studentId: "s-chen",
             phaseIndex: 2,
             final: true,
-            currentRevision: { submittedAt: daysAgo(30), isLate: false, hasFeedback: true },
+            currentRevision: revision({ submittedAt: daysAgo(30), hasFeedback: true }),
           }),
         ],
         members: [{ id: "s-chen", name: "陈同学" }],
@@ -330,11 +347,7 @@ describe("release diagnosis", () => {
             id: "a1",
             studentId: "s-chen",
             phaseIndex: 1,
-            currentRevision: {
-              submittedAt: daysAgo(STALL_DAYS + 1),
-              isLate: false,
-              hasFeedback: false,
-            },
+            currentRevision: revision({ submittedAt: daysAgo(STALL_DAYS + 1), hasFeedback: false }),
             revisions: [{ revisionNumber: 1, nextStep: null, outcomes: null }],
           }),
           submission({
@@ -343,7 +356,7 @@ describe("release diagnosis", () => {
             phaseIndex: 2,
             final: true,
             latestRevisionNumber: 1,
-            currentRevision: { submittedAt: daysAgo(0), isLate: false, hasFeedback: true },
+            currentRevision: revision({ submittedAt: daysAgo(0), hasFeedback: true }),
             revisions: [{ revisionNumber: 1, nextStep: "REVISE", outcomes: null }],
           }),
         ],
@@ -360,5 +373,188 @@ describe("release diagnosis", () => {
       action: { label: "开始评阅", query: "?queue=feedback", primary: true },
     });
     expect(diagnosis.alerts[1]?.text).toBe("要求重交的 1 份里 1 份还没重交");
+  });
+
+  it("counts ticked evidence per phase and raises an alert when most skip an item", () => {
+    const phaseOne = (id: string, studentId: string, ticked: number[]) =>
+      submission({
+        id,
+        studentId,
+        phaseIndex: 1,
+        currentRevision: revision({ completedEvidenceIndexes: ticked }),
+      });
+    const diagnosis = buildReleaseDiagnosis(
+      release({
+        submissions: [
+          phaseOne("c1", "s-chen", [1, 2]),
+          phaseOne("l1", "s-li", [2]),
+          phaseOne("w1", "s-wang", [2]),
+          // A started-but-unsubmitted phase is not part of the count.
+          submission({
+            id: "z1",
+            studentId: "s-zhao",
+            phaseIndex: 1,
+            latestRevisionNumber: 0,
+            currentRevision: null,
+            revisions: [],
+          }),
+        ],
+      }),
+      NOW,
+    );
+
+    expect(diagnosis.evidence).toHaveLength(1);
+    expect(diagnosis.evidence[0]).toMatchObject({
+      phaseName: "现场认定",
+      submittedCount: 3,
+    });
+    expect(
+      diagnosis.evidence[0]?.items.map((item) => [
+        item.description,
+        item.doneCount,
+        item.missing.map((ref) => ref.audienceName),
+      ]),
+    ).toEqual([
+      ["漏水点的位置与照片", 1, ["李明", "王芳"]],
+      ["和同伴核对过位置", 3, []],
+    ]);
+    expect(diagnosis.alerts.find((alert) => alert.kind === "evidence_gap")).toMatchObject({
+      text: "「现场认定」的「漏水点的位置与照片」3 份中 2 份没勾选",
+      action: { target: "page", query: "#evidence" },
+    });
+  });
+
+  it("does not raise an evidence alert on fewer than three submissions", () => {
+    const diagnosis = buildReleaseDiagnosis(
+      release({
+        submissions: [
+          submission({ id: "c1", studentId: "s-chen" }),
+          submission({ id: "l1", studentId: "s-li" }),
+        ],
+      }),
+      NOW,
+    );
+    expect(diagnosis.evidence[0]?.items[0]?.missing).toHaveLength(2);
+    expect(diagnosis.alerts.some((alert) => alert.kind === "evidence_gap")).toBe(false);
+  });
+
+  it("pairs each requested revision with the next evaluated one, per relevant dimension", () => {
+    const diagnosis = buildReleaseDiagnosis(
+      release({
+        submissions: [
+          submission({
+            id: "c2",
+            studentId: "s-chen",
+            phaseIndex: 2,
+            final: true,
+            latestRevisionNumber: 2,
+            revisions: [
+              {
+                revisionNumber: 1,
+                nextStep: "REVISE",
+                outcomes: outcomes("insufficient", "improve", "improve"),
+              },
+              {
+                revisionNumber: 2,
+                nextStep: "CONTINUE",
+                outcomes: outcomes("insufficient", "pass", "improve"),
+              },
+            ],
+          }),
+          // Asked to revise, nothing back yet.
+          submission({
+            id: "w1",
+            studentId: "s-wang",
+            phaseIndex: 1,
+            revisions: [{ revisionNumber: 1, nextStep: "REVISE", outcomes: null }],
+          }),
+        ],
+      }),
+      NOW,
+    );
+
+    expect(diagnosis.resubmission).toMatchObject({
+      reviseCount: 2,
+      resubmittedCount: 1,
+      rose: 1,
+      unchanged: 1,
+      fell: 0,
+    });
+    expect(diagnosis.resubmission.awaiting).toEqual([
+      { submissionId: "w1", audienceName: "王芳", phaseLabel: "现场认定" },
+    ]);
+    // 问题与机理 serves goal 1 only, so phase 2 never compares it (D-076).
+    expect(diagnosis.resubmission.pairs).toEqual([
+      {
+        submissionId: "c2",
+        audienceName: "陈同学",
+        phaseLabel: null,
+        moves: [
+          { dimensionName: "数据与证据", before: "improve", after: "pass", movement: "rose" },
+          {
+            dimensionName: "跨学科连接",
+            before: "improve",
+            after: "improve",
+            movement: "unchanged",
+          },
+        ],
+      },
+    ]);
+    expect(
+      diagnosis.alerts.find((alert) => alert.kind === "awaiting_resubmission"),
+    ).toMatchObject({ text: "要求重交的 2 份里 1 份还没重交", basis: "王芳" });
+  });
+
+  it("takes each audience's most recently confirmed scaffold tier", () => {
+    const none = buildReleaseDiagnosis(
+      release({ submissions: [submission({ id: "c1", studentId: "s-chen" })] }),
+      NOW,
+    );
+    expect(none.support).toBeNull();
+
+    const diagnosis = buildReleaseDiagnosis(
+      release({
+        submissions: [
+          submission({
+            id: "c1",
+            studentId: "s-chen",
+            phaseIndex: 1,
+            currentRevision: revision({
+              supportLevel: "FOUNDATION",
+              feedbackConfirmedAt: daysAgo(4),
+            }),
+          }),
+          submission({
+            id: "c2",
+            studentId: "s-chen",
+            phaseIndex: 2,
+            final: true,
+            currentRevision: revision({
+              supportLevel: "STANDARD",
+              feedbackConfirmedAt: daysAgo(1),
+            }),
+          }),
+          submission({
+            id: "l1",
+            studentId: "s-li",
+            currentRevision: revision({
+              supportLevel: "CHALLENGE",
+              feedbackConfirmedAt: daysAgo(2),
+            }),
+          }),
+        ],
+      }),
+      NOW,
+    );
+    expect(
+      diagnosis.support?.tiers.map((tier) => [
+        tier.label,
+        tier.audiences.map((audience) => [audience.name, audience.submissionId]),
+      ]),
+    ).toEqual([
+      ["基础支持", []],
+      ["标准任务", [["陈同学", "c2"]]],
+      ["挑战拓展", [["李明", "l1"]]],
+    ]);
   });
 });

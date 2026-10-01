@@ -212,21 +212,102 @@ function diagnosis(overrides: Record<string, unknown> = {}) {
         },
       ],
     },
-    improvement: emptyImprovement,
+    evidence: [
+      {
+        phaseIndex: 1,
+        phaseName: "现场认定",
+        submittedCount: 3,
+        items: [
+          {
+            evidenceIndex: 1,
+            description: "漏水点的位置与照片",
+            typeLabel: "图片",
+            doneCount: 1,
+            missing: [
+              {
+                submissionId: "80000000-0000-4000-8000-000000000004",
+                audienceName: "李明",
+                phaseLabel: null,
+              },
+              {
+                submissionId: "80000000-0000-4000-8000-000000000002",
+                audienceName: "王芳",
+                phaseLabel: null,
+              },
+            ],
+          },
+        ],
+      },
+    ],
+    resubmission: {
+      reviseCount: 2,
+      resubmittedCount: 1,
+      awaiting: [
+        {
+          submissionId: "80000000-0000-4000-8000-000000000002",
+          audienceName: "王芳",
+          phaseLabel: "读数与估算",
+        },
+      ],
+      pairs: [
+        {
+          submissionId: "80000000-0000-4000-8000-000000000001",
+          audienceName: "陈同学",
+          phaseLabel: null,
+          moves: [
+            { dimensionName: "数据与证据", before: "improve", after: "pass", movement: "rose" },
+            { dimensionName: "跨学科连接", before: "improve", after: "improve", movement: "unchanged" },
+          ],
+        },
+      ],
+      rose: 1,
+      unchanged: 1,
+      fell: 0,
+    },
+    support: {
+      tiers: [
+        {
+          level: "FOUNDATION",
+          label: "基础支持",
+          audiences: [
+            { name: "王芳", submissionId: "80000000-0000-4000-8000-000000000002" },
+          ],
+        },
+        { level: "STANDARD", label: "标准任务", audiences: [] },
+        { level: "CHALLENGE", label: "挑战拓展", audiences: [] },
+      ],
+    },
     alerts: [
       {
         kind: "stalled",
         tone: "attention",
         text: "「读数与估算」有 1 人超过 5 天没有改动",
         basis: "王芳 · 最久 6 天",
-        action: { label: "查看是谁", query: "?stage=phase%3A1#progress", primary: false },
+        action: {
+          label: "查看是谁",
+          target: "roster",
+          query: "?stage=phase%3A1#progress",
+          primary: false,
+        },
       },
       {
         kind: "awaiting_feedback",
         tone: "attention",
         text: "1 份提交在等你的反馈",
         basis: "最早的一份已经等了 2 天",
-        action: { label: "开始评阅", query: "?queue=feedback", primary: true },
+        action: {
+          label: "开始评阅",
+          target: "roster",
+          query: "?queue=feedback",
+          primary: true,
+        },
+      },
+      {
+        kind: "evidence_gap",
+        tone: "attention",
+        text: "「现场认定」的「漏水点的位置与照片」3 份中 2 份没勾选",
+        basis: "多数人没交这一项，可能是任务书没讲清要交什么，或这一项要求过重",
+        action: { label: "看是哪几份", target: "page", query: "#evidence", primary: false },
       },
     ],
     ...overrides,
@@ -359,6 +440,17 @@ describe("teacher insights page", () => {
       diagnosis({
         alerts: [],
         matrix: { status: "no_evaluations", sampleCount: 0, dimensions: [], rows: [] },
+        evidence: [],
+        resubmission: {
+          reviseCount: 0,
+          resubmittedCount: 0,
+          awaiting: [],
+          pairs: [],
+          rose: 0,
+          unchanged: 0,
+          fell: 0,
+        },
+        support: null,
       }),
     );
 
@@ -366,6 +458,42 @@ describe("teacher insights page", () => {
     expect(markup).toContain("目前没有需要特别留意的地方");
     expect(markup).toContain("暂无已确认的量规评价");
     expect(markup).not.toContain("重交之后");
+    expect(markup).not.toContain("证据交齐了吗");
+    expect(markup).not.toContain("你给的支架");
+  });
+
+  it("shows which evidence item was skipped and by whom", async () => {
+    mocks.getTeacherInsights.mockResolvedValue(
+      dashboard([{ id: ACTIVE_ID, title: "校园节水行动", status: "ACTIVE" }]),
+    );
+    mocks.getTeacherReleaseDiagnosis.mockResolvedValue(diagnosis());
+
+    const markup = await renderPage({ release: ACTIVE_ID });
+    expect(markup).toContain('id="evidence"');
+    expect(markup).toContain("漏水点的位置与照片");
+    expect(markup).toContain("3 份中 1 份已勾选");
+    expect(markup).toContain(
+      'href="/teacher/submissions/80000000-0000-4000-8000-000000000004"',
+    );
+    // The evidence alert stays on this page instead of going to the roster.
+    expect(markup).toContain('href="#evidence"');
+  });
+
+  it("shows resubmission changes per person and the scaffold tiers", async () => {
+    mocks.getTeacherInsights.mockResolvedValue(
+      dashboard([{ id: ACTIVE_ID, title: "校园节水行动", status: "ACTIVE" }]),
+    );
+    mocks.getTeacherReleaseDiagnosis.mockResolvedValue(diagnosis());
+
+    const markup = await renderPage({ release: ACTIVE_ID });
+    expect(markup).toContain("要求重交 2 份，其中 1 份已重交");
+    expect(markup).toContain("还没重交：");
+    expect(markup).toContain('aria-label="上升到"');
+    expect(markup).toContain('aria-label="保持"');
+    expect(markup).toContain("按维度合计：上升 1，持平 1，下降 0。");
+    expect(markup).toContain("你给的支架");
+    expect(markup).toContain("基础支持");
+    expect(markup).toContain("学生看不到");
   });
 
   it("guides a student back without reading insights", async () => {

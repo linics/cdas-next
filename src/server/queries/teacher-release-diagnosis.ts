@@ -3,6 +3,7 @@ import "server-only";
 import { z } from "zod";
 import {
   activityContentSchema,
+  evidenceTypeLabel,
   isStructuredContent,
 } from "../../domain/activity/activity-content";
 import {
@@ -115,13 +116,19 @@ export async function getTeacherReleaseDiagnosis(
               revisionNumber: true,
               submittedAt: true,
               isLate: true,
+              completedEvidenceIndexes: true,
               feedback: {
                 select: {
                   version: true,
                   revisions: {
                     orderBy: { version: "desc" },
                     take: 1,
-                    select: { version: true, nextStep: true },
+                    select: {
+                      version: true,
+                      nextStep: true,
+                      supportLevel: true,
+                      confirmedAt: true,
+                    },
                   },
                 },
               },
@@ -163,6 +170,10 @@ export async function getTeacherReleaseDiagnosis(
             name: phase.name,
             learningGoalIds:
               "learningGoalIds" in phase ? phase.learningGoalIds : undefined,
+            evidence: phase.evidence.map((evidence) => ({
+              description: evidence.description,
+              typeLabel: evidenceTypeLabel(evidence.type),
+            })),
           }))
         : [],
     rubricDimensions: structured
@@ -204,6 +215,10 @@ export async function getTeacherReleaseDiagnosis(
               submittedAt: current.submittedAt.toISOString(),
               isLate: current.isLate,
               hasFeedback: current.feedback !== null,
+              completedEvidenceIndexes: current.completedEvidenceIndexes,
+              supportLevel: current.feedback?.revisions[0]?.supportLevel ?? null,
+              feedbackConfirmedAt:
+                current.feedback?.revisions[0]?.confirmedAt.toISOString() ?? null,
             }
           : null,
         revisions: submission.revisions.map(mapRevision),
