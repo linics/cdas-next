@@ -107,7 +107,7 @@ function ReleaseTabs({
   selectedId: string | null;
 }) {
   return (
-    <nav aria-label="选择活动" className="-mx-1 overflow-x-auto px-1 pb-1">
+    <nav aria-label="选择活动" className="-m-1.5 overflow-x-auto p-1.5">
       <ul className="flex gap-3">
         {options.map((option) => {
           const selected = option.id === selectedId;
