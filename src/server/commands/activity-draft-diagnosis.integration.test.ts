@@ -12,6 +12,7 @@ import {
 import { finishActivityAssistantRun, startActivityAssistantRun } from "../assistant/agent-run-lifecycle";
 import { createDatabaseClient } from "../db/client";
 import { getActivitySourceReferences } from "../queries/activity-source-references";
+import { getDraftOriginSignals } from "../queries/release-task-book-signals";
 import { getDraftDiagnoses } from "../queries/activity-draft-diagnoses";
 import { getTeacherActivityDraft } from "../queries/teacher-activity-workspace";
 import type { CommandContext } from "./command-context";
@@ -45,6 +46,7 @@ function dependencies(
     createModel: () => ({}) as LanguageModel,
     getDraft: getTeacherActivityDraft,
     getSources: getActivitySourceReferences,
+    getSignals: getDraftOriginSignals,
     startRun: startActivityAssistantRun,
     finishRun: finishActivityAssistantRun,
     recordDiagnosis: recordActivityDraftDiagnosis,

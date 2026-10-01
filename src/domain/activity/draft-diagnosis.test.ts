@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { waterConservationTaskBookV3 as content } from "../../fixtures/water-conservation-v3";
 import {
   DiagnosisOutputError,
+  diagnosisModelOutputSchema,
   diagnosisTargets,
   resolveDiagnosisFindings,
 } from "./draft-diagnosis";
@@ -53,4 +54,30 @@ describe("draft diagnosis targets", () => {
       ),
     ).toBe("REPEATED_FINDING");
   });
+
+  it("drops an extra key on a finding instead of rejecting the diagnosis", () => {
+    const parsed = diagnosisModelOutputSchema.parse({
+      summary: "证据要求偏笼统，其余结构完整。",
+      findings: [
+        {
+          target: "phases.2.evidence.1",
+          target_label: "阶段 2 · 证据 1",
+          category: "EVIDENCE",
+          problem: "看不出比较了什么。",
+          suggestion: "要求两个点位的对比表。",
+        },
+      ],
+    });
+    expect(parsed.findings[0]).toEqual({
+      target: "phases.2.evidence.1",
+      category: "EVIDENCE",
+      problem: "看不出比较了什么。",
+      suggestion: "要求两个点位的对比表。",
+    });
+    // The envelope itself stays strict.
+    expect(
+      diagnosisModelOutputSchema.safeParse({ summary: "结构完整，没有明显问题。", findings: [], score: 90 }).success,
+    ).toBe(false);
+  });
 });
+

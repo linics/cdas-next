@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   getTeacherInsights: vi.fn(),
   getTeacherReleaseDiagnosis: vi.fn(),
   getReleaseAnswerSummaries: vi.fn(),
+  getReleaseTaskBookSignals: vi.fn(),
   isActivityAssistantEnabled: vi.fn(),
   notFound: vi.fn(() => {
     throw new Error("NEXT_NOT_FOUND");
@@ -73,6 +74,9 @@ vi.mock("../../../server/queries/teacher-release-diagnosis", () => ({
 }));
 vi.mock("../../../server/queries/release-answer-summaries", () => ({
   getReleaseAnswerSummaries: mocks.getReleaseAnswerSummaries,
+}));
+vi.mock("../../../server/queries/release-task-book-signals", () => ({
+  getReleaseTaskBookSignals: mocks.getReleaseTaskBookSignals,
 }));
 vi.mock("../../../server/assistant/assistant-config", () => ({
   isActivityAssistantEnabled: mocks.isActivityAssistantEnabled,
@@ -351,6 +355,7 @@ describe("teacher insights page", () => {
     mocks.createUiCommandContext.mockResolvedValue(mocks.context);
     mocks.getDatabaseClient.mockReturnValue(mocks.database);
     mocks.getReleaseAnswerSummaries.mockResolvedValue([]);
+    mocks.getReleaseTaskBookSignals.mockResolvedValue(null);
     mocks.isActivityAssistantEnabled.mockReturnValue(true);
   });
 
@@ -613,5 +618,50 @@ describe("teacher insights page", () => {
     const markup = await renderPage({ release: ACTIVE_ID });
     expect(markup).toContain("只写了位置，没有写判断依据");
     expect(markup).not.toContain("归纳这");
+  });
+
+  it("lists task-book signals and offers to copy the task book for editing", async () => {
+    mocks.getTeacherInsights.mockResolvedValue(
+      dashboard([{ id: ACTIVE_ID, title: "校园节水行动", status: "ACTIVE" }]),
+    );
+    mocks.getTeacherReleaseDiagnosis.mockResolvedValue(diagnosis());
+    mocks.getReleaseTaskBookSignals.mockResolvedValue({
+      releaseId: ACTIVE_ID,
+      title: "校园节水行动",
+      classroomName: "七年一班",
+      copySource: { id: ACTIVE_ID, version: 2 },
+      signals: [
+        {
+          target: "phases.1.evidence.1",
+          kind: "EVIDENCE_SKIPPED",
+          sourceLabel: "阶段 1 · 证据 1",
+          text: "已交的 3 份里有 2 份没有勾选这项证据。",
+        },
+      ],
+    });
+
+    const markup = await renderPage({ release: ACTIVE_ID });
+    expect(markup).toContain("带回任务书");
+    expect(markup).toContain("阶段 1 · 证据 1");
+    expect(markup).toContain("已交的 3 份里有 2 份没有勾选这项证据。");
+    expect(markup).toContain(
+      `href="/teacher/activities/copy?kind=RELEASE&amp;id=${ACTIVE_ID}&amp;version=2"`,
+    );
+  });
+
+  it("leaves the task-book card out when there is nothing to carry back", async () => {
+    mocks.getTeacherInsights.mockResolvedValue(
+      dashboard([{ id: ACTIVE_ID, title: "校园节水行动", status: "ACTIVE" }]),
+    );
+    mocks.getTeacherReleaseDiagnosis.mockResolvedValue(diagnosis());
+    mocks.getReleaseTaskBookSignals.mockResolvedValue({
+      releaseId: ACTIVE_ID,
+      title: "校园节水行动",
+      classroomName: "七年一班",
+      copySource: { id: ACTIVE_ID, version: 2 },
+      signals: [],
+    });
+
+    expect(await renderPage({ release: ACTIVE_ID })).not.toContain("带回任务书");
   });
 });

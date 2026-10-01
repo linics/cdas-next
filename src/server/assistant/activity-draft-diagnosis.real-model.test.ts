@@ -45,6 +45,7 @@ describe.each([
       targets: diagnosisTargets(taskBook),
       taskBook: taskBookForModel(taskBook),
       adoptedSources: [],
+      classroomSignals: [],
     });
     const output = diagnosisModelOutputSchema.parse(raw);
     const findings = resolveDiagnosisFindings(taskBook, output);
@@ -60,3 +61,32 @@ describe.each([
     }
   });
 });
+
+describe("real-model diagnosis with classroom signals (D-088)", () => {
+  it("ties a classroom signal to the field it points at, without judging students", async () => {
+    const raw = await generateActivityDraftDiagnosis(model(), {
+      targets: diagnosisTargets(content),
+      taskBook: taskBookForModel(content),
+      adoptedSources: [],
+      classroomSignals: [
+        {
+          target: "phases.2.evidence.1",
+          signal: "已交的 9 份里有 6 份没有勾选这项证据。",
+          editedSince: false,
+        },
+      ],
+    });
+    const output = diagnosisModelOutputSchema.parse(raw);
+    const findings = resolveDiagnosisFindings(content, output);
+    if (process.env.DIAGNOSIS_DUMP) {
+      writeFileSync(`${process.env.DIAGNOSIS_DUMP}/signals-${Date.now()}.json`, JSON.stringify({ summary: output.summary, findings }, null, 2));
+    }
+    const onTarget = findings.filter((finding) => finding.target === "phases.2.evidence.1");
+    expect(onTarget.length).toBeGreaterThan(0);
+    // The data is cited where it applies...
+    expect(onTarget.some((finding) => /6\s*份|没有勾选|没勾选|未勾选/.test(finding.problem))).toBe(true);
+    // ...and read as a task-book question, not a verdict on the class.
+    expect(JSON.stringify(output)).not.toMatch(/学生(能力|水平)(不足|较弱|薄弱|有限)|学生不认真|态度不端正/);
+  });
+});
+
