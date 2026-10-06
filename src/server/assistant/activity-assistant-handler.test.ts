@@ -41,6 +41,10 @@ import {
 import { teacherAgentPageKindSchema } from "../../domain/assistant/teacher-agent-page-context";
 import { teacherProductSurfaces } from "../../domain/assistant/teacher-product-surfaces";
 import {
+  teacherEvaluationLevelLabels,
+  teacherEvaluationLevels,
+} from "../../domain/evaluation/teacher-evaluation-policy";
+import {
   MAX_ATTACHMENT_BYTES,
   MAX_SUBMISSION_ATTACHMENTS,
   supportedAttachmentFormats,
@@ -623,6 +627,18 @@ describe("buildActivityAssistantInstructions", () => {
     expect(text).toContain("语料中未找到依据");
     expect(text).toContain("不能改用记忆里的课程标准原文充数");
     expect(text).toContain("不是课程质量结论");
+  });
+
+  it("names process-insight levels the way the review and student pages do", () => {
+    // D-090: get_process_insights returns bare level codes, and left to
+    // translate `pass` itself the model says 合格 where every page says 达标.
+    const text = buildActivityAssistantInstructions([]);
+
+    for (const level of teacherEvaluationLevels) {
+      expect(text).toContain(`${level} 是「${teacherEvaluationLevelLabels[level]}」`);
+    }
+    expect(text).toContain("insufficient 是「证据不足」");
+    expect(text).not.toContain("合格");
   });
 
   it("keeps invented addresses out of the reply text", () => {

@@ -74,6 +74,7 @@ vi.mock("./submission-editor", () => ({
 }));
 
 import { AuthenticationError } from "../../../../server/auth/current-actor";
+import { teacherEvaluationLevelLabels } from "../../../../domain/evaluation/teacher-evaluation-policy";
 import { waterConservationTaskBook } from "../../../../fixtures/water-conservation";
 import { FeedbackWorkspaceQueryError } from "../../../../server/queries/feedback-workspace";
 import StudentReleasePage from "./page";
@@ -369,6 +370,9 @@ describe("student release page access boundary", () => {
     expect(markup).toContain("文字记录");
     expect(markup).toContain("评价标准");
     expect(markup).toContain("需改进：证据不足或与结论脱节");
+    // D-090: v2 snapshots use the evaluation's level names too.
+    expect(markup).toContain(`${teacherEvaluationLevelLabels.pass}：能指出一个相关问题。`);
+    expect(markup).not.toContain("合格");
     // 教学设计与审计用的信息不进学生端
     expect(markup).not.toContain("任务设置");
     expect(markup).not.toContain("知识与技能");

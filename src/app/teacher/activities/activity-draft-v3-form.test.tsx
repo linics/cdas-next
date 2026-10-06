@@ -1,6 +1,10 @@
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
+import {
+  teacherEvaluationLevelLabels,
+  teacherEvaluationLevels,
+} from "../../../domain/evaluation/teacher-evaluation-policy";
 import { waterConservationTaskBookV3 } from "../../../fixtures/water-conservation-v3";
 
 vi.mock("next/link", () => ({
@@ -45,5 +49,15 @@ describe("activity draft v3 form", () => {
 
   it("does not offer publication preview while the draft is still editing", () => {
     expect(renderForm("EDITING")).not.toContain("查看发布预览");
+  });
+
+  it("names the rubric levels the way the student's evaluation does", () => {
+    // D-090: the form said 达标 while the evaluation said 合格 for one level.
+    const markup = renderForm("EDITING");
+
+    for (const level of teacherEvaluationLevels) {
+      expect(markup).toContain(`<label>${teacherEvaluationLevelLabels[level]}<textarea`);
+    }
+    expect(markup).not.toContain("合格");
   });
 });

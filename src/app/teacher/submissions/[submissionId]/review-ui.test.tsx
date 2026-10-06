@@ -4,7 +4,7 @@ import { ChoiceGroup } from "./review-ui";
 
 const options = [
   { value: "good", label: "良好" },
-  { value: "pass", label: "合格" },
+  { value: "pass", label: "达标" },
 ] as const;
 
 describe("ChoiceGroup", () => {

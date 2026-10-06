@@ -17,8 +17,9 @@ import {
  * activity page so the two can never drift into describing the same published
  * snapshot differently.
  *
- * v3 shows 达标 where v1 and v2 said 合格; the older wording stays on older
- * snapshots because those are sealed history, not a style choice.
+ * The level names match the evaluation the student later receives
+ * (`teacherEvaluationLevelLabels`, D-090). The v2 pages use them too: the label
+ * is rendered here, not stored in the snapshot, so it is not sealed history.
  */
 export function TaskBookV3View({
   content,

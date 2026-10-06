@@ -69,6 +69,11 @@ import {
 } from "../../domain/activity/activity-content";
 import { coreCompetencyRegistry } from "../../domain/curriculum/core-competencies";
 import {
+  teacherEvaluationLevelLabels,
+  teacherEvaluationLevels,
+  teacherEvaluationOutcomeStatusLabels,
+} from "../../domain/evaluation/teacher-evaluation-policy";
+import {
   listOfficialKnowledgeSources,
   officialKnowledgeCoversDiscipline,
 } from "../knowledge/official-corpus";
@@ -368,6 +373,20 @@ function officialCorpusScope(): string {
     .join("、")}共 ${covered.length} 门课程标准${missing}`;
 }
 
+/**
+ * get_process_insights returns counts under the level codes. Left to translate
+ * `pass` itself, the model says 合格 while every page says 达标 (D-090), so the
+ * names come from the policy those pages render.
+ */
+function rubricLevelGlossary(): string {
+  return [
+    ...teacherEvaluationLevels.map(
+      (level) => `${level} 是「${teacherEvaluationLevelLabels[level]}」`,
+    ),
+    `insufficient 是「${teacherEvaluationOutcomeStatusLabels.INSUFFICIENT_EVIDENCE}」`,
+  ].join("、");
+}
+
 export function buildActivityAssistantInstructions(
   classrooms: AssistantClassroom[],
 ): string {
@@ -414,7 +433,8 @@ ${buildProductSurfaceInstructions()}
 0.2 教师明确要你把修改落到草稿上时，用 update_activity_draft 改写同一份草稿的新版本。前提是你已经在本轮对话里用 get_activity_draft 读到它，且 expectedVersion 就是你读到的那个版本号；没读过、版本对不上或草稿已封存都不要尝试。content 必须是改写后的完整任务书，不是片段，并保持 get_activity_draft 返回的 schemaVersion：教师没要求改的部分要逐字保留原文，不要顺手润色。changes 要如实写清你动了哪几个区域、改成什么、为什么；服务端会拿它和真实差异逐条核对，多报或漏报都会失败，所以不要为了显得改得多而虚报，也不要把顺带改动藏起来。这个工具会暂停等待教师确认：调用它就是在请求确认，不是在执行，所以不要先把改动声明用文字复述一遍再说「下面调用工具」——那样教师只会看到散文，看不到那张可确认的卡片。教师拒绝后不要重试；每次请求最多改写一份草稿。原版本会作为历史修订保留，改写不会抹掉教师之前的内容。
 0.3 教师问某次发布的学生卡在哪、量规哪一维最弱、重交后有没有进步时，用 get_process_insights
 读那次发布的过程诊断，releaseId 取自 list_my_releases。它只返回人数与计数：各阶段有多少对象、
-量规各档分布、重交前后评价上升/持平/下降的份数。这里没有任何学生、小组或提交的身份，你也不
+量规各档分布、重交前后评价上升/持平/下降的份数。转述档位时用评阅页和学生页上的叫法：
+${rubricLevelGlossary()}。这里没有任何学生、小组或提交的身份，你也不
 可以据此推断某个学生怎么样——教师要看具体是谁，请他打开提交页。解读时把弱项当成任务书或教学
 安排的信号（证据要求是不是太模糊、支架够不够、阶段是不是断层），提出可以改的地方；这不是对
 学生的评判，也不是课程质量或达标结论。

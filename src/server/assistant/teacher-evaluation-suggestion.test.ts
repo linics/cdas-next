@@ -3,6 +3,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
 
+import {
+  teacherEvaluationLevelLabels,
+  teacherEvaluationLevels,
+} from "../../domain/evaluation/teacher-evaluation-policy";
 import { waterConservationTaskBook } from "../../fixtures/water-conservation";
 import type { PrismaClient } from "../../generated/prisma/client";
 import type { CommandContext } from "../commands/command-context";
@@ -185,6 +189,21 @@ describe("teacher evaluation suggestion prompt", () => {
     }
     // The provider requires the word JSON to accept json_object responses.
     expect(prompt).toContain("JSON");
+  });
+
+  it("names levels in the summary the way the review and student pages do", () => {
+    // D-090: the prompt asked for 达标 while the badge beside the summary said 合格.
+    const prompt = buildTeacherEvaluationSuggestionPrompt({
+      rubricDimensions: waterConservationTaskBook.rubricDimensions,
+      textEvidence: "我记录了三次用水读数。",
+      checkpoints: [],
+      attachments: [],
+    });
+
+    for (const level of teacherEvaluationLevels) {
+      expect(prompt).toContain(`「${teacherEvaluationLevelLabels[level]}」`);
+    }
+    expect(prompt).not.toContain("合格");
   });
 });
 

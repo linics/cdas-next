@@ -131,10 +131,10 @@ export function ActivityDraftForm({ initialState }: { initialState: ActivityDraf
         {activeValues.phases.length < 4 ? <button type="button" className={styles.secondaryButton} onClick={addPhase} disabled={disabled}>添加第 4 阶段</button> : null}
       </Section>
 
-      <Section number={4} title="评价量规" detail="每个维度包含优秀、良好、合格、需改进四档描述；学生会在任务书中看到这些标准。">
+      <Section number={4} title="评价量规" detail="每个维度包含优秀、良好、达标、需改进四档描述；学生会在任务书中看到这些标准。">
         <div className={styles.rubricList}>{activeValues.rubricDimensions.map((dimension, index) => <fieldset className={styles.rubricCard} key={index}><legend>维度 {index + 1}</legend><div className={styles.taskGrid}>
           <label className={styles.taskFull}>评价维度<input value={dimension.name} onChange={(event) => updateRubric(index, "name", event.target.value)} disabled={disabled} required /></label>
-          {(["excellent", "good", "pass", "improve"] as const).map((level) => <label key={level}>{({ excellent: "优秀", good: "良好", pass: "合格", improve: "需改进" })[level]}<textarea value={dimension[level]} onChange={(event) => updateRubric(index, level, event.target.value)} disabled={disabled} required /></label>)}
+          {(["excellent", "good", "pass", "improve"] as const).map((level) => <label key={level}>{({ excellent: "优秀", good: "良好", pass: "达标", improve: "需改进" })[level]}<textarea value={dimension[level]} onChange={(event) => updateRubric(index, level, event.target.value)} disabled={disabled} required /></label>)}
         </div></fieldset>)}</div>
       </Section>
 
