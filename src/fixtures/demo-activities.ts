@@ -9,6 +9,11 @@ import type { ActivityContentV3 } from "../domain/activity/activity-content";
  * which rubric dimension are responsible for every goal. Five clones of one
  * activity would show the form and hide the idea.
  *
+ * They also differ in subject and stage — water and physics, plants and
+ * biology, family objects and history, a primary-school library corner, and a
+ * grade-8 daylight study — so that copying, adapting and the assistant's
+ * curriculum search have more than one topic to work on.
+ *
  * Every competency code here exists in the versioned registry for the school
  * stage and grade the activity declares, so a seeded instance is also a
  * demonstration that the citations are real rather than decorative.
@@ -150,378 +155,430 @@ export const waterConservationDemoV3: ActivityContentV3 = {
   ],
 };
 
-/** Phased, still open. The evidence-gathering half of the same story. */
-export const waterSurveyDemoV3: ActivityContentV3 = {
+/** Phased, still open, with a group. A different subject trio from the flagship. */
+export const campusPlantsDemoV3: ActivityContentV3 = {
   schemaVersion: 3,
-  title: "校园用水现场调查",
-  topic: "校园用水的现场证据",
+  title: "校园植物身份证",
+  topic: "校园植物识别与科普",
   summary:
-    "总务处只剩一周就要公布节水措施。这一轮先把现场证据拿到手：哪个用水点在漏、漏了多少、谁能改。",
+    "你们是七年级植物调查员：给校园里一棵还没有名牌的植物做一张「身份证」——说清它是谁、怎么认出来、为什么长在这里，扫码就能读到。",
   schoolStage: "MIDDLE",
   grade: 7,
-  mainDisciplineCode: "physics",
-  integratedDisciplineCodes: ["math", "geography"],
+  mainDisciplineCode: "biology",
+  integratedDisciplineCodes: ["infoTech", "chinese"],
   disciplineContributions: [
     {
-      disciplineCode: "physics",
-      contribution: "判断一个用水点是装置故障、使用习惯还是设计问题。",
-      necessity: "分不清这三者，改造就会用错手段——换阀门解决不了习惯问题。",
+      disciplineCode: "biology",
+      contribution: "用叶、花、果、茎的特征把植物认准，并说明它和校园环境的关系。",
+      necessity: "认不准就会把错的名字挂上去，全校跟着认错。",
     },
+    {
+      disciplineCode: "infoTech",
+      contribution: "把档案做成扫码可读的页面，标注每张照片和每份资料的来源。",
+      necessity: "纸牌写不下也改不了；不标来源，别人无法核对你们的鉴定。",
+    },
+    {
+      disciplineCode: "chinese",
+      contribution: "把鉴定依据写成路过的同学一分钟能读完的说明文字。",
+      necessity: "写成术语堆砌就没人读，名牌上只剩一个名字。",
+    },
+  ],
+  assignmentType: "inquiry",
+  assignmentSubtype: "survey",
+  inquiryDepth: "intermediate",
+  submissionMode: "phased",
+  durationWeeks: 3,
+  backgroundSetting:
+    "学校要把校园改成「植物课堂」。总务处清点出 40 多棵树和灌木还没有名牌，有两块名牌还挂错了。生物组请七年级各小组认领一棵，做一张经得起核对的植物身份证。",
+  taskInstructions:
+    "分三步完成：先实地观察认领的植物，记下能用来辨认的特征；再对照检索表和资料确定它的名称，写清鉴定依据；最后做成一张带二维码的名牌和一页扫码可读的说明。",
+  learningGoals: [
+    {
+      id: "goal-identify",
+      description: "能依据叶、花、果等可观察的特征鉴定一种校园植物，并写出鉴定依据。",
+      competencyReferences: [
+        { disciplineCode: "biology", competencyCode: "inquiry_practice" },
+      ],
+    },
+    {
+      id: "goal-habitat",
+      description: "能说明这种植物的形态特征与校园里的光照、水分或土壤有什么关系。",
+      competencyReferences: [
+        { disciplineCode: "biology", competencyCode: "life_concept" },
+        { disciplineCode: "biology", competencyCode: "scientific_thinking" },
+      ],
+    },
+    {
+      id: "goal-publish",
+      description: "能把鉴定结果做成扫码可读、来源清楚的科普页面。",
+      competencyReferences: [
+        { disciplineCode: "infoTech", competencyCode: "digital_learning_innovation" },
+        { disciplineCode: "infoTech", competencyCode: "information_social_responsibility" },
+      ],
+    },
+    {
+      id: "goal-explain",
+      description: "能写出一段同学读得懂、又准确的植物说明。",
+      competencyReferences: [
+        { disciplineCode: "chinese", competencyCode: "language_application" },
+      ],
+    },
+  ],
+  phases: [
+    {
+      name: "实地观察",
+      action: "到认领的植物旁观察并记录叶、茎、花或果的特征，拍下能用来鉴定的照片。",
+      context:
+        "先别急着上网搜名字。那两块挂错的名牌，就是有人只看了一眼叶子。把你看到的写下来，下一步才能对照检索表。",
+      support: "1. 写下植物的位置和观察时间\n2. 依次记录叶的形状、边缘、叶脉和排列方式\n3. 如果有花或果，记下颜色、大小和气味\n4. 拍一张叶片特写、一张全株照片\n可以这样写：「叶子是……形，边缘……」「我在……位置观察，这时……」",
+      learningGoalIds: ["goal-identify"],
+      evidence: [
+        { type: "text", description: "带位置与时间的特征观察记录" },
+        { type: "image", description: "叶片特写与全株照片" },
+      ],
+      evaluationFocus: "特征描述具体到能拿去对照检索表。",
+      suggestedLessons: 1,
+    },
+    {
+      name: "鉴定与依据",
+      action: "对照检索表和至少两份资料确定植物名称，写出每一步的鉴定依据，并说明它为什么适合长在这里。",
+      context:
+        "生物组老师会逐条核对你们的依据。只写「网上查到是桂花」不算数，要说清是哪几个特征让你排除了别的可能。",
+      support: "1. 按检索表一步步走，记下每一步选了哪一项\n2. 找一种容易混淆的相似植物，写出区分它们的特征\n3. 结合它所在位置的光照和水分，说明它长得好或不好的原因\n可以这样写：「因为……，所以排除了……」「它和……很像，但……不同」",
+      learningGoalIds: ["goal-identify", "goal-habitat"],
+      evidence: [
+        { type: "document", description: "鉴定过程记录（检索步骤与资料来源）" },
+      ],
+      evaluationFocus: "鉴定依据可以复核，能排除相似种。",
+      suggestedLessons: 2,
+    },
+    {
+      name: "身份证上墙",
+      action: "完成一张带二维码的名牌和一页扫码可读的说明，并请一位没参与的同学试读。",
+      context:
+        "名牌会挂在植物旁边，路过的同学平均只停一分钟。扫码页面要在手机上看得清，照片和资料来源都要标明。",
+      support: "1. 名牌上只放名称、科属和一句最有趣的特征\n2. 说明页分三段：怎么认、为什么长在这里、一个小知识\n3. 每张照片、每份资料都写明来源\n4. 请一位同学试读，记下他没看懂的地方再改\n可以这样写：「认出它的秘诀是……」「它喜欢……，所以长在……」",
+      learningGoalIds: ["goal-habitat", "goal-publish", "goal-explain"],
+      evidence: [
+        { type: "image", description: "扫码说明页面在手机上的截图" },
+        { type: "text", description: "试读意见与修改说明" },
+      ],
+      evaluationFocus: "说明准确好读，来源标注完整。",
+      suggestedLessons: 1,
+    },
+  ],
+  rubricDimensions: [
+    {
+      name: "鉴定依据",
+      excellent: "依据多个特征逐步鉴定，并能排除相似种。",
+      good: "依据主要特征鉴定，结论正确。",
+      pass: "给出了名称和至少一条依据。",
+      improve: "只有名称，没有可以核对的依据。",
+      learningGoalIds: ["goal-identify"],
+    },
+    {
+      name: "环境联系",
+      excellent: "用具体特征解释它与光照、水分或土壤的关系。",
+      good: "能说出它适应环境的一个特点。",
+      pass: "提到了它的生长位置。",
+      improve: "没有联系环境，或解释与观察不符。",
+      learningGoalIds: ["goal-habitat"],
+    },
+    {
+      name: "来源与发布",
+      excellent: "页面扫码可读，每张照片和每份资料都标明来源。",
+      good: "页面可读，主要资料标明了来源。",
+      pass: "做出了页面。",
+      improve: "页面打不开，或来源缺失。",
+      learningGoalIds: ["goal-publish"],
+    },
+    {
+      name: "说明表达",
+      excellent: "一分钟能读完，准确又有趣，并采纳了试读意见。",
+      good: "表达清楚准确。",
+      pass: "能看懂。",
+      improve: "术语堆砌，或有明显错误。",
+      learningGoalIds: ["goal-explain"],
+    },
+  ],
+};
+
+/** One-shot, already closed. History leads, so the subject mix changes again. */
+export const oldObjectsDemoV3: ActivityContentV3 = {
+  schemaVersion: 3,
+  title: "家乡老物件展",
+  topic: "物件里的家乡变迁",
+  summary:
+    "你们是七年级小策展人：从家里找一件有年头的老物件，查清它的来历，为学校「家乡记忆」展写一张展签、做一张展示卡。",
+  schoolStage: "MIDDLE",
+  grade: 7,
+  mainDisciplineCode: "history",
+  integratedDisciplineCodes: ["chinese", "arts"],
+  disciplineContributions: [
+    {
+      disciplineCode: "history",
+      contribution: "把老物件放回它所在的年代，用口述和资料互相印证它的来历。",
+      necessity: "没有史料核对，展签只是家里人的回忆，年份可能记错，也说不清它反映了什么变化。",
+    },
+    {
+      disciplineCode: "chinese",
+      contribution: "把访谈和考证写成观众读得进去的展签。",
+      necessity: "展签写成流水账，观众看不出这件物件为什么值得停下来看。",
+    },
+    {
+      disciplineCode: "arts",
+      contribution: "设计展示卡的拍摄角度与版面，让物件的特征被看见。",
+      necessity: "照片拍不清、版面杂乱，再好的故事也没人读。",
+    },
+  ],
+  assignmentType: "practical",
+  assignmentSubtype: "visit",
+  inquiryDepth: null,
+  submissionMode: "once",
+  durationWeeks: 2,
+  backgroundSetting:
+    "学校图书馆要在校庆周办一场「家乡记忆」小展览，展品全部来自同学们家里。馆长只提了一个要求：每件展品的展签都要经得起追问——它是什么年代的、谁用过、说明了家乡哪些变化。",
+  taskInstructions:
+    "选一件家里的老物件，访谈家人记下它的来历，再用老照片、地方志或博物馆资料核对年代，最后一次性提交一张展签和一张展示卡。",
+  learningGoals: [
+    {
+      id: "goal-source",
+      description: "能把口述与至少一份文字或实物资料相互印证，判断物件的大致年代。",
+      competencyReferences: [
+        { disciplineCode: "history", competencyCode: "historical_evidence" },
+        { disciplineCode: "history", competencyCode: "temporal_spatial_concept" },
+      ],
+    },
+    {
+      id: "goal-change",
+      description: "能借这件物件说明家乡生活的一处具体变化。",
+      competencyReferences: [
+        { disciplineCode: "history", competencyCode: "historical_interpretation" },
+      ],
+    },
+    {
+      id: "goal-label",
+      description: "能写出准确、简洁、让人愿意读完的展签。",
+      competencyReferences: [
+        { disciplineCode: "chinese", competencyCode: "language_application" },
+      ],
+    },
+    {
+      id: "goal-display",
+      description: "能用拍摄和版面突出物件的关键特征。",
+      competencyReferences: [
+        { disciplineCode: "arts", competencyCode: "artistic_expression" },
+      ],
+    },
+  ],
+  phases: [
+    {
+      name: "访谈与来历",
+      action: "访谈一位家人，记下物件的用途、使用年代和一段相关的故事。",
+      context:
+        "长辈的记忆很珍贵，但年份常常记混。把原话记下来，标明是谁说的，下一步才能去核对。",
+      support: "1. 提前准备三个问题：它是做什么用的、什么时候开始用、后来为什么不用了\n2. 尽量记下原话，写明是谁说的\n3. 拍一张物件的全貌照片\n可以这样写：「奶奶说：『……』」「据爸爸回忆，大约在……年」",
+      learningGoalIds: ["goal-source"],
+      evidence: [{ type: "text", description: "访谈记录（标明讲述人）" }],
+      evaluationFocus: "记录忠实，讲述人清楚。",
+      suggestedLessons: 1,
+    },
+    {
+      name: "考证年代",
+      action: "找到至少一份资料与口述对照，判断物件的大致年代，并说明它反映了家乡的什么变化。",
+      context:
+        "馆长会追问「你怎么知道是那个年代的」。家里的说法和资料对不上时，要写出你更相信哪一个、为什么。",
+      support: "1. 找一份能对照的资料：老照片、地方志、博物馆说明，或物件上的商标和字样\n2. 把口述和资料并排比较，写出一致和不一致的地方\n3. 用一句话说出它反映的家乡变化\n可以这样写：「口述说……，资料显示……，所以……」「从……到……，说明……」",
+      learningGoalIds: ["goal-source", "goal-change"],
+      evidence: [{ type: "document", description: "口述与资料对照表" }],
+      evaluationFocus: "年代判断有依据，变化说得具体。",
+      suggestedLessons: 1,
+    },
+    {
+      name: "展签与展示卡",
+      action: "写一张不超过 150 字的展签，配一张展示卡版面。",
+      context:
+        "观众在每件展品前平均只停半分钟。展签要让人一眼知道它是什么、为什么值得看。",
+      support: "1. 第一句写它是什么、什么年代\n2. 第二句写它背后的一个故事或细节\n3. 最后一句点出它反映的变化\n4. 拍一张突出关键特征的特写，排进展示卡\n可以这样写：「这台……是……年代的……」「它见证了……」",
+      learningGoalIds: ["goal-change", "goal-label", "goal-display"],
+      evidence: [
+        { type: "text", description: "展签定稿" },
+        { type: "image", description: "展示卡版面" },
+      ],
+      evaluationFocus: "展签准确简洁，版面突出重点。",
+      suggestedLessons: 1,
+    },
+  ],
+  rubricDimensions: [
+    {
+      name: "史料互证",
+      excellent: "口述与资料互相印证，不一致的地方有判断理由。",
+      good: "有资料支持年代判断。",
+      pass: "给出了年代和来源。",
+      improve: "年代只凭猜测，没有依据。",
+      learningGoalIds: ["goal-source"],
+    },
+    {
+      name: "变迁解释",
+      excellent: "借物件说清一处具体变化及其原因。",
+      good: "说出了一处变化。",
+      pass: "提到了过去和现在不一样。",
+      improve: "没有联系家乡的变化。",
+      learningGoalIds: ["goal-change"],
+    },
+    {
+      name: "展签表达",
+      excellent: "简洁准确，有细节，观众愿意读完。",
+      good: "准确清楚。",
+      pass: "信息基本完整。",
+      improve: "冗长，或有事实错误。",
+      learningGoalIds: ["goal-label"],
+    },
+    {
+      name: "展示设计",
+      excellent: "拍摄与版面突出关键特征，一眼可读。",
+      good: "照片清楚，版面整齐。",
+      pass: "有照片和文字。",
+      improve: "照片不清，或版面杂乱。",
+      learningGoalIds: ["goal-display"],
+    },
+  ],
+};
+
+/** An editing draft for a primary class, so the workspace is not all grade 7. */
+export const libraryCornerDemoV3: ActivityContentV3 = {
+  schemaVersion: 3,
+  title: "班级图书角借阅改进",
+  topic: "图书角的借阅数据与管理",
+  summary:
+    "你们是四年级图书角管理员：用两周的借阅数据找出图书角最大的麻烦，定一条新规则，并在班里试行一周。",
+  schoolStage: "PRIMARY",
+  grade: 4,
+  mainDisciplineCode: "math",
+  integratedDisciplineCodes: ["chinese", "labor"],
+  disciplineContributions: [
     {
       disciplineCode: "math",
-      contribution: "把不同点位的读数放在同一口径下比较，排出优先级。",
-      necessity: "不比较就只能一处一处试，而学校只有一周和一笔钱。",
+      contribution: "把借阅登记表整理成统计表和条形统计图，找出哪类书最受欢迎、哪里最容易出问题。",
+      necessity: "不看数据，只能凭感觉说「书总是乱」，改规则也说不出理由。",
     },
     {
-      disciplineCode: "geography",
-      contribution: "把用水点标进校园平面图，看清管线走向与人流分布的关系。",
-      necessity: "脱离空间分布，就解释不了为什么偏偏是这几处出问题。",
+      disciplineCode: "chinese",
+      contribution: "写出全班读得懂、记得住的新规则。",
+      necessity: "规则写不清，同学们就不会照着做。",
+    },
+    {
+      disciplineCode: "labor",
+      contribution: "分工整理书架、修补破损图书，并按新规则轮值一周。",
+      necessity: "规则只贴在墙上没人动手，图书角不会变好。",
     },
   ],
   assignmentType: "inquiry",
   assignmentSubtype: "survey",
   inquiryDepth: "basic",
   submissionMode: "phased",
-  durationWeeks: 2,
+  durationWeeks: 3,
   backgroundSetting:
-    "校园里有十一个公共用水点。总务处怀疑其中两三处占了大部分损耗，但没人实地核过。这一周你们要给出一张有依据的排序表。",
+    "四年级（2）班的图书角有 120 多本书，可最近总有人找不到想看的书，还有 9 本借出去一个月没还。班主任说：图书角交给你们管，先用数据说清问题在哪。",
   taskInstructions:
-    "分三步：先在校园平面图上标出全部用水点并分类，再挑三处做同口径读数，最后交出一张按浪费量排序、标注可改造性的调查表。",
+    "分三步完成：先把两周的借阅登记表整理成统计图，再找出最大的问题、写一条新规则，最后按新规则轮值管理一周，比较前后的变化。",
   learningGoals: [
     {
-      id: "goal-classify",
-      description: "能把校园用水点按故障、习惯、设计三类归因并说明依据。",
+      id: "goal-data",
+      description: "能整理借阅登记表，用条形统计图呈现借阅情况并读出信息。",
       competencyReferences: [
-        { disciplineCode: "physics", competencyCode: "scientific_thinking" },
+        { disciplineCode: "math", competencyCode: "data_awareness" },
       ],
     },
     {
-      id: "goal-map",
-      description: "能在校园平面图上呈现用水点分布，并解释分布与人流或管线的关系。",
-      competencyReferences: [
-        { disciplineCode: "geography", competencyCode: "regional_cognition" },
-        { disciplineCode: "geography", competencyCode: "geographical_practice" },
-      ],
-    },
-    {
-      id: "goal-rank",
-      description: "能用同口径数据对多个用水点排序，并说明排序依据。",
-      competencyReferences: [
-        { disciplineCode: "math", competencyCode: "data_concept" },
-      ],
-    },
-  ],
-  phases: [
-    {
-      name: "点位普查",
-      action: "走遍校园，标出全部公共用水点并初步归类。",
-      context: "总务处给了一张平面图，但上面没有用水点。这张图要由你们补完。",
-      support: "1. 在校园平面图上标出每一个公共用水点\n2. 给每个点位写一句看到的情况\n3. 判断它属于设备问题、使用习惯还是管理问题\n可以这样写：「这处属于……，因为……」",
-      learningGoalIds: ["goal-classify", "goal-map"],
-      evidence: [
-        { type: "image", description: "标注了用水点与分类的校园平面图" },
-      ],
-      evaluationFocus: "点位无遗漏，归类有依据。",
-      suggestedLessons: 1,
-    },
-    {
-      name: "重点点位读数",
-      action: "选三处疑似高损耗点位，用相同方法各取三次读数。",
-      context: "口径不一样的数据没法比较，所以三处必须用同一种记法和同一个时长。",
-      support: "1. 选定三处点位，约好同一时段、同一时长\n2. 由同一个人读数，填进统一读数表\n3. 每处各取三次，标出异常的那一次\n可以这样写：「三次读数分别是……，其中……偏高，可能是因为……」",
-      learningGoalIds: ["goal-classify", "goal-rank"],
-      evidence: [{ type: "document", description: "三处点位的同口径读数表" }],
-      evaluationFocus: "口径一致，数据可比较。",
-      suggestedLessons: 1,
-    },
-    {
-      name: "排序与移交",
-      action: "按浪费量排序，标注每一处的可改造性，交给总务处。",
-      context: "总务处拿到表就要决定先修哪一处，所以排序要经得起追问。",
-      support: "1. 把点位按估算浪费量从多到少排好\n2. 每一处补上归因和改造难度\n3. 综合两者给出建议的改造顺序\n可以这样写：「建议先改……，因为它浪费最多且……」",
-      learningGoalIds: ["goal-map", "goal-rank"],
-      evidence: [{ type: "document", description: "带排序依据的用水点调查表" }],
-      evaluationFocus: "排序依据清楚，可改造性判断有理由。",
-      suggestedLessons: 1,
-    },
-  ],
-  rubricDimensions: [
-    {
-      name: "归因判断",
-      excellent: "三类归因区分准确，每一处都能说出判断依据。",
-      good: "多数点位归因合理。",
-      pass: "能作出初步分类。",
-      improve: "分类随意，或把现象直接当成原因。",
-      learningGoalIds: ["goal-classify"],
-    },
-    {
-      name: "空间呈现",
-      excellent: "平面图完整清晰，并解释了分布与人流或管线的关系。",
-      good: "分布呈现完整，解释基本合理。",
-      pass: "能标出主要用水点。",
-      improve: "图不完整或与实地对不上。",
-      learningGoalIds: ["goal-map"],
-    },
-    {
-      name: "数据可比性",
-      excellent: "口径统一，重复读数一致，差异有解释。",
-      good: "口径基本统一。",
-      pass: "有读数记录。",
-      improve: "口径混乱，数据无法比较。",
-      learningGoalIds: ["goal-rank"],
-    },
-    {
-      name: "结论可用性",
-      excellent: "排序与可改造性判断可直接支持决策。",
-      good: "排序清楚，理由基本充分。",
-      pass: "给出了顺序。",
-      improve: "排序缺依据，无法据以行动。",
-      learningGoalIds: ["goal-map", "goal-rank"],
-    },
-  ],
-};
-
-/** One-shot, already closed. The public-communication half of the same story. */
-export const waterCampaignDemoV3: ActivityContentV3 = {
-  schemaVersion: 3,
-  title: "节水倡议展示",
-  topic: "把证据讲给全校听",
-  summary:
-    "节水建议已经被采纳。这一轮你们要把调查过程讲成全校听得懂的展示，让别的班也照着做。",
-  schoolStage: "MIDDLE",
-  grade: 7,
-  mainDisciplineCode: "chinese",
-  integratedDisciplineCodes: ["arts", "infoTech"],
-  disciplineContributions: [
-    {
-      disciplineCode: "chinese",
-      contribution: "把调查过程组织成一条别人跟得上的叙述线。",
-      necessity: "没有叙述线，观众只看到一堆数字，记不住也学不会。",
-    },
-    {
-      disciplineCode: "arts",
-      contribution: "用版面与图示让关键数据一眼可读。",
-      necessity: "展板上没人会读大段文字；看不清就等于没讲。",
-    },
-    {
-      disciplineCode: "infoTech",
-      contribution: "把数据做成可核对的图表，并说明数据来源。",
-      necessity: "不标来源的图表在公开场合站不住，别的班也无法复用你们的方法。",
-    },
-  ],
-  assignmentType: "practical",
-  assignmentSubtype: "simulation",
-  inquiryDepth: null,
-  submissionMode: "once",
-  durationWeeks: 1,
-  backgroundSetting:
-    "上一轮的节水建议已经被总务处采纳并开始施工。校方希望你们在升旗仪式后做一次展示，让其他年级知道这件事是怎么做成的。",
-  taskInstructions:
-    "把前两轮的调查做成一次面向全校的展示：一张展板加一段三分钟讲解。要让听众明白你们怎么找到问题、怎么用数据证明、最后改了什么。",
-  learningGoals: [
-    {
-      id: "goal-narrative",
-      description: "能把一次调查组织成让非专业听众跟得上的叙述。",
+      id: "goal-rule",
+      description: "能根据数据提出一条清楚、做得到的图书角新规则。",
       competencyReferences: [
         { disciplineCode: "chinese", competencyCode: "language_application" },
-        { disciplineCode: "chinese", competencyCode: "thinking_ability" },
+        { disciplineCode: "math", competencyCode: "reasoning_awareness" },
       ],
     },
     {
-      id: "goal-visual",
-      description: "能用版面与图示让关键信息在几秒内被读到。",
+      id: "goal-practice",
+      description: "能按分工整理书架、修补图书，并坚持轮值。",
       competencyReferences: [
-        { disciplineCode: "arts", competencyCode: "artistic_expression" },
-      ],
-    },
-    {
-      id: "goal-traceable",
-      description: "能在公开材料中标明数据来源，使结论可被他人核对。",
-      competencyReferences: [
-        { disciplineCode: "infoTech", competencyCode: "information_social_responsibility" },
+        { disciplineCode: "labor", competencyCode: "labor_ability" },
+        { disciplineCode: "labor", competencyCode: "labor_habits_quality" },
       ],
     },
   ],
   phases: [
     {
-      name: "叙述线",
-      action: "把两轮调查压缩成一条三分钟能讲完的线索。",
-      context: "听众是其他年级的同学，他们没参与过调查，也不认识那些点位。",
-      support: "1. 选出最打动人的一个问题\n2. 配上最能说明问题的一个数字\n3. 说出你们希望带来的一个改变\n可以这样说：「你知道吗，……」「这个数字意味着……」「如果我们……，就能……」",
-      learningGoalIds: ["goal-narrative"],
-      evidence: [{ type: "text", description: "三分钟讲稿" }],
-      evaluationFocus: "外行听得懂，且没有跳步。",
+      name: "数一数",
+      action: "把两周的借阅登记表整理成一张统计表，再画成条形统计图。",
+      context:
+        "登记表上写得密密麻麻，班主任看不出名堂。先把数据理清楚，问题才会自己露出来。",
+      support: "1. 按书的种类（故事、科普、漫画、其他）数一数各借了多少次\n2. 填进统计表，再画成条形统计图\n3. 写下你从图上看出的两件事\n可以这样写：「借得最多的是……，有……次」「……类几乎没人借」",
+      learningGoalIds: ["goal-data"],
+      evidence: [
+        { type: "image", description: "条形统计图照片" },
+        { type: "text", description: "从图上读出的两条信息" },
+      ],
+      evaluationFocus: "数据整理准确，读出的信息在图上找得到。",
       suggestedLessons: 1,
     },
     {
-      name: "展板",
-      action: "设计一张一米见方的展板，让人路过三秒就能抓住重点。",
-      context: "展板会立在食堂门口，多数人只是路过看一眼。",
-      support: "1. 先定一句标题，路人三秒能看懂\n2. 选一张最关键的图表放在中间\n3. 正文不超过三段，每段一个意思\n可以这样写：「一周浪费……升，相当于……」",
-      learningGoalIds: ["goal-visual", "goal-traceable"],
-      evidence: [{ type: "image", description: "展板设计稿" }],
-      evaluationFocus: "重点突出，数据标注了来源。",
+      name: "定规则",
+      action: "找出图书角最大的一个问题，写一条新规则，说明它为什么能解决这个问题。",
+      context:
+        "规则要贴在图书角，全班都要照着做。规则太多没人记得住，只写一条最要紧的。",
+      support: "1. 从统计图和逾期记录里选出最大的问题\n2. 写一条规则：谁、什么时候、怎么做\n3. 用一个数据说明为什么需要这条规则\n可以这样写：「因为……，所以我们规定……」",
+      learningGoalIds: ["goal-rule"],
+      evidence: [{ type: "text", description: "新规则与理由" }],
+      evaluationFocus: "规则对准数据里的问题，写得清楚、做得到。",
       suggestedLessons: 1,
     },
     {
-      name: "现场讲解",
-      action: "完成一次现场讲解并回应两个提问。",
-      context: "会有老师追问「这个数字怎么来的」，要答得上。",
-      support: "1. 写下两个观众最可能问的问题\n2. 给每个问题准备一句回应和一个证据\n3. 找同学模拟提问，练一遍\n可以这样说：「这个问题很好，我们的数据显示……」",
-      learningGoalIds: ["goal-narrative", "goal-traceable"],
-      evidence: [{ type: "confirm", description: "教师现场确认已完成讲解与答问" }],
-      evaluationFocus: "讲解完整，追问答得上。",
-      suggestedLessons: 1,
+      name: "试行一周",
+      action: "按新规则分工轮值一周，整理书架、修补破损图书，再比较试行前后的借阅和归还情况。",
+      context: "试行结束后，你们要向全班汇报：新规则到底有没有用。",
+      support: "1. 排一张轮值表，写清每天谁负责\n2. 每天记下借出和归还的本数\n3. 一周后和试行前比一比，写出变化\n可以这样写：「试行前……，试行后……」「我负责……，做到了……」",
+      learningGoalIds: ["goal-data", "goal-practice"],
+      evidence: [
+        { type: "document", description: "轮值表与一周记录" },
+        { type: "confirm", description: "教师确认已完成轮值" },
+      ],
+      evaluationFocus: "坚持轮值，前后对比有数据。",
+      suggestedLessons: 2,
     },
   ],
   rubricDimensions: [
     {
-      name: "叙述完整",
-      excellent: "问题、证据、结果三段清楚，没有跳步。",
-      good: "叙述基本完整。",
-      pass: "能讲清做了什么。",
-      improve: "顺序混乱或缺少关键环节。",
-      learningGoalIds: ["goal-narrative"],
+      name: "数据整理",
+      excellent: "统计表和条形统计图准确，能读出有用的信息。",
+      good: "统计图基本准确。",
+      pass: "完成了统计表。",
+      improve: "数据有明显错误，或没有整理。",
+      learningGoalIds: ["goal-data"],
     },
     {
-      name: "可读性",
-      excellent: "三秒内能抓住重点，图表自解释。",
-      good: "重点清楚。",
-      pass: "信息完整但需要细读。",
-      improve: "文字堆叠，重点淹没。",
-      learningGoalIds: ["goal-visual"],
+      name: "规则设计",
+      excellent: "规则对准问题，清楚做得到，有数据作理由。",
+      good: "规则清楚，有理由。",
+      pass: "写出了一条规则。",
+      improve: "规则含糊，或与问题无关。",
+      learningGoalIds: ["goal-rule"],
     },
     {
-      name: "可核对",
-      excellent: "每个数字都能追到来源，方法可被别班复用。",
-      good: "主要数据标注了来源。",
-      pass: "部分数据有出处。",
-      improve: "数字来路不明。",
-      learningGoalIds: ["goal-traceable"],
+      name: "动手管理",
+      excellent: "按分工坚持轮值，书架整洁，破损图书得到修补。",
+      good: "完成了大部分轮值。",
+      pass: "参与了轮值。",
+      improve: "很少参与轮值。",
+      learningGoalIds: ["goal-practice"],
     },
     {
-      name: "现场应对",
-      excellent: "讲解流畅，追问答得有依据。",
-      good: "讲解完整，能回应提问。",
-      pass: "完成了讲解。",
-      improve: "讲解中断或答非所问。",
-      learningGoalIds: ["goal-narrative", "goal-traceable"],
-    },
-  ],
-};
-
-/** An editing draft: deliberately a narrower, single-point measurement design. */
-export const drinkingStationDemoV3: ActivityContentV3 = {
-  schemaVersion: 3,
-  title: "饮水区用水记录",
-  topic: "饮水区的用水记录",
-  summary:
-    "饮水区每天接水的人最多，也最难说清浪费在哪。先从连续一周的定点记录做起。",
-  schoolStage: "MIDDLE",
-  grade: 7,
-  mainDisciplineCode: "math",
-  integratedDisciplineCodes: ["physics"],
-  disciplineContributions: [
-    {
-      disciplineCode: "math",
-      contribution: "设计一份能持续一周、不同人记也一致的记录方法。",
-      necessity: "记录方法不统一，一周下来的数据没法合并，也就白记了。",
-    },
-    {
-      disciplineCode: "physics",
-      contribution: "分辨哪些流失是接水必然带来的，哪些是可以消除的。",
-      necessity: "不区分这两者，就会把正常用水也算成浪费，结论站不住。",
-    },
-  ],
-  assignmentType: "practical",
-  assignmentSubtype: "observation",
-  inquiryDepth: null,
-  submissionMode: "phased",
-  durationWeeks: 1,
-  backgroundSetting:
-    "饮水区一天有六百多人次接水。有人说这里最浪费，也有人说那是接水必然的损耗。谁也拿不出记录。",
-  taskInstructions:
-    "用一周时间在饮水区做定点记录：先定好记录方法，再轮班记录，最后判断其中多少是可消除的浪费。",
-  learningGoals: [
-    {
-      id: "goal-method",
-      description: "能设计出不同记录人执行也一致的定点记录方法。",
-      competencyReferences: [
-        { disciplineCode: "math", competencyCode: "data_concept" },
-      ],
-    },
-    {
-      id: "goal-separate",
-      description: "能区分必然损耗与可消除浪费，并说明区分依据。",
-      competencyReferences: [
-        { disciplineCode: "physics", competencyCode: "physical_concept" },
-      ],
-    },
-  ],
-  phases: [
-    {
-      name: "定方法",
-      action: "写出一份任何人拿到都能照做的记录方法。",
-      context: "一周要轮六个人记录，方法不统一就前功尽弃。",
-      support: "1. 写清要记什么，每一项用什么单位\n2. 规定多久记一次、由谁来记\n3. 写明遇到异常情况怎么处理\n可以这样写：「每……记录一次……，如果……，就……」",
-      learningGoalIds: ["goal-method"],
-      evidence: [{ type: "text", description: "定点记录方法说明" }],
-      evaluationFocus: "换一个人执行也能得到同样口径的数据。",
-      suggestedLessons: 1,
-    },
-    {
-      name: "轮班记录",
-      action: "按方法连续记录一周并汇总。",
-      context: "中间会遇到没人接水的时段和设备被临时关闭的情况，都要如实记下。",
-      support: "1. 按轮班表排好每天由谁记录\n2. 每次记录后在登记栏里写下异常情况\n3. 一周后把所有记录汇总成一张表\n可以这样写：「本周共记录……次，其中异常……次」",
-      learningGoalIds: ["goal-method", "goal-separate"],
-      evidence: [{ type: "document", description: "一周汇总记录表" }],
-      evaluationFocus: "记录连续，异常有说明。",
-      suggestedLessons: 1,
-    },
-    {
-      name: "分离浪费",
-      action: "判断记录中哪一部分是可消除的浪费。",
-      context: "接水时的滴漏和长流水不是一回事，结论要说清区别。",
-      support: "1. 先把记录中的用水分成必要用水和可消除的浪费\n2. 再分别计算两类的量\n3. 说明你们分类的依据\n可以这样写：「我们把……算作浪费，因为……」",
-      learningGoalIds: ["goal-separate"],
-      evidence: [{ type: "text", description: "必然损耗与可消除浪费的分离说明" }],
-      evaluationFocus: "区分有依据，没有把正常用水算成浪费。",
-      suggestedLessons: 1,
-    },
-  ],
-  rubricDimensions: [
-    {
-      name: "方法一致性",
-      excellent: "方法明确到换人执行也不走样，异常处理有规定。",
-      good: "方法清楚，多数情况可照做。",
-      pass: "能说明记什么。",
-      improve: "方法含糊，不同人会记出不同结果。",
-      learningGoalIds: ["goal-method"],
-    },
-    {
-      name: "记录质量",
-      excellent: "一周连续无缺漏，异常均有说明。",
-      good: "记录基本连续。",
-      pass: "有部分记录。",
-      improve: "断档多且未说明。",
-      learningGoalIds: ["goal-method"],
-    },
-    {
-      name: "区分依据",
-      excellent: "必然损耗与可消除浪费分离清楚，依据充分。",
-      good: "能作出区分。",
-      pass: "意识到两者不同。",
-      improve: "把全部用水都当成浪费。",
-      learningGoalIds: ["goal-separate"],
-    },
-    {
-      name: "结论可用",
-      excellent: "结论指向具体的可改进环节。",
-      good: "结论明确。",
-      pass: "给出了初步判断。",
-      improve: "结论与记录对不上。",
-      learningGoalIds: ["goal-method", "goal-separate"],
+      name: "前后对比",
+      excellent: "用数据清楚说明新规则带来的变化。",
+      good: "能说出一处变化。",
+      pass: "记录了试行情况。",
+      improve: "没有比较前后的变化。",
+      learningGoalIds: ["goal-data", "goal-practice"],
     },
   ],
 };
@@ -660,8 +717,8 @@ export const classroomDaylightDemoV3: ActivityContentV3 = {
 
 export const demoActivitiesV3 = [
   waterConservationDemoV3,
-  waterSurveyDemoV3,
-  waterCampaignDemoV3,
-  drinkingStationDemoV3,
+  campusPlantsDemoV3,
+  oldObjectsDemoV3,
+  libraryCornerDemoV3,
   classroomDaylightDemoV3,
 ] as const;
