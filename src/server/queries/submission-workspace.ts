@@ -7,6 +7,7 @@ import {
   type ActivityContent,
 } from "../../domain/activity/activity-content";
 import {
+  evaluationGoalScope,
   isDimensionRelevantToPhase,
   isLowBandOutcome,
   stageBucketKey,
@@ -510,6 +511,7 @@ export async function getStudentReleaseWorkspace(
 }
 
 function lowDimensionIndexes(
+  executionVersion: number,
   content: ActivityContent,
   phaseIndex: number,
   evaluation: {
@@ -528,8 +530,18 @@ function lowDimensionIndexes(
   }
   const outcomes = compactOutcomes(current.outcomes);
   const v3 = content.schemaVersion === 3 ? content : null;
-  const phaseGoalIds =
-    v3 && phaseIndex > 0 ? v3.phases[phaseIndex - 1]?.learningGoalIds : undefined;
+  // Same scope as the diagnosis card (D-076, D-091): the final submission
+  // counts every dimension, so the drill-down lists what the card counted.
+  const phaseGoalIds = v3
+    ? evaluationGoalScope(
+        {
+          executionVersion: executionVersion === 1 ? 1 : 0,
+          submissionMode: v3.submissionMode,
+          phases: v3.phases,
+        },
+        phaseIndex,
+      )
+    : undefined;
   return content.rubricDimensions.flatMap((dimension, index) =>
     isDimensionRelevantToPhase(
       phaseGoalIds,
@@ -720,6 +732,7 @@ export async function getTeacherReleaseSubmissions(
           hasWorkingCopy: submission.workingCopy !== null,
         }),
         lowDimensionIndexes: lowDimensionIndexes(
+          release.executionVersion,
           content,
           submission.phaseIndex,
           currentRevision.evaluation,

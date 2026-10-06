@@ -177,6 +177,28 @@ describe("ActivityAssistant", () => {
     });
   });
 
+  it.each([
+    ["/teacher/activities/copy", { kind: "ACTIVITY_COPY" }],
+    ["/teacher/classrooms/new", { kind: "CLASSROOM_NEW" }],
+  ])("sends the canonical context for %s", (pathname, pageContext) => {
+    mocks.pathname = pathname;
+    renderAssistant();
+    const options = mocks.transportOptions.at(-1) as {
+      prepareSendMessagesRequest: (input: { messages: unknown[] }) => {
+        body: unknown;
+      };
+    };
+
+    expect(
+      options.prepareSendMessagesRequest({ messages: [{ id: "message_1" }] }),
+    ).toEqual({
+      body: {
+        messages: [{ id: "message_1" }],
+        pageContext,
+      },
+    });
+  });
+
   it("renders read-only workspace results as exact user-clicked links", () => {
     mocks.useChat.mockReturnValue(
       helpers([
@@ -231,6 +253,33 @@ describe("ActivityAssistant", () => {
                 ],
               },
             },
+            {
+              type: "tool-get_process_insights",
+              toolCallId: "insights_1",
+              state: "output-available",
+              input: { releaseId: classroomId },
+              output: {
+                status: "FOUND",
+                releaseId: classroomId,
+                title: "校园节水行动",
+                classroomName: "七年一班",
+                releaseStatus: "ACTIVE",
+                insightsHref: `/teacher/insights?release=${classroomId}`,
+                audienceCount: 28,
+                stageBuckets: [{ key: "complete", label: "全部完成", count: 10 }],
+                rubricStatus: "no_evaluations",
+                evaluatedCount: 0,
+                rubricDimensions: [],
+                improvement: {
+                  reviseCount: 0,
+                  resubmittedCount: 0,
+                  evaluationPairs: 0,
+                  rose: 0,
+                  unchanged: 0,
+                  fell: 0,
+                },
+              },
+            },
           ],
         },
       ]),
@@ -245,6 +294,7 @@ describe("ActivityAssistant", () => {
     expect(markup).toContain(
       `href="/teacher/activities/${draftId}/preview"`,
     );
+    expect(markup).toContain(`href="/teacher/insights?release=${classroomId}"`);
     expect(markup).not.toContain("router.push");
   });
 

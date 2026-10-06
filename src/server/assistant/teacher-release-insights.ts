@@ -23,7 +23,9 @@ export const releaseInsightsOutputSchema = z.discriminatedUnion("status", [
       title: z.string().trim().min(1),
       classroomName: z.string().trim().min(1),
       releaseStatus: z.enum(["ACTIVE", "CLOSED", "ARCHIVED"]),
-      insightsHref: z.string().regex(/^\/teacher\/insights$/),
+      insightsHref: z.string().regex(
+        /^\/teacher\/insights\?release=[0-9a-f-]{36}$/,
+      ),
       audienceCount: z.int().nonnegative(),
       stageBuckets: z.array(
         z
@@ -131,7 +133,7 @@ export function createTeacherReleaseInsightsReader({
       title: option.title,
       classroomName: option.classroomName,
       releaseStatus: option.status,
-      insightsHref: "/teacher/insights",
+      insightsHref: `/teacher/insights?release=${releaseId}`,
       audienceCount: stages.audienceCount,
       stageBuckets: stages.buckets,
       rubricStatus: rubric.status,

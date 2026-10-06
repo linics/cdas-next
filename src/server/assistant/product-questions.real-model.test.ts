@@ -53,7 +53,15 @@ const questions: readonly Question[] = [
     name: "名册为什么没有姓名",
     ask: "名册里怎么都是「对象 1」「对象 2」，学生名字呢？",
     mustMention: ["评阅"],
-    mustMentionAny: ["我这边", "我看不到", "不进模型", "我只", "对我"],
+    mustMentionAny: [
+      "我这边",
+      "我这一侧",
+      "我看不到",
+      "我能读取",
+      "不进模型",
+      "我只",
+      "对我",
+    ],
     mustNotMention: ["线下"],
   },
   {
@@ -71,6 +79,45 @@ const questions: readonly Question[] = [
     ask: "学生的附件最大能传多大？哪些格式你能直接读懂内容？",
     // Both come from the policy catalogue, so a hallucinated limit fails.
     mustMention: ["20", "5"],
+  },
+  {
+    name: "复用已有活动",
+    ask: "我想把自己以前的活动复用一份，应该怎么做？",
+    mustMention: ["草稿"],
+    mustMentionAny: ["复用活动", "新草稿", "复制"],
+    mustNotMention: ["没有这个功能", "不支持复制"],
+  },
+  {
+    name: "新建班级与 Excel 名单",
+    ask: "我想新建班级，再用 Excel 导入学生名单，具体怎么操作？",
+    mustMention: ["Excel"],
+    mustMentionAny: ["新建班级", "创建班级"],
+    // The model may describe the two-column preview flow in different words;
+    // require an operational cue without freezing the full answer wording.
+    mustNotMention: ["没有这个功能", "不支持导入"],
+  },
+  {
+    name: "学生忘了密码",
+    ask: "有个学生忘了密码登录不上，我能帮他处理吗？",
+    mustMention: ["班级成员"],
+    mustMentionAny: ["重置密码", "重置"],
+    mustNotMention: ["联系管理员", "没有这个功能"],
+  },
+  {
+    // D-077: the rubric opens only on the final submission. Without this the
+    // assistant guesses at a fault ("可能是权限问题") for a designed behaviour.
+    name: "中间阶段没有量规评价",
+    ask: "分阶段的活动里，学生第一阶段交上来的那份为什么没有量规评价？",
+    mustMention: ["最后一个阶段"],
+    // 「不是故障」is the right answer; guessing at a cause is the wrong one.
+    mustNotMention: ["权限问题", "联系运维"],
+  },
+  {
+    name: "导出 Word 任务书",
+    ask: "任务书能导出成 Word 吗？我想自己再改改。",
+    mustMention: ["Word"],
+    mustMentionAny: ["打印"],
+    mustNotMention: ["没有这个功能", "不支持导出"],
   },
 ];
 

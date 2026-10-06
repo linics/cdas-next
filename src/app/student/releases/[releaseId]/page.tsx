@@ -74,7 +74,7 @@ function ReleaseBrief({
         {content.schemaVersion === 2 ? <>
           <section><h3>总体任务</h3><p>{content.taskInstructions}</p></section>
           <section><h3>任务链</h3><ol>{content.phases.map((phase) => <li key={phase.name}><strong>{phase.name}</strong><br />任务：{phase.action}<br />情境：{phase.context}<br />学习支持：{phase.support}<br />需提交：{phase.evidence.map((evidence) => `${evidenceTypeLabel(evidence.type)}：${evidence.description}`).join("；")}<br />评价要点：{phase.evaluationFocus}</li>)}</ol></section>
-          <section><h3>评价标准</h3><ul>{content.rubricDimensions.map((dimension) => <li key={dimension.name}><strong>{dimension.name}</strong><br />优秀：{dimension.excellent}<br />良好：{dimension.good}<br />合格：{dimension.pass}<br />需改进：{dimension.improve}</li>)}</ul></section>
+          <section><h3>评价标准</h3><ul>{content.rubricDimensions.map((dimension) => <li key={dimension.name}><strong>{dimension.name}</strong><br />优秀：{dimension.excellent}<br />良好：{dimension.good}<br />达标：{dimension.pass}<br />需改进：{dimension.improve}</li>)}</ul></section>
         </> : content.schemaVersion === 3 ? <TaskBookV3View content={content} showBackground={false} /> : <>
           <section><h3>任务说明</h3><p>{content.taskInstructions}</p></section>
           <section><h3>学习目标</h3><ol>{content.learningObjectives.map((objective) => <li key={objective}>{objective}</li>)}</ol></section>

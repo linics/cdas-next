@@ -6,12 +6,14 @@ export const teacherAgentPageKindSchema = z.enum([
   "TEACHER_DASHBOARD",
   "ACTIVITY_NEW",
   "ACTIVITY_STUDIO",
+  "ACTIVITY_COPY",
   "ACTIVITY_DRAFT",
   "ACTIVITY_PREVIEW",
   "RELEASE_SUBMISSIONS",
   "SUBMISSION_REVIEW",
   "TEACHER_INSIGHTS",
   "TEACHER_KNOWLEDGE",
+  "CLASSROOM_NEW",
   "CLASSROOM_MEMBERS",
   "UNKNOWN_TEACHER_PAGE",
 ]);
@@ -22,9 +24,11 @@ const staticPageContextSchema = z
       "TEACHER_DASHBOARD",
       "ACTIVITY_NEW",
       "ACTIVITY_STUDIO",
+      "ACTIVITY_COPY",
       "SUBMISSION_REVIEW",
       "TEACHER_INSIGHTS",
       "TEACHER_KNOWLEDGE",
+      "CLASSROOM_NEW",
       "UNKNOWN_TEACHER_PAGE",
     ]),
   })
@@ -79,8 +83,10 @@ const staticRoutes = new Map<string, TeacherAgentPageContext["kind"]>([
   ["/teacher", "TEACHER_DASHBOARD"],
   ["/teacher/activities", "ACTIVITY_STUDIO"],
   ["/teacher/activities/new", "ACTIVITY_NEW"],
+  ["/teacher/activities/copy", "ACTIVITY_COPY"],
   ["/teacher/insights", "TEACHER_INSIGHTS"],
   ["/teacher/knowledge", "TEACHER_KNOWLEDGE"],
+  ["/teacher/classrooms/new", "CLASSROOM_NEW"],
 ]);
 
 /**

@@ -81,7 +81,7 @@ export const assistantQuestions: readonly AssistantQuestion[] = [
     intent: "CAPABILITY",
     surface: "活动设计",
     ask: "能帮我把去年的活动复制一份吗？",
-    expected: "说明没有复制功能；可以提出用助手按同样要求重新起草一份草稿。",
+    expected: "指向复用活动页；说明可从本人草稿或仍管理的本人发布选择 v3 版本，确认后复制为新草稿，不自动复制或发布。",
   },
   {
     id: "CAP-08",
@@ -146,7 +146,7 @@ export const assistantQuestions: readonly AssistantQuestion[] = [
     intent: "WAYFINDING",
     surface: "任意",
     ask: "课程标准原文在哪儿查？",
-    expected: "课程依据页；首版语料只有课程方案与语文数学物理信息科技。",
+    expected: "课程依据页；首版语料是课程方案与道德与法治、语文、数学、英语、科学、历史、地理、物理、化学、生物学、信息科技、劳动、艺术、体育与健康共 14 门课程标准。",
   },
   {
     id: "WAY-07",
@@ -175,6 +175,20 @@ export const assistantQuestions: readonly AssistantQuestion[] = [
     surface: "活动草稿",
     ask: "发布之前想先看看学生会看到什么样子，在哪预览？",
     expected: "活动预览页，核对后在同页选班级发布。",
+  },
+  {
+    id: "WAY-11",
+    intent: "WAYFINDING",
+    surface: "新建班级",
+    ask: "我想新建班级并用 Excel 导入学生，应该怎么做？",
+    expected: "先在新建班级页创建班级，再到班级成员页上传只有两列「学号、姓名」的 Excel，逐行预览并确认后导入；助手不代办。",
+  },
+  {
+    id: "WAY-12",
+    intent: "WAYFINDING",
+    surface: "班级成员",
+    ask: "有个学生忘了密码登录不上，我能处理吗？",
+    expected: "班级成员页那名学生一行点「重置密码」并确认；新临时密码只显示一次，学生登录后必须修改，不影响作业。",
   },
 
   // ── 为什么不工作 ──────────────────────────────────────────
@@ -247,6 +261,13 @@ export const assistantQuestions: readonly AssistantQuestion[] = [
     surface: "任意",
     ask: "学生传了个 30MB 的视频传不上去，怎么回事？",
     expected: "单个附件上限 20MB，且视频不在可交格式内。",
+  },
+  {
+    id: "TRB-11",
+    intent: "TROUBLESHOOT",
+    surface: "提交评阅台",
+    ask: "分阶段活动里，第一阶段交上来的那份怎么没有量规评价？",
+    expected: "量规评价只在最终提交上做（分阶段是最后一个阶段），中间阶段只写反馈；这是设计，不是故障。",
   },
 
   // ── 帮我做（需要工具；本 harness 无工具，看它会不会编造数据）──

@@ -15,7 +15,7 @@ export const teacherEvaluationLevelLabels: Readonly<
 > = {
   excellent: "优秀",
   good: "良好",
-  pass: "合格",
+  pass: "达标",
   improve: "需改进",
 };
 

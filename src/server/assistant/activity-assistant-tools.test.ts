@@ -280,6 +280,22 @@ describe("activity assistant tools", () => {
     expect(mocks.saveDraft).not.toHaveBeenCalled();
   });
 
+  it.each([
+    [
+      { kind: "ACTIVITY_COPY" as const },
+      { kind: "ACTIVITY_COPY", label: "复用活动", href: "/teacher/activities/copy" },
+    ],
+    [
+      { kind: "CLASSROOM_NEW" as const },
+      { kind: "CLASSROOM_NEW", label: "新建班级", href: "/teacher/classrooms/new" },
+    ],
+  ])("returns an available canonical context for %j", (pageContext, expected) => {
+    expect(mapCurrentTeacherContext(pageContext, workspace)).toMatchObject({
+      status: "AVAILABLE",
+      ...expected,
+    });
+  });
+
   it("reads one owned draft only through the authorized detail reader", async () => {
     mocks.readDraftDetail.mockResolvedValue({
       status: "NOT_FOUND",

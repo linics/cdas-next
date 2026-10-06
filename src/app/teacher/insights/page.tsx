@@ -72,13 +72,13 @@ const releaseStatus = {
   ARCHIVED: { label: "已封存", tone: "closed" },
 } as const satisfies Record<string, { label: string; tone: StatusTone }>;
 
-// 档位是一条从强到弱的刻度：优秀主色实底、良好主色浅底、合格灰、需改进珊瑚
+// 档位是一条从强到弱的刻度：优秀主色实底、良好主色浅底、达标灰、需改进珊瑚
 //（与「需修改」同色）；证据不足只留描边。与本阶段无关的维度画斜纹，未评画虚线。
 const cellStyle: Record<DiagnosisCell, { label: string; className: string }> = {
   excellent: { label: "优秀", className: "bg-primary text-primary-foreground" },
   good: { label: "良好", className: "bg-accent text-accent-foreground" },
   pass: {
-    label: "合格",
+    label: "达标",
     className: "bg-status-closed text-status-closed-foreground",
   },
   improve: {

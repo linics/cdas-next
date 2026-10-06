@@ -9,6 +9,7 @@ import {
   aggregateStageCard,
   compareOutcomes,
   currentAudienceProgress,
+  evaluationGoalScope,
   isDimensionRelevantToPhase,
   stageBucketKey,
   type InsightsOutcome,
@@ -358,10 +359,7 @@ function buildMatrix(release: DiagnosisReleaseInput): DiagnosisMatrix {
       // Unevaluated phase submissions never take a rubric, so they are not
       // rows; an unevaluated final submission is, because it is waiting.
       if (!outcomes && !final) return [];
-      const phaseGoalIds =
-        submission.phaseIndex > 0
-          ? release.phases[submission.phaseIndex - 1]?.learningGoalIds
-          : undefined;
+      const phaseGoalIds = evaluationGoalScope(release, submission.phaseIndex);
       return [
         {
           submissionId: submission.id,
@@ -496,10 +494,7 @@ function buildResubmission(release: DiagnosisReleaseInput): DiagnosisResubmissio
     const ordered = [...submission.revisions].sort(
       (left, right) => left.revisionNumber - right.revisionNumber,
     );
-    const phaseGoalIds =
-      submission.phaseIndex > 0
-        ? release.phases[submission.phaseIndex - 1]?.learningGoalIds
-        : undefined;
+    const phaseGoalIds = evaluationGoalScope(release, submission.phaseIndex);
     for (const revision of ordered) {
       if (revision.nextStep !== "REVISE") continue;
       reviseCount += 1;

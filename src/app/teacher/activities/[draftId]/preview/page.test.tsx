@@ -30,6 +30,7 @@ vi.mock("../../../_components/teacher-shell", () => ({
 vi.mock("./publish-panel", () => ({ PublishPanel: () => <aside data-manual-publish="true" /> }));
 
 import TeacherActivityPreviewPage from "./page";
+import { teacherEvaluationLevelLabels } from "../../../../../domain/evaluation/teacher-evaluation-policy";
 import { waterConservationTaskBook } from "../../../../../fixtures/water-conservation";
 
 const workspace = {
@@ -74,6 +75,8 @@ describe("teacher activity preview", () => {
     expect(markup).toContain("文档：统计表或图表及简要分析");
     expect(markup).toContain("评价标准");
     expect(markup).toContain("需改进 证据不足或与结论脱节");
+    expect(markup).toContain(`${teacherEvaluationLevelLabels.pass} 能指出一个相关问题。`);
+    expect(markup).not.toContain("合格");
   });
 
 });

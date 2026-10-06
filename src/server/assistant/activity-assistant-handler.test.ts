@@ -34,11 +34,16 @@ import {
   type ActivityDraftProposal,
 } from "./activity-assistant-tools";
 import {
+  officialKnowledgeCoversDiscipline,
   readOfficialKnowledgeSection,
   searchOfficialKnowledge,
 } from "../knowledge/official-corpus";
 import { teacherAgentPageKindSchema } from "../../domain/assistant/teacher-agent-page-context";
 import { teacherProductSurfaces } from "../../domain/assistant/teacher-product-surfaces";
+import {
+  teacherEvaluationLevelLabels,
+  teacherEvaluationLevels,
+} from "../../domain/evaluation/teacher-evaluation-policy";
 import {
   MAX_ATTACHMENT_BYTES,
   MAX_SUBMISSION_ATTACHMENTS,
@@ -622,6 +627,43 @@ describe("buildActivityAssistantInstructions", () => {
     expect(text).toContain("语料中未找到依据");
     expect(text).toContain("不能改用记忆里的课程标准原文充数");
     expect(text).toContain("不是课程质量结论");
+  });
+
+  it("names process-insight levels the way the review and student pages do", () => {
+    // D-090: get_process_insights returns bare level codes, and left to
+    // translate `pass` itself the model says 合格 where every page says 达标.
+    const text = buildActivityAssistantInstructions([]);
+
+    for (const level of teacherEvaluationLevels) {
+      expect(text).toContain(`${level} 是「${teacherEvaluationLevelLabels[level]}」`);
+    }
+    expect(text).toContain("insufficient 是「证据不足」");
+    expect(text).not.toContain("合格");
+  });
+
+  it("keeps invented addresses out of the reply text", () => {
+    // A real run wrote "https://cdas.next/teacher/insights?..." — a host that
+    // does not exist — beside a card that already carried the working link.
+    const text = buildActivityAssistantInstructions([]);
+    expect(text).toContain("绝不自己拼域名");
+    expect(text).toContain("工具结果卡片下方已经带着可点的链接");
+  });
+
+  it("states the corpus boundary the corpus actually has", () => {
+    const text = buildActivityAssistantInstructions([]);
+    const scope = /当前白名单是[^。]*/.exec(text)?.[0] ?? "";
+    const covered = disciplineCatalog.filter((discipline) =>
+      officialKnowledgeCoversDiscipline(discipline.code),
+    );
+
+    expect(scope).toContain(`共 ${covered.length} 门课程标准`);
+    for (const discipline of disciplineCatalog) {
+      if (officialKnowledgeCoversDiscipline(discipline.code)) {
+        expect(scope).toContain(discipline.label);
+      } else {
+        expect(scope).toContain(`不含${discipline.label}`);
+      }
+    }
   });
 });
 
@@ -1701,7 +1743,7 @@ describe("activity assistant route handler", () => {
 
     expect(executionResponse.status).toBe(200);
     expect(executionBody).toContain(releaseId);
-    expect(executionBody).not.toContain("助手請求未完成");
+    expect(executionBody).not.toContain("助手请求未完成");
     expect(mocks.preparePublish).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ source: "AGENT", actorId }),

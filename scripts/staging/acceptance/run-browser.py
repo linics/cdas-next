@@ -594,7 +594,7 @@ def fill_activity(page: Page, title: str, summary: str) -> None:
         rubric = page.get_by_role("group", name=f"维度 {index + 1}", exact=True)
         rubric.get_by_label("优秀", exact=True).fill("Complete evidence with a clear explanation.")
         rubric.get_by_label("良好", exact=True).fill("Mostly complete evidence and explanation.")
-        rubric.get_by_label("合格", exact=True).fill("Basic evidence and an understandable explanation.")
+        rubric.get_by_label("达标", exact=True).fill("Basic evidence and an understandable explanation.")
         rubric.get_by_label("需改进", exact=True).fill("Evidence or explanation needs more detail.")
 
 

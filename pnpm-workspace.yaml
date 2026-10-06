@@ -18,3 +18,14 @@ overrides:
   # GHSA-3wwx-pv8p-q78v：@vercel/blob 与 @ai-sdk/* 间接依赖的 undici，同大版本内抬到修复版。
   undici@6: ^6.28.1
   undici@7: ^7.29.1
+  # GHSA-wq5f-xc86-pv6w（next 间接依赖的 sharp）与 GHSA-68fv-2mgg-jv7q（postcss 间接依赖的
+  # source-map-js）：同大版本内抬到修复版。
+  sharp@0.35: ^0.35.5
+  source-map-js@1: ^1.2.2
+auditConfig:
+  ignoreGhsas:
+    # GHSA-hp3w-g68c-fv3c（sprintf-js 拒绝服务）：只经 mammoth → argparse@1 进入，而 argparse 只被
+    # mammoth 的命令行入口 bin/mammoth 加载；本项目只调用库函数 extractRawText，走不到这段代码。
+    # npm 上没有修复版（最新 1.1.3），mammoth 1.13.0 仍依赖 argparse ~1.0.3。
+    # 出现 sprintf-js >= 1.1.4 或 mammoth 不再依赖 argparse@1 时删除这一条。
+    - GHSA-hp3w-g68c-fv3c

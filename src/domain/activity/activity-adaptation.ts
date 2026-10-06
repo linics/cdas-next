@@ -469,7 +469,7 @@ export function describeAdaptationChanges(
     push("RUBRIC", `${prefix} · 名称`, dimension.name, next?.name ?? "");
     push("RUBRIC", `${prefix} · 优秀`, dimension.excellent, next?.excellent ?? "");
     push("RUBRIC", `${prefix} · 良好`, dimension.good, next?.good ?? "");
-    push("RUBRIC", `${prefix} · 合格`, dimension.pass, next?.pass ?? "");
+    push("RUBRIC", `${prefix} · 达标`, dimension.pass, next?.pass ?? "");
     push("RUBRIC", `${prefix} · 待改进`, dimension.improve, next?.improve ?? "");
   });
   return changes;

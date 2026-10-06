@@ -44,6 +44,8 @@ import {
 import {
   createDeepSeekModel,
   deepSeekThinkingProviderOptions,
+  ignoringEchoedResponseFormat,
+  retryingUnparseableJson,
 } from "./deepseek-provider";
 
 const inputSchema = z
@@ -177,19 +179,21 @@ export async function generateActivityDraftDiagnosis(
   model: LanguageModel,
   input: DiagnosisModelInput,
 ): Promise<unknown> {
-  const result = await generateText({
-    model,
-    output: Output.object({
-      schema: diagnosisModelOutputSchema,
-      name: "activity_draft_diagnosis",
-      description: "对当前版本任务书的设计质量建议",
+  const result = await retryingUnparseableJson(() =>
+    generateText({
+      model,
+      output: Output.object({
+        schema: ignoringEchoedResponseFormat(diagnosisModelOutputSchema),
+        name: "activity_draft_diagnosis",
+        description: "对当前版本任务书的设计质量建议",
+      }),
+      instructions:
+        "你是 K12 跨学科作业的设计审阅助手。你只给出可解释、可定位的修改建议，不能改写或保存任务书。",
+      prompt: buildActivityDraftDiagnosisPrompt(input),
+      providerOptions: deepSeekThinkingProviderOptions,
+      timeout: 120_000,
     }),
-    instructions:
-      "你是 K12 跨学科作业的设计审阅助手。你只给出可解释、可定位的修改建议，不能改写或保存任务书。",
-    prompt: buildActivityDraftDiagnosisPrompt(input),
-    providerOptions: deepSeekThinkingProviderOptions,
-    timeout: 120_000,
-  });
+  );
   return result.output;
 }
 
