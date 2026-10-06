@@ -54,16 +54,34 @@ export function isFinalSubmission(
   content: ActivityContent,
   phaseIndex: number,
 ): boolean {
-  if (
-    executionVersion !== 1 ||
-    !isStructuredContent(content) ||
-    content.submissionMode === "once"
-  ) {
+  return isFinalPhaseIndex(
+    executionVersion,
+    isStructuredContent(content)
+      ? { submissionMode: content.submissionMode, phaseCount: content.phases.length }
+      : null,
+    phaseIndex,
+  );
+}
+
+/**
+ * The rule behind `isFinalSubmission`, for callers that hold a release's
+ * submission mode and phase count rather than its task book. `shape` is null
+ * for unstructured (v1) content.
+ */
+export function isFinalPhaseIndex(
+  executionVersion: number,
+  shape: Readonly<{
+    submissionMode: "once" | "phased" | "mixed";
+    phaseCount: number;
+  }> | null,
+  phaseIndex: number,
+): boolean {
+  if (executionVersion !== 1 || !shape || shape.submissionMode === "once") {
     return phaseIndex === 0;
   }
-  return content.submissionMode === "mixed"
+  return shape.submissionMode === "mixed"
     ? phaseIndex === 0
-    : phaseIndex === content.phases.length;
+    : phaseIndex === shape.phaseCount;
 }
 
 /**

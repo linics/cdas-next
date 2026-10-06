@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   aggregateRubricCard,
+  evaluationGoalScope,
   isDimensionRelevantToPhase,
   isLowBandOutcome,
   stageBucketKey,
@@ -70,7 +71,8 @@ describe("insights drill-down helpers (D-070)", () => {
 
 describe("phase-relevant dimensions (D-076)", () => {
   // The walkthrough case: phase 1 serves goal A; dimensions 2–4 judge later
-  // goals, so their 证据不足 on a phase-1 submission is not a weakness.
+  // goals, so their 证据不足 on a phase-1 submission is not a weakness. The
+  // phase evaluations here predate D-077; phase 3 is the final submission.
   const release: InsightsReleaseInput = {
     id: "r",
     title: "t",
@@ -80,6 +82,7 @@ describe("phase-relevant dimensions (D-076)", () => {
     phases: [
       { name: "定方案", learningGoalIds: ["a"] },
       { name: "实测", learningGoalIds: ["a", "b"] },
+      { name: "汇报", learningGoalIds: ["c"] },
     ],
     rubricDimensions: [
       { name: "维度1", learningGoalIds: ["a"] },
@@ -128,6 +131,40 @@ describe("phase-relevant dimensions (D-076)", () => {
     ]);
     // Dimension 2's real 需改进 outweighs 证据不足 that only phase-1 work caused before.
     expect(card.dimensions.find((d) => d.weak)?.dimensionIndex).toBe(2);
+  });
+
+  it("counts every dimension on the final submission (D-091)", () => {
+    // The final phase serves only goal c, but its evaluation is the activity's
+    // one rubric judgement: dimensions 1 and 2 must not drop out.
+    const card = aggregateRubricCard({
+      ...release,
+      submissions: [
+        {
+          id: "s3",
+          phaseIndex: 3,
+          latestRevisionNumber: 1,
+          studentId: "u4",
+          groupId: null,
+          revisions: [{ revisionNumber: 1, nextStep: null, outcomes: [outcome(1, "good"), outcome(2, "improve"), outcome(3, "pass"), outcome(4, null)] }],
+        },
+      ],
+    });
+    expect(card.dimensions.map((d) => [d.sampleCount, d.improve, d.insufficient])).toEqual([
+      [1, 0, 0],
+      [1, 1, 0],
+      [1, 0, 0],
+      [1, 0, 1],
+    ]);
+  });
+
+  it("bounds only phase evaluations that are not the final submission", () => {
+    expect(evaluationGoalScope(release, 1)).toEqual(["a"]);
+    expect(evaluationGoalScope(release, 2)).toEqual(["a", "b"]);
+    expect(evaluationGoalScope(release, 3)).toBeUndefined();
+    expect(evaluationGoalScope(release, 0)).toBeUndefined();
+    // In mixed mode the final submission is the whole-task one, so the last
+    // phase is still an ordinary phase.
+    expect(evaluationGoalScope({ ...release, submissionMode: "mixed" }, 3)).toEqual(["c"]);
   });
 
   it("treats missing links (v2, final submission) as relevant", () => {

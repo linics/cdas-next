@@ -226,7 +226,7 @@ describe("release diagnosis", () => {
     );
   });
 
-  it("builds matrix rows per submission in roster order and masks irrelevant dimensions", () => {
+  it("builds matrix rows in roster order, masking only what a legacy phase evaluation cannot speak to", () => {
     const diagnosis = buildReleaseDiagnosis(
       release({
         submissions: [
@@ -273,7 +273,9 @@ describe("release diagnosis", () => {
         row.cells,
       ]),
     ).toEqual([
-      ["陈同学", null, true, ["irrelevant", "excellent", "good"]],
+      // The final submission is the activity's one rubric judgement, so every
+      // dimension counts on it (D-091); only the phase-1 evaluation is masked.
+      ["陈同学", null, true, ["insufficient", "excellent", "good"]],
       ["李明", null, false, ["none", "none", "none"]],
       ["王芳", "现场认定", true, ["pass", "irrelevant", "improve"]],
     ]);
@@ -284,7 +286,7 @@ describe("release diagnosis", () => {
         dimension.lowCount,
       ]),
     ).toEqual([
-      ["问题与机理", 1, 0],
+      ["问题与机理", 2, 1],
       ["数据与证据", 1, 0],
       ["跨学科连接", 2, 1],
     ]);
@@ -438,7 +440,7 @@ describe("release diagnosis", () => {
     expect(diagnosis.alerts.some((alert) => alert.kind === "evidence_gap")).toBe(false);
   });
 
-  it("pairs each requested revision with the next evaluated one, per relevant dimension", () => {
+  it("pairs each requested revision with the next evaluated one, on every dimension of a final submission", () => {
     const diagnosis = buildReleaseDiagnosis(
       release({
         submissions: [
@@ -477,19 +479,26 @@ describe("release diagnosis", () => {
       reviseCount: 2,
       resubmittedCount: 1,
       rose: 1,
-      unchanged: 1,
+      unchanged: 2,
       fell: 0,
     });
     expect(diagnosis.resubmission.awaiting).toEqual([
       { submissionId: "w1", audienceName: "王芳", phaseLabel: "现场认定" },
     ]);
-    // 问题与机理 serves goal 1 only, so phase 2 never compares it (D-076).
+    // The final submission compares every dimension (D-091), including
+    // 问题与机理, which only phase 1 serves.
     expect(diagnosis.resubmission.pairs).toEqual([
       {
         submissionId: "c2",
         audienceName: "陈同学",
         phaseLabel: null,
         moves: [
+          {
+            dimensionName: "问题与机理",
+            before: "insufficient",
+            after: "insufficient",
+            movement: "unchanged",
+          },
           { dimensionName: "数据与证据", before: "improve", after: "pass", movement: "rose" },
           {
             dimensionName: "跨学科连接",

@@ -1,4 +1,5 @@
 import type { TeacherEvaluationLevel } from "../evaluation/teacher-evaluation-policy";
+import { isFinalPhaseIndex } from "../submission/sequential-execution";
 
 export const INSIGHTS_MIN_SAMPLE = 3;
 
@@ -209,6 +210,32 @@ export function isDimensionRelevantToPhase(
   return dimensionGoalIds.some((id) => phaseGoalIds.includes(id));
 }
 
+/**
+ * The learning goals that bound which dimensions one evaluation speaks to, or
+ * undefined when it speaks to all of them. A phase evaluation — only ever
+ * made before D-077 — is bounded by its phase's goals (D-076). The final
+ * submission is the activity's one rubric judgement since D-077, so like the
+ * whole-task submission it counts every dimension (D-091); bounding it by the
+ * last phase's goals left any dimension served only by earlier phases with no
+ * data at all.
+ */
+export function evaluationGoalScope(
+  release: Pick<InsightsReleaseInput, "executionVersion" | "submissionMode" | "phases">,
+  phaseIndex: number,
+): readonly string[] | undefined {
+  if (
+    phaseIndex <= 0 ||
+    isFinalPhaseIndex(
+      release.executionVersion,
+      { submissionMode: release.submissionMode, phaseCount: release.phases.length },
+      phaseIndex,
+    )
+  ) {
+    return undefined;
+  }
+  return release.phases[phaseIndex - 1]?.learningGoalIds;
+}
+
 export function aggregateRubricCard(
   release: InsightsReleaseInput,
 ): InsightsRubricCard {
@@ -227,10 +254,7 @@ export function aggregateRubricCard(
   const samples = release.submissions.flatMap((submission) => {
     const outcomes = currentRevision(submission)?.outcomes;
     if (!outcomes) return [];
-    const phaseGoalIds =
-      submission.phaseIndex > 0
-        ? release.phases[submission.phaseIndex - 1]?.learningGoalIds
-        : undefined;
+    const phaseGoalIds = evaluationGoalScope(release, submission.phaseIndex);
     return [{ outcomes, phaseGoalIds }];
   });
 
