@@ -9,6 +9,7 @@ import {
   createDeepSeekModel,
   deepSeekFetch,
   ignoringEchoedResponseFormat,
+  retryingUnparseableJson,
   deepSeekNamedToolProviderOptions,
   deepSeekProviderOptionsForToolChoice,
   deepSeekThinkingProviderOptions,
@@ -325,3 +326,75 @@ describe("DeepSeek json_object answers", () => {
     ).rejects.toSatisfy((error) => NoObjectGeneratedError.isInstance(error));
   });
 });
+
+describe("DeepSeek answers that are not JSON (D-092)", () => {
+  const answeringInTurn = (contents: readonly string[]) => {
+    const calls = { count: 0 };
+    const fetchImpl: typeof fetch = async () => {
+      const content = contents[Math.min(calls.count, contents.length - 1)]!;
+      calls.count += 1;
+      return new Response(
+        JSON.stringify({
+          id: "chatcmpl-json",
+          object: "chat.completion",
+          created: 1,
+          model: "deepseek-v4-flash",
+          choices: [
+            { index: 0, message: { role: "assistant", content }, finish_reason: "stop" },
+          ],
+          usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 },
+        }),
+        { status: 200, headers: { "content-type": "application/json" } },
+      );
+    };
+    return { calls, fetchImpl };
+  };
+  const draftWith = (fetchImpl: typeof fetch) =>
+    retryingUnparseableJson(() =>
+      generateText({
+        model: createDeepSeekModel(
+          { apiKey: "contract-test-key", model: "deepseek-v4-flash" },
+          fetchImpl,
+        ),
+        output: Output.object({
+          schema: ignoringEchoedResponseFormat(z.object({ summary: z.string() }).strict()),
+        }),
+        prompt: "起草。",
+      }),
+    );
+  // Verbatim tail of a real evaluation draft that failed to parse.
+  const strayTail = '{"summary":"还缺读数。","} ';
+
+  it("calls again once when the answer is not JSON", async () => {
+    const { calls, fetchImpl } = answeringInTurn([
+      strayTail,
+      JSON.stringify({ summary: "还缺读数。" }),
+    ]);
+
+    const result = await draftWith(fetchImpl);
+
+    expect(result.output).toEqual({ summary: "还缺读数。" });
+    expect(calls.count).toBe(2);
+  });
+
+  it("gives up after the second unparseable answer", async () => {
+    const { calls, fetchImpl } = answeringInTurn([strayTail]);
+
+    await expect(draftWith(fetchImpl)).rejects.toSatisfy((error) =>
+      NoObjectGeneratedError.isInstance(error),
+    );
+    expect(calls.count).toBe(2);
+  });
+
+  it("does not call again when the answer parses but breaks the schema", async () => {
+    const { calls, fetchImpl } = answeringInTurn([
+      JSON.stringify({ summary: "还缺读数。", note: "给教师看" }),
+    ]);
+
+    await expect(draftWith(fetchImpl)).rejects.toSatisfy((error) =>
+      NoObjectGeneratedError.isInstance(error),
+    );
+    expect(calls.count).toBe(1);
+  });
+});
+

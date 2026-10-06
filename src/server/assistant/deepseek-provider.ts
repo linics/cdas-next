@@ -1,7 +1,12 @@
 import "server-only";
 
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import { APICallError, type LanguageModel } from "ai";
+import {
+  APICallError,
+  JSONParseError,
+  NoObjectGeneratedError,
+  type LanguageModel,
+} from "ai";
 import { z } from "zod";
 import type { ActivityAssistantConfig } from "./assistant-config";
 
@@ -90,6 +95,32 @@ export function ignoringEchoedResponseFormat<Schema extends z.ZodType>(
     }
     return value;
   }, schema);
+}
+
+/**
+ * DeepSeek's json_object mode now and then closes an otherwise complete answer
+ * with stray characters — a real evaluation draft ended `…回应。","}` — and no
+ * schema can read text that is not JSON. On one evaluation draft that was 1 in
+ * 12 calls, with the prompt before D-092 and after it alike, and the teacher
+ * saw a failed draft. A second call almost always parses, so a drafter calls
+ * again once when, and only when, the answer was not JSON at all. Answers that
+ * parse but break the schema still fail: they mean the model answered a
+ * different question, and D-053 does not loosen schemas to suit it.
+ */
+export async function retryingUnparseableJson<T>(
+  generate: () => Promise<T>,
+): Promise<T> {
+  try {
+    return await generate();
+  } catch (error) {
+    if (
+      NoObjectGeneratedError.isInstance(error) &&
+      JSONParseError.isInstance(error.cause)
+    ) {
+      return generate();
+    }
+    throw error;
+  }
 }
 
 function isStreamingRequest(body: unknown): boolean {

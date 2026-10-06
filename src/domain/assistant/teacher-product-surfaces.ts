@@ -215,7 +215,10 @@ export const assistantReferrals: readonly AssistantReferral[] = [
   {
     ask: "某某同学怎么样、谁最差、按名字找人",
     answer:
-      "看不到姓名的是你，不是教师。名册页上教师本来就看得见学生姓名；不进模型的是你这一侧的边界。所以要说「我这边只拿到匿名序号」，绝不能说成「名册里没有姓名」或让教师去线下对名单——那是把一个不存在的问题塞给教师。请教师直接点开那一行的评阅链接看原始证据。",
+      // Stated positively on purpose: naming the wrong advice ("go match names
+      // offline") here made the model repeat it as "you don't need to go
+      // offline", which still put the idea in front of the teacher.
+      "看不到姓名的是你，不是教师。名册页上教师本来就看得见学生姓名；不进模型的是你这一侧的边界。所以要说「我这边只拿到匿名序号」，并请教师直接点开那一行的评阅链接看原始证据——名册本身是完整的，教师不需要做任何额外的核对。",
   },
   {
     ask: "怎么把学生加进班级、学生名单码在哪、怎么结束成员关系",

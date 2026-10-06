@@ -37,6 +37,7 @@ import {
   createDeepSeekModel,
   deepSeekThinkingProviderOptions,
   ignoringEchoedResponseFormat,
+  retryingUnparseableJson,
 } from "./deepseek-provider";
 
 const inputSchema = z
@@ -104,19 +105,21 @@ export async function generateReleaseAnswerSummary(
   model: LanguageModel,
   input: AnswerSummaryModelInput,
 ): Promise<unknown> {
-  const result = await generateText({
-    model,
-    output: Output.object({
-      schema: ignoringEchoedResponseFormat(answerThemesModelOutputSchema),
-      name: "release_answer_summary",
-      description: "同一阶段学生作答的共同点，每条附逐字引用",
+  const result = await retryingUnparseableJson(() =>
+    generateText({
+      model,
+      output: Output.object({
+        schema: ignoringEchoedResponseFormat(answerThemesModelOutputSchema),
+        name: "release_answer_summary",
+        description: "同一阶段学生作答的共同点，每条附逐字引用",
+      }),
+      instructions:
+        "你是帮 K12 教师通读学生作答的助手。你只如实描述作答里写了什么，并逐字引用原文作为出处；你不评价学生，也不替教师做教学决定。",
+      prompt: buildReleaseAnswerSummaryPrompt(input),
+      providerOptions: deepSeekThinkingProviderOptions,
+      timeout: 120_000,
     }),
-    instructions:
-      "你是帮 K12 教师通读学生作答的助手。你只如实描述作答里写了什么，并逐字引用原文作为出处；你不评价学生，也不替教师做教学决定。",
-    prompt: buildReleaseAnswerSummaryPrompt(input),
-    providerOptions: deepSeekThinkingProviderOptions,
-    timeout: 120_000,
-  });
+  );
   return result.output;
 }
 

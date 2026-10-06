@@ -48,6 +48,7 @@ import {
   createDeepSeekModel,
   deepSeekRewriteProviderOptions,
   ignoringEchoedResponseFormat,
+  retryingUnparseableJson,
 } from "./deepseek-provider";
 
 const suggestionInputSchema = z
@@ -147,21 +148,23 @@ export async function generateActivityAdaptation(
   model: LanguageModel,
   input: AdaptationModelInput,
 ): Promise<unknown> {
-  const result = await generateText({
-    model,
-    output: Output.object({
-      schema: ignoringEchoedResponseFormat(adaptationModelOutputSchema(input.areas)),
-      name: "activity_adaptation",
-      description: "按教师指定区域改写后的任务书片段",
+  const result = await retryingUnparseableJson(() =>
+    generateText({
+      model,
+      output: Output.object({
+        schema: ignoringEchoedResponseFormat(adaptationModelOutputSchema(input.areas)),
+        name: "activity_adaptation",
+        description: "按教师指定区域改写后的任务书片段",
+      }),
+      instructions:
+        "你是 K12 跨学科作业的适配助手。你只提出供教师逐处确认的改写，不能增删任务书结构，也不能替教师保存或发布。",
+      prompt: buildActivityAdaptationPrompt(input),
+      providerOptions: deepSeekRewriteProviderOptions,
+      // A full phase and rubric rewrite is several times longer than a feedback
+      // draft, so it gets twice the drafters' budget.
+      timeout: 120_000,
     }),
-    instructions:
-      "你是 K12 跨学科作业的适配助手。你只提出供教师逐处确认的改写，不能增删任务书结构，也不能替教师保存或发布。",
-    prompt: buildActivityAdaptationPrompt(input),
-    providerOptions: deepSeekRewriteProviderOptions,
-    // A full phase and rubric rewrite is several times longer than a feedback
-    // draft, so it gets twice the drafters' budget.
-    timeout: 120_000,
-  });
+  );
   return result.output;
 }
 
