@@ -44,6 +44,7 @@ import {
 import {
   createDeepSeekModel,
   deepSeekThinkingProviderOptions,
+  ignoringEchoedResponseFormat,
 } from "./deepseek-provider";
 
 const inputSchema = z
@@ -180,7 +181,7 @@ export async function generateActivityDraftDiagnosis(
   const result = await generateText({
     model,
     output: Output.object({
-      schema: diagnosisModelOutputSchema,
+      schema: ignoringEchoedResponseFormat(diagnosisModelOutputSchema),
       name: "activity_draft_diagnosis",
       description: "对当前版本任务书的设计质量建议",
     }),

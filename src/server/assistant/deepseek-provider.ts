@@ -1,7 +1,8 @@
 import "server-only";
 
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import type { LanguageModel } from "ai";
+import { APICallError, type LanguageModel } from "ai";
+import { z } from "zod";
 import type { ActivityAssistantConfig } from "./assistant-config";
 
 const deepSeekBaseUrl = "https://api.deepseek.com";
@@ -66,16 +67,92 @@ export function deepSeekProviderOptionsForToolChoice(
 }
 
 /**
+ * The drafters ask for `response_format: {type: "json_object"}`, and DeepSeek
+ * sometimes copies that into its answer as a top-level `"type": "json_object"`
+ * key beside an otherwise valid object. The drafters' outer schemas are strict,
+ * so that one echoed key threw away a correct evaluation draft (1 of 8 real
+ * calls on 2026-10-06). Drop exactly that key and nothing else: any other
+ * unknown field still fails the strict schema it wraps.
+ */
+export function ignoringEchoedResponseFormat<Schema extends z.ZodType>(
+  schema: Schema,
+) {
+  return z.preprocess((value) => {
+    if (
+      value !== null &&
+      typeof value === "object" &&
+      !Array.isArray(value) &&
+      (value as Record<string, unknown>).type === "json_object"
+    ) {
+      const rest: Record<string, unknown> = { ...value };
+      delete rest.type;
+      return rest;
+    }
+    return value;
+  }, schema);
+}
+
+function isStreamingRequest(body: unknown): boolean {
+  if (typeof body !== "string") return false;
+  try {
+    return (JSON.parse(body) as { stream?: unknown }).stream === true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * DeepSeek answers a non-streaming request with its status line first and keeps
+ * the body open while it thinks — tens of seconds at the drafters' gear. A
+ * connection dropped in that window surfaces after a 200, which the SDK reads
+ * as "not retryable", so one network blip failed the teacher's draft outright.
+ * The 2026-10-06 real-model smoke hit exactly that: the socket closed at 35s
+ * and the evaluation drafter ended EVALUATION_SUGGESTION_PROVIDER_FAILED.
+ *
+ * Reading the body here moves that failure inside fetch, where it is reported
+ * as a retryable call error and the SDK's own retry runs. Streaming requests
+ * pass through untouched: their body is the stream the caller consumes.
+ */
+export function deepSeekFetch(baseFetch: typeof fetch = fetch): typeof fetch {
+  return async (input, init) => {
+    const response = await baseFetch(input, init);
+    if (!response.ok || isStreamingRequest(init?.body)) {
+      return response;
+    }
+    try {
+      const body = await response.arrayBuffer();
+      return new Response(body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers,
+      });
+    } catch (error) {
+      if (init?.signal?.aborted) throw error;
+      throw new APICallError({
+        message: "DeepSeek closed the connection before the response finished",
+        cause: error,
+        url: input instanceof Request ? input.url : String(input),
+        requestBodyValues: undefined,
+        statusCode: response.status,
+        isRetryable: true,
+      });
+    }
+  };
+}
+
+/**
  * Construct the model at the external-provider boundary. The API key stays
  * server-only and is sent directly to DeepSeek; Vercel AI Gateway is not used.
  */
 export function createDeepSeekModel(
   config: Pick<ActivityAssistantConfig, "apiKey" | "model">,
+  baseFetch: typeof fetch = fetch,
 ): LanguageModel {
   return createOpenAICompatible({
     name: "deepseek",
     baseURL: deepSeekBaseUrl,
     apiKey: config.apiKey,
+    fetch: deepSeekFetch(baseFetch),
   }).chatModel(config.model);
 }
 
@@ -90,10 +167,12 @@ export function createDeepSeekAttachmentVisionModel(
     ActivityAssistantConfig,
     "apiKey" | "attachmentVisionModel"
   >,
+  baseFetch: typeof fetch = fetch,
 ): LanguageModel {
   return createOpenAICompatible({
     name: "deepseek",
     baseURL: deepSeekBaseUrl,
     apiKey: config.apiKey,
+    fetch: deepSeekFetch(baseFetch),
   }).chatModel(config.attachmentVisionModel);
 }

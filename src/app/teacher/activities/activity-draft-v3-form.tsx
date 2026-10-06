@@ -2,7 +2,13 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useActionState, useEffect, useMemo, useState } from "react";
+import {
+  useActionState,
+  useEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import {
   assignmentSubtypes,
   assignmentTypes,
@@ -31,6 +37,9 @@ const statusLabels = {
   READY_FOR_PREVIEW: "可预览",
   SEALED: "已封存",
 } as const;
+const subscribeToHydration = () => () => {};
+const hydratedSnapshot = () => true;
+const serverSnapshot = () => false;
 
 function Section({
   number,
@@ -68,6 +77,12 @@ export function ActivityDraftV3Form({
     initialState,
   );
   const [values, setValues] = useState(initialState.values);
+  // Browser gates fill this form; typing before hydration is silently undone.
+  const hydrated = useSyncExternalStore(
+    subscribeToHydration,
+    hydratedSnapshot,
+    serverSnapshot,
+  );
 
   const isSealed = state.persistedStatus === "SEALED";
   const isConflict = state.status === "conflict";
@@ -183,6 +198,7 @@ export function ActivityDraftV3Form({
     <div className={styles.editorLayout}>
       <form
         id="activity-draft-v3-form"
+        data-hydrated={hydrated ? "true" : "false"}
         className={styles.editorForm}
         action={formAction}
       >

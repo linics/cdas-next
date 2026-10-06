@@ -17,6 +17,7 @@ from urllib.parse import urlparse
 
 from playwright.sync_api import (
     Error as PlaywrightError,
+    Locator,
     Page,
     TimeoutError as PlaywrightTimeoutError,
     sync_playwright,
@@ -141,8 +142,16 @@ def wait_for_text(page: Page, value: str | re.Pattern[str]) -> None:
     page.get_by_text(value, exact=False).last.wait_for(state="visible", timeout=30_000)
 
 
+def dialog_titled(page: Page, title: str) -> Locator:
+    # Confirmations are alert dialogs (they interrupt to ask for a decision);
+    # plain dialogs are matched too so a change of primitive is not a failure.
+    return page.locator('[role="alertdialog"], [role="dialog"]').filter(
+        has_text=title
+    )
+
+
 def confirm_dialog(page: Page, title: str, confirmation_label: str) -> None:
-    dialog = page.get_by_role("dialog").filter(has_text=title)
+    dialog = dialog_titled(page, title)
     dialog.wait_for(state="visible", timeout=30_000)
     dialog.get_by_role("button", name=confirmation_label, exact=True).click()
     dialog.wait_for(state="hidden", timeout=30_000)
@@ -164,7 +173,14 @@ def switch_account(
         field = "工号" if role == "teacher" else "学号"
         page.get_by_label(field, exact=True).fill(identity["account"])
         page.get_by_label("密码", exact=True).fill(identity["password"])
-        page.get_by_role("button", name="登录", exact=True).click()
+        page.get_by_role("button", name="进入工作台", exact=True).click()
+        # The login form is rendered in place on the workspace route itself
+        # (the /login path redirects there), so the URL already matches before
+        # the session exists, and the button renames itself while pending. The
+        # password field leaving the page is what proves the login landed.
+        page.get_by_label("密码", exact=True).wait_for(
+            state="detached", timeout=30_000
+        )
         page.wait_for_url(f"{base_url}/{destination}", timeout=30_000)
         assert_origin(page, base_url)
         session = next(
@@ -230,48 +246,98 @@ def screenshot(page: Page, artifacts: Path, name: str) -> None:
     page.screenshot(path=artifacts / f"{name}.png", full_page=True)
 
 
-def fill_activity_form(page: Page, title: str, summary: str) -> None:
-    page.locator('#activity-draft-form[data-hydrated="true"]').wait_for(state="visible")
-    page.locator("#activity-title").fill(title)
-    page.locator("#activity-summary").fill(summary)
-    page.get_by_label("探究主题", exact=True).fill("校园证据核验")
-    page.get_by_label("背景设定", exact=True).fill(
-        "学生受邀核验校园观察记录，并以可复验的数据说明结论。"
-    )
-    page.get_by_label("知识与技能目标", exact=True).fill("识别可核验的观察证据。")
-    page.get_by_label("过程与方法目标", exact=True).fill("根据记录比较证据并形成解释。")
-    page.get_by_label("情感态度目标", exact=True).fill("愿意诚实记录并听取同伴意见。")
-    page.get_by_label("总体任务说明", exact=True).fill(
-        "完成一次校园观察，记录数据，并用文字说明证据如何支持结论。"
+def form_field(scope: Page | Locator, label: str) -> Locator:
+    """The control wrapped by a label whose text starts with `label`.
+
+    The v3 form wraps each control in its label, so the label's text also
+    carries the control's own text (a select's options, a textarea's server
+    rendered value). Matching the whole label text breaks on any value.
+    """
+    return (
+        scope.locator("label")
+        .filter(has_text=re.compile(rf"^\s*{re.escape(label)}"))
+        .locator("input, textarea, select")
+        .first
     )
 
+
+def fill_activity_form(page: Page, title: str, summary: str) -> None:
+    """Write a complete v3 task book by hand through the teacher form.
+
+    The form opens with the structural minimums already in place (two goals,
+    three phases, four rubric dimensions, physics with chinese), so only the
+    prose and the links between goals, phases and dimensions are filled here.
+    Whole-project submission keeps the loop on one revision chain.
+    """
+    form = page.locator('#activity-draft-v3-form[data-hydrated="true"]')
+    form.wait_for(state="visible")
+    form_field(form, "任务标题").fill(title)
+    form_field(form, "任务主题").fill("校园证据核验")
+    form_field(form, "任务描述").fill(summary)
+    form_field(form, "提交模式").select_option("once")
+    form_field(form, "背景设定").fill(
+        "你们是学校后勤处请来的校园记录核验员，要把核验结论交给后勤处，"
+        "回答：这份观察记录能不能作为改进依据？"
+    )
+
+    contributions = form.locator("li").filter(has_text="学科贡献")
+    if contributions.count() < 2:
+        raise E2eFailure("V3_FORM_CONTRIBUTIONS_MISSING")
+    for index in range(contributions.count()):
+        card = contributions.nth(index)
+        form_field(card, "学科贡献").fill("提供本学科独有的观察与表达方法。")
+        form_field(card, "不可替代性").fill("缺少这门学科，结论就无法被核验或说清。")
+
+    goal_descriptions = (
+        "能识别可核验的观察证据。",
+        "能用证据写出可复验的结论。",
+    )
+    goals = form.locator("li").filter(has_text="可观察目标")
+    if goals.count() != len(goal_descriptions):
+        raise E2eFailure("V3_FORM_GOAL_COUNT_CHANGED")
+    for index, description in enumerate(goal_descriptions):
+        goal = goals.nth(index)
+        form_field(goal, "可观察目标").fill(description)
+        goal.locator('input[type="checkbox"]').first.check()
+
+    form_field(form, "总体任务说明").fill(
+        "完成一次校园观察，记录数据，并用文字说明证据如何支持结论。"
+    )
     phase_actions = (
         "提出一个可以通过观察验证的问题。",
         "收集并比较至少两项观察记录。",
         "用证据表达结论并回应同伴质疑。",
     )
+    phases = form.locator("li").filter(has_text="核心动作")
+    if phases.count() != len(phase_actions):
+        raise E2eFailure("V3_FORM_PHASE_COUNT_CHANGED")
     for index, action in enumerate(phase_actions):
-        phase = page.get_by_role("group", name=f"阶段 {index + 1}", exact=True)
-        phase.get_by_label("核心动作", exact=True).fill(action)
-        phase.get_by_label("情境承接", exact=True).fill(
+        phase = phases.nth(index)
+        form_field(phase, "核心动作").fill(action)
+        form_field(phase, "情境承接").fill(
             f"承接校园证据核验任务的第 {index + 1} 步。"
         )
-        phase.get_by_label("学习支架", exact=True).fill(
-            "使用问题、记录、证据、结论四栏表。"
+        form_field(phase, "学习支架").fill(
+            "1. 列出问题\n2. 填写记录表\n可以这样写：「我们发现……」"
         )
-        phase.get_by_label("提交证据说明", exact=True).fill(
+        form_field(phase, "评价要点").fill("记录可核验，结论与证据一致。")
+        form_field(phase, "任务要求").fill(
             f"第 {index + 1} 阶段的文字记录与依据。"
         )
-        phase.get_by_label("评价要点", exact=True).fill(
-            "记录可核验，结论与证据一致。"
-        )
+        for checkbox in phase.locator('input[type="checkbox"]').all():
+            checkbox.check()
 
-    for index in range(4):
-        rubric = page.get_by_role("group", name=f"维度 {index + 1}", exact=True)
-        rubric.get_by_label("优秀", exact=True).fill("证据完整且解释清晰。")
-        rubric.get_by_label("良好", exact=True).fill("主要证据完整，解释基本清晰。")
-        rubric.get_by_label("合格", exact=True).fill("有基本证据和可理解的解释。")
-        rubric.get_by_label("需改进", exact=True).fill("证据或解释仍需补充。")
+    rubric = form.locator("li").filter(has_text="评价维度")
+    if rubric.count() < 4:
+        raise E2eFailure("V3_FORM_RUBRIC_MISSING")
+    for index in range(rubric.count()):
+        dimension = rubric.nth(index)
+        form_field(dimension, "优秀").fill("证据完整且解释清晰。")
+        form_field(dimension, "良好").fill("主要证据完整，解释基本清晰。")
+        form_field(dimension, "达标").fill("有基本证据和可理解的解释。")
+        form_field(dimension, "需改进").fill("证据或解释仍需补充。")
+        for checkbox in dimension.locator('input[type="checkbox"]').all():
+            checkbox.check()
 
 
 def expand_submission_history(page: Page) -> None:
@@ -306,6 +372,12 @@ def submit_to_teacher(page: Page, revision_number: int) -> None:
     wait_for_text(page, f"第 {revision_number} 版已提交给老师")
 
 
+FEEDBACK_REVISE_BUTTON = "保存 · 请学生修改"
+# The roster's per-row action is named for what the row needs (评阅 or 查看);
+# its destination is the contract.
+SUBMISSION_ROW_LINK = 'a[href^="/teacher/submissions/"]'
+
+
 def choose(page: Page, name: str, value: str) -> None:
     """Pick one of the review page's segmented choices (native radios)."""
     page.locator("label", has=page.locator(f'input[name="{name}"][value="{value}"]')).click()
@@ -314,31 +386,28 @@ def choose(page: Page, name: str, value: str) -> None:
 def fill_feedback_when_ready(
     page: Page,
     body: str,
-    next_step: str = "REVISE",
     support_level: str = "FOUNDATION",
 ) -> None:
-    """Fill after hydration and prove React enabled the confirmation action.
+    """Fill after hydration and prove React enabled the save actions.
 
-    The structured next step and support level are frozen with the body, so
-    saving stays disabled until the next step is chosen.
+    The support level is frozen with the body; the next step is chosen by
+    which save button is pressed (D-079), so both stay disabled until the
+    body and support level are set.
     """
     textarea = page.locator("#teacher-feedback-body")
-    next_step_radio = page.locator(f'input[name="nextStep"][value="{next_step}"]')
     support_radio = page.locator(
         f'input[name="supportLevel"][value="{support_level}"]'
     )
-    button = page.get_by_role("button", name="保存反馈", exact=True)
+    button = page.get_by_role("button", name=FEEDBACK_REVISE_BUTTON, exact=True)
     textarea.wait_for(state="visible")
     button.wait_for(state="visible")
 
     deadline = time.monotonic() + 30
     while time.monotonic() < deadline:
         textarea.fill(body)
-        choose(page, "nextStep", next_step)
         choose(page, "supportLevel", support_level)
         if (
             textarea.input_value() == body
-            and next_step_radio.is_checked()
             and support_radio.is_checked()
             and button.is_enabled()
         ):
@@ -414,11 +483,12 @@ def run_browser_flow(
             )
             page.get_by_role("button", name="保存为编辑中", exact=True).click()
             page.wait_for_url(re.compile(rf"{re.escape(base_url)}/teacher/activities/[0-9a-f-]+$"))
-            page.locator('#activity-draft-form[data-hydrated="true"]').wait_for(state="visible")
+            draft_form = page.locator('#activity-draft-v3-form[data-hydrated="true"]')
+            draft_form.wait_for(state="visible")
             if page.locator('input[name="expectedVersion"]').input_value() != "1":
                 raise E2eFailure("DRAFT_VERSION_ONE_NOT_RENDERED")
 
-            page.locator("#activity-summary").fill(
+            form_field(draft_form, "任务描述").fill(
                 "第二版摘要：建立可复验的学习证据，并明确数据来源。"
             )
             page.get_by_role("button", name="保存并标记可预览", exact=True).click()
@@ -465,15 +535,13 @@ def run_browser_flow(
 
             switch_account(page, base_url, "teacher", credentials)
             page.goto(f"{base_url}{release_href}", wait_until="domcontentloaded")
-            submission_link = page.get_by_role(
-                "link", name=re.compile("去评阅")
-            ).first
+            submission_link = page.locator(SUBMISSION_ROW_LINK).first
             submission_href = submission_link.get_attribute("href")
             if not submission_href:
                 raise E2eFailure("SUBMISSION_LINK_MISSING")
             submission_link.click()
             fill_feedback_when_ready(page, first_feedback)
-            page.get_by_role("button", name="保存反馈", exact=True).click()
+            page.get_by_role("button", name=FEEDBACK_REVISE_BUTTON, exact=True).click()
             confirm_dialog(page, "确认并保存最终反馈", "确认并保存最终反馈")
             open_confirmed_records(page)
             page.get_by_text(first_feedback, exact=True).last.wait_for(state="visible")
@@ -491,7 +559,7 @@ def run_browser_flow(
             switch_account(page, base_url, "teacher", credentials)
             page.goto(f"{base_url}{submission_href}", wait_until="domcontentloaded")
             fill_feedback_when_ready(page, second_feedback)
-            page.get_by_role("button", name="保存反馈", exact=True).click()
+            page.get_by_role("button", name=FEEDBACK_REVISE_BUTTON, exact=True).click()
             confirm_dialog(page, "确认并保存最终反馈", "确认并保存最终反馈")
             open_confirmed_records(page)
             page.get_by_text(second_feedback, exact=True).last.wait_for(state="visible")
@@ -554,6 +622,9 @@ def run_browser_flow(
 
             switch_account(page, base_url, "teacher", credentials)
             page.goto(f"{base_url}{release_href}", wait_until="domcontentloaded")
+            # Closing is a rare, one-way action, so the roster keeps it folded
+            # away under the activity settings.
+            page.locator("summary").filter(has_text="活动设置").click()
             page.get_by_role("button", name="准备关闭活动", exact=True).click()
             confirm_dialog(page, "确认关闭这个活动", "确认并关闭活动")
             page.get_by_role(
@@ -609,9 +680,7 @@ def run_browser_flow(
             page.get_by_role(
                 "button", name="准备发布确认", exact=True
             ).click()
-            page.get_by_role("dialog").filter(
-                has_text="确认发布活动"
-            ).wait_for(state="visible")
+            dialog_titled(page, "确认发布活动").wait_for(state="visible")
 
             competing_page = context.new_page()
             try:
@@ -619,7 +688,12 @@ def run_browser_flow(
                     f"{base_url}{concurrency_draft_path}",
                     wait_until="domcontentloaded",
                 )
-                competing_page.locator("#activity-summary").fill(
+                form_field(
+                    competing_page.locator(
+                        '#activity-draft-v3-form[data-hydrated="true"]'
+                    ),
+                    "任务描述",
+                ).fill(
                     "并发页面已经追加第二版，旧确认不得发布第一版。"
                 )
                 competing_page.get_by_role(
@@ -667,11 +741,11 @@ def run_real_model_browser_flow(
 標題必須逐字為：{title}
 請建立完整跨學科任務書：初中七年級，主學科物理，融合數學與語文；探究性作業、調查探究、中等探究、一次性提交、2周。
 探究主題與摘要聚焦校園節水觀察；背景是學生受邀核驗兩次不含個資的合成水表讀數。
-三維目標分別涵蓋辨識可核驗的用水證據、根據數據形成改善建議、願意為公共資源負責。
+設置3條可觀察學習目標：辨識可核驗的用水證據、根據數據形成改善建議、願意為公共資源負責，每條掛適配七年級的官方核心素養。
 總體任務要求學生比較讀數差異，并用文字解釋證據如何支持建議。
 設置3個連續階段，每階段都有明確行動、情境承接、學習支架、至少一項類型化提交證據、評價要點和課時建議。
-設置問題意識、證據質量、跨學科連接、方案表達4個量規維度，每個維度都有優秀、良好、合格、需改進四檔非空描述。
-內容只使用以上合成資料。提案必須明確列出教師已提供要求、假設、數學與語文各自不可替代的貢獻，以及知識與技能／過程與方法／情感態度三條目標—任務—證據—評價鏈；然後調用 create_activity_draft 等待確認。"""
+設置問題意識、證據質量、跨學科連接、方案表達4個量規維度，每個維度都有優秀、良好、達標、需改進四檔非空描述，並寫明評價哪幾條目標。
+內容只使用以上合成資料。提案必須明確列出教師已提供要求、假設、物理、數學與語文各自的貢獻與不可替代性，並讓每條目標都被某個階段承擔、被某個量規維度評價；然後調用 create_activity_draft 等待確認。"""
 
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=True)
@@ -803,9 +877,11 @@ def run_real_model_browser_flow(
                 "details > summary", has_text="已读取："
             ).count() < 2:
                 raise E2eFailure("REAL_MODEL_SOURCE_READING_MISSING")
-            proposal.get_by_text("math", exact=True).wait_for()
-            proposal.get_by_text("chinese", exact=True).wait_for()
-            proposal.get_by_text("知识与技能", exact=True).wait_for()
+            # v3 names each discipline by its label and each goal by position.
+            contributions = proposal.locator('section[aria-label="跨学科必要性"]')
+            contributions.get_by_text("数学", exact=True).wait_for()
+            contributions.get_by_text("语文", exact=True).wait_for()
+            proposal.get_by_text("目标 1", exact=True).wait_for()
             screenshot(page, artifacts, "03-real-model-draft-proposal")
             # The idle badge this used to wait for no longer exists; the panel
             # now only marks the busy state. Wait for that to clear instead.
@@ -826,7 +902,15 @@ def run_real_model_browser_flow(
             )
             wait_for_text(page, title)
             wait_for_text(page, "版本 1")
-            for heading in ("基本设置", "背景设定", "三维目标", "总体任务", "任务链", "评价标准"):
+            for heading in (
+                "基本设置",
+                "背景设定",
+                "总体任务",
+                "学习目标与课程依据",
+                "学科分工",
+                "阶段任务",
+                "评价标准",
+            ):
                 page.get_by_role("heading", name=heading, level=3, exact=True).wait_for()
             if page.get_by_role(
                 "link", name="查看发布与学生提交", exact=True
@@ -854,13 +938,14 @@ def run_real_model_browser_flow(
 
             switch_account(page, base_url, "student", credentials)
             # Read the name the roster must never show, from the page itself.
+            # The top bar's account menu names the signed-in user in its
+            # accessible label; the menu text itself only renders when opened.
             student_display_name = ""
-            account_label = page.get_by_text(
-                re.compile(r"当前账号：")
-            ).first
+            account_label = page.locator('[aria-label^="当前账号："]').first
             if account_label.count() != 0:
                 match = re.search(
-                    r"当前账号：\s*([^·\n]+)", account_label.inner_text()
+                    r"当前账号：\s*([^·\n]+)",
+                    account_label.get_attribute("aria-label") or "",
                 )
                 if match:
                     student_display_name = match.group(1).strip()
@@ -885,9 +970,7 @@ def run_real_model_browser_flow(
 
             switch_account(page, base_url, "teacher", credentials)
             page.goto(f"{base_url}{release_href}", wait_until="domcontentloaded")
-            page.get_by_role(
-                "link", name=re.compile("去评阅")
-            ).first.click()
+            page.locator(SUBMISSION_ROW_LINK).first.click()
 
             # D-052: the feedback drafter must fill the real form, and the
             # teacher's ordinary confirmation must save it as AI_ASSISTED.
@@ -895,13 +978,14 @@ def run_real_model_browser_flow(
                 "button", name="让助手起草这一版反馈", exact=True
             ).click()
             page.get_by_text(
-                "AI 建议已填入当前表单。请核对、修改后，再保存反馈。",
+                "AI 建议已填入当前表单。请核对、修改后，再准备反馈确认。",
                 exact=True,
             ).wait_for(timeout=120_000)
             drafted_feedback = page.locator("#teacher-feedback-body").input_value()
             if len(drafted_feedback) < 40:
                 raise E2eFailure("REAL_MODEL_FEEDBACK_DRAFT_TOO_SHORT")
-            if page.locator('input[name="nextStep"]:checked').count() != 1:
+            # The suggested next step is announced next to the save buttons.
+            if page.get_by_text(re.compile(r"^AI 建议：")).count() == 0:
                 raise E2eFailure("REAL_MODEL_FEEDBACK_DRAFT_NEXT_STEP_MISSING")
             if page.locator('input[name="supportLevel"]:checked').count() != 1:
                 raise E2eFailure("REAL_MODEL_FEEDBACK_DRAFT_SUPPORT_LEVEL_MISSING")
@@ -915,7 +999,7 @@ def run_real_model_browser_flow(
                 drafted_feedback, encoding="utf-8"
             )
             screenshot(page, artifacts, "05-real-model-feedback-draft")
-            page.get_by_role("button", name="保存反馈", exact=True).click()
+            page.get_by_role("button", name=FEEDBACK_REVISE_BUTTON, exact=True).click()
             confirm_dialog(page, "确认并保存最终反馈", "确认并保存最终反馈")
             # Confirmed records live in a native <details> that CLASSICAL.md
             # requires to start collapsed, so the provenance line is in the DOM
@@ -1015,6 +1099,12 @@ def run_real_model_browser_flow(
             settle_assistant_stream(page)
             roster.scroll_into_view_if_needed()
             screenshot(page, artifacts, "09-real-model-release-roster")
+
+            # Links belong to the result cards. A reply that spells one out
+            # had to invent a host for it, and the teacher cannot open that.
+            replies = page.locator('article[data-role="assistant"]').all_inner_texts()
+            if any("://" in reply for reply in replies):
+                raise E2eFailure("REAL_MODEL_REPLY_INVENTED_URL")
 
             # The same numbers must be what the first-party page shows.
             page.goto(f"{base_url}/teacher/insights", wait_until="domcontentloaded")

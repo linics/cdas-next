@@ -124,7 +124,7 @@ describe("teacher release insights reader", () => {
       title: "校园节水行动",
       classroomName: "七年一班",
       releaseStatus: "ACTIVE",
-      insightsHref: "/teacher/insights",
+      insightsHref: `/teacher/insights?release=${releaseId}`,
       audienceCount: 28,
       rubricStatus: "ready",
       evaluatedCount: 12,

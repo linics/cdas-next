@@ -11,8 +11,10 @@ describe("teacher Agent page context", () => {
     ["/teacher", { kind: "TEACHER_DASHBOARD" }],
     ["/teacher/activities", { kind: "ACTIVITY_STUDIO" }],
     ["/teacher/activities/new", { kind: "ACTIVITY_NEW" }],
+    ["/teacher/activities/copy", { kind: "ACTIVITY_COPY" }],
     ["/teacher/insights", { kind: "TEACHER_INSIGHTS" }],
     ["/teacher/knowledge", { kind: "TEACHER_KNOWLEDGE" }],
+    ["/teacher/classrooms/new", { kind: "CLASSROOM_NEW" }],
     [
       `/teacher/activities/${resourceId}`,
       { kind: "ACTIVITY_DRAFT", resourceId },

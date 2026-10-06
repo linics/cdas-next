@@ -31,7 +31,10 @@ import {
   taskBookAreaLabels,
   type TaskBookArea,
 } from "../../../domain/activity/task-book-areas";
-import { getTeacherAgentPageContext } from "../../../domain/assistant/teacher-agent-page-context";
+import {
+  getTeacherAgentPageContext,
+  type TeacherAgentPageContext,
+} from "../../../domain/assistant/teacher-agent-page-context";
 import { styles } from "./assistant-ui";
 
 type CreatedDraftOutput = {
@@ -51,18 +54,7 @@ type PublishInput = {
 
 type CurrentTeacherContextOutput = {
   status: "AVAILABLE" | "UNAVAILABLE";
-  kind:
-    | "TEACHER_DASHBOARD"
-    | "ACTIVITY_NEW"
-    | "ACTIVITY_STUDIO"
-    | "ACTIVITY_DRAFT"
-    | "ACTIVITY_PREVIEW"
-    | "RELEASE_SUBMISSIONS"
-    | "SUBMISSION_REVIEW"
-    | "TEACHER_INSIGHTS"
-    | "TEACHER_KNOWLEDGE"
-    | "CLASSROOM_MEMBERS"
-    | "UNKNOWN_TEACHER_PAGE";
+  kind: TeacherAgentPageContext["kind"];
   label: string;
   href: string | null;
 };

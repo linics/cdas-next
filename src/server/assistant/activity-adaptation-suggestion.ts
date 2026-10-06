@@ -47,6 +47,7 @@ import {
 import {
   createDeepSeekModel,
   deepSeekRewriteProviderOptions,
+  ignoringEchoedResponseFormat,
 } from "./deepseek-provider";
 
 const suggestionInputSchema = z
@@ -149,7 +150,7 @@ export async function generateActivityAdaptation(
   const result = await generateText({
     model,
     output: Output.object({
-      schema: adaptationModelOutputSchema(input.areas),
+      schema: ignoringEchoedResponseFormat(adaptationModelOutputSchema(input.areas)),
       name: "activity_adaptation",
       description: "按教师指定区域改写后的任务书片段",
     }),

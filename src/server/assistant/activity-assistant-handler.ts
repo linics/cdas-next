@@ -68,6 +68,10 @@ import {
   type SchoolStage,
 } from "../../domain/activity/activity-content";
 import { coreCompetencyRegistry } from "../../domain/curriculum/core-competencies";
+import {
+  listOfficialKnowledgeSources,
+  officialKnowledgeCoversDiscipline,
+} from "../knowledge/official-corpus";
 
 type StartedRun = Awaited<ReturnType<typeof startActivityAssistantRun>>;
 
@@ -337,6 +341,33 @@ function coreCompetencyRule(): string {
   return `核心素养引用不是自由文本。learningGoals 的 competencyReferences 只能从下列 code 逐字选用；每一条的 disciplineCode 必须是本活动已选学科，且要同时符合该条标示的学段与年级：\n${lines.join("\n")}`;
 }
 
+/**
+ * What the retrieval corpus holds, read from the corpus. This sentence was
+ * hand-written and lagged once already: the corpus grew from four standards to
+ * fourteen while an eval expectation still taught the old four. The model may
+ * claim exactly this boundary and nothing wider.
+ */
+function officialCorpusScope(): string {
+  const sources = listOfficialKnowledgeSources();
+  const versions = [...new Set(sources.map((source) => source.version))].join("、");
+  const plan = sources.some((source) => source.disciplineCodes.length === 0)
+    ? "课程方案与"
+    : "";
+  const covered = disciplineCatalog.filter((discipline) =>
+    officialKnowledgeCoversDiscipline(discipline.code),
+  );
+  const uncovered = disciplineCatalog.filter(
+    (discipline) => !officialKnowledgeCoversDiscipline(discipline.code),
+  );
+  const missing =
+    uncovered.length > 0
+      ? `，不含${uncovered.map((discipline) => discipline.label).join("、")}独立课标`
+      : "";
+  return `当前白名单是${versions}${plan}${covered
+    .map((discipline) => discipline.label)
+    .join("、")}共 ${covered.length} 门课程标准${missing}`;
+}
+
 export function buildActivityAssistantInstructions(
   classrooms: AssistantClassroom[],
 ): string {
@@ -408,7 +439,7 @@ ${coreCompetencyRule()}
 关于长度：整份工具参数有硬性上限，写太长会被截断，那一轮教师什么也拿不到。所以提案里的
 每个字段都只写一到两句话，不要写成段落；引用固定两条已通读来源（学科命中白名单时必须是
 两个不同来源），不要为了显得充分而多引。真正需要写足的是 content 里的任务书本身。
-3. 资料足够后，先调用 search_knowledge，按学段和主学科／融合学科检索教育部官方课程方案与课程标准；根据结果改写查询可以再检索。query 写成简短关键词组合（例如「初中 物理 跨学科实践 节水」），去掉首尾空白后必须在 2 到 400 字之间——不要把教师那整段要求或一整句话当作查询丢进去。当前白名单是课程方案与道德与法治、语文、数学、英语、科学、历史、地理、物理、化学、生物学、信息科技、劳动、艺术、体育与健康共 14 门 2022 年课程标准，不含综合实践活动独立课标，也不包含 UbD、C-POTE、团体标准、教材、教师案例或任何 AI 生成内容。不得声称检索到了白名单之外的资料。
+3. 资料足够后，先调用 search_knowledge，按学段和主学科／融合学科检索教育部官方课程方案与课程标准；根据结果改写查询可以再检索。query 写成简短关键词组合（例如「初中 物理 跨学科实践 节水」），去掉首尾空白后必须在 2 到 400 字之间——不要把教师那整段要求或一整句话当作查询丢进去。${officialCorpusScope()}，也不包含 UbD、C-POTE、团体标准、教材、教师案例或任何 AI 生成内容。不得声称检索到了白名单之外的资料。
 4. 对与当前活动相关的检索结果，调 read_source_section 阅读原文后再写目标、学科贡献、证据与评价。若活动学科命中首版白名单，提案必须引用至少两个不同官方来源；引用只需要给出工具结果里的 sourceId 与 sectionId，外加你为什么采用它；标题和链接由服务端按同一份语料补全，你不需要也不应该自己复述。sourceReferences 的每一条都必须对应本轮 read_source_section 已返回 FOUND 的章节；引用数量不得超过已通读章节数，优先只引用 2 条已通读来源，不要把只检索到、未通读的章节写入引用。提交提案前逐条核对。引用只是可追查的设计依据，不代表活动自动符合课程标准。若确实没有相关结果，必须明确说「语料中未找到依据」，并说明首版语料边界，不能编造来源，也不能改用记忆里的课程标准原文充数。
 5. create_activity_draft 的输入是待教师确认的结构化提案：任务理解摘要、教师已提供要求、明确假设、官方来源的 sourceId/sectionId 及采用理由，最后附上完整 schema v3 内容。跨学科必要性与目标—任务—证据—评价的一致性都写在 content 里，不再单独提供：disciplineContributions 是这份活动的学科名单，learningGoals 与阶段、量规的 learningGoalIds 关联就是那条一致性链。content.schemaVersion 与 content.integratedDisciplineCodes 不用你填，服务端会按 disciplineContributions 补齐。提交该工具前先自检：assignmentType/assignmentSubtype 配对合法、inquiryDepth 只在 inquiry 时非空、每条目标都被阶段和量规覆盖、核心素养引用适配学段年级且属于已选学科、sourceReferences 均为本轮 FOUND 通读、学段与年级与教师说明一致（小学 1–6 对 PRIMARY，初中 7–9 对 MIDDLE）。它会暂停等待教师确认；拒绝后不得重试，也不得建立草稿。每个请求最多提出或建立一份草稿。
 6. 教师确认后，工具只会把提案内同一份 schema v3 content 建立为 READY_FOR_PREVIEW 草稿。建立成功后即停止；用户端会依工具回传的精确 draftId 与 previewHref 开启预览，不要再要求一次模型回应。
@@ -780,7 +811,7 @@ ${error.message}`,
           if (createApprovalSelected) {
             return {
               type: "denied",
-              reason: "每次請求只能建立一份草稿",
+              reason: "每次请求只能建立一份草稿",
             };
           }
           createApprovalSelected = true;
@@ -890,7 +921,7 @@ ${error.message}`,
         originalMessages: uiMessages,
         sendReasoning: false,
         sendSources: false,
-        onError: () => "助手請求未完成，請檢查內容後重試。",
+        onError: () => "助手请求未完成，请检查内容后重试。",
       }),
       headers: { "Cache-Control": "no-store" },
     });

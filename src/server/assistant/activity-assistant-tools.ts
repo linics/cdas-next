@@ -7,7 +7,10 @@ import {
   activityContentStructuredSchema,
   activityContentV3Schema,
 } from "../../domain/activity/activity-content";
-import type { TeacherAgentPageContext } from "../../domain/assistant/teacher-agent-page-context";
+import {
+  teacherAgentPageKindSchema,
+  type TeacherAgentPageContext,
+} from "../../domain/assistant/teacher-agent-page-context";
 import { teacherProductSurfaces } from "../../domain/assistant/teacher-product-surfaces";
 import {
   changedTaskBookAreas,
@@ -269,19 +272,7 @@ const teacherInternalHrefSchema = z
 export const currentTeacherContextOutputSchema = z
   .object({
     status: z.enum(["AVAILABLE", "UNAVAILABLE"]),
-    kind: z.enum([
-      "TEACHER_DASHBOARD",
-      "ACTIVITY_NEW",
-      "ACTIVITY_STUDIO",
-      "ACTIVITY_DRAFT",
-      "ACTIVITY_PREVIEW",
-      "RELEASE_SUBMISSIONS",
-      "SUBMISSION_REVIEW",
-      "TEACHER_INSIGHTS",
-      "TEACHER_KNOWLEDGE",
-      "CLASSROOM_MEMBERS",
-      "UNKNOWN_TEACHER_PAGE",
-    ]),
+    kind: teacherAgentPageKindSchema,
     label: z.string().trim().min(1).max(240),
     href: teacherInternalHrefSchema.nullable(),
   })
@@ -484,8 +475,10 @@ export function mapCurrentTeacherContext(
       | "TEACHER_DASHBOARD"
       | "ACTIVITY_NEW"
       | "ACTIVITY_STUDIO"
+      | "ACTIVITY_COPY"
       | "TEACHER_INSIGHTS"
       | "TEACHER_KNOWLEDGE"
+      | "CLASSROOM_NEW"
     >,
   ): CurrentTeacherContextOutput => {
     const surface = teacherProductSurfaces.find(
@@ -505,8 +498,10 @@ export function mapCurrentTeacherContext(
     TEACHER_DASHBOARD: fixedPage("TEACHER_DASHBOARD"),
     ACTIVITY_NEW: fixedPage("ACTIVITY_NEW"),
     ACTIVITY_STUDIO: fixedPage("ACTIVITY_STUDIO"),
+    ACTIVITY_COPY: fixedPage("ACTIVITY_COPY"),
     TEACHER_INSIGHTS: fixedPage("TEACHER_INSIGHTS"),
     TEACHER_KNOWLEDGE: fixedPage("TEACHER_KNOWLEDGE"),
+    CLASSROOM_NEW: fixedPage("CLASSROOM_NEW"),
     SUBMISSION_REVIEW: {
       status: "AVAILABLE",
       kind: "SUBMISSION_REVIEW",

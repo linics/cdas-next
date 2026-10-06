@@ -38,6 +38,7 @@ describe("DeepSeek provider boundary", () => {
       name: "deepseek",
       baseURL: "https://api.deepseek.com",
       apiKey: "deepseek-secret-key",
+      fetch: expect.any(Function),
     });
     expect(mocks.chatModel).toHaveBeenCalledWith(
       "deepseek-v4-flash",

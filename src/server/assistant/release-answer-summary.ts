@@ -36,6 +36,7 @@ import {
 import {
   createDeepSeekModel,
   deepSeekThinkingProviderOptions,
+  ignoringEchoedResponseFormat,
 } from "./deepseek-provider";
 
 const inputSchema = z
@@ -106,7 +107,7 @@ export async function generateReleaseAnswerSummary(
   const result = await generateText({
     model,
     output: Output.object({
-      schema: answerThemesModelOutputSchema,
+      schema: ignoringEchoedResponseFormat(answerThemesModelOutputSchema),
       name: "release_answer_summary",
       description: "同一阶段学生作答的共同点，每条附逐字引用",
     }),

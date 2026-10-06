@@ -35,6 +35,7 @@ import {
 import {
   createDeepSeekModel,
   deepSeekThinkingProviderOptions,
+  ignoringEchoedResponseFormat,
 } from "./deepseek-provider";
 import {
   FeedbackWorkspaceQueryError,
@@ -187,7 +188,7 @@ async function generateSuggestion(
   const result = await generateText({
     model,
     output: Output.object({
-      schema: teacherEvaluationSuggestionModelOutputSchema,
+      schema: ignoringEchoedResponseFormat(teacherEvaluationSuggestionModelOutputSchema),
       name: "teacher_evaluation_suggestion",
       description: "按冻结量规和当前可读证据起草的教师终审前评价建议",
     }),
