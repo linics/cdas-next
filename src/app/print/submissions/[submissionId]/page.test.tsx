@@ -60,6 +60,7 @@ function feedback(version: number, body: string) {
 const workspace = {
   actor: { displayName: "林老师" },
   group: null,
+  earlierPhases: [],
   student: { id: "30000000-0000-4000-8000-000000000003", displayName: "陈同学" },
   submission: {
     id: submissionId,
