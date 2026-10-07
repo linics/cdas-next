@@ -144,42 +144,43 @@ model TeacherProvisioning {
 }
 
 model AppUser {
-  id                      String                          @id @default(uuid()) @db.Uuid
-  authSubject             String                          @unique @map("auth_subject")
-  role                    UserRole
-  displayName             String                          @map("display_name")
-  rosterKey               String?                         @unique @map("roster_key") @db.VarChar(32)
-  schoolId                String?                         @map("school_id") @db.Uuid
-  staffNo                 String?                         @map("staff_no") @db.VarChar(32)
-  studentNo               String?                         @map("student_no") @db.VarChar(32)
-  accountStatus           AccountStatus                   @default(ACTIVE) @map("account_status")
-  legacyProfile           Boolean                         @default(false) @map("legacy_profile")
-  createdAt               DateTime                        @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt               DateTime                        @updatedAt @map("updated_at") @db.Timestamptz(3)
-  school                  School?                         @relation(fields: [schoolId], references: [id], onDelete: Restrict)
-  teacherProvisioning     TeacherProvisioning?
-  classrooms              Classroom[]                     @relation("ClassroomManager")
-  memberships             ClassroomMembership[]           @relation("StudentMemberships")
-  drafts                  ActivityDraft[]                 @relation("DraftOwner")
-  adoptedSources          ActivityDraftSourceReference[]  @relation("SourceReferenceAdopter")
-  withdrawnSources        ActivityDraftSourceWithdrawal[] @relation("SourceReferenceWithdrawer")
-  requestedDiagnoses      ActivityDraftDiagnosis[]        @relation("DiagnosisRequester")
-  requestedAnswerSummaries ReleaseAnswerSummary[]         @relation("AnswerSummaryRequester")
-  releases                ActivityRelease[]               @relation("ReleasePublisher")
-  actionIntents           ActionIntent[]                  @relation("ActionIntentActor")
-  actionDecisions         ActionIntent[]                  @relation("ActionIntentDecider")
-  idempotency             IdempotencyRecord[]
-  auditEntries            ActionAudit[]
-  agentRuns               AgentRun[]
-  submissions             Submission[]                    @relation("SubmissionStudent")
-  releaseGroupMembers     ReleaseGroupMember[]
-  submissionAttachments   SubmissionAttachment[]          @relation("SubmissionAttachmentStudent")
-  feedback                TeacherFeedback[]               @relation("TeacherFeedbackTeacher")
-  feedbackConfirmations   TeacherFeedbackRevision[]       @relation("TeacherFeedbackConfirmer")
-  evaluations             TeacherEvaluation[]             @relation("TeacherEvaluationTeacher")
-  evaluationConfirmations TeacherEvaluationRevision[]     @relation("TeacherEvaluationConfirmer")
-  localCredential         LocalCredential?
-  authSessions            AuthSession[]
+  id                       String                          @id @default(uuid()) @db.Uuid
+  authSubject              String                          @unique @map("auth_subject")
+  role                     UserRole
+  displayName              String                          @map("display_name")
+  rosterKey                String?                         @unique @map("roster_key") @db.VarChar(32)
+  schoolId                 String?                         @map("school_id") @db.Uuid
+  staffNo                  String?                         @map("staff_no") @db.VarChar(32)
+  studentNo                String?                         @map("student_no") @db.VarChar(32)
+  accountStatus            AccountStatus                   @default(ACTIVE) @map("account_status")
+  legacyProfile            Boolean                         @default(false) @map("legacy_profile")
+  createdAt                DateTime                        @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt                DateTime                        @updatedAt @map("updated_at") @db.Timestamptz(3)
+  school                   School?                         @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  teacherProvisioning      TeacherProvisioning?
+  classrooms               Classroom[]                     @relation("ClassroomManager")
+  memberships              ClassroomMembership[]           @relation("StudentMemberships")
+  drafts                   ActivityDraft[]                 @relation("DraftOwner")
+  draftWorkingCopies       ActivityDraftWorkingCopy[]      @relation("DraftWorkingCopyOwner")
+  adoptedSources           ActivityDraftSourceReference[]  @relation("SourceReferenceAdopter")
+  withdrawnSources         ActivityDraftSourceWithdrawal[] @relation("SourceReferenceWithdrawer")
+  requestedDiagnoses       ActivityDraftDiagnosis[]        @relation("DiagnosisRequester")
+  requestedAnswerSummaries ReleaseAnswerSummary[]          @relation("AnswerSummaryRequester")
+  releases                 ActivityRelease[]               @relation("ReleasePublisher")
+  actionIntents            ActionIntent[]                  @relation("ActionIntentActor")
+  actionDecisions          ActionIntent[]                  @relation("ActionIntentDecider")
+  idempotency              IdempotencyRecord[]
+  auditEntries             ActionAudit[]
+  agentRuns                AgentRun[]
+  submissions              Submission[]                    @relation("SubmissionStudent")
+  releaseGroupMembers      ReleaseGroupMember[]
+  submissionAttachments    SubmissionAttachment[]          @relation("SubmissionAttachmentStudent")
+  feedback                 TeacherFeedback[]               @relation("TeacherFeedbackTeacher")
+  feedbackConfirmations    TeacherFeedbackRevision[]       @relation("TeacherFeedbackConfirmer")
+  evaluations              TeacherEvaluation[]             @relation("TeacherEvaluationTeacher")
+  evaluationConfirmations  TeacherEvaluationRevision[]     @relation("TeacherEvaluationConfirmer")
+  localCredential          LocalCredential?
+  authSessions             AuthSession[]
 
   @@unique([schoolId, staffNo])
   @@unique([schoolId, studentNo])
@@ -272,9 +273,31 @@ model ActivityDraft {
   origin               ActivityDraftOrigin?
   sourceReferences     ActivityDraftSourceReference[]
   diagnoses            ActivityDraftDiagnosis[]
+  workingCopy          ActivityDraftWorkingCopy?
 
   @@index([ownerId, status, updatedAt])
   @@map("activity_drafts")
+}
+
+/// D-093: a teacher's unsaved, possibly incomplete task book. It is scratch
+/// paper: autosaved and overwritten in place, never previewed, published,
+/// copied or read by the assistant, and removed once a complete version of the
+/// task book is saved. A new task book has one before it has a draft at all.
+model ActivityDraftWorkingCopy {
+  id          String         @id @default(uuid()) @db.Uuid
+  ownerId     String         @map("owner_id") @db.Uuid
+  draftId     String?        @unique @map("draft_id") @db.Uuid
+  baseVersion Int            @default(0) @map("base_version")
+  version     Int            @default(1)
+  title       String         @default("")
+  content     Json
+  createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+  owner       AppUser        @relation("DraftWorkingCopyOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  draft       ActivityDraft? @relation(fields: [draftId], references: [id], onDelete: Restrict)
+
+  @@index([ownerId, updatedAt])
+  @@map("activity_draft_working_copies")
 }
 
 model ActivityDraftRevision {

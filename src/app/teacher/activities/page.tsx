@@ -16,6 +16,7 @@ import {
   teacherHomeCrumb,
 } from "../_components/teacher-shell";
 import { styles } from "../teacher-ui";
+import { listOwnTaskBookWorkingCopies } from "../../../server/queries/activity-draft-working-copy";
 
 const draftStatus = {
   EDITING: { label: "编辑中", tone: "editing" },
@@ -28,10 +29,12 @@ function isOpenDraft(status: string): status is keyof typeof draftStatus {
 
 export default async function TeacherActivityStudioPage() {
   let dashboard;
+  let unsaved: Awaited<ReturnType<typeof listOwnTaskBookWorkingCopies>> = [];
   try {
     const context = await createUiCommandContext();
     const database = getDatabaseClient();
     dashboard = await getTeacherActivityDashboard(database, context, {});
+    unsaved = await listOwnTaskBookWorkingCopies(database, context);
   } catch (error) {
     if (error instanceof AuthenticationError) {
       return (
@@ -59,6 +62,12 @@ export default async function TeacherActivityStudioPage() {
 
   const openDrafts = dashboard.drafts.filter((draft) =>
     isOpenDraft(draft.status),
+  );
+  // D-093: task books started but never saved as a version, and drafts with
+  // unsaved edits, so nothing a teacher typed is only findable by its URL.
+  const unsavedNew = unsaved.filter((copy) => copy.draftId === null);
+  const unsavedByDraft = new Map(
+    unsaved.flatMap((copy) => (copy.draftId ? [[copy.draftId, copy] as const] : [])),
   );
 
   return (
@@ -92,14 +101,34 @@ export default async function TeacherActivityStudioPage() {
                 <p className={styles.eyebrow}>继续编辑</p>
                 <h2>我的草稿</h2>
               </div>
-              <span>{openDrafts.length} 份</span>
+              <span>{openDrafts.length + unsavedNew.length} 份</span>
             </header>
-            {openDrafts.length === 0 ? (
+            {openDrafts.length === 0 && unsavedNew.length === 0 ? (
               <p className={styles.emptyState}>
                 暂无进行中的草稿。点击「新建学习活动」开始设计。
               </p>
             ) : (
               <div className={styles.activityList}>
+                {unsavedNew.map((copy) => (
+                  <Link
+                    className={styles.nestedActivityRow}
+                    href={`/teacher/activities/new?wc=${copy.id}`}
+                    key={copy.id}
+                  >
+                    <span className={styles.activityTitle}>
+                      {copy.title.trim() || "未命名任务书"}
+                    </span>
+                    <span className={styles.activityMeta}>
+                      还没保存为版本 · 还差 {copy.gapCount} 项 ·{" "}
+                      <LocalizedDateTime dateTime={copy.savedAt} /> 自动保存
+                    </span>
+                    <span className={styles.activityStatus}>
+                      <span className={styles.statusBadge} data-tone="editing">
+                        未完成
+                      </span>
+                    </span>
+                  </Link>
+                ))}
                 {openDrafts.map((draft) => {
                   if (!isOpenDraft(draft.status)) {
                     return null;
@@ -115,6 +144,7 @@ export default async function TeacherActivityStudioPage() {
                       <span className={styles.activityMeta}>
                         版本 {draft.version} ·{" "}
                         <LocalizedDateTime dateTime={draft.updatedAt} /> 更新
+                        {unsavedByDraft.has(draft.id) ? " · 有没保存的修改" : ""}
                       </span>
                       <span className={styles.activityStatus}>
                         <span

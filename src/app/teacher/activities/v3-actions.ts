@@ -6,6 +6,7 @@ import { z } from "zod";
 import { activityContentV3Schema } from "../../../domain/activity/activity-content";
 import { AuthenticationError } from "../../../server/auth/current-actor";
 import { createUiCommandContext } from "../../../server/commands/create-ui-command-context";
+import { discardActivityDraftWorkingCopy } from "../../../server/commands/activity-draft-working-copy";
 import {
   saveActivityDraft,
   SaveActivityDraftError,
@@ -33,6 +34,8 @@ const formSchema = z
     desiredStatus: z.enum(["EDITING", "READY_FOR_PREVIEW"]),
     content: z.string().min(2).max(100_000),
     idempotencyKey: z.string().trim().min(8).max(200),
+    workingCopyId: nullableUuidSchema,
+    workingCopyVersion: nullableVersionSchema,
   })
   .strict()
   .superRefine((input, context) => {
@@ -51,6 +54,8 @@ const formFields = new Set([
   "desiredStatus",
   "content",
   "idempotencyKey",
+  "workingCopyId",
+  "workingCopyVersion",
 ]);
 
 /** The form posts exactly these fields; anything else is a forged submission. */
@@ -168,6 +173,8 @@ export async function saveActivityDraftV3Action(
       desiredStatus: formData.get("desiredStatus"),
       content: formData.get("content"),
       idempotencyKey: formData.get("idempotencyKey"),
+      workingCopyId: formData.get("workingCopyId"),
+      workingCopyVersion: formData.get("workingCopyVersion"),
     });
     const content = activityContentV3Schema.parse(JSON.parse(input.content));
     const context = await createUiCommandContext();
@@ -179,6 +186,14 @@ export async function saveActivityDraftV3Action(
       agentRunId: null,
       idempotencyKey: input.idempotencyKey,
     });
+    // D-093: the version now holds what the working copy held. Only the copy
+    // this form saved from is dropped; edits another tab made since survive.
+    if (input.workingCopyId && input.workingCopyVersion) {
+      await discardActivityDraftWorkingCopy(getDatabaseClient(), context, {
+        workingCopyId: input.workingCopyId,
+        expectedVersion: input.workingCopyVersion,
+      }).catch(() => undefined);
+    }
     revalidatePath("/teacher");
     revalidatePath("/teacher/activities");
     revalidatePath(`/teacher/activities/${result.draftId}`);
