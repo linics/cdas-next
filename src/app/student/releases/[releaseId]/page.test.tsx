@@ -430,6 +430,33 @@ describe("student release page access boundary", () => {
     );
   });
 
+  it("says what each level means and what the next one asks for (D-096)", async () => {
+    mocks.getStudentReleaseWorkspace.mockResolvedValue(submittedWorkspace);
+    mocks.getStudentFeedbackWorkspace.mockResolvedValue({
+      ...confirmedFeedbackWorkspace,
+      submission: {
+        ...confirmedFeedbackWorkspace.submission,
+        release: {
+          ...confirmedFeedbackWorkspace.submission.release,
+          snapshot: {
+            ...confirmedFeedbackWorkspace.submission.release.snapshot,
+            content: waterConservationTaskBook,
+          },
+        },
+      },
+    });
+    const [problem, evidence, crossDiscipline] = waterConservationTaskBook.rubricDimensions;
+
+    const markup = await renderPage();
+
+    expect(markup).toContain(`「优秀」是：${problem!.excellent}`);
+    expect(markup).not.toContain(`再往上一档「优秀」：${problem!.excellent}`);
+    expect(markup).toContain("老师没能从你交的内容里看到这一项的依据。");
+    expect(markup).toContain(`要达到「达标」：${evidence!.pass}`);
+    expect(markup).toContain(`「良好」是：${crossDiscipline!.good}`);
+    expect(markup).toContain(`再往上一档「优秀」：${crossDiscipline!.excellent}`);
+  });
+
   it("puts the teacher's request to revise at the top of the page", async () => {
     const revising = {
       ...submittedSubmission,

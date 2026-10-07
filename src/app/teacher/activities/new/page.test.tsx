@@ -59,7 +59,7 @@ import { AuthenticationError } from "../../../../server/auth/current-actor";
 import NewTeacherActivityPage from "./page";
 
 async function renderPage(): Promise<string> {
-  return renderToStaticMarkup(await NewTeacherActivityPage());
+  return renderToStaticMarkup(await NewTeacherActivityPage({}));
 }
 
 describe("new teacher activity page", () => {

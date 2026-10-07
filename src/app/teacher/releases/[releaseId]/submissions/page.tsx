@@ -378,6 +378,10 @@ export default async function TeacherReleaseSubmissionsPage({
                     ? workspace.release.executionVersion === 1
                       ? "全部完成"
                       : "已提交"
+                    : typeof progress.revisionPhaseIndex === "number"
+                      ? progress.revisionPhaseIndex === 0
+                        ? "待重交整项终稿"
+                        : `待重交第 ${progress.revisionPhaseIndex} 阶段`
                     : progress.started
                       ? workspace.release.executionVersion === 0
                         ? "已开始"
@@ -429,7 +433,7 @@ export default async function TeacherReleaseSubmissionsPage({
                         </div>
                         <span className="text-xs tabular-nums text-muted-foreground">
                           {workspace.release.executionVersion === 1
-                            ? `已完成 ${progress.completedPhaseCount}/${progress.totalPhaseCount} 阶段`
+                            ? `已交 ${progress.completedPhaseCount}/${progress.totalPhaseCount} 阶段`
                             : progress.group
                               ? `${progress.group.members.length} 人共享一份提交`
                               : "个人提交"}
@@ -440,9 +444,11 @@ export default async function TeacherReleaseSubmissionsPage({
                           tone={
                             progress.complete
                               ? "done"
-                              : progress.started
-                                ? "neutral"
-                                : "closed"
+                              : typeof progress.revisionPhaseIndex === "number"
+                                ? "pending"
+                                : progress.started
+                                  ? "neutral"
+                                  : "closed"
                           }
                         >
                           {stageLabel}

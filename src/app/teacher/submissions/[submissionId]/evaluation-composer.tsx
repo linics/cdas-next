@@ -580,7 +580,7 @@ export function EvaluationComposer({
               aria-label="让助手起草这一版评价"
               disabled={anyPending}
               size="sm"
-              title="AI 只读取本版提交的文字、已确认检查点、量规和可解析附件；起草结果需你确认后才保存。"
+              title="AI 只读取本版提交的文字、学生勾选的证据项、量规和可解析附件；起草结果需你确认后才保存。"
               type="submit"
               variant="outline"
             >

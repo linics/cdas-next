@@ -4,6 +4,7 @@ import { ZodError } from "zod";
 import {
   evidenceTypeLabel,
   isStructuredContent,
+  type ActivityContent,
   type ActivityTaskPhase,
 } from "../../../../domain/activity/activity-content";
 import { hasMeaningfulTextEvidence } from "../../../../domain/submission/text-evidence";
@@ -93,6 +94,151 @@ function AccessUnavailable({
 
 type FormalRevision =
   TeacherFeedbackWorkspace["submission"]["revisions"][number];
+type EarlierPhaseSubmission = TeacherFeedbackWorkspace["earlierPhases"][number];
+
+function TickedEvidenceList({
+  phase,
+  evidenceIndexes,
+}: {
+  phase: ActivityTaskPhase | null;
+  evidenceIndexes: readonly number[];
+}) {
+  if (!phase || evidenceIndexes.length === 0) return null;
+  return (
+    <ul className={styles.formalAttachmentList}>
+      {evidenceIndexes.map((evidenceIndex) => {
+        const evidence = phase.evidence[evidenceIndex - 1];
+        return evidence ? (
+          <li className="flex items-center justify-between gap-3 rounded-lg border p-3" key={evidenceIndex}>
+            <strong className="font-medium">
+              {/* D-094: the student ticked this; only 现场确认 has no other record. */}
+              {evidence.type === "confirm" ? "学生确认已完成" : "学生勾选"}：{evidence.description}
+            </strong>
+            <Badge variant="secondary">{evidenceTypeLabel(evidence.type)}</Badge>
+          </li>
+        ) : null;
+      })}
+    </ul>
+  );
+}
+
+function FormalAttachmentList({
+  attachments,
+}: {
+  attachments: FormalRevision["attachments"];
+}) {
+  if (attachments.length === 0) return null;
+  return (
+    <ul className={styles.formalAttachmentList}>
+      {attachments.map((attachment) => (
+        <li className="flex flex-col gap-2 rounded-lg border p-3" key={attachment.id}>
+          <a
+            className="font-medium underline-offset-4 hover:underline"
+            href={`/attachments/${attachment.id}/download`}
+            download={attachment.filename}
+          >
+            {attachment.filename}
+          </a>
+          <span className="text-xs text-muted-foreground tabular-nums">{Math.ceil(attachment.byteSize / 1024)} KB</span>
+          <AttachmentPreview attachment={attachment} />
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** Rubric dimensions that judge one of the phase's learning goals (v3 only). */
+function dimensionsServedByPhase(content: ActivityContent, phase: ActivityTaskPhase): string[] {
+  if (!isStructuredContent(content) || !("learningGoalIds" in phase)) return [];
+  const goalIds: readonly string[] = phase.learningGoalIds;
+  return content.rubricDimensions.flatMap((dimension) =>
+    "learningGoalIds" in dimension &&
+    dimension.learningGoalIds.some((id) => goalIds.includes(id))
+      ? [dimension.name]
+      : [],
+  );
+}
+
+/**
+ * D-095: the final submission is judged on every rubric dimension, but the
+ * work behind the earlier dimensions was handed in during earlier phases.
+ */
+function EarlierPhases({
+  content,
+  entries,
+  finalSubmission,
+}: {
+  content: ActivityContent;
+  entries: readonly EarlierPhaseSubmission[];
+  finalSubmission: boolean;
+}) {
+  if (!isStructuredContent(content) || entries.length === 0) return null;
+  return (
+    <details className={styles.historyDisclosure}>
+      <summary>前面阶段交的内容（{entries.length} 个阶段）</summary>
+      <div className={styles.revisionList}>
+        {finalSubmission ? (
+          <p className="text-sm text-muted-foreground">
+            终稿要评全部量规维度。前面阶段对应的维度，可以对照这里每个阶段最后交的一版。
+          </p>
+        ) : null}
+        {entries.map((entry) => {
+          const phase = content.phases[entry.phaseIndex - 1] ?? null;
+          const dimensions = phase ? dimensionsServedByPhase(content, phase) : [];
+          return (
+            <article
+              className="flex flex-col gap-3"
+              key={entry.submissionId}
+              aria-labelledby={`earlier-phase-${entry.submissionId}`}
+            >
+              <header className={styles.revisionHeading}>
+                <div>
+                  <h3 className="text-sm font-semibold" id={`earlier-phase-${entry.submissionId}`}>
+                    第 {entry.phaseIndex} 阶段{phase ? ` · ${phase.name}` : ""}
+                  </h3>
+                  <p className="flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
+                    <span>最后交的是第 {entry.revisionNumber} 版 ·</span>
+                    <LocalizedDateTime dateTime={entry.submittedAt} />
+                    {entry.isLate ? <span>· 迟交</span> : null}
+                  </p>
+                </div>
+                <a
+                  className="shrink-0 text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                  href={`/teacher/submissions/${entry.submissionId}`}
+                >
+                  打开这一阶段
+                </a>
+              </header>
+              {dimensions.length > 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  对应评价维度：{dimensions.join("、")}
+                </p>
+              ) : null}
+              {hasMeaningfulTextEvidence(entry.textEvidence) ? (
+                <div className={styles.submissionBody}>{entry.textEvidence}</div>
+              ) : null}
+              <TickedEvidenceList phase={phase} evidenceIndexes={entry.completedEvidenceIndexes} />
+              <FormalAttachmentList attachments={entry.attachments} />
+              {entry.feedback ? (
+                <div className="flex flex-col gap-1 text-sm">
+                  <p className={styles.feedbackMeta}>
+                    你的反馈
+                    {entry.feedback.nextStep
+                      ? ` · ${teacherFeedbackNextStepLabels[entry.feedback.nextStep]}`
+                      : ""}
+                  </p>
+                  <div className={styles.feedbackBody}>{entry.feedback.body}</div>
+                </div>
+              ) : (
+                <p className={styles.emptyFeedback}>这一版还没有反馈。</p>
+              )}
+            </article>
+          );
+        })}
+      </div>
+    </details>
+  );
+}
 
 function FeedbackHistory({ revision }: { revision: FormalRevision }) {
   const feedback = revision.feedback;
@@ -291,36 +437,8 @@ function SubmissionRevision({
       {revision.textEvidence ? (
         <div className={styles.submissionBody}>{revision.textEvidence}</div>
       ) : null}
-      {phase && revision.completedEvidenceIndexes.length > 0 ? (
-        <ul className={styles.formalAttachmentList}>
-          {revision.completedEvidenceIndexes.map((evidenceIndex) => {
-            const evidence = phase.evidence[evidenceIndex - 1];
-            return evidence ? (
-              <li className="flex items-center justify-between gap-3 rounded-lg border p-3" key={evidenceIndex}>
-                <strong className="font-medium">已确认：{evidence.description}</strong>
-                <Badge variant="secondary">{evidenceTypeLabel(evidence.type)}</Badge>
-              </li>
-            ) : null;
-          })}
-        </ul>
-      ) : null}
-      {revision.attachments.length > 0 ? (
-        <ul className={styles.formalAttachmentList}>
-          {revision.attachments.map((attachment) => (
-            <li className="flex flex-col gap-2 rounded-lg border p-3" key={attachment.id}>
-              <a
-                className="font-medium underline-offset-4 hover:underline"
-                href={`/attachments/${attachment.id}/download`}
-                download={attachment.filename}
-              >
-                {attachment.filename}
-              </a>
-              <span className="text-xs text-muted-foreground tabular-nums">{Math.ceil(attachment.byteSize / 1024)} KB</span>
-              <AttachmentPreview attachment={attachment} />
-            </li>
-          ))}
-        </ul>
-      ) : null}
+      <TickedEvidenceList phase={phase} evidenceIndexes={revision.completedEvidenceIndexes} />
+      <FormalAttachmentList attachments={revision.attachments} />
     </article>
   );
 }
@@ -500,6 +618,11 @@ export default async function TeacherSubmissionPage({
               revision={currentRevision}
               current
               phase={phase}
+            />
+            <EarlierPhases
+              content={content}
+              entries={workspace.earlierPhases}
+              finalSubmission={submission.evaluationOpen}
             />
             {earlierRevisions.length > 0 ? (
               <details className={styles.historyDisclosure}>

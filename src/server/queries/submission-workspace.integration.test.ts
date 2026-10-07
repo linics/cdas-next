@@ -372,12 +372,14 @@ describeWithDatabase("submission workspace queries", () => {
           student: expect.objectContaining({ displayName: "当前学生" }),
           complete: true,
           awaitingFormalRevision: false,
+          revisionPhaseIndex: null,
         }),
         expect.objectContaining({
           student: expect.objectContaining({ displayName: "同班学生" }),
           started: true,
           complete: false,
           awaitingFormalRevision: true,
+          revisionPhaseIndex: null,
         }),
       ]),
     );

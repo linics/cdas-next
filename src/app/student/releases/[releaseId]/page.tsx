@@ -6,9 +6,12 @@ import { ZodError } from "zod";
 import {
   evidenceTypeLabel,
   isStructuredContent,
+  type ActivityRubricDimension,
   type ActivityTaskPhase,
 } from "../../../../domain/activity/activity-content";
+import { rubricLevelGuidance } from "../../../../domain/evaluation/rubric-level-guidance";
 import { isFinalSubmission } from "../../../../domain/submission/sequential-execution";
+import { currentAudienceProgress } from "../../../../domain/insights/teacher-insights";
 import {
   teacherEvaluationLevelLabels,
   teacherEvaluationOutcomeStatusLabels,
@@ -175,10 +178,19 @@ function FeedbackText({
   ) : null;
 }
 
+function frozenRubric(
+  feedbackWorkspace: StudentFeedbackWorkspace | null,
+): readonly ActivityRubricDimension[] {
+  const content = feedbackWorkspace?.submission.release.snapshot.content;
+  return content && isStructuredContent(content) ? content.rubricDimensions : [];
+}
+
 function EvaluationResult({
   evaluation,
+  rubric,
 }: {
   evaluation: NonNullable<QueriedRevision["evaluation"]>;
+  rubric: readonly ActivityRubricDimension[];
 }) {
   const current =
     evaluation.revisions.find(
@@ -188,16 +200,32 @@ function EvaluationResult({
   return (
     <div className="flex flex-col gap-3">
       <ul className={styles.evaluationOutcomeList}>
-        {current.outcomes.map((outcome) => (
-          <li key={outcome.dimensionIndex}>
-            <strong>{outcome.dimensionName}</strong>
-            <span>
-              {outcome.status === "LEVEL" && "level" in outcome
-                ? teacherEvaluationLevelLabels[outcome.level]
-                : teacherEvaluationOutcomeStatusLabels.INSUFFICIENT_EVIDENCE}
-            </span>
-          </li>
-        ))}
+        {current.outcomes.map((outcome) => {
+          // D-096: say what the level means and what the next one asks for.
+          const guidance = rubricLevelGuidance(rubric, outcome);
+          return (
+            <li key={outcome.dimensionIndex}>
+              <strong>{outcome.dimensionName}</strong>
+              <span>
+                {outcome.status === "LEVEL" && "level" in outcome
+                  ? teacherEvaluationLevelLabels[outcome.level]
+                  : teacherEvaluationOutcomeStatusLabels.INSUFFICIENT_EVIDENCE}
+              </span>
+              {guidance?.awarded ? (
+                <small>
+                  {`「${teacherEvaluationLevelLabels[guidance.awarded.level]}」是：${guidance.awarded.descriptor}`}
+                </small>
+              ) : guidance ? (
+                <small>老师没能从你交的内容里看到这一项的依据。</small>
+              ) : null}
+              {guidance?.next ? (
+                <small>
+                  {`${guidance.awarded ? "再往上一档" : "要达到"}「${teacherEvaluationLevelLabels[guidance.next.level]}」：${guidance.next.descriptor}`}
+                </small>
+              ) : null}
+            </li>
+          );
+        })}
       </ul>
       <div className={styles.feedbackBody}>{current.summary}</div>
     </div>
@@ -289,7 +317,9 @@ function TeacherResponse({
         </p>
       ) : nextStep === "CONTINUE" ? (
         finalSubmission ? (
-          <p className={styles.nextStepLine}>这项活动已经完成。</p>
+          <p className={styles.nextStepLine}>
+            这项活动已经完成。活动关闭前，你仍可以再交一版改进。
+          </p>
         ) : nextPhaseHref ? (
           <p className={styles.nextStepLine}>
             这一阶段可以了。
@@ -301,7 +331,7 @@ function TeacherResponse({
       {evaluation ? (
         <div className="flex flex-col gap-2 border-t pt-4">
           <h3 className="text-sm font-semibold">评价</h3>
-          <EvaluationResult evaluation={evaluation} />
+          <EvaluationResult evaluation={evaluation} rubric={frozenRubric(feedbackWorkspace)} />
         </div>
       ) : null}
 
@@ -349,7 +379,10 @@ function EarlierVersions({
               {queried?.evaluation ? (
                 <div className="flex flex-col gap-1">
                   <p className={styles.eyebrow}>评价</p>
-                  <EvaluationResult evaluation={queried.evaluation} />
+                  <EvaluationResult
+                    evaluation={queried.evaluation}
+                    rubric={frozenRubric(feedbackWorkspace)}
+                  />
                 </div>
               ) : null}
             </article>
@@ -703,15 +736,29 @@ export default async function StudentReleasePage({
   const readOnlyMessage = isActive
     ? "你已不是该班级的当前成员，仍可查看这份活动与自己的提交，但不能再修改。"
     : "活动已结束，内容仍可查看，但不能再修改或提交。";
+  // D-094: the header says where this student is, not only that the activity
+  // is open — "进行中" beside "这项活动已经完成" read as a contradiction.
+  const ownProgress = currentAudienceProgress({
+    executionVersion: workspace.execution.version === 1 ? 1 : 0,
+    submissionMode: workspace.execution.mode,
+    phaseCount: workspace.execution.phaseCount,
+    submissions: workspace.submissions.map((item) => ({
+      phaseIndex: item.phaseIndex,
+      latestRevisionNumber: item.latestRevisionNumber,
+      revisionRequested: item.followUp !== null,
+    })),
+  });
   const statusLabel = !isActive
     ? workspace.release.status === "ARCHIVED"
       ? "已封存 · 只读"
       : "已关闭 · 只读"
     : !canWrite
       ? "历史成员 · 只读"
-      : isPastDue
-        ? "已过截止 · 可迟交"
-        : "进行中";
+      : ownProgress.complete
+        ? "你已完成"
+        : isPastDue
+          ? "已过截止 · 可迟交"
+          : "活动进行中";
   // The browser cannot work out how to upload on its own: one backend presigns
   // and is written directly, the other takes the bytes through this app.
   const attachmentUpload = attachmentUploadStrategy();
@@ -732,7 +779,17 @@ export default async function StudentReleasePage({
             <h1>{content.title}</h1>
             <p>{content.summary}</p>
           </div>
-          <StatusBadge tone={!isActive || !canWrite ? "neutral" : isPastDue ? "warning" : "success"}>
+          <StatusBadge
+            tone={
+              !isActive || !canWrite
+                ? "neutral"
+                : ownProgress.complete
+                  ? "done"
+                  : isPastDue
+                    ? "warning"
+                    : "success"
+            }
+          >
             {statusLabel}
           </StatusBadge>
         </header>

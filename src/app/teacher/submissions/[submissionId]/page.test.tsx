@@ -108,6 +108,7 @@ vi.mock("./evaluation-composer", () => ({
 
 import { AuthenticationError } from "../../../../server/auth/current-actor";
 import { waterConservationTaskBook } from "../../../../fixtures/water-conservation";
+import { waterConservationTaskBookV3 } from "../../../../fixtures/water-conservation-v3";
 import { FeedbackWorkspaceQueryError } from "../../../../server/queries/feedback-workspace";
 import TeacherSubmissionPage from "./page";
 
@@ -123,6 +124,7 @@ const currentFeedbackBody = "当前已确认的教师反馈";
 const workspace = {
   actor: { displayName: "林老师" },
   group: null,
+  earlierPhases: [],
   student: {
     id: "30000000-0000-4000-8000-000000000003",
     displayName: "陈同学",
@@ -360,6 +362,62 @@ describe("teacher feedback page access boundary", () => {
     expect(markup).toContain("证据不足");
     expect(markup).toContain("优秀");
     expect(markup).not.toContain("这份发布快照是 schema v1");
+  });
+
+  it("shows what earlier phases handed in when the final submission is judged (D-095)", async () => {
+    mocks.getTeacherFeedbackWorkspace.mockResolvedValue({
+      ...workspace,
+      earlierPhases: [
+        {
+          submissionId: "c0000000-0000-4000-8000-00000000000c",
+          phaseIndex: 1,
+          revisionNumber: 2,
+          textEvidence: "第一阶段观察：周二上午洗手池滴水。",
+          completedEvidenceIndexes: [1],
+          isLate: false,
+          submittedAt: "2026-08-16T11:00:00.000Z",
+          attachments: [],
+          feedback: { body: "观察时间地点都清楚了。", nextStep: "CONTINUE" },
+        },
+        {
+          submissionId: "d0000000-0000-4000-8000-00000000000d",
+          phaseIndex: 2,
+          revisionNumber: 1,
+          textEvidence: "第二阶段数据表说明。",
+          completedEvidenceIndexes: [],
+          isLate: true,
+          submittedAt: "2026-08-17T11:00:00.000Z",
+          attachments: [],
+          feedback: null,
+        },
+      ],
+      submission: {
+        ...workspace.submission,
+        phaseIndex: 3,
+        phaseName: "建议与公开表达",
+        evaluationOpen: true,
+        release: {
+          ...workspace.submission.release,
+          snapshot: {
+            ...workspace.submission.release.snapshot,
+            content: { ...waterConservationTaskBookV3, submissionMode: "phased" },
+          },
+        },
+      },
+    });
+
+    const markup = await renderPage();
+
+    expect(markup).toContain("前面阶段交的内容（2 个阶段）");
+    expect(markup).toContain("终稿要评全部量规维度");
+    expect(markup).toContain("第 1 阶段 · 观察与问题界定");
+    expect(markup).toContain("对应评价维度：问题与机理、跨学科连接");
+    expect(markup).toContain("第一阶段观察：周二上午洗手池滴水。");
+    expect(markup).toContain("学生勾选：观察记录与问题说明");
+    expect(markup).toContain("观察时间地点都清楚了。");
+    expect(markup).toContain("这一版还没有反馈。");
+    expect(markup).toContain('href="/teacher/submissions/d0000000-0000-4000-8000-00000000000d"');
+    expect(markup.indexOf("第 1 阶段 · ")).toBeLessThan(markup.indexOf("第 2 阶段 · "));
   });
 
   it("enables the optional AI draft affordance without changing the evaluation layout", async () => {

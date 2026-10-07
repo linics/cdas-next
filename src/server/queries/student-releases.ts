@@ -6,6 +6,7 @@ import {
   isStructuredContent,
 } from "../../domain/activity/activity-content";
 import { reviewFollowUp } from "../../domain/feedback/review-follow-up";
+import { currentAudienceProgress } from "../../domain/insights/teacher-insights";
 import type { PrismaClient } from "../../generated/prisma/client";
 import {
   type CommandContext,
@@ -46,10 +47,24 @@ export const studentReleaseListSchema = z
               summary: z.string().trim().min(1).max(600),
             })
             .strict(),
+          // D-094: where the student is across all phases, by the same rule
+          // the teacher's roster and diagnosis use.
+          progress: z
+            .object({
+              phased: z.boolean(),
+              phaseCount: z.int().nonnegative(),
+              completedPhaseCount: z.int().nonnegative(),
+              currentPhaseIndex: z.int().nonnegative(),
+              complete: z.boolean(),
+              revisionPhaseIndex: z.int().nonnegative().nullable(),
+            })
+            .strict(),
           submission: z
             .object({
               latestRevisionNumber: z.int().nonnegative(),
               hasWorkingCopy: z.boolean(),
+              /** The working copy holds something the student wrote or ticked. */
+              hasUnsubmittedWork: z.boolean(),
               hasCurrentFeedback: z.boolean(),
               hasCurrentEvaluation: z.boolean(),
               followUp: z
@@ -138,6 +153,7 @@ export async function listStudentReleases(
       publishedAt: true,
       dueAt: true,
       closedAt: true,
+      executionVersion: true,
       snapshot: {
         select: { content: true },
       },
@@ -152,10 +168,17 @@ export async function listStudentReleases(
       submissions: {
         where: isSubmissionAudienceMemberWhere(context.actorId),
         orderBy: { phaseIndex: "desc" },
-        take: 1,
         select: {
+          phaseIndex: true,
           latestRevisionNumber: true,
-          workingCopy: { select: { id: true } },
+          workingCopy: {
+            select: {
+              id: true,
+              textEvidence: true,
+              completedEvidenceIndexes: true,
+              _count: { select: { attachments: true } },
+            },
+          },
           revisions: {
             orderBy: { revisionNumber: "desc" },
             take: 1,
@@ -226,6 +249,34 @@ export async function listStudentReleases(
     const hasWorkingCopy =
       submission?.workingCopy !== null &&
       submission?.workingCopy !== undefined;
+    // Submitting a phase opens the next one with an empty working copy, so
+    // existence alone said 「有未提交草稿」 before the student wrote a word.
+    const workingCopy = submission?.workingCopy ?? null;
+    const hasUnsubmittedWork = Boolean(
+      workingCopy &&
+        (workingCopy.textEvidence.trim() !== "" ||
+          workingCopy.completedEvidenceIndexes.length > 0 ||
+          workingCopy._count.attachments > 0),
+    );
+    const executionVersion = release.executionVersion === 1 ? 1 : 0;
+    const structured = isStructuredContent(content) ? content : null;
+    const submissionMode = structured?.submissionMode ?? "once";
+    const phased = executionVersion === 1 && submissionMode !== "once";
+    const progress = currentAudienceProgress({
+      executionVersion,
+      submissionMode,
+      phaseCount: phased ? (structured?.phases.length ?? 0) : 0,
+      submissions: release.submissions.map((item) => {
+        const latest = item.revisions[0];
+        return {
+          phaseIndex: item.phaseIndex,
+          latestRevisionNumber: item.latestRevisionNumber,
+          revisionRequested:
+            latest?.revisionNumber === item.latestRevisionNumber &&
+            latest.feedback?.revisions[0]?.nextStep === "REVISE",
+        };
+      }),
+    });
     const followUp = reviewFollowUp({
       nextStep: currentFeedbackRevision?.nextStep,
       hasWorkingCopy,
@@ -245,10 +296,19 @@ export async function listStudentReleases(
           title: content.title,
           summary: content.summary,
         },
+        progress: {
+          phased,
+          phaseCount: phased ? (structured?.phases.length ?? 0) : 0,
+          completedPhaseCount: progress.completedPhaseCount,
+          currentPhaseIndex: progress.currentPhaseIndex,
+          complete: progress.complete,
+          revisionPhaseIndex: progress.revisionPhaseIndex,
+        },
         submission: {
           latestRevisionNumber:
             submission?.latestRevisionNumber ?? 0,
           hasWorkingCopy,
+          hasUnsubmittedWork,
           hasCurrentFeedback,
           hasCurrentEvaluation,
           followUp,

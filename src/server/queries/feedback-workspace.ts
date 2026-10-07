@@ -237,6 +237,26 @@ const submissionHistorySchema = z
     });
   });
 
+/**
+ * D-095: what the same student or group last formally handed in for each
+ * phase before this one, with the teacher's current feedback on it. The final
+ * submission judges every rubric dimension (D-091), and the evidence for the
+ * dimensions of earlier phases lives in those phases.
+ */
+const earlierPhaseSubmissionSchema = z.strictObject({
+  submissionId: z.uuid(),
+  phaseIndex: z.int().positive(),
+  revisionNumber: z.int().positive(),
+  textEvidence: z.string(),
+  completedEvidenceIndexes: z.array(z.int().positive()).max(4),
+  isLate: z.boolean(),
+  submittedAt: isoDateSchema,
+  attachments: z.array(formalAttachmentSchema).max(5),
+  feedback: z
+    .strictObject({ body: visibleTextSchema, nextStep: feedbackNextStepSchema })
+    .nullable(),
+});
+
 export const teacherFeedbackWorkspaceSchema = z
   .object({
     actor: z
@@ -263,6 +283,7 @@ export const teacherFeedbackWorkspaceSchema = z
       })
       .nullable(),
     submission: submissionHistorySchema,
+    earlierPhases: z.array(earlierPhaseSubmissionSchema),
   })
   .strict();
 
@@ -285,6 +306,46 @@ export class FeedbackWorkspaceQueryError extends Error {
     super(code);
     this.name = "FeedbackWorkspaceQueryError";
   }
+}
+
+const formalAttachmentSelect = {
+  orderBy: { position: "asc" as const },
+  select: {
+    attachment: {
+      select: {
+        id: true,
+        kind: true,
+        originalFilename: true,
+        mediaType: true,
+        byteSize: true,
+        status: true,
+      },
+    },
+  },
+} as const;
+
+type FormalAttachmentRow = {
+  attachment: {
+    id: string;
+    kind: "IMAGE" | "PDF" | "WORD";
+    originalFilename: string;
+    mediaType: string;
+    byteSize: number;
+    status: "UPLOAD_PENDING" | "SCAN_PENDING" | "READY" | "REJECTED";
+  };
+};
+
+function mapFormalAttachment({ attachment }: FormalAttachmentRow) {
+  if (attachment.status !== "READY") {
+    throw new Error("Formal revision references a non-ready attachment");
+  }
+  return {
+    id: attachment.id,
+    kind: attachment.kind,
+    filename: attachment.originalFilename,
+    mediaType: attachment.mediaType,
+    byteSize: attachment.byteSize,
+  };
 }
 
 const safeSubmissionSelect = {
@@ -322,21 +383,7 @@ const safeSubmissionSelect = {
       completedEvidenceIndexes: true,
       isLate: true,
       submittedAt: true,
-      attachments: {
-        orderBy: { position: "asc" as const },
-        select: {
-          attachment: {
-            select: {
-              id: true,
-              kind: true,
-              originalFilename: true,
-              mediaType: true,
-              byteSize: true,
-              status: true,
-            },
-          },
-        },
-      },
+      attachments: formalAttachmentSelect,
       feedback: {
         select: {
           id: true,
@@ -413,16 +460,7 @@ function mapSubmissionHistory(
       completedEvidenceIndexes: number[];
       isLate: boolean;
       submittedAt: Date;
-      attachments: Array<{
-        attachment: {
-          id: string;
-          kind: "IMAGE" | "PDF" | "WORD";
-          originalFilename: string;
-          mediaType: string;
-          byteSize: number;
-          status: "UPLOAD_PENDING" | "SCAN_PENDING" | "READY" | "REJECTED";
-        };
-      }>;
+      attachments: FormalAttachmentRow[];
       feedback: {
         id: string;
         version: number;
@@ -496,20 +534,7 @@ function mapSubmissionHistory(
       completedEvidenceIndexes: revision.completedEvidenceIndexes,
       isLate: revision.isLate,
       submittedAt: revision.submittedAt.toISOString(),
-      attachments: revision.attachments.map(({ attachment }) => {
-        if (attachment.status !== "READY") {
-          throw new Error(
-            "Formal revision references a non-ready attachment",
-          );
-        }
-        return {
-          id: attachment.id,
-          kind: attachment.kind,
-          filename: attachment.originalFilename,
-          mediaType: attachment.mediaType,
-          byteSize: attachment.byteSize,
-        };
-      }),
+      attachments: revision.attachments.map(mapFormalAttachment),
       feedback: revision.feedback
           ? {
             id: revision.feedback.id,
@@ -552,6 +577,84 @@ function mapSubmissionHistory(
         : null,
     })),
   };
+}
+
+/**
+ * The latest formal revision of each phase that comes before `phaseIndex` for
+ * the same audience. The whole-task submission of a mixed activity (phase 0)
+ * comes after every phase.
+ */
+async function findEarlierPhaseSubmissions(
+  database: PrismaClient,
+  submission: {
+    phaseIndex: number;
+    release: { id: string; snapshot: { content: unknown } | null };
+    student: { id: string } | null;
+    group: { id: string } | null;
+  },
+) {
+  const content = activityContentSchema.safeParse(submission.release.snapshot?.content);
+  const audience = submission.group
+    ? { groupId: submission.group.id }
+    : submission.student
+      ? { studentId: submission.student.id }
+      : null;
+  if (!content.success || !isStructuredContent(content.data) || !audience) return [];
+
+  const earlier = await database.submission.findMany({
+    where: {
+      releaseId: submission.release.id,
+      ...audience,
+      latestRevisionNumber: { gt: 0 },
+      phaseIndex:
+        submission.phaseIndex === 0 ? { gt: 0 } : { gt: 0, lt: submission.phaseIndex },
+    },
+    orderBy: { phaseIndex: "asc" },
+    select: {
+      id: true,
+      phaseIndex: true,
+      revisions: {
+        orderBy: { revisionNumber: "desc" },
+        take: 1,
+        select: {
+          revisionNumber: true,
+          textEvidence: true,
+          completedEvidenceIndexes: true,
+          isLate: true,
+          submittedAt: true,
+          attachments: formalAttachmentSelect,
+          feedback: {
+            select: {
+              revisions: {
+                orderBy: { version: "desc" },
+                take: 1,
+                select: { body: true, nextStep: true },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  return earlier.flatMap((entry) => {
+    const revision = entry.revisions[0];
+    if (!revision) return [];
+    const feedback = revision.feedback?.revisions[0] ?? null;
+    return [
+      {
+        submissionId: entry.id,
+        phaseIndex: entry.phaseIndex,
+        revisionNumber: revision.revisionNumber,
+        textEvidence: revision.textEvidence,
+        completedEvidenceIndexes: revision.completedEvidenceIndexes,
+        isLate: revision.isLate,
+        submittedAt: revision.submittedAt.toISOString(),
+        attachments: revision.attachments.map(mapFormalAttachment),
+        feedback: feedback ? { body: feedback.body, nextStep: feedback.nextStep } : null,
+      },
+    ];
+  });
 }
 
 export async function getTeacherFeedbackWorkspace(
@@ -616,6 +719,7 @@ export async function getTeacherFeedbackWorkspace(
     },
     group: submission.group,
     submission: mapSubmissionHistory(submission),
+    earlierPhases: await findEarlierPhaseSubmissions(database, submission),
   });
 }
 

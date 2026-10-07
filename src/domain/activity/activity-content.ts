@@ -485,6 +485,105 @@ export const activityContentV3Schema = z
     });
   });
 
+/**
+ * The shape of a v3 task book a teacher has not finished (D-093). Every field
+ * and nesting is the same as `activityContentV3Schema`, with the same limits on
+ * length and count, but text may be blank, lists may be short and nothing has
+ * to link up yet. A working copy is checked against this on every autosave and
+ * against the full schema only when a version is saved.
+ */
+const workingText = (max: number) => z.string().max(max);
+
+export const activityContentV3WorkingSchema = z
+  .object({
+    schemaVersion: z.literal(3),
+    title: workingText(120),
+    topic: workingText(160),
+    summary: workingText(600),
+    schoolStage: z.enum(schoolStages),
+    grade: z.int().min(1).max(9),
+    mainDisciplineCode: disciplineCodeSchema,
+    integratedDisciplineCodes: z.array(disciplineCodeSchema).max(14),
+    disciplineContributions: z
+      .array(
+        z
+          .object({
+            disciplineCode: disciplineCodeSchema,
+            contribution: workingText(500),
+            necessity: workingText(500),
+          })
+          .strict(),
+      )
+      .max(15),
+    assignmentType: assignmentTypeSchema,
+    assignmentSubtype: assignmentSubtypeSchema.nullable(),
+    inquiryDepth: z.enum(["basic", "intermediate", "deep"]).nullable(),
+    submissionMode: z.enum(["phased", "once", "mixed"]),
+    durationWeeks: z.int().min(1).max(16),
+    backgroundSetting: workingText(1_200),
+    taskInstructions: workingText(5_000),
+    learningGoals: z
+      .array(
+        z
+          .object({
+            id: learningGoalIdSchema,
+            description: workingText(500),
+            competencyReferences: z
+              .array(
+                z
+                  .object({
+                    disciplineCode: disciplineCodeSchema,
+                    competencyCode: z.string().trim().regex(/^[a-z][a-z0-9_]{1,79}$/u),
+                  })
+                  .strict(),
+              )
+              .max(3),
+          })
+          .strict(),
+      )
+      .max(8),
+    phases: z
+      .array(
+        z
+          .object({
+            name: workingText(80),
+            action: workingText(300),
+            context: workingText(500),
+            support: workingText(500),
+            learningGoalIds: z.array(learningGoalIdSchema).max(8),
+            evidence: z
+              .array(
+                z
+                  .object({
+                    type: z.enum(["text", "document", "image", "confirm"]),
+                    description: workingText(300),
+                  })
+                  .strict(),
+              )
+              .max(4),
+            evaluationFocus: workingText(300),
+            suggestedLessons: z.int().min(1).max(16),
+          })
+          .strict(),
+      )
+      .max(4),
+    rubricDimensions: z
+      .array(
+        z
+          .object({
+            name: workingText(100),
+            excellent: workingText(300),
+            good: workingText(300),
+            pass: workingText(300),
+            improve: workingText(300),
+            learningGoalIds: z.array(learningGoalIdSchema).max(8),
+          })
+          .strict(),
+      )
+      .max(8),
+  })
+  .strict();
+
 export const activityContentStructuredSchema = z.union([
   activityContentV2Schema,
   activityContentV3Schema,

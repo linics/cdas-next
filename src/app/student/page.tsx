@@ -89,13 +89,21 @@ function releaseStatusLabel(release: StudentRelease): string {
   if (!release.access.canWrite) {
     return "历史只读";
   }
+  const { progress } = release;
   if (release.submission.followUp === "AWAITING_RESUBMISSION") {
-    return "待重交";
+    return progress.phased && progress.revisionPhaseIndex
+      ? `第 ${progress.revisionPhaseIndex} 阶段待重交`
+      : "待重交";
   }
   if (release.submission.followUp === "RESUBMISSION_IN_PROGRESS") {
     return "重交中";
   }
-  if (release.submission.hasWorkingCopy) {
+  // D-094: a phased activity is described by where the student is in it, not
+  // by the one submission the list happens to hold.
+  if (progress.phased && !progress.complete && progress.completedPhaseCount > 0) {
+    return `第 ${progress.currentPhaseIndex} 阶段进行中`;
+  }
+  if (release.submission.hasUnsubmittedWork) {
     return release.submission.latestRevisionNumber > 0
       ? "重交草稿"
       : "草稿未提交";
@@ -127,7 +135,7 @@ function releaseStatusTone(release: StudentRelease): StatusTone {
   }
   if (
     release.submission.latestRevisionNumber > 0 &&
-    !release.submission.hasWorkingCopy
+    !release.submission.hasUnsubmittedWork
   ) {
     return "neutral";
   }
@@ -147,15 +155,23 @@ function ReleaseRow({
     release.access.canWrite &&
     release.dueAt !== null &&
     now > new Date(release.dueAt);
+  const { progress } = release;
   const progressParts = [
-    release.submission.latestRevisionNumber > 0
-      ? `已提交第 ${release.submission.latestRevisionNumber} 版`
-      : "尚未正式提交",
-    release.submission.hasWorkingCopy ? "有未提交草稿" : null,
-    release.submission.followUp === "AWAITING_RESUBMISSION" ? "待重交" : null,
+    progress.phased
+      ? progress.complete
+        ? `已完成全部 ${progress.phaseCount} 个阶段`
+        : `已交 ${progress.completedPhaseCount}/${progress.phaseCount} 个阶段`
+      : release.submission.latestRevisionNumber > 0
+        ? `已提交第 ${release.submission.latestRevisionNumber} 版`
+        : "尚未提交",
+    progress.phased && !progress.complete && progress.completedPhaseCount > 0
+      ? `正在做第 ${progress.currentPhaseIndex} 阶段`
+      : null,
+    release.submission.hasUnsubmittedWork ? "有没交的草稿" : null,
+    release.submission.followUp === "AWAITING_RESUBMISSION" ? "老师请你修改后重交" : null,
     release.submission.followUp === "RESUBMISSION_IN_PROGRESS" ? "重交中" : null,
     release.submission.hasCurrentFeedback ? "已有反馈" : null,
-    release.submission.hasCurrentEvaluation ? "当前版已有量规评价" : null,
+    release.submission.hasCurrentEvaluation ? "已有评价" : null,
   ].filter((part): part is string => part !== null);
 
   return (

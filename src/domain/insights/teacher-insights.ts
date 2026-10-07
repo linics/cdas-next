@@ -112,6 +112,23 @@ const LEVEL_RANK: Readonly<Record<TeacherEvaluationLevel, number>> = {
   excellent: 3,
 };
 
+/**
+ * Whether the teacher's last word on this submission's current revision was
+ * "revise and resubmit". Until the student resubmits, that phase is not done,
+ * whatever the submission count says.
+ */
+export function isRevisionRequested(submission: {
+  latestRevisionNumber: number;
+  revisions: readonly { revisionNumber: number; nextStep: string | null }[];
+}): boolean {
+  return (
+    submission.latestRevisionNumber > 0 &&
+    submission.revisions.find(
+      (revision) => revision.revisionNumber === submission.latestRevisionNumber,
+    )?.nextStep === "REVISE"
+  );
+}
+
 export function currentAudienceProgress(input: {
   executionVersion: 0 | 1;
   submissionMode: "once" | "phased" | "mixed";
@@ -119,12 +136,16 @@ export function currentAudienceProgress(input: {
   submissions: readonly {
     phaseIndex: number;
     latestRevisionNumber: number;
+    /** See `isRevisionRequested`; absent means no. */
+    revisionRequested?: boolean;
   }[];
 }): {
   started: boolean;
   complete: boolean;
   currentPhaseIndex: number;
   completedPhaseCount: number;
+  /** The phase the teacher asked to redo, if any; 0 is the whole-task one. */
+  revisionPhaseIndex: number | null;
 } {
   const completedPhaseIndexes = new Set(
     input.submissions
@@ -142,21 +163,31 @@ export function currentAudienceProgress(input: {
     { length: input.phaseCount },
     (_, index) => index + 1,
   ).find((phaseIndex) => !completedPhaseIndexes.has(phaseIndex));
-  const complete =
+  // A phase sent back for revision is still the student's to do, so an
+  // audience with one outstanding is neither "全部完成" nor past that phase.
+  const revisionPhaseIndex =
+    input.submissions
+      .filter((submission) => submission.revisionRequested)
+      .map((submission) => submission.phaseIndex)
+      .sort((left, right) => (left || Infinity) - (right || Infinity))[0] ?? null;
+  const allSubmitted =
     input.executionVersion === 0
       ? finalSubmitted
       : completedPhaseIndexes.size === input.phaseCount &&
         (input.submissionMode === "phased" || finalSubmitted);
+  const complete = allSubmitted && revisionPhaseIndex === null;
   const currentPhaseIndex =
     input.executionVersion === 0
       ? 0
       : firstIncompletePhase ??
+        revisionPhaseIndex ??
         (input.submissionMode === "mixed" ? 0 : Math.max(1, input.phaseCount));
   return {
     started: input.submissions.length > 0,
     complete,
     currentPhaseIndex,
     completedPhaseCount: completedPhaseIndexes.size,
+    revisionPhaseIndex,
   };
 }
 
@@ -412,7 +443,10 @@ export function aggregateStageCard(
       executionVersion: release.executionVersion,
       submissionMode: release.submissionMode,
       phaseCount: release.phases.length,
-      submissions: audience.submissions,
+      submissions: audience.submissions.map((submission) => ({
+        ...submission,
+        revisionRequested: isRevisionRequested(submission),
+      })),
     });
     buckets = incrementBucket(
       buckets,

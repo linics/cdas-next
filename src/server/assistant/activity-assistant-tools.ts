@@ -332,6 +332,8 @@ export const teacherReleaseListOutputSchema = z
             .object({
               submittedCount: z.int().nonnegative(),
               cohortSize: z.int().nonnegative(),
+              // D-094: for phased activities, students fully done; null otherwise.
+              completeCount: z.int().nonnegative().nullable(),
             })
             .strict()
             .nullable(),

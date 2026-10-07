@@ -120,6 +120,7 @@ const workspace = {
       currentPhaseIndex: 0,
       complete: true,
       awaitingFormalRevision: false,
+      revisionPhaseIndex: null,
     },
   ],
   reviewCoverage: {
@@ -330,6 +331,7 @@ describe("teacher release submissions page boundary", () => {
           currentPhaseIndex: 2,
           complete: false,
           awaitingFormalRevision: false,
+          revisionPhaseIndex: null,
         },
       ],
     });
@@ -372,6 +374,7 @@ describe("teacher release submissions page boundary", () => {
           completedPhaseCount: 1,
           totalPhaseCount: 3,
           awaitingFormalRevision: true,
+          revisionPhaseIndex: null,
         },
       ],
     });

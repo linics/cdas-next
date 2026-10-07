@@ -7,6 +7,7 @@ import {
   type ActivityContent,
 } from "../../domain/activity/activity-content";
 import {
+  currentAudienceProgress,
   evaluationGoalScope,
   isDimensionRelevantToPhase,
   isLowBandOutcome,
@@ -196,6 +197,8 @@ const teacherReleaseSubmissionsSchema = z.strictObject({
       currentPhaseIndex: z.int().nonnegative(),
       complete: z.boolean(),
       awaitingFormalRevision: z.boolean(),
+      // D-094: the phase the teacher sent back, while it is outstanding.
+      revisionPhaseIndex: z.int().min(0).max(4).nullable(),
       stageKey: z.string(),
       group: z.strictObject({
         id: z.uuid(),
@@ -757,89 +760,61 @@ export async function getTeacherReleaseSubmissions(
   const groupedStudentIds = new Set(
     release.groups.flatMap((group) => group.members.map((member) => member.student.id)),
   );
+  // One progress rule for the roster, the insights card and the diagnosis
+  // (`currentAudienceProgress`), so a student sent back to revise is never
+  // "全部完成" here while the queue counts them as 待重交.
+  const progressOf = (audienceSubmissions: typeof release.submissions) =>
+    currentAudienceProgress({
+      executionVersion: release.executionVersion === 1 ? 1 : 0,
+      submissionMode,
+      phaseCount,
+      submissions: audienceSubmissions.map((submission) => {
+        const latest = submission.revisions[0];
+        return {
+          phaseIndex: submission.phaseIndex,
+          latestRevisionNumber: submission.latestRevisionNumber,
+          revisionRequested:
+            latest?.revisionNumber === submission.latestRevisionNumber &&
+            latest.feedback?.revisions[0]?.nextStep === "REVISE",
+        };
+      }),
+    });
+  const audienceProgress = (
+    audienceSubmissions: typeof release.submissions,
+  ) => {
+    const current = progressOf(audienceSubmissions);
+    return {
+      started: current.started,
+      completedPhaseCount: current.completedPhaseCount,
+      totalPhaseCount: phaseCount,
+      currentPhaseIndex: current.currentPhaseIndex,
+      complete: current.complete,
+      revisionPhaseIndex: current.revisionPhaseIndex,
+      awaitingFormalRevision: awaitingFormalRevision(
+        audienceSubmissions,
+        current.currentPhaseIndex,
+        current.complete,
+      ),
+      stageKey: stageBucketKey(current, release.executionVersion === 1 ? 1 : 0),
+    };
+  };
   const progress: TeacherReleaseSubmissions["progress"] = [
-    ...release.groups.map((group) => {
-      const groupSubmissions = release.submissions.filter(
-        (submission) => submission.group?.id === group.id,
-      );
-      const completedPhaseIndexes = new Set(groupSubmissions.filter((submission) => submission.phaseIndex > 0 && submission.latestRevisionNumber > 0).map((submission) => submission.phaseIndex));
-      const finalSubmitted = groupSubmissions.some((submission) => submission.phaseIndex === 0 && submission.latestRevisionNumber > 0);
-      const firstIncompletePhase = Array.from({ length: phaseCount }, (_, index) => index + 1).find((phaseIndex) => !completedPhaseIndexes.has(phaseIndex));
-      const complete = release.executionVersion === 0 ? finalSubmitted : completedPhaseIndexes.size === phaseCount && (submissionMode === "phased" || finalSubmitted);
-      const currentPhaseIndex = release.executionVersion === 0 ? 0 : firstIncompletePhase ?? (submissionMode === "mixed" ? 0 : Math.max(1, phaseCount));
-      return {
-        student: { id: group.id, displayName: group.name },
-        group,
-        started: groupSubmissions.length > 0,
-        completedPhaseCount: completedPhaseIndexes.size,
-        totalPhaseCount: phaseCount,
-        currentPhaseIndex,
-        complete,
-        awaitingFormalRevision: awaitingFormalRevision(
-          groupSubmissions,
-          currentPhaseIndex,
-          complete,
-        ),
-        stageKey: stageBucketKey(
-          { complete, started: groupSubmissions.length > 0, currentPhaseIndex },
-          release.executionVersion === 1 ? 1 : 0,
-        ),
-      };
-    }),
+    ...release.groups.map((group) => ({
+      student: { id: group.id, displayName: group.name },
+      group,
+      ...audienceProgress(
+        release.submissions.filter((submission) => submission.group?.id === group.id),
+      ),
+    })),
     ...release.classroom.memberships
       .filter(({ student }) => !groupedStudentIds.has(student.id))
-      .map(({ student }) => {
-      const studentSubmissions = release.submissions.filter(
-        (submission) => submission.student?.id === student.id,
-      );
-      const completedPhaseIndexes = new Set(
-        studentSubmissions
-          .filter(
-            (submission) =>
-              submission.phaseIndex > 0 &&
-              submission.latestRevisionNumber > 0,
-          )
-          .map((submission) => submission.phaseIndex),
-      );
-      const finalSubmitted = studentSubmissions.some(
-        (submission) =>
-          submission.phaseIndex === 0 &&
-          submission.latestRevisionNumber > 0,
-      );
-      const firstIncompletePhase = Array.from(
-        { length: phaseCount },
-        (_, index) => index + 1,
-      ).find((phaseIndex) => !completedPhaseIndexes.has(phaseIndex));
-      const complete =
-        release.executionVersion === 0
-          ? finalSubmitted
-          : completedPhaseIndexes.size === phaseCount &&
-            (submissionMode === "phased" || finalSubmitted);
-      const currentPhaseIndex =
-        release.executionVersion === 0
-          ? 0
-          : firstIncompletePhase ??
-            (submissionMode === "mixed" ? 0 : Math.max(1, phaseCount));
-
-      return {
+      .map(({ student }) => ({
         student,
         group: null,
-        started: studentSubmissions.length > 0,
-        completedPhaseCount: completedPhaseIndexes.size,
-        totalPhaseCount: phaseCount,
-        currentPhaseIndex,
-        complete,
-        awaitingFormalRevision: awaitingFormalRevision(
-          studentSubmissions,
-          currentPhaseIndex,
-          complete,
+        ...audienceProgress(
+          release.submissions.filter((submission) => submission.student?.id === student.id),
         ),
-        stageKey: stageBucketKey(
-          { complete, started: studentSubmissions.length > 0, currentPhaseIndex },
-          release.executionVersion === 1 ? 1 : 0,
-        ),
-      };
-    }),
+      })),
   ];
   progress.sort((left, right) =>
     left.student.displayName.localeCompare(right.student.displayName),

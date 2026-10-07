@@ -60,6 +60,7 @@ function feedback(version: number, body: string) {
 const workspace = {
   actor: { displayName: "林老师" },
   group: null,
+  earlierPhases: [],
   student: { id: "30000000-0000-4000-8000-000000000003", displayName: "陈同学" },
   submission: {
     id: submissionId,
@@ -132,11 +133,16 @@ describe("learning outcome report (D-072)", () => {
     expect(html).toContain("陈同学");
     expect(html).toContain("第 2 版正式提交");
     expect(html).toContain("第二版的当前文字");
-    expect(html).toContain("已确认：数据表与分析说明");
+    expect(html).toContain("学生自查已完成：数据表与分析说明");
     expect(html).toContain("数据表.pdf");
     expect(html).toContain("当前确认的反馈");
     expect(html).toContain("按反馈修改并重交");
     expect(html).toContain("数据与证据</strong>：良好");
+    // D-096: what the level means, and what one step up asks for.
+    const [, data, crossDiscipline] = waterConservationTaskBookV3.rubricDimensions;
+    expect(html).toContain(`（${data!.good}）`);
+    expect(html).toContain(`再往上一档「优秀」：${data!.excellent}`);
+    expect(html).toContain(`要达到「达标」：${crossDiscipline!.pass}`);
     expect(html).toContain("数据完整，连接还需补充。");
 
     for (const excluded of ["第一版的旧文字", "针对第一版的反馈", "已被取代的旧反馈", "secret/storage/key", "AI"]) {

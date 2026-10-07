@@ -61,7 +61,7 @@ describe("teacher workspace output contracts", () => {
           publishedAt: instant,
           dueAt: null,
           canViewSubmissions: true,
-          progress: { submittedCount: 0, cohortSize: 1 },
+          progress: { submittedCount: 0, cohortSize: 1, completeCount: null },
           attention: {
             pendingFeedbackCount: 0,
             pendingEvaluationCount: 0,

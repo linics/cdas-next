@@ -3,6 +3,7 @@ import "server-only";
 import { z } from "zod";
 import {
   activityContentSchema,
+  isStructuredContent,
   type ActivityContent,
 } from "../../domain/activity/activity-content";
 import {
@@ -12,6 +13,7 @@ import {
 import type { PrismaClient } from "../../generated/prisma/client";
 import { reviewFollowUp } from "../../domain/feedback/review-follow-up";
 import { isRubricEvaluationOpen } from "../../domain/submission/sequential-execution";
+import { currentAudienceProgress } from "../../domain/insights/teacher-insights";
 import {
   type CommandContext,
   resolveCommandContext,
@@ -98,6 +100,9 @@ export const teacherDashboardSchema = z
             .strictObject({
               submittedCount: z.int().nonnegative(),
               cohortSize: z.int().nonnegative(),
+              // D-094: students whose every phase is in and none sent back;
+              // null for one-shot activities, where submitted is done.
+              completeCount: z.int().nonnegative().nullable(),
             })
             .nullable(),
           attention: z
@@ -310,6 +315,77 @@ export async function getTeacherIdentity(
   return requireTeacher(database, context.actorId);
 }
 
+/**
+ * How many current students have finished a phased activity: every phase
+ * submitted and none sent back for revision, by the rule the roster and the
+ * diagnosis use. A group that finished counts once per current member, so the
+ * number shares a unit with the class size beside it.
+ */
+function completedStudentCount(
+  release: {
+    executionVersion: number;
+    classroom: {
+      memberships: readonly { studentId: string; joinedAt: Date; endedAt: Date | null }[];
+    };
+    groups: readonly { id: string; members: readonly { studentId: string }[] }[];
+    submissions: readonly {
+      studentId: string | null;
+      groupId: string | null;
+      phaseIndex: number;
+      latestRevisionNumber: number;
+      revisions: readonly {
+        revisionNumber: number;
+        feedback: { revisions: readonly { nextStep: string | null }[] } | null;
+      }[];
+    }[];
+  },
+  content: ActivityContent,
+  now: Date,
+): number | null {
+  if (
+    release.executionVersion !== 1 ||
+    !isStructuredContent(content) ||
+    content.submissionMode === "once"
+  ) {
+    return null;
+  }
+  const current = new Set(
+    release.classroom.memberships
+      .filter((membership) => isCurrentMembership(membership, now))
+      .map((membership) => membership.studentId),
+  );
+  const finished = (submissions: typeof release.submissions) =>
+    currentAudienceProgress({
+      executionVersion: 1,
+      submissionMode: content.submissionMode,
+      phaseCount: content.phases.length,
+      submissions: submissions.map((submission) => {
+        const latest = submission.revisions[0];
+        return {
+          phaseIndex: submission.phaseIndex,
+          latestRevisionNumber: submission.latestRevisionNumber,
+          revisionRequested:
+            latest?.revisionNumber === submission.latestRevisionNumber &&
+            latest.feedback?.revisions[0]?.nextStep === "REVISE",
+        };
+      }),
+    }).complete;
+  const grouped = new Set(release.groups.flatMap((group) => group.members.map((m) => m.studentId)));
+  let count = 0;
+  for (const group of release.groups) {
+    if (finished(release.submissions.filter((submission) => submission.groupId === group.id))) {
+      count += group.members.filter((member) => current.has(member.studentId)).length;
+    }
+  }
+  for (const studentId of current) {
+    if (grouped.has(studentId)) continue;
+    if (finished(release.submissions.filter((submission) => submission.studentId === studentId))) {
+      count += 1;
+    }
+  }
+  return count;
+}
+
 export async function getTeacherActivityDashboard(
   database: PrismaClient,
   commandContext: CommandContext,
@@ -350,9 +426,10 @@ export async function getTeacherActivityDashboard(
           select: {
             name: true,
             managerId: true,
-            memberships: { select: { joinedAt: true, endedAt: true } },
+            memberships: { select: { studentId: true, joinedAt: true, endedAt: true } },
           },
         },
+        groups: { select: { id: true, members: { select: { studentId: true } } } },
         snapshot: { select: { content: true } },
         submissions: {
           select: {
@@ -434,6 +511,7 @@ export async function getTeacherActivityDashboard(
               cohortSize: release.classroom.memberships.filter((membership) =>
                 isCurrentMembership(membership, context.now),
               ).length,
+              completeCount: completedStudentCount(release, content, context.now),
             }
           : null,
         attention: canViewSubmissions

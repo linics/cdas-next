@@ -36,5 +36,5 @@ export const teacherEvaluationOutcomeStatusLabels: Readonly<
 export const teacherEvaluationCitationKindLabels = {
   text: "本版文字证据",
   attachment: "本版附件",
-  checkpoint: "已确认检查点",
+  checkpoint: "学生勾选的证据项",
 } as const;

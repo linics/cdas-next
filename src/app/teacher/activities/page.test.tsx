@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   getDatabaseClient: vi.fn(),
   createUiCommandContext: vi.fn(),
   getTeacherActivityDashboard: vi.fn(),
+  listOwnTaskBookWorkingCopies: vi.fn(),
   notFound: vi.fn(() => {
     throw new Error("NEXT_NOT_FOUND");
   }),
@@ -58,6 +59,10 @@ vi.mock("../../../server/queries/teacher-activity-workspace", () => ({
   getTeacherActivityDashboard: mocks.getTeacherActivityDashboard,
 }));
 
+vi.mock("../../../server/queries/activity-draft-working-copy", () => ({
+  listOwnTaskBookWorkingCopies: mocks.listOwnTaskBookWorkingCopies,
+}));
+
 import TeacherActivityStudioPage from "./page";
 
 const trustedContext = {
@@ -76,6 +81,36 @@ describe("teacher activity studio", () => {
     vi.clearAllMocks();
     mocks.getDatabaseClient.mockReturnValue(mocks.database);
     mocks.createUiCommandContext.mockResolvedValue(trustedContext);
+    mocks.listOwnTaskBookWorkingCopies.mockResolvedValue([]);
+  });
+
+  it("lists a task book that was started but never saved as a version (D-093)", async () => {
+    mocks.getTeacherActivityDashboard.mockResolvedValue({
+      actor: { displayName: "林老师" },
+      classrooms: [],
+      drafts: [
+        {
+          id: "70000000-0000-4000-8000-000000000007",
+          title: "饮水区用水记录",
+          status: "EDITING",
+          version: 2,
+          updatedAt: "2026-08-18T11:00:00.000Z",
+          releaseId: null,
+        },
+      ],
+    });
+    mocks.listOwnTaskBookWorkingCopies.mockResolvedValue([
+      { id: "80000000-0000-4000-8000-000000000008", draftId: null, title: "", savedAt: "2026-08-18T11:20:00.000Z", gapCount: 12 },
+      { id: "80000000-0000-4000-8000-000000000009", draftId: "70000000-0000-4000-8000-000000000007", title: "饮水区用水记录", savedAt: "2026-08-18T11:25:00.000Z", gapCount: 0 },
+    ]);
+
+    const markup = await renderPage();
+
+    expect(markup).toContain('href="/teacher/activities/new?wc=80000000-0000-4000-8000-000000000008"');
+    expect(markup).toContain("未命名任务书");
+    expect(markup).toContain("还差 12 项");
+    expect(markup).toContain("有没保存的修改");
+    expect(markup).toContain("2 份");
   });
 
   it("lists open drafts and hides sealed source drafts of published releases", async () => {

@@ -22,6 +22,7 @@ import { startSubmissionResubmission } from "./start-submission-resubmission";
 import { submitSubmissionRevision } from "./submit-submission-revision";
 import { listStudentReleases } from "../queries/student-releases";
 import { getTeacherReleaseSubmissions } from "../queries/submission-workspace";
+import { getTeacherFeedbackWorkspace } from "../queries/feedback-workspace";
 import {
   finishActivityAssistantRun,
   startActivityAssistantRun,
@@ -220,6 +221,7 @@ async function createEvaluationFixture(options?: {
     teacherId,
     otherTeacherId,
     studentId,
+    classroomId,
     releaseId: published.releaseId,
     submissionId: submissionRevision.submissionId,
     submissionRevisionId: submissionRevision.revisionId,
@@ -299,6 +301,79 @@ describeWithDatabase("teacher evaluation commands", () => {
         },
       }),
     ).toBe(0);
+  });
+
+  it("shows the final review each earlier phase of the same student only (D-095)", async () => {
+    const fixture = await createEvaluationFixture({
+      content: waterConservationTaskBook,
+      phaseIndex: waterConservationTaskBook.phases.length,
+    });
+    // A classmate's phase-1 work in the same release must not appear.
+    const classmateId = randomUUID();
+    await database!.appUser.create({
+      data: {
+        id: classmateId,
+        authSubject: `evaluation_classmate_${classmateId}`,
+        role: "STUDENT",
+        displayName: "同班同学",
+      },
+    });
+    await database!.classroomMembership.create({
+      data: {
+        classroomId: fixture.classroomId,
+        studentId: classmateId,
+        joinedAt: minutesAfter(fixture.baseTime, -30),
+      },
+    });
+    const classmateCopy = await saveSubmissionWorkingCopy(
+      database!,
+      commandContext(classmateId, minutesAfter(fixture.baseTime, -3)),
+      {
+        releaseId: fixture.releaseId,
+        phaseIndex: 1,
+        expectedWorkingCopyId: null,
+        expectedWorkingVersion: null,
+        textEvidence: "同班同学的第一阶段证据。",
+        completedEvidenceIndexes: [],
+        idempotencyKey: `save_${randomUUID()}`,
+      },
+    );
+    await submitSubmissionRevision(
+      database!,
+      commandContext(classmateId, minutesAfter(fixture.baseTime, -2)),
+      {
+        releaseId: fixture.releaseId,
+        phaseIndex: 1,
+        expectedWorkingCopyId: classmateCopy.workingCopyId,
+        expectedWorkingVersion: classmateCopy.workingVersion,
+        idempotencyKey: `submit_${randomUUID()}`,
+      },
+    );
+
+    const finalReview = await getTeacherFeedbackWorkspace(
+      database!,
+      commandContext(fixture.teacherId, minutesAfter(fixture.baseTime, 1)),
+      { submissionId: fixture.submissionId },
+    );
+    expect(
+      finalReview.earlierPhases.map((entry) => ({
+        phaseIndex: entry.phaseIndex,
+        revisionNumber: entry.revisionNumber,
+        textEvidence: entry.textEvidence,
+        feedback: entry.feedback,
+      })),
+    ).toEqual([
+      { phaseIndex: 1, revisionNumber: 1, textEvidence: "第 1 阶段证据。", feedback: null },
+      { phaseIndex: 2, revisionNumber: 1, textEvidence: "第 2 阶段证据。", feedback: null },
+    ]);
+
+    const firstPhaseReview = await getTeacherFeedbackWorkspace(
+      database!,
+      commandContext(fixture.teacherId, minutesAfter(fixture.baseTime, 1)),
+      { submissionId: finalReview.earlierPhases[0]!.submissionId },
+    );
+    expect(firstPhaseReview.submission.phaseIndex).toBe(1);
+    expect(firstPhaseReview.earlierPhases).toEqual([]);
   });
 
   it("saves staging-shaped mixed citation outcomes through DB triggers", async () => {
@@ -455,6 +530,7 @@ describeWithDatabase("teacher evaluation commands", () => {
     ).toEqual({
       latestRevisionNumber: 1,
       hasWorkingCopy: false,
+      hasUnsubmittedWork: false,
       hasCurrentFeedback: false,
       hasCurrentEvaluation: true,
       followUp: null,

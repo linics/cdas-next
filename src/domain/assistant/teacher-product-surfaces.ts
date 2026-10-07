@@ -63,13 +63,17 @@ export const teacherProductSurfaces: readonly TeacherProductSurface[] = [
     kind: "ACTIVITY_STUDIO",
     label: "活动设计",
     path: "/teacher/activities",
-    does: "管理未发布的活动草稿；从这里新建学习活动、复用已有活动，或去课程依据页检索",
+    does:
+      "管理未发布的活动草稿；从这里新建学习活动、复用已有活动，或去课程依据页检索。" +
+      "写了一半、还没保存为版本的任务书也列在这里，标着还差几项",
   },
   {
     kind: "ACTIVITY_NEW",
     label: "新建学习活动",
     path: "/teacher/activities/new",
-    does: "自己动手填一份任务书，不经过助手",
+    does:
+      "自己动手填一份任务书，不经过助手。输入会自动保存，可以写一半离开、回来接着写；" +
+      `右侧列出${control("还差")}哪几项，补齐后才能保存为版本，之后才能预览和发布`,
   },
   {
     kind: "ACTIVITY_COPY",
@@ -85,6 +89,7 @@ export const teacherProductSurfaces: readonly TeacherProductSurface[] = [
     path: "/teacher/activities/{draftId}",
     does:
       "编辑这份草稿的任务书，保存为编辑中或标记可预览；每次保存都生成新版本，旧版本保留。" +
+      "没保存的修改会自动保存，下次打开时恢复；版本检查、AI 适配和预览只用已保存的版本。" +
       `v3 草稿还可以：${control("打印第 N 版")}（打印页可${control("下载 Word（可编辑）")}）、${control("复制为新活动")}、` +
       `在${control("课程依据")}块记录采纳的官方章节；未封存时还有${control("版本检查")}（AI 按任务书标准指出问题，不改内容）` +
       `和${control("AI 适配")}（按目标年级、总课时或新情境生成改动，教师核对后确认写入为新版本）。` +
@@ -109,7 +114,7 @@ export const teacherProductSurfaces: readonly TeacherProductSurface[] = [
     label: "提交评阅台",
     path: "/teacher/submissions/{submissionId}",
     does:
-      "看这一份提交的当前正式修订：文字证据、已确认检查点和附件（图片与 PDF 可就地预览）。" +
+      "看这一份提交的当前正式修订：文字证据、学生勾选的证据项和附件（图片与 PDF 可就地预览）。" +
       `写形成性反馈时先选支架层级，再按${control("保存 · 请学生修改")}或${control("保存 · 进入下一阶段")}` +
       `（最终提交上是${control("保存 · 完成")}）；四档量规评价只在最终提交上做——分阶段活动的最后一个阶段、` +
       "一次性提交的整项——中间阶段只写反馈。两个起草按钮可以让 AI 先起草反馈或评价，教师改完再确认保存。" +
@@ -168,7 +173,7 @@ export const studentProductSurfaces: readonly StudentProductSurface[] = [
     path: "/student/releases/{releaseId}",
     does:
       `按阶段依次写记录（自动保存）、勾选要交的内容、上传附件，再点${control("提交给老师")}；` +
-      `前一阶段提交后下一阶段才解锁；老师要求修改时点${control("按老师的反馈修改")}重新提交一版；` +
+      `前一阶段提交后下一阶段才解锁；老师要求修改时点${control("按老师的反馈修改")}重交；已完成后在活动关闭前也可以${control("再交一版改进")}；` +
       "活动关闭后仍可查看反馈与评价但不能再写",
   },
 ];

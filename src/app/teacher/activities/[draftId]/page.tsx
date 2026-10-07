@@ -33,6 +33,7 @@ import { getDraftDiagnoses } from "../../../../server/queries/activity-draft-dia
 import { getActivitySourceReferences } from "../../../../server/queries/activity-source-references";
 import { getDraftOriginSignals } from "../../../../server/queries/release-task-book-signals";
 import { OriginSignals } from "./origin-signals";
+import { getOwnDraftWorkingCopy } from "../../../../server/queries/activity-draft-working-copy";
 
 export default async function TeacherActivityPage({
   params,
@@ -42,17 +43,21 @@ export default async function TeacherActivityPage({
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { draftId } = await params;
-  const adapted = (await searchParams)?.adapted === "1";
+  const query = await searchParams;
+  const adapted = query?.adapted === "1";
+  const restoreRequested = query?.restore === "working-copy";
   let workspace;
   let origin: Awaited<ReturnType<typeof getActivityDraftOrigin>> = null;
   let originError = false;
   let sources: Awaited<ReturnType<typeof getActivitySourceReferences>> = null;
   let diagnoses: Awaited<ReturnType<typeof getDraftDiagnoses>> = null;
   let originSignals: Awaited<ReturnType<typeof getDraftOriginSignals>> = null;
+  let unsaved: Awaited<ReturnType<typeof getOwnDraftWorkingCopy>> = null;
   try {
     const context = await createUiCommandContext();
     const database = getDatabaseClient();
     workspace = await getTeacherActivityDraft(database, context, { draftId });
+    unsaved = await getOwnDraftWorkingCopy(database, context, draftId);
     sources = await getActivitySourceReferences(database, context, draftId);
     diagnoses = await getDraftDiagnoses(database, context, draftId);
     try {
@@ -88,6 +93,17 @@ export default async function TeacherActivityPage({
 
   const { draft } = workspace;
   const content = draft.revision.content;
+  // D-093: unsaved edits made on this version reopen as they were. Edits made
+  // on an older version wait until the teacher chooses between the two.
+  const continuing =
+    unsaved && draft.status !== "SEALED" && content.schemaVersion === 3 &&
+    (unsaved.baseVersion === draft.version || restoreRequested)
+      ? unsaved
+      : null;
+  const pendingCopy =
+    unsaved && !continuing && draft.status !== "SEALED" && content.schemaVersion === 3
+      ? unsaved
+      : null;
   return (
     <TeacherPage
       actorName={workspace.actor.displayName}
@@ -195,11 +211,13 @@ export default async function TeacherActivityPage({
         ) : null}
         {content.schemaVersion === 3 ? (
           <ActivityDraftV3Form
-            key={`form-${draft.version}`}
+            key={`form-${draft.version}-${continuing?.id ?? "saved"}`}
+            workingCopy={continuing}
+            pendingCopy={pendingCopy}
             initialState={{
               status: "idle",
               message: "",
-              values: content,
+              values: continuing?.content ?? content,
               draftId: draft.id,
               expectedVersion: draft.version,
               persistedStatus: draft.status,

@@ -644,6 +644,9 @@ async function resetDemoActivities(
     await tx.activityDraftDiagnosis.deleteMany({
       where: { draftId: { in: draftIds } },
     });
+    await tx.activityDraftWorkingCopy.deleteMany({
+      where: { draftId: { in: draftIds } },
+    });
     if (releaseIds.length > 0) {
       await tx.releaseAnswerSummary.deleteMany({
         where: { releaseId: { in: releaseIds } },

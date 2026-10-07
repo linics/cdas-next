@@ -609,7 +609,7 @@ def run_browser_flow(
                 "提交给老师",
                 "迟交给老师",
                 "按老师的反馈修改",
-                "重新提交一版",
+                "再交一版改进",
             ):
                 if page.get_by_role(
                     "button", name=action_label, exact=True
@@ -648,7 +648,7 @@ def run_browser_flow(
                 "提交给老师",
                 "迟交给老师",
                 "按老师的反馈修改",
-                "重新提交一版",
+                "再交一版改进",
             ):
                 if page.get_by_role("button", name=action_label, exact=True).count() != 0:
                     raise E2eFailure("CLOSED_RELEASE_WRITE_ACTION_VISIBLE")
