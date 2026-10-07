@@ -312,6 +312,7 @@ describeWithDatabase("student release list query", () => {
     ).toEqual({
       latestRevisionNumber: 0,
       hasWorkingCopy: true,
+      hasUnsubmittedWork: true,
       hasCurrentFeedback: false,
       hasCurrentEvaluation: false,
       followUp: null,
@@ -323,6 +324,7 @@ describeWithDatabase("student release list query", () => {
     ).toEqual({
       latestRevisionNumber: 1,
       hasWorkingCopy: false,
+      hasUnsubmittedWork: false,
       hasCurrentFeedback: true,
       hasCurrentEvaluation: false,
       followUp: "AWAITING_RESUBMISSION",

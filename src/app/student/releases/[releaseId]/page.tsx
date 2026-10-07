@@ -9,6 +9,7 @@ import {
   type ActivityTaskPhase,
 } from "../../../../domain/activity/activity-content";
 import { isFinalSubmission } from "../../../../domain/submission/sequential-execution";
+import { currentAudienceProgress } from "../../../../domain/insights/teacher-insights";
 import {
   teacherEvaluationLevelLabels,
   teacherEvaluationOutcomeStatusLabels,
@@ -289,7 +290,9 @@ function TeacherResponse({
         </p>
       ) : nextStep === "CONTINUE" ? (
         finalSubmission ? (
-          <p className={styles.nextStepLine}>这项活动已经完成。</p>
+          <p className={styles.nextStepLine}>
+            这项活动已经完成。活动关闭前，你仍可以再交一版改进。
+          </p>
         ) : nextPhaseHref ? (
           <p className={styles.nextStepLine}>
             这一阶段可以了。
@@ -703,15 +706,29 @@ export default async function StudentReleasePage({
   const readOnlyMessage = isActive
     ? "你已不是该班级的当前成员，仍可查看这份活动与自己的提交，但不能再修改。"
     : "活动已结束，内容仍可查看，但不能再修改或提交。";
+  // D-094: the header says where this student is, not only that the activity
+  // is open — "进行中" beside "这项活动已经完成" read as a contradiction.
+  const ownProgress = currentAudienceProgress({
+    executionVersion: workspace.execution.version === 1 ? 1 : 0,
+    submissionMode: workspace.execution.mode,
+    phaseCount: workspace.execution.phaseCount,
+    submissions: workspace.submissions.map((item) => ({
+      phaseIndex: item.phaseIndex,
+      latestRevisionNumber: item.latestRevisionNumber,
+      revisionRequested: item.followUp !== null,
+    })),
+  });
   const statusLabel = !isActive
     ? workspace.release.status === "ARCHIVED"
       ? "已封存 · 只读"
       : "已关闭 · 只读"
     : !canWrite
       ? "历史成员 · 只读"
-      : isPastDue
-        ? "已过截止 · 可迟交"
-        : "进行中";
+      : ownProgress.complete
+        ? "你已完成"
+        : isPastDue
+          ? "已过截止 · 可迟交"
+          : "活动进行中";
   // The browser cannot work out how to upload on its own: one backend presigns
   // and is written directly, the other takes the bytes through this app.
   const attachmentUpload = attachmentUploadStrategy();
@@ -732,7 +749,17 @@ export default async function StudentReleasePage({
             <h1>{content.title}</h1>
             <p>{content.summary}</p>
           </div>
-          <StatusBadge tone={!isActive || !canWrite ? "neutral" : isPastDue ? "warning" : "success"}>
+          <StatusBadge
+            tone={
+              !isActive || !canWrite
+                ? "neutral"
+                : ownProgress.complete
+                  ? "done"
+                  : isPastDue
+                    ? "warning"
+                    : "success"
+            }
+          >
             {statusLabel}
           </StatusBadge>
         </header>

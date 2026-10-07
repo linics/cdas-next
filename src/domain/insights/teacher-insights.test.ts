@@ -11,6 +11,7 @@ import {
   aggregateStageCard,
   buildTeacherInsightsView,
   currentAudienceProgress,
+  isRevisionRequested,
 } from "./teacher-insights";
 
 const releaseId = "11111111-1111-4111-8111-111111111111";
@@ -84,7 +85,7 @@ function release(
 }
 
 describe("currentAudienceProgress", () => {
-  it("matches teacher/student current-phase: first incomplete phase, REVISE ignored", () => {
+  it("matches teacher/student current-phase: the first incomplete phase leads", () => {
     expect(
       currentAudienceProgress({
         executionVersion: 1,
@@ -100,6 +101,7 @@ describe("currentAudienceProgress", () => {
       complete: false,
       currentPhaseIndex: 2,
       completedPhaseCount: 1,
+      revisionPhaseIndex: null,
     });
     expect(
       currentAudienceProgress({
@@ -109,6 +111,35 @@ describe("currentAudienceProgress", () => {
         submissions: [{ phaseIndex: 0, latestRevisionNumber: 1 }],
       }).complete,
     ).toBe(true);
+  });
+
+  it("does not call an audience complete while a phase is sent back for revision (D-094)", () => {
+    const allSubmitted = [
+      { phaseIndex: 1, latestRevisionNumber: 1 },
+      { phaseIndex: 2, latestRevisionNumber: 1 },
+      { phaseIndex: 3, latestRevisionNumber: 1, revisionRequested: true },
+    ];
+    expect(
+      currentAudienceProgress({ executionVersion: 1, submissionMode: "phased", phaseCount: 3, submissions: allSubmitted }),
+    ).toEqual({ started: true, complete: false, currentPhaseIndex: 3, completedPhaseCount: 3, revisionPhaseIndex: 3 });
+    // Revision does not lock the next phase, so an unsubmitted phase still leads.
+    expect(
+      currentAudienceProgress({
+        executionVersion: 1,
+        submissionMode: "phased",
+        phaseCount: 3,
+        submissions: [{ phaseIndex: 1, latestRevisionNumber: 1, revisionRequested: true }],
+      }),
+    ).toMatchObject({ complete: false, currentPhaseIndex: 2, revisionPhaseIndex: 1 });
+    expect(
+      isRevisionRequested({
+        latestRevisionNumber: 2,
+        revisions: [
+          { revisionNumber: 1, nextStep: "REVISE" },
+          { revisionNumber: 2, nextStep: null },
+        ],
+      }),
+    ).toBe(false);
   });
 });
 

@@ -11,6 +11,7 @@ import {
   currentAudienceProgress,
   evaluationGoalScope,
   isDimensionRelevantToPhase,
+  isRevisionRequested,
   stageBucketKey,
   type InsightsOutcome,
   type InsightsReleaseInput,
@@ -264,7 +265,10 @@ function buildAudiences(
         executionVersion: release.executionVersion,
         submissionMode: release.submissionMode,
         phaseCount: release.phases.length,
-        submissions: audience.submissions,
+        submissions: audience.submissions.map((submission) => ({
+          ...submission,
+          revisionRequested: isRevisionRequested(submission),
+        })),
       });
       const lastActivity = latestActivity(audience.submissions);
       const idleDays = lastActivity ? wholeDaysBetween(lastActivity, now) : null;

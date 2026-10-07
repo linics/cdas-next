@@ -88,9 +88,11 @@ const releaseList = {
         title: "待提交活动",
         summary: "仍有工作草稿",
       },
+      progress: { phased: false, phaseCount: 0, completedPhaseCount: 0, currentPhaseIndex: 0, complete: false, revisionPhaseIndex: null },
       submission: {
         latestRevisionNumber: 0,
         hasWorkingCopy: true,
+        hasUnsubmittedWork: true,
         hasCurrentFeedback: false,
         hasCurrentEvaluation: false,
         followUp: null,
@@ -106,9 +108,11 @@ const releaseList = {
         title: "已有反馈活动",
         summary: "查看教师反馈",
       },
+      progress: { phased: false, phaseCount: 0, completedPhaseCount: 0, currentPhaseIndex: 0, complete: false, revisionPhaseIndex: null },
       submission: {
         latestRevisionNumber: 1,
         hasWorkingCopy: false,
+        hasUnsubmittedWork: false,
         hasCurrentFeedback: true,
         hasCurrentEvaluation: false,
         followUp: null,
@@ -124,9 +128,11 @@ const releaseList = {
         title: "待重交活动",
         summary: "按反馈修改后重交",
       },
+      progress: { phased: false, phaseCount: 0, completedPhaseCount: 0, currentPhaseIndex: 0, complete: false, revisionPhaseIndex: null },
       submission: {
         latestRevisionNumber: 1,
         hasWorkingCopy: false,
+        hasUnsubmittedWork: false,
         hasCurrentFeedback: true,
         hasCurrentEvaluation: true,
         followUp: "AWAITING_RESUBMISSION",
@@ -142,9 +148,11 @@ const releaseList = {
         title: "已有评价活动",
         summary: "查看教师量规评价",
       },
+      progress: { phased: false, phaseCount: 0, completedPhaseCount: 0, currentPhaseIndex: 0, complete: false, revisionPhaseIndex: null },
       submission: {
         latestRevisionNumber: 1,
         hasWorkingCopy: false,
+        hasUnsubmittedWork: false,
         hasCurrentFeedback: true,
         hasCurrentEvaluation: true,
         followUp: null,
@@ -160,9 +168,11 @@ const releaseList = {
         title: "历史活动",
         summary: "只读保留",
       },
+      progress: { phased: false, phaseCount: 0, completedPhaseCount: 0, currentPhaseIndex: 0, complete: false, revisionPhaseIndex: null },
       submission: {
         latestRevisionNumber: 1,
         hasWorkingCopy: false,
+        hasUnsubmittedWork: false,
         hasCurrentFeedback: false,
         hasCurrentEvaluation: false,
         followUp: null,
@@ -236,7 +246,6 @@ describe("student dashboard page", () => {
     expect(markup).toContain("进行中");
     expect(markup).toContain("已关闭");
     expect(markup).toContain("已有评价");
-    expect(markup).toContain("当前版已有量规评价");
     expect(markup).toContain("仍可迟交");
     expect(markup).toContain(`/student/releases/${pendingReleaseId}`);
     expect(markup).toContain(`/student/releases/${feedbackReleaseId}`);
@@ -286,5 +295,36 @@ describe("student dashboard page", () => {
     expect(markup).toContain("当前账号：林老师 · 教师");
     expect(markup).toContain("退出登录");
     expect(markup).not.toContain("待提交活动");
+  });
+
+  it("describes a phased activity by phase, not by the empty copy the next phase opened with (D-094)", async () => {
+    const phased = structuredClone(releaseList.releases[0]!);
+    phased.progress = {
+      phased: true,
+      phaseCount: 3,
+      completedPhaseCount: 1,
+      currentPhaseIndex: 2,
+      complete: false,
+      revisionPhaseIndex: null,
+    };
+    phased.submission = {
+      ...phased.submission,
+      latestRevisionNumber: 0,
+      hasWorkingCopy: true,
+      hasUnsubmittedWork: false,
+      hasCurrentFeedback: false,
+      hasCurrentEvaluation: false,
+      followUp: null,
+    };
+    mocks.listStudentReleases.mockResolvedValue({ ...releaseList, releases: [phased] });
+
+    const markup = await renderPage();
+
+    expect(markup).toContain("第 2 阶段进行中");
+    expect(markup).toContain("已交 1/3 个阶段");
+    expect(markup).toContain("正在做第 2 阶段");
+    expect(markup).not.toContain("尚未提交");
+    expect(markup).not.toContain("有没交的草稿");
+    expect(markup).not.toContain("草稿未提交");
   });
 });

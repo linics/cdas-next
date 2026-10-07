@@ -247,7 +247,7 @@ export function SubmissionEditor({
                 ? "正在准备…"
                 : revisionRequested
                   ? "按老师的反馈修改"
-                  : "重新提交一版"}
+                  : "再交一版改进"}
             </button>
             <p>
               会在第 {latestRevisionNumber} 版的基础上修改，已提交的版本和老师的反馈都会保留。

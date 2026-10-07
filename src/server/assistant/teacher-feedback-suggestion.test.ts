@@ -163,7 +163,7 @@ describe("teacher feedback suggestion prompt", () => {
     const prompt = buildTeacherFeedbackSuggestionPrompt({
       phase: null,
       textEvidence: "我记录了三次用水读数。",
-      confirmedCheckpoints: [],
+      checkpoints: [],
       attachments: [],
     });
 
@@ -178,6 +178,19 @@ describe("teacher feedback suggestion prompt", () => {
     }
     // The provider requires the word JSON to accept json_object responses.
     expect(prompt).toContain("JSON");
+  });
+
+  it("tells the model a ticked checkpoint is the student's claim, not evidence (D-094)", () => {
+    const prompt = buildTeacherFeedbackSuggestionPrompt({
+      phase: null,
+      textEvidence: "我觉得学校最浪费水的是绿化浇水。",
+      checkpoints: [{ evidenceIndex: 1, type: "text", description: "带时间、地点与现象描述的观察记录" }],
+      attachments: [],
+    });
+
+    expect(prompt).toContain("checkpoints 是学生自己勾选「已完成」的证据项");
+    expect(prompt).toContain('"type": "text"');
+    expect(prompt).not.toContain("confirmedCheckpoints");
   });
 });
 
@@ -334,7 +347,7 @@ describe("teacher feedback suggestion boundary", () => {
     const [, modelInput] = mocks.generateSuggestion.mock.calls[0] ?? [];
     expect((modelInput as { phase: unknown }).phase).toBeNull();
     expect(
-      (modelInput as { confirmedCheckpoints: unknown[] }).confirmedCheckpoints,
+      (modelInput as { checkpoints: unknown[] }).checkpoints,
     ).toEqual([]);
   });
 

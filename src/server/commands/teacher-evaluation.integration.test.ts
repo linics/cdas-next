@@ -455,6 +455,7 @@ describeWithDatabase("teacher evaluation commands", () => {
     ).toEqual({
       latestRevisionNumber: 1,
       hasWorkingCopy: false,
+      hasUnsubmittedWork: false,
       hasCurrentFeedback: false,
       hasCurrentEvaluation: true,
       followUp: null,

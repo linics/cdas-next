@@ -132,7 +132,7 @@ describe("learning outcome report (D-072)", () => {
     expect(html).toContain("陈同学");
     expect(html).toContain("第 2 版正式提交");
     expect(html).toContain("第二版的当前文字");
-    expect(html).toContain("已确认：数据表与分析说明");
+    expect(html).toContain("学生自查已完成：数据表与分析说明");
     expect(html).toContain("数据表.pdf");
     expect(html).toContain("当前确认的反馈");
     expect(html).toContain("按反馈修改并重交");

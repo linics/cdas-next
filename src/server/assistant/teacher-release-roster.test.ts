@@ -32,7 +32,7 @@ const workspace: TeacherActivityDashboard = {
       publishedAt: now.toISOString(),
       dueAt: null,
       canViewSubmissions: true,
-      progress: { submittedCount: 2, cohortSize: 3 },
+      progress: { submittedCount: 2, cohortSize: 3, completeCount: null },
       attention: {
         pendingFeedbackCount: 1,
         pendingEvaluationCount: 2,

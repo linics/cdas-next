@@ -119,7 +119,9 @@ function ReleaseTile({ release }: { release: DashboardRelease }) {
   const progress = release.progress;
   const percent =
     progress && progress.cohortSize > 0
-      ? Math.round((progress.submittedCount / progress.cohortSize) * 100)
+      ? Math.round(
+          ((progress.completeCount ?? progress.submittedCount) / progress.cohortSize) * 100,
+        )
       : 0;
   const ended = release.status !== "ACTIVE";
   return (
@@ -142,7 +144,9 @@ function ReleaseTile({ release }: { release: DashboardRelease }) {
           />
           <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
             <span className="tabular-nums">
-              {`${progress.submittedCount}/${progress.cohortSize} 已正式提交`}
+              {progress.completeCount === null
+                ? `${progress.submittedCount}/${progress.cohortSize} 已提交`
+                : `${progress.completeCount}/${progress.cohortSize} 全部完成`}
             </span>
             {release.dueAt ? (
               <span className="tabular-nums">

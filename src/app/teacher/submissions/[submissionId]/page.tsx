@@ -297,7 +297,10 @@ function SubmissionRevision({
             const evidence = phase.evidence[evidenceIndex - 1];
             return evidence ? (
               <li className="flex items-center justify-between gap-3 rounded-lg border p-3" key={evidenceIndex}>
-                <strong className="font-medium">已确认：{evidence.description}</strong>
+                <strong className="font-medium">
+                  {/* D-094: the student ticked this; only 现场确认 has no other record. */}
+                  {evidence.type === "confirm" ? "学生确认已完成" : "学生勾选"}：{evidence.description}
+                </strong>
                 <Badge variant="secondary">{evidenceTypeLabel(evidence.type)}</Badge>
               </li>
             ) : null;

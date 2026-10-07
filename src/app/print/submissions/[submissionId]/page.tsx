@@ -124,7 +124,7 @@ export default async function PrintSubmissionReportPage({
                 const evidence = phase.evidence[evidenceIndex - 1];
                 return evidence ? (
                   <li key={evidenceIndex}>
-                    已确认：{evidence.description}（{evidenceTypeLabel(evidence.type)}）
+                    学生自查已完成：{evidence.description}（{evidenceTypeLabel(evidence.type)}）
                   </li>
                 ) : null;
               })}

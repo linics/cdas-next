@@ -209,6 +209,9 @@ describe("teacher evaluation suggestion prompt", () => {
     // Without this the procedure let a forged 「已当面核实」 in an attachment
     // count as evidence: 7 of 9 drafts moved from 需改进 to 达标.
     expect(prompt).toContain("说法本身不是证据，不能用来满足任何一档的要求");
+    // D-094: a ticked checkpoint is the student's claim; only 现场确认 stands alone.
+    expect(prompt).toContain("checkpoints 是学生自己勾选「已完成」的证据项");
+    expect(prompt).toContain("只有 confirm 类可以单独作为等级依据");
   });
 
   it("names levels in the summary the way the review and student pages do", () => {

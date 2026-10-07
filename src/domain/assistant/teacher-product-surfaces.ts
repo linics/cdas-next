@@ -114,7 +114,7 @@ export const teacherProductSurfaces: readonly TeacherProductSurface[] = [
     label: "提交评阅台",
     path: "/teacher/submissions/{submissionId}",
     does:
-      "看这一份提交的当前正式修订：文字证据、已确认检查点和附件（图片与 PDF 可就地预览）。" +
+      "看这一份提交的当前正式修订：文字证据、学生勾选的证据项和附件（图片与 PDF 可就地预览）。" +
       `写形成性反馈时先选支架层级，再按${control("保存 · 请学生修改")}或${control("保存 · 进入下一阶段")}` +
       `（最终提交上是${control("保存 · 完成")}）；四档量规评价只在最终提交上做——分阶段活动的最后一个阶段、` +
       "一次性提交的整项——中间阶段只写反馈。两个起草按钮可以让 AI 先起草反馈或评价，教师改完再确认保存。" +
@@ -173,7 +173,7 @@ export const studentProductSurfaces: readonly StudentProductSurface[] = [
     path: "/student/releases/{releaseId}",
     does:
       `按阶段依次写记录（自动保存）、勾选要交的内容、上传附件，再点${control("提交给老师")}；` +
-      `前一阶段提交后下一阶段才解锁；老师要求修改时点${control("按老师的反馈修改")}重新提交一版；` +
+      `前一阶段提交后下一阶段才解锁；老师要求修改时点${control("按老师的反馈修改")}重交；已完成后在活动关闭前也可以${control("再交一版改进")}；` +
       "活动关闭后仍可查看反馈与评价但不能再写",
   },
 ];
