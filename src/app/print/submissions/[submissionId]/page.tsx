@@ -14,6 +14,7 @@ import {
   teacherFeedbackNextStepLabels,
   teacherFeedbackSupportLevelLabels,
 } from "../../../../domain/feedback/teacher-feedback-policy";
+import { rubricLevelGuidance } from "../../../../domain/evaluation/rubric-level-guidance";
 import { hasMeaningfulTextEvidence } from "../../../../domain/submission/text-evidence";
 import { LocalizedDateTime } from "../../../_components/localized-date-time";
 import { AuthenticationError } from "../../../../server/auth/current-actor";
@@ -161,14 +162,24 @@ export default async function PrintSubmissionReportPage({
             {evaluation ? (
               <>
                 <ul>
-                  {evaluation.outcomes.map((outcome) => (
-                    <li key={outcome.dimensionIndex}>
-                      <strong>{outcome.dimensionName}</strong>：
-                      {outcome.status === "LEVEL" && "level" in outcome
-                        ? teacherEvaluationLevelLabels[outcome.level]
-                        : teacherEvaluationOutcomeStatusLabels.INSUFFICIENT_EVIDENCE}
-                    </li>
-                  ))}
+                  {evaluation.outcomes.map((outcome) => {
+                    // D-096: the level word with what it means and what is one step up.
+                    const guidance = rubricLevelGuidance(content.rubricDimensions, outcome);
+                    return (
+                      <li key={outcome.dimensionIndex}>
+                        <strong>{outcome.dimensionName}</strong>：
+                        {outcome.status === "LEVEL" && "level" in outcome
+                          ? teacherEvaluationLevelLabels[outcome.level]
+                          : teacherEvaluationOutcomeStatusLabels.INSUFFICIENT_EVIDENCE}
+                        {guidance?.awarded ? `（${guidance.awarded.descriptor}）` : ""}
+                        {guidance?.next ? (
+                          <span className="block text-sm text-black/70">
+                            {`${guidance.awarded ? "再往上一档" : "要达到"}「${teacherEvaluationLevelLabels[guidance.next.level]}」：${guidance.next.descriptor}`}
+                          </span>
+                        ) : null}
+                      </li>
+                    );
+                  })}
                 </ul>
                 <p className="whitespace-pre-wrap">{evaluation.summary}</p>
                 <p className="text-sm text-black/70">

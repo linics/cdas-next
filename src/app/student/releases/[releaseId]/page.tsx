@@ -6,8 +6,10 @@ import { ZodError } from "zod";
 import {
   evidenceTypeLabel,
   isStructuredContent,
+  type ActivityRubricDimension,
   type ActivityTaskPhase,
 } from "../../../../domain/activity/activity-content";
+import { rubricLevelGuidance } from "../../../../domain/evaluation/rubric-level-guidance";
 import { isFinalSubmission } from "../../../../domain/submission/sequential-execution";
 import { currentAudienceProgress } from "../../../../domain/insights/teacher-insights";
 import {
@@ -176,10 +178,19 @@ function FeedbackText({
   ) : null;
 }
 
+function frozenRubric(
+  feedbackWorkspace: StudentFeedbackWorkspace | null,
+): readonly ActivityRubricDimension[] {
+  const content = feedbackWorkspace?.submission.release.snapshot.content;
+  return content && isStructuredContent(content) ? content.rubricDimensions : [];
+}
+
 function EvaluationResult({
   evaluation,
+  rubric,
 }: {
   evaluation: NonNullable<QueriedRevision["evaluation"]>;
+  rubric: readonly ActivityRubricDimension[];
 }) {
   const current =
     evaluation.revisions.find(
@@ -189,16 +200,32 @@ function EvaluationResult({
   return (
     <div className="flex flex-col gap-3">
       <ul className={styles.evaluationOutcomeList}>
-        {current.outcomes.map((outcome) => (
-          <li key={outcome.dimensionIndex}>
-            <strong>{outcome.dimensionName}</strong>
-            <span>
-              {outcome.status === "LEVEL" && "level" in outcome
-                ? teacherEvaluationLevelLabels[outcome.level]
-                : teacherEvaluationOutcomeStatusLabels.INSUFFICIENT_EVIDENCE}
-            </span>
-          </li>
-        ))}
+        {current.outcomes.map((outcome) => {
+          // D-096: say what the level means and what the next one asks for.
+          const guidance = rubricLevelGuidance(rubric, outcome);
+          return (
+            <li key={outcome.dimensionIndex}>
+              <strong>{outcome.dimensionName}</strong>
+              <span>
+                {outcome.status === "LEVEL" && "level" in outcome
+                  ? teacherEvaluationLevelLabels[outcome.level]
+                  : teacherEvaluationOutcomeStatusLabels.INSUFFICIENT_EVIDENCE}
+              </span>
+              {guidance?.awarded ? (
+                <small>
+                  {`「${teacherEvaluationLevelLabels[guidance.awarded.level]}」是：${guidance.awarded.descriptor}`}
+                </small>
+              ) : guidance ? (
+                <small>老师没能从你交的内容里看到这一项的依据。</small>
+              ) : null}
+              {guidance?.next ? (
+                <small>
+                  {`${guidance.awarded ? "再往上一档" : "要达到"}「${teacherEvaluationLevelLabels[guidance.next.level]}」：${guidance.next.descriptor}`}
+                </small>
+              ) : null}
+            </li>
+          );
+        })}
       </ul>
       <div className={styles.feedbackBody}>{current.summary}</div>
     </div>
@@ -304,7 +331,7 @@ function TeacherResponse({
       {evaluation ? (
         <div className="flex flex-col gap-2 border-t pt-4">
           <h3 className="text-sm font-semibold">评价</h3>
-          <EvaluationResult evaluation={evaluation} />
+          <EvaluationResult evaluation={evaluation} rubric={frozenRubric(feedbackWorkspace)} />
         </div>
       ) : null}
 
@@ -352,7 +379,10 @@ function EarlierVersions({
               {queried?.evaluation ? (
                 <div className="flex flex-col gap-1">
                   <p className={styles.eyebrow}>评价</p>
-                  <EvaluationResult evaluation={queried.evaluation} />
+                  <EvaluationResult
+                    evaluation={queried.evaluation}
+                    rubric={frozenRubric(feedbackWorkspace)}
+                  />
                 </div>
               ) : null}
             </article>
