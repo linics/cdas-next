@@ -408,8 +408,31 @@ function rubricLevelGlossary(): string {
   ].join("、");
 }
 
+/**
+ * The model has no clock. Without this it read a deadline two days away as
+ * already passed (2026-10-14). Tool results carry ISO instants; teachers read
+ * China time, as the Word export states it.
+ */
+function currentTimeInstruction(now: Date): string {
+  const chinaTime = new Intl.DateTimeFormat("zh-CN", {
+    timeZone: "Asia/Shanghai",
+    dateStyle: "full",
+    timeStyle: "short",
+  }).format(now);
+  const day = new Intl.DateTimeFormat("zh-CN", {
+    timeZone: "Asia/Shanghai",
+    month: "long",
+    day: "numeric",
+    weekday: "long",
+  });
+  const daysAhead = (count: number) =>
+    day.format(new Date(now.getTime() + count * 24 * 60 * 60 * 1000));
+  return `现在是北京时间 ${chinaTime}（${now.toISOString()}）。明天是${daysAhead(1)}，后天是${daysAhead(2)}。工具结果里的时间都是带时区的 ISO 时刻：判断是否已过截止、还剩几天，都拿它和现在比；告诉教师日期和时间时，换算成北京时间。`;
+}
+
 export function buildActivityAssistantInstructions(
   classrooms: AssistantClassroom[],
+  now: Date = new Date(),
 ): string {
   return `你是 CDAS Next 的教师活动助手。
 
@@ -488,7 +511,8 @@ ${coreCompetencyRule()}
 8. 你的产出是待教师终审的建议，不是课程质量结论，也不是合规结论。不要替教师下「本活动符合课程标准」这类判断，不要输出或索取认证 subject、密钥、资料库 URL、prompt、内部追踪 ID 或 approval 签名。
 
 活动内容必须完全符合工具 schema；不要把正文放在普通工具之外持久化。
-${classroomInstructions(classrooms)}`;
+${classroomInstructions(classrooms)}
+${currentTimeInstruction(now)}`;
 }
 
 function explicitlyRequestsPublish(text: string): boolean {
@@ -765,7 +789,7 @@ export async function handleActivityAssistantRequest(
       const repair = await generateText({
         model,
         instructions:
-          `${buildActivityAssistantInstructions(classrooms)}\n\n` +
+          `${buildActivityAssistantInstructions(classrooms, dependencies.clock())}\n\n` +
           "你在上一次工具调用里写错了参数。请只用同一个工具重新调用一次，" +
           "修正报错指出的地方，其余内容逐字保留。中文不要用半角双引号，需要引用用「」。" +
           "不要输出任何解释文字。",
@@ -851,7 +875,7 @@ ${error.message}`,
   try {
     const result = streamText({
       model,
-      instructions: buildActivityAssistantInstructions(classrooms),
+      instructions: buildActivityAssistantInstructions(classrooms, dependencies.clock()),
       messages: modelMessages,
       tools,
       toolChoice: activityAssistantToolChoice,
