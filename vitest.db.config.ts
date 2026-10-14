@@ -16,6 +16,7 @@ export default defineConfig({
       "src/server/auth/*.integration.test.ts",
       "src/server/commands/*.integration.test.ts",
       "src/server/queries/*.integration.test.ts",
+      "src/server/assistant/*.integration.test.ts",
       "scripts/staging/*.integration.test.ts",
     ],
     setupFiles: ["./src/test/require-test-database.ts"],

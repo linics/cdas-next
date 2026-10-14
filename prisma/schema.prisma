@@ -162,6 +162,7 @@ model AppUser {
   memberships              ClassroomMembership[]           @relation("StudentMemberships")
   drafts                   ActivityDraft[]                 @relation("DraftOwner")
   draftWorkingCopies       ActivityDraftWorkingCopy[]      @relation("DraftWorkingCopyOwner")
+  assistantConversations   AssistantConversation[]         @relation("AssistantConversationOwner")
   adoptedSources           ActivityDraftSourceReference[]  @relation("SourceReferenceAdopter")
   withdrawnSources         ActivityDraftSourceWithdrawal[] @relation("SourceReferenceWithdrawer")
   requestedDiagnoses       ActivityDraftDiagnosis[]        @relation("DiagnosisRequester")
@@ -298,6 +299,21 @@ model ActivityDraftWorkingCopy {
 
   @@index([ownerId, updatedAt])
   @@map("activity_draft_working_copies")
+}
+
+/// D-099: a teacher's assistant conversation, saved after each reply so a
+/// reload or another page picks it up again. Only the owner reads or writes it.
+model AssistantConversation {
+  id        String   @id @db.Uuid
+  ownerId   String   @map("owner_id") @db.Uuid
+  title     String   @default("")
+  messages  Json
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+  owner     AppUser  @relation("AssistantConversationOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+
+  @@index([ownerId, updatedAt])
+  @@map("assistant_conversations")
 }
 
 model ActivityDraftRevision {

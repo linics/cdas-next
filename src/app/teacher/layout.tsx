@@ -10,6 +10,10 @@ import {
 import { createUiCommandContext } from "../../server/commands/create-ui-command-context";
 import { getDatabaseClient } from "../../server/db/client";
 import { TeacherAgentOverlay } from "./_components/teacher-agent-overlay";
+import {
+  getAssistantConversation,
+  restoreWindowStart,
+} from "../../server/assistant/assistant-conversations";
 
 function reportTeacherAgentContextFailure(error: unknown): void {
   console.error(
@@ -52,8 +56,19 @@ export default async function TeacherLayout({
     return children;
   }
 
+  // D-099: carry on with the latest conversation. Losing it only means a
+  // fresh panel, so a failed read is reported and otherwise ignored.
+  let initialConversation = null;
+  try {
+    initialConversation = await getAssistantConversation(getDatabaseClient(), context, {
+      latestSince: restoreWindowStart(new Date()),
+    });
+  } catch (error) {
+    reportTeacherAgentContextFailure(error);
+  }
+
   return (
-    <TeacherAgentOverlay classrooms={classrooms}>
+    <TeacherAgentOverlay classrooms={classrooms} initialConversation={initialConversation}>
       {children}
     </TeacherAgentOverlay>
   );
