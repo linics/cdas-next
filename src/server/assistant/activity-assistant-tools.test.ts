@@ -834,11 +834,11 @@ const currentDraftDetail = {
   content,
 };
 
+const revisedContext = "你們在上一階段發現了讀數差異，現在總務處希望你們解釋它。";
+
 function revisedPhases() {
   return content.phases.map((phase, index) =>
-    index === 1
-      ? { ...phase, context: "你們在上一階段發現了讀數差異，現在總務處希望你們解釋它。" }
-      : phase,
+    index === 1 ? { ...phase, context: revisedContext } : phase,
   );
 }
 
@@ -846,14 +846,8 @@ function revision(overrides: Record<string, unknown> = {}) {
   return {
     draftId,
     expectedVersion: 3,
-    changes: [
-      {
-        area: "PHASES" as const,
-        change: "把第二階段的情境改成承接第一階段的發現。",
-        reason: "原本三個階段讀起來像三道並列的題。",
-      },
-    ],
-    content: { ...content, phases: revisedPhases() },
+    summary: "把第二階段的情境改成承接第一階段的發現。",
+    edits: [{ op: "set" as const, path: "phases[1].context", value: revisedContext }],
     ...overrides,
   };
 }
@@ -896,6 +890,9 @@ describe("activity assistant draft revision", () => {
         expectedVersion: 3,
         desiredStatus: "READY_FOR_PREVIEW",
         agentRunId: runId,
+        // D-097: the stored task book with that one field changed, every
+        // other word exactly as the teacher left it.
+        content: { ...content, phases: revisedPhases() },
       }),
     );
     expect(mocks.onBusinessWriteSuccess).toHaveBeenCalledWith("DRAFT_UPDATED");
@@ -921,14 +918,8 @@ describe("activity assistant draft revision", () => {
         {
           draftId,
           expectedVersion: 3,
-          changes: [
-            {
-              area: "BASIC_SETTINGS" as const,
-              change: "补充校园真实情境。",
-              reason: "教师要求说明任务发生地点。",
-            },
-          ],
-          content: revised,
+          summary: "补充校园真实情境。",
+          edits: [{ op: "set" as const, path: "summary", value: revised.summary }],
         },
         options("revise_v2"),
       ),
@@ -940,16 +931,21 @@ describe("activity assistant draft revision", () => {
     );
   });
 
-  it("rejects a revision that changes the task-book schema version", async () => {
-    mocks.readDraftDetail.mockResolvedValue({
-      ...currentDraftDetail,
-      content: waterConservationTaskBook,
-    });
-    const registry = tools({ draftReads: new Map([[draftId, 3]]) });
-
-    await expect(
-      registry.update_activity_draft.execute!(revision(), options("revise_schema")),
-    ).rejects.toThrow("ACTIVITY_REVISE_SCHEMA_VERSION_CHANGED");
+  it("refuses edits that do not fit the stored task book, writing nothing", async () => {
+    // One registry per attempt: a registry accepts one revision per request.
+    for (const edit of [
+      { op: "set" as const, path: "phases[7].name", value: "不存在的阶段" },
+      { op: "set" as const, path: "schemaVersion", value: 2 },
+      { op: "replaceText" as const, path: "summary", find: "原文裡沒有的字", replaceWith: "x" },
+    ]) {
+      await expect(
+        tools({ draftReads: new Map([[draftId, 3]]) }).update_activity_draft.execute!(
+          revision({ edits: [edit] }),
+          options(`revise_${edit.path}`),
+        ),
+      ).rejects.toThrow("ACTIVITY_REVISE_EDITS_DO_NOT_APPLY");
+    }
+    expect(mocks.onToolFailure).toHaveBeenCalledWith("REVISE_EDITS_DO_NOT_APPLY");
     expect(mocks.saveDraft).not.toHaveBeenCalled();
   });
 
@@ -1003,50 +999,25 @@ describe("activity assistant draft revision", () => {
     expect(mocks.saveDraft).not.toHaveBeenCalled();
   });
 
-  it("refuses a revision that quietly reaches past the areas it declared", async () => {
+  it("applies the edits to the task book as stored now, not a copy from the model", async () => {
+    // The teacher saved another field since the model read version 3; the
+    // version check still passes because the version did not move, and the
+    // edit lands on what is stored rather than on anything the model sent.
+    mocks.readDraftDetail.mockResolvedValue({
+      ...currentDraftDetail,
+      content: { ...content, title: "教師剛改的標題" },
+    });
     const registry = tools({ draftReads: new Map([[draftId, 3]]) });
 
-    await expect(
-      registry.update_activity_draft.execute!(
-        revision({
-          content: {
-            ...content,
-            phases: revisedPhases(),
-            rubricDimensions: content.rubricDimensions.map((dimension) => ({
-              ...dimension,
-              improve: "需要更多證據支持。",
-            })),
-          },
-        }),
-        options("revise_1"),
-      ),
-    ).rejects.toThrow("ACTIVITY_REVISE_UNDECLARED_CHANGE");
-    expect(mocks.saveDraft).not.toHaveBeenCalled();
-  });
+    await registry.update_activity_draft.execute!(revision(), options("revise_1"));
 
-  it("refuses a revision that claims an area it did not touch", async () => {
-    const registry = tools({ draftReads: new Map([[draftId, 3]]) });
-
-    await expect(
-      registry.update_activity_draft.execute!(
-        revision({
-          changes: [
-            {
-              area: "PHASES" as const,
-              change: "把第二階段的情境改成承接第一階段的發現。",
-              reason: "原本三個階段讀起來像三道並列的題。",
-            },
-            {
-              area: "RUBRIC" as const,
-              change: "重寫四檔描述。",
-              reason: "教師說量規太籠統。",
-            },
-          ],
-        }),
-        options("revise_1"),
-      ),
-    ).rejects.toThrow("ACTIVITY_REVISE_UNDECLARED_CHANGE");
-    expect(mocks.saveDraft).not.toHaveBeenCalled();
+    expect(mocks.saveDraft).toHaveBeenCalledWith(
+      expect.anything(),
+      agentContext,
+      expect.objectContaining({
+        content: { ...content, title: "教師剛改的標題", phases: revisedPhases() },
+      }),
+    );
   });
 
   it("refuses a revision that changes nothing", async () => {
@@ -1054,10 +1025,13 @@ describe("activity assistant draft revision", () => {
 
     await expect(
       registry.update_activity_draft.execute!(
-        revision({ content }),
+        revision({
+          edits: [{ op: "set" as const, path: "phases[1].context", value: content.phases[1]!.context }],
+        }),
         options("revise_1"),
       ),
-    ).rejects.toThrow("ACTIVITY_REVISE_NO_CHANGE");
+    ).rejects.toThrow("ACTIVITY_REVISE_EDITS_DO_NOT_APPLY");
+    expect(mocks.onToolFailure).toHaveBeenCalledWith("REVISE_NO_CHANGE");
     expect(mocks.saveDraft).not.toHaveBeenCalled();
   });
 

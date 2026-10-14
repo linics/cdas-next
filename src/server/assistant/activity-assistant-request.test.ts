@@ -549,14 +549,8 @@ describe("activity assistant request validation", () => {
                 input: {
                   draftId: "30000000-0000-4000-8000-000000000003",
                   expectedVersion: 3,
-                  changes: [
-                    {
-                      area: "PHASES",
-                      change: "改写第二阶段情境。",
-                      reason: "阶段之间读起来不连贯。",
-                    },
-                  ],
-                  content: waterConservationTaskBookV3,
+                  summary: "改写第二阶段情境。",
+                  edits: [{ op: "set", path: "phases[1].context", value: "承接上一阶段发现的读数差异。" }],
                 },
                 approval: {
                   id: "approval_1",
@@ -778,8 +772,8 @@ describe("activity assistant request validation", () => {
                   input: {
                     draftId: "30000000-0000-4000-8000-000000000003",
                     expectedVersion: 3,
-                    changes: [],
-                    content: waterConservationTaskBookV3,
+                    summary: "改写第二阶段情境。",
+                    edits: [],
                   },
                   approval: { id: "approval_1", signature: "s".repeat(64) },
                 },
@@ -818,14 +812,8 @@ describe("activity assistant request validation", () => {
                   input: {
                     draftId: "30000000-0000-4000-8000-000000000003",
                     expectedVersion: 3,
-                    changes: [
-                      {
-                        area: "PHASES",
-                        change: "改写第二阶段情境。",
-                        reason: "阶段之间读起来不连贯。",
-                      },
-                    ],
-                    content: waterConservationTaskBookV3,
+                    summary: "改写第二阶段情境。",
+                    edits: [{ op: "set", path: "phases[1].context", value: "承接上一阶段发现的读数差异。" }],
                   },
                   approval: {
                     id: "approval_1",

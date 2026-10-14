@@ -3,19 +3,16 @@ import "server-only";
 import { createHash } from "node:crypto";
 import { tool } from "ai";
 import { z } from "zod";
-import {
-  activityContentStructuredSchema,
-  activityContentV3Schema,
-} from "../../domain/activity/activity-content";
+import { activityContentV3Schema } from "../../domain/activity/activity-content";
 import {
   teacherAgentPageKindSchema,
   type TeacherAgentPageContext,
 } from "../../domain/assistant/teacher-agent-page-context";
 import { teacherProductSurfaces } from "../../domain/assistant/teacher-product-surfaces";
 import {
-  changedTaskBookAreas,
-  taskBookAreaSchema,
-} from "../../domain/activity/task-book-areas";
+  applyTaskBookEdits,
+  taskBookEditSchema,
+} from "../../domain/activity/task-book-edits";
 import { publishDueAtSchema } from "../../domain/activity/prepare-publish-intent";
 import type { PrismaClient } from "../../generated/prisma/client";
 import {
@@ -367,38 +364,19 @@ export const releaseRosterInputSchema = z
   .object({ releaseId: z.uuid() })
   .strict();
 
-const revisionChangeSchema = z
-  .object({
-    area: taskBookAreaSchema,
-    change: proposalText,
-    reason: proposalText,
-  })
-  .strict();
-
 /**
- * A revision proposal names the areas it touches. The server checks that claim
- * against the real difference before the teacher is asked to approve, so
- * "我只改了第二阶段" cannot quietly arrive with a rewritten rubric attached.
+ * D-097: a revision is a list of exact edits, applied by the server to the
+ * stored task book. Nothing the edits do not name can change, so there is no
+ * declared-versus-actual comparison left to get wrong.
  */
 export const activityDraftRevisionProposalSchema = z
   .object({
     draftId: z.uuid(),
     expectedVersion: z.int().positive(),
-    changes: z.array(revisionChangeSchema).min(1).max(8),
-    content: activityContentStructuredSchema,
+    summary: proposalText,
+    edits: z.array(taskBookEditSchema).min(1).max(20),
   })
-  .strict()
-  .superRefine((proposal, context) => {
-    const areas = proposal.changes.map((item) => item.area);
-    if (new Set(areas).size !== areas.length) {
-      context.addIssue({
-        code: "custom",
-        path: ["changes"],
-        message: "Each task book area may be described at most once",
-        params: { reason: "AREA_REPEATED" },
-      });
-    }
-  });
+  .strict();
 
 export type ActivityDraftRevisionProposal = z.infer<
   typeof activityDraftRevisionProposalSchema
@@ -921,7 +899,7 @@ export function createActivityAssistantTools({
 
     update_activity_draft: tool({
       description:
-        "把教师要求的修改写成这份已有草稿的新版本。只能改写本人的、未封存的草稿，且必须先用 get_activity_draft 读过同一版本。content 必须是改写后的完整结构化任务书，不是片段，并保持 get_activity_draft 返回的 schemaVersion；未被要求改动的部分必须逐字保留教师原文。changes 必须如实列出你改动的每一个区域及理由；服务端会把它与真实差异逐一核对，谎报或漏报会直接失败。此操作会暂停并展示你声明的改动，只有教师明确确认后才写入，且原版本作为历史修订保留。",
+        "把教师要求的修改作为一组精确修改提交到这份已有草稿，生成新版本。只能改本人的、未封存的草稿，且必须先用 get_activity_draft 读过同一版本。edits 由服务端逐条套用到草稿原文上，没写进 edits 的内容一个字都不会变。path 用 get_activity_draft 返回的 content 里的字段路径，下标从 0 开始：第 2 阶段是 phases[1]，第 3 个量规维度是 rubricDimensions[2]。op 有五种：set 把一个文字或选项字段换成 value（如 phases[1].name、submissionMode、durationWeeks、rubricDimensions[1].pass）；replaceText 把原文中的 find 逐字换成 replaceWith，path 为 null 时在整本任务书的文字里替换，只改一段话里几个词时用它；setList 替换一个编号列表（如 phases[0].learningGoalIds）；insert 在列表里加一项 item，index 为 null 表示加在末尾（如在 phases[2].evidence 里加 {\"type\":\"image\",\"description\":\"…\"}）；remove 删掉列表里的一项（如 phases[2].evidence[1]）。schemaVersion 不能改；integratedDisciplineCodes 由服务端按 disciplineContributions 推算，增删学科改 disciplineContributions。summary 用一句话向教师说明这次改了什么。修改套不上原文时会被退回并写明原因。此操作会暂停，向教师逐条展示改前改后，只有教师明确确认后才写入，原版本作为历史修订保留。",
       inputSchema: activityDraftRevisionProposalSchema,
       outputSchema: updatedDraftToolOutputSchema,
       strict: true,
@@ -954,26 +932,16 @@ export function createActivityAssistantTools({
           onToolFailure("REVISE_STALE_READ");
           throw new Error("ACTIVITY_REVISE_STALE_READ");
         }
-        if (current.content.schemaVersion !== proposal.content.schemaVersion) {
-          onToolFailure("REVISE_SCHEMA_VERSION_CHANGED");
-          throw new Error("ACTIVITY_REVISE_SCHEMA_VERSION_CHANGED");
-        }
-
-        const actuallyChanged = changedTaskBookAreas(
-          current.content,
-          proposal.content,
-        );
-        if (actuallyChanged.length === 0) {
-          onToolFailure("REVISE_NO_CHANGE");
-          throw new Error("ACTIVITY_REVISE_NO_CHANGE");
-        }
-        const declared = new Set(proposal.changes.map((item) => item.area));
-        if (
-          actuallyChanged.some((area) => !declared.has(area)) ||
-          [...declared].some((area) => !actuallyChanged.includes(area))
-        ) {
-          onToolFailure("REVISE_UNDECLARED_CHANGE");
-          throw new Error("ACTIVITY_REVISE_UNDECLARED_CHANGE");
+        // The edits are applied to the task book as stored now, never to a
+        // copy the model claims to have, so the teacher's other words survive.
+        const applied = applyTaskBookEdits(current.content, proposal.edits);
+        if (!applied.ok) {
+          onToolFailure(
+            applied.errors.some((error) => error.code === "NO_CHANGE")
+              ? "REVISE_NO_CHANGE"
+              : "REVISE_EDITS_DO_NOT_APPLY",
+          );
+          throw new Error("ACTIVITY_REVISE_EDITS_DO_NOT_APPLY");
         }
 
         try {
@@ -981,7 +949,7 @@ export function createActivityAssistantTools({
             draftId: proposal.draftId,
             expectedVersion: proposal.expectedVersion,
             desiredStatus: "READY_FOR_PREVIEW",
-            content: proposal.content,
+            content: applied.content,
             agentRunId,
             idempotencyKey: idempotencyKey("revise", toolCallId),
           });

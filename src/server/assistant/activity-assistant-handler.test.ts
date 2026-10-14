@@ -1004,14 +1004,14 @@ describe("activity assistant route handler", () => {
     const revision = {
       draftId,
       expectedVersion: 3,
-      changes: [
+      summary: "把第二階段的情境改成承接第一階段的發現。",
+      edits: [
         {
-          area: "PHASES",
-          change: "把第二階段的情境改成承接第一階段的發現。",
-          reason: "原本三個階段讀起來像三道並列的題。",
+          op: "set",
+          path: "phases[1].context",
+          value: revisedContent.phases[1]!.context,
         },
       ],
-      content: revisedContent,
     };
     const draftDetail = {
       id: draftId,
@@ -1160,18 +1160,138 @@ describe("activity assistant route handler", () => {
     );
   });
 
+  describe("edits that do not fit the stored draft (D-097)", () => {
+    function setUpReadableDraft() {
+      mocks.getWorkspace.mockResolvedValue({
+        ...workspace,
+        drafts: [
+          {
+            id: draftId,
+            title: content.title,
+            status: "READY_FOR_PREVIEW",
+            version: 3,
+            updatedAt: now.toISOString(),
+            releaseId: null,
+          },
+        ],
+      });
+      mocks.readDraft.mockResolvedValue({
+        actor: { displayName: "林老師" },
+        draft: {
+          id: draftId,
+          status: "READY_FOR_PREVIEW" as const,
+          version: 3,
+          updatedAt: now.toISOString(),
+          sealedAt: null,
+          releaseId: null,
+          revision: {
+            id: "70000000-0000-4000-8000-000000000007",
+            version: 3,
+            source: "MANUAL" as const,
+            createdAt: now.toISOString(),
+            content,
+          },
+        },
+      });
+    }
+
+    function revisionCall(edits: unknown[]) {
+      return {
+        stream: simulateReadableStream({
+          chunks: [
+            {
+              type: "tool-call" as const,
+              toolCallId: `revise_${Math.random().toString(36).slice(2, 10)}`,
+              toolName: "update_activity_draft",
+              input: JSON.stringify({ draftId, expectedVersion: 3, summary: "改第二階段名稱。", edits }),
+            },
+            {
+              type: "finish" as const,
+              finishReason: { unified: "tool-calls" as const, raw: undefined },
+              usage,
+            },
+          ],
+        }),
+      };
+    }
+
+    const history = [
+      { id: "message_1", role: "user", parts: [{ type: "text", text: "把第二階段改名" }] },
+      {
+        id: "assistant_1",
+        role: "assistant",
+        parts: [
+          {
+            type: "tool-get_activity_draft",
+            toolCallId: "draft_read_d097",
+            state: "output-available",
+            input: { draftId },
+            output: { status: "NOT_FOUND", draftId },
+          },
+        ],
+      },
+      { id: "message_2", role: "user", parts: [{ type: "text", text: "对，就这么改" }] },
+    ];
+
+    it("hands the reason back and shows the card for the corrected edits", async () => {
+      setUpReadableDraft();
+      const attempts = [
+        [{ op: "replaceText", path: "phases[1].name", find: "原文裡沒有的字", replaceWith: "讀水表" }],
+        [{ op: "set", path: "phases[1].name", value: "讀水表，算浪費" }],
+      ];
+      let call = 0;
+      const prompts: string[] = [];
+      mocks.createModel.mockReturnValue(
+        new MockLanguageModelV4({
+          doStream: async (options) => {
+            prompts.push(JSON.stringify(options.prompt));
+            return revisionCall(attempts[Math.min(call++, attempts.length - 1)]!);
+          },
+        }),
+      );
+
+      const response = await handleActivityAssistantRequest(messageRequest(history), dependencies());
+      const events = sseEvents(await response.text());
+
+      const humanApprovals = events.filter(
+        (event) => event.type === "tool-approval-request" && event.isAutomatic !== true,
+      );
+      expect(humanApprovals).toHaveLength(1);
+      expect(call).toBe(2);
+      // The second model call saw why the first edits were refused.
+      expect(prompts[1]).toContain("原文里没有「原文裡沒有的字」");
+      expect(mocks.saveDraft).not.toHaveBeenCalled();
+    });
+
+    it("stops without a card when the edits still do not fit after a correction", async () => {
+      setUpReadableDraft();
+      let call = 0;
+      mocks.createModel.mockReturnValue(
+        new MockLanguageModelV4({
+          doStream: async () => {
+            call += 1;
+            return revisionCall([{ op: "set", path: "phases[9].name", value: "不存在" }]);
+          },
+        }),
+      );
+
+      const response = await handleActivityAssistantRequest(messageRequest(history), dependencies());
+      const events = sseEvents(await response.text());
+
+      expect(
+        events.filter((event) => event.type === "tool-approval-request" && event.isAutomatic !== true),
+      ).toEqual([]);
+      expect(call).toBe(2);
+      expect(mocks.saveDraft).not.toHaveBeenCalled();
+    });
+  });
+
   it("refuses a revision of a draft outside the authorized workspace", async () => {
     const revision = {
       draftId,
       expectedVersion: 3,
-      changes: [
-        {
-          area: "BACKGROUND",
-          change: "換一個真實受眾。",
-          reason: "原背景沒有交代成果交給誰。",
-        },
-      ],
-      content: { ...content, backgroundSetting: "你們是校園節水顧問。" },
+      summary: "換一個真實受眾。",
+      edits: [{ op: "set", path: "backgroundSetting", value: "你們是校園節水顧問。" }],
     };
     const revisionModel = new MockLanguageModelV4({
       doStream: async () => ({

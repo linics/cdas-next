@@ -28,9 +28,11 @@ import {
   type ActivityContentV3,
 } from "../../../domain/activity/activity-content";
 import {
-  taskBookAreaLabels,
-  type TaskBookArea,
-} from "../../../domain/activity/task-book-areas";
+  applyTaskBookEdits,
+  textChangeParts,
+  type TaskBookChange,
+  type TaskBookEdit,
+} from "../../../domain/activity/task-book-edits";
 import {
   getTeacherAgentPageContext,
   type TeacherAgentPageContext,
@@ -122,9 +124,12 @@ type TeacherDraftDetailOutput =
 type ActivityDraftRevisionProposal = {
   draftId: string;
   expectedVersion: number;
-  changes: Array<{ area: TaskBookArea; change: string; reason: string }>;
-  content: ActivityContentV3;
+  summary: string;
+  edits: TaskBookEdit[];
 };
+
+/** Drafts this conversation has read, keyed by `${draftId}:${version}`. */
+type DraftReadContents = ReadonlyMap<string, ActivityContentStructured>;
 
 type ReleaseInsightsOutput =
   | {
@@ -594,13 +599,47 @@ function ActivityDraftProposalCard({
   );
 }
 
+/** One change as the teacher reads it: only the words that moved, in context. */
+function TaskBookChangeLine({ change }: Readonly<{ change: TaskBookChange }>) {
+  if (change.kind === "added") {
+    return <dd><ins>新增：{change.after}</ins></dd>;
+  }
+  if (change.kind === "removed") {
+    return <dd><del>删除：{change.before}</del></dd>;
+  }
+  const before = change.before ?? "（空）";
+  const after = change.after ?? "（空）";
+  // Short values (options, names) read best whole; long text only around the edit.
+  if (Array.from(before).length <= 24 && Array.from(after).length <= 24) {
+    return (
+      <dd>
+        <del>{before}</del> → <ins>{after}</ins>
+      </dd>
+    );
+  }
+  const parts = textChangeParts(before, after);
+  return (
+    <dd>
+      {parts.truncatedStart ? "…" : ""}
+      {parts.prefix}
+      {parts.removed ? <del>{parts.removed}</del> : null}
+      {parts.added ? <ins>{parts.added}</ins> : null}
+      {parts.suffix}
+      {parts.truncatedEnd ? "…" : ""}
+    </dd>
+  );
+}
+
 function ActivityDraftRevisionCard({
   proposal,
+  base,
   toolCallId,
   approval,
   onRespond,
 }: Readonly<{
   proposal: ActivityDraftRevisionProposal;
+  /** The version the edits were written against, as read in this conversation. */
+  base: ActivityContentStructured | null;
   toolCallId: string;
   approval: { id: string };
   onRespond: (response: {
@@ -609,6 +648,9 @@ function ActivityDraftRevisionCard({
     reason?: string;
   }) => void;
 }>) {
+  // The server already checked that these edits apply to this version before
+  // showing the card (D-097); applying them here only lays out before / after.
+  const applied = base ? applyTaskBookEdits(base, proposal.edits) : null;
   return (
     <div
       className={styles.approval}
@@ -616,28 +658,45 @@ function ActivityDraftRevisionCard({
       role="group"
       aria-label="草稿改写确认"
     >
-      <strong>先确认这次改写</strong>
+      <strong>先确认这次修改</strong>
       <p>
-        《{proposal.content.title}》版本 {proposal.expectedVersion} →{" "}
-        {proposal.expectedVersion + 1}。原版本会作为历史修订保留；未确认前不会写入。
+        {base ? `《${base.title}》` : "这份草稿"}版本 {proposal.expectedVersion} →{" "}
+        {proposal.expectedVersion + 1}：{proposal.summary}
       </p>
       <section className={styles.proposalSection} aria-label="本次改动">
-        <h3>本次改动</h3>
-        <dl>
-          {proposal.changes.map((item) => (
-            <div key={item.area}>
-              <dt>{taskBookAreaLabels[item.area]}</dt>
-              <dd>
-                改动：{item.change}
-                <br />
-                理由：{item.reason}
-              </dd>
-            </div>
-          ))}
-        </dl>
+        <h3>只改这些地方</h3>
+        {applied?.ok ? (
+          <dl>
+            {applied.changes.map((change, index) => (
+              <div key={`${change.path}:${index}`}>
+                <dt>{change.label}</dt>
+                <TaskBookChangeLine change={change} />
+              </div>
+            ))}
+          </dl>
+        ) : (
+          <dl>
+            {proposal.edits.map((edit, index) => (
+              <div key={index}>
+                <dt>{edit.path ?? "整本任务书"}</dt>
+                <dd>
+                  {edit.op === "set"
+                    ? `改为：${String(edit.value)}`
+                    : edit.op === "replaceText"
+                      ? `把「${edit.find}」换成「${edit.replaceWith}」`
+                      : edit.op === "setList"
+                        ? `改为：${edit.values.join("、")}`
+                        : edit.op === "insert"
+                          ? "新增一项"
+                          : "删除这一项"}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        )}
       </section>
       <p className={styles.referenceCaveat}>
-        这些区域已与草稿当前内容逐一核对；其余部分保持教师原文。确认后仍可在草稿页继续修改。
+        其余内容保持原文，一个字都不会变。原版本会作为历史修订保留；确认后仍可在草稿页继续修改。
       </p>
       <div className={styles.inlineActions}>
         <button
@@ -772,6 +831,23 @@ export function ActivityAssistant({
       }
     }
     return sections;
+  }, [messages]);
+  // A revision card shows before / after against the version it was written
+  // for, which update_activity_draft only accepts after it was read here.
+  const draftReadContents: DraftReadContents = useMemo(() => {
+    const contents = new Map<string, ActivityContentStructured>();
+    for (const message of messages) {
+      for (const part of message.parts) {
+        if (
+          part.type === "tool-get_activity_draft" &&
+          part.state === "output-available" &&
+          part.output.status === "FOUND"
+        ) {
+          contents.set(`${part.output.draftId}:${part.output.version}`, part.output.content);
+        }
+      }
+    }
+    return contents;
   }, [messages]);
 
   if (continuationOnly && messages.length === 0) {
@@ -1294,6 +1370,11 @@ export function ActivityAssistant({
                         <ActivityDraftRevisionCard
                           key={part.toolCallId}
                           proposal={part.input}
+                          base={
+                            draftReadContents.get(
+                              `${part.input.draftId}:${part.input.expectedVersion}`,
+                            ) ?? null
+                          }
                           toolCallId={part.toolCallId}
                           approval={part.approval}
                           onRespond={addToolApprovalResponse}
@@ -1325,7 +1406,9 @@ export function ActivityAssistant({
                     if (part.state === "output-denied") {
                       return (
                         <p className={styles.toolProgress} key={part.toolCallId}>
-                          已保留这次改写建议，草稿未改动。
+                          {part.approval.isAutomatic
+                            ? "这次的修改没有对上草稿原文，草稿未改动。"
+                            : "已保留这次改写建议，草稿未改动。"}
                         </p>
                       );
                     }
