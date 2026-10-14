@@ -13,7 +13,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@ai-sdk/react", () => ({
-  useChat: () => mocks.useChat(),
+  useChat: (options: unknown) => mocks.useChat(options),
 }));
 vi.mock("ai", () => ({
   DefaultChatTransport: class DefaultChatTransport {
@@ -429,6 +429,39 @@ describe("ActivityAssistant", () => {
     expect(markup).not.toContain(paragraph);
     expect(markup).toContain("其余内容保持原文");
     expect(markup).not.toContain("never-rendered");
+  });
+
+  it("says when the panel picked up the last saved conversation (D-099)", () => {
+    const messages = [
+      { id: "user_1", role: "user", parts: [{ type: "text", text: "上次问到一半" }] },
+      { id: "assistant_1", role: "assistant", parts: [{ type: "text", text: "我们接着说。" }] },
+    ];
+    mocks.useChat.mockReturnValue(helpers(messages));
+
+    const markup = renderToStaticMarkup(
+      <ActivityAssistantSessionProvider
+        initialConversation={{
+          id: "40000000-0000-4000-8000-000000000004",
+          messages: messages as never,
+          updatedAt: "2026-10-14T05:00:00.000Z",
+        }}
+      >
+        <ActivityAssistant classrooms={[]} />
+      </ActivityAssistantSessionProvider>,
+    );
+
+    expect(markup).toContain("接着上次的对话");
+    expect(markup).toContain("上次问到一半");
+    expect(mocks.useChat).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "40000000-0000-4000-8000-000000000004", messages }),
+    );
+    // Each request names the conversation, so the server saves the reply there.
+    const transport = mocks.transportOptions.at(-1) as {
+      prepareSendMessagesRequest: (input: { id: string; messages: unknown[] }) => { body: Record<string, unknown> };
+    };
+    expect(
+      transport.prepareSendMessagesRequest({ id: "40000000-0000-4000-8000-000000000004", messages }).body,
+    ).toMatchObject({ conversationId: "40000000-0000-4000-8000-000000000004", messages });
   });
 
   it("keeps the draft-progress copy only while the stream is still open", () => {

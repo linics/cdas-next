@@ -6,6 +6,9 @@ vi.mock("./activity-assistant", () => ({
   ActivityAssistantSessionProvider: ({ children }: { children: ReactNode }) => <>{children}</>,
   ActivityAssistant: () => <div data-agent-conversation="true" />,
 }));
+vi.mock("./assistant-conversation-controls", () => ({
+  AssistantConversationControls: () => <div data-conversation-controls="true" />,
+}));
 
 import { TeacherAgentOverlay } from "./teacher-agent-overlay";
 
@@ -23,6 +26,16 @@ describe("TeacherAgentOverlay", () => {
     expect(markup).toContain("打开 CDAS Agent 独立会话");
     expect(markup).toContain('data-open="false"');
     expect(markup).not.toContain('data-agent-conversation="true"');
+  });
+
+  it("offers new and past conversations in the open panel header (D-099)", () => {
+    const markup = renderToStaticMarkup(
+      <TeacherAgentOverlay classrooms={[]} startOpen>
+        <main />
+      </TeacherAgentOverlay>,
+    );
+
+    expect(markup).toContain('data-conversation-controls="true"');
   });
 
   it("merges workspace duty into the independent-session header", () => {

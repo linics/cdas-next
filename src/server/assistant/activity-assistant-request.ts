@@ -20,6 +20,7 @@ import {
   mapTeacherReleaseList,
 } from "./activity-assistant-tools";
 import type { TeacherActivityDashboard } from "../queries/teacher-activity-workspace";
+import { assistantRequestLimits } from "../../domain/assistant/assistant-request-limits";
 import type { TeacherDraftDetailReader } from "./teacher-draft-detail";
 import type { TeacherReleaseInsightsReader } from "./teacher-release-insights";
 import type { TeacherReleaseRosterReader } from "./teacher-release-roster";
@@ -30,16 +31,18 @@ import {
   type OfficialKnowledgeSectionIdentity,
 } from "../knowledge/official-corpus";
 
-export const ACTIVITY_ASSISTANT_MAX_REQUEST_BYTES = 64 * 1024;
-const MAX_MESSAGES = 16;
-const MAX_USER_TEXT = 4_000;
-const MAX_HISTORY_TEXT = 20_000;
-const MAX_TOOL_PARTS = 24;
+export const ACTIVITY_ASSISTANT_MAX_REQUEST_BYTES = assistantRequestLimits.maxRequestBytes;
+const MAX_MESSAGES = assistantRequestLimits.maxMessages;
+const MAX_USER_TEXT = assistantRequestLimits.maxUserText;
+const MAX_HISTORY_TEXT = assistantRequestLimits.maxHistoryText;
+const MAX_TOOL_PARTS = assistantRequestLimits.maxToolParts;
 
 const requestBodySchema = z
   .object({
     messages: z.array(z.unknown()).min(1).max(MAX_MESSAGES),
     pageContext: teacherAgentPageContextSchema.optional(),
+    /** D-099: where the reply is saved; absent from callers that keep no history. */
+    conversationId: z.uuid().optional(),
   })
   .strict();
 
@@ -357,6 +360,7 @@ export function getActivityAssistantDraftReadLedger(
 export type ParsedActivityAssistantRequest = Readonly<{
   messages: ActivityAssistantMessage[];
   pageContext: TeacherAgentPageContext;
+  conversationId: string | null;
 }>;
 
 /**
@@ -492,6 +496,7 @@ export async function parseActivityAssistantRequestEnvelope(
     pageContext: body.data.pageContext ?? {
       kind: "UNKNOWN_TEACHER_PAGE",
     },
+    conversationId: body.data.conversationId ?? null,
   };
 }
 

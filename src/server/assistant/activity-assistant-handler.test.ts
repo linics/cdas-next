@@ -834,12 +834,88 @@ describe("activity assistant route handler", () => {
     expect(mocks.startRun).not.toHaveBeenCalled();
   });
 
+  describe("saving the conversation (D-099)", () => {
+    const conversationId = "90000000-0000-4000-8000-000000000009";
+
+    function textModel(reply: string) {
+      return new MockLanguageModelV4({
+        doStream: async () => ({
+          stream: simulateReadableStream({
+            chunks: [
+              { type: "text-start" as const, id: "reply" },
+              { type: "text-delta" as const, id: "reply", delta: reply },
+              { type: "text-end" as const, id: "reply" },
+              { type: "finish" as const, finishReason: { unified: "stop" as const, raw: undefined }, usage },
+            ],
+          }),
+        }),
+      });
+    }
+
+    function request(body: Record<string, unknown>) {
+      return new Request("http://localhost/api/assistant/activity-draft", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: [{ id: "message_1", role: "user", parts: [{ type: "text", text: "你好" }] }],
+          ...body,
+        }),
+      });
+    }
+
+    it("saves the history and the reply under the conversation id", async () => {
+      mocks.createModel.mockReturnValue(textModel("你好，我在。"));
+      const saveConversation = vi.fn().mockResolvedValue("SAVED");
+
+      const response = await handleActivityAssistantRequest(request({ conversationId }), {
+        ...dependencies(),
+        saveConversation,
+      });
+      const body = await response.text();
+
+      expect(saveConversation).toHaveBeenCalledTimes(1);
+      // The reply's id is made on the server and sent to the client, so the
+      // saved copy passes the next request's id check and matches the screen.
+      const replyId = saveConversation.mock.calls[0]![2].messages[1].id;
+      expect(replyId).toMatch(/^assistant_[A-Za-z0-9]+$/);
+      expect(sseEvents(body).find((event) => event.type === "start")).toMatchObject({ messageId: replyId });
+      const [, context, input] = saveConversation.mock.calls[0]!;
+      expect(context).toMatchObject({ actorId, source: "UI" });
+      expect(input.conversationId).toBe(conversationId);
+      expect(input.messages.map((message: { role: string }) => message.role)).toEqual(["user", "assistant"]);
+      expect(JSON.stringify(input.messages[1])).toContain("你好，我在。");
+    });
+
+    it("saves nothing without a conversation id, and a failed save keeps the reply", async () => {
+      mocks.createModel.mockReturnValue(textModel("第一句。"));
+      const saveConversation = vi.fn().mockRejectedValue(new Error("database down"));
+
+      const withoutId = await handleActivityAssistantRequest(request({}), { ...dependencies(), saveConversation });
+      await withoutId.text();
+      expect(saveConversation).not.toHaveBeenCalled();
+
+      mocks.createModel.mockReturnValue(textModel("第二句。"));
+      const failing = await handleActivityAssistantRequest(request({ conversationId }), { ...dependencies(), saveConversation });
+      expect(failing.status).toBe(200);
+      expect(await failing.text()).toContain("第二句。");
+      expect(saveConversation).toHaveBeenCalledTimes(1);
+    });
+
+    it("refuses a conversation id that is not a uuid", async () => {
+      const response = await handleActivityAssistantRequest(request({ conversationId: "../other" }), dependencies());
+
+      expect(response.status).toBe(400);
+    });
+  });
+
   it("lets a teacher retry after an interrupted draft tool call", async () => {
     const recoveryModel = new MockLanguageModelV4({
       doStream: async () => ({
         stream: simulateReadableStream({
           chunks: [
+            { type: "text-start", id: "recovery_text" },
             { type: "text-delta", id: "recovery_text", delta: "已重新开始整理这份活动。" },
+            { type: "text-end", id: "recovery_text" },
             {
               type: "finish",
               finishReason: { unified: "stop", raw: undefined },

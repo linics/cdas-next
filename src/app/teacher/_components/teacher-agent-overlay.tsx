@@ -10,7 +10,9 @@ import {
   ActivityAssistant,
   ActivityAssistantSessionProvider,
   type ActivityAssistantClassroom,
+  type ActivityAssistantConversation,
 } from "./activity-assistant";
+import { AssistantConversationControls } from "./assistant-conversation-controls";
 import { MessageSquareTextIcon, SparklesIcon, XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -23,10 +25,13 @@ export function TeacherAgentOverlay({
   children,
   classrooms,
   startOpen = false,
+  initialConversation = null,
 }: Readonly<{
   children: ReactNode;
   classrooms: ActivityAssistantClassroom[];
   startOpen?: boolean;
+  /** D-099: the teacher's latest saved conversation, picked up again. */
+  initialConversation?: ActivityAssistantConversation | null;
 }>) {
   const [open, setOpen] = useState(startOpen);
   const [rendered, setRendered] = useState(startOpen);
@@ -74,7 +79,7 @@ export function TeacherAgentOverlay({
   }, [open]);
 
   return (
-    <ActivityAssistantSessionProvider>
+    <ActivityAssistantSessionProvider initialConversation={initialConversation}>
       {children}
       <div
         className="pointer-events-none fixed inset-0 z-50"
@@ -105,6 +110,8 @@ export function TeacherAgentOverlay({
                 </h2>
                 <p className="text-xs text-muted-foreground">教师工作台与活动设计</p>
               </div>
+              <div className="flex items-center gap-1">
+              <AssistantConversationControls />
               <Button
                 ref={closeRef}
                 aria-label="关闭 CDAS Agent 会话"
@@ -115,6 +122,7 @@ export function TeacherAgentOverlay({
               >
                 <XIcon />
               </Button>
+              </div>
             </header>
             <div className="grid min-h-0 overflow-hidden">
               <ActivityAssistant classrooms={classrooms} surface="panel" />

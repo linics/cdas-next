@@ -3,6 +3,7 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import {
   convertToModelMessages,
+  createIdGenerator,
   createUIMessageStreamResponse,
   generateText,
   hasToolCall,
@@ -56,6 +57,7 @@ import {
 import { getTeacherInsights } from "../queries/teacher-insights";
 import { getTeacherReleaseSubmissions } from "../queries/submission-workspace";
 import { createTeacherDraftDetailReader } from "./teacher-draft-detail";
+import { saveAssistantConversation } from "./assistant-conversations";
 import { createTeacherReleaseInsightsReader } from "./teacher-release-insights";
 import { createTeacherReleaseRosterReader } from "./teacher-release-roster";
 import {
@@ -100,6 +102,8 @@ export type ActivityAssistantHandlerDependencies = Readonly<{
   readRoster: typeof getTeacherReleaseSubmissions;
   startRun: typeof startActivityAssistantRun;
   finishRun: typeof finishActivityAssistantRun;
+  /** D-099: keeps the conversation for the next page load. */
+  saveConversation?: typeof saveAssistantConversation;
   createTraceId: () => string;
   clock: () => Date;
 }>;
@@ -116,6 +120,7 @@ const defaultDependencies: ActivityAssistantHandlerDependencies = {
   readRoster: getTeacherReleaseSubmissions,
   startRun: startActivityAssistantRun,
   finishRun: finishActivityAssistantRun,
+  saveConversation: saveAssistantConversation,
   createTraceId: randomUUID,
   clock: () => new Date(),
 };
@@ -131,6 +136,8 @@ function jsonError(status: number, code: string): Response {
 }
 
 const AGENT_RUN_FAILURE_CODE_MAX = 120;
+/** Message ids the request validator accepts: letters, digits, `_` and `-`. */
+const createAssistantMessageId = createIdGenerator({ prefix: "assistant", separator: "_", size: 16 });
 
 export function sanitizeActivityAssistantFailureCode(code: string): string {
   return code.replace(/[^A-Z0-9_]/g, "_").slice(0, AGENT_RUN_FAILURE_CODE_MAX);
@@ -976,9 +983,32 @@ ${error.message}`,
         stream: result.stream,
         tools,
         originalMessages: uiMessages,
+        // D-099: the reply gets its id here and the client adopts it, so the
+        // saved conversation and the one on screen name messages alike.
+        generateMessageId: createAssistantMessageId,
         sendReasoning: false,
         sendSources: false,
         onError: () => "助手请求未完成，请检查内容后重试。",
+        // D-099: save what the teacher now sees, so a reload carries on. A
+        // failed save costs the history, never the reply.
+        onEnd: async ({ messages }) => {
+          const save = dependencies.saveConversation;
+          if (!parsedRequest.conversationId || !save) return;
+          try {
+            const saved = await save(database, uiContext, {
+              conversationId: parsedRequest.conversationId,
+              messages,
+            });
+            if (saved === "NOT_OWNER") {
+              console.error("ASSISTANT_CONVERSATION_NOT_OWNER", { traceId: uiContext.traceId });
+            }
+          } catch (error) {
+            console.error("ASSISTANT_CONVERSATION_SAVE_FAILED", {
+              traceId: uiContext.traceId,
+              errorName: error instanceof Error ? error.name : "UnknownError",
+            });
+          }
+        },
       }),
       headers: { "Cache-Control": "no-store" },
     });

@@ -38,6 +38,7 @@ import {
   type TeacherAgentPageContext,
 } from "../../../domain/assistant/teacher-agent-page-context";
 import { styles } from "./assistant-ui";
+import { assistantHistoryHasRoom } from "../../../domain/assistant/assistant-request-limits";
 
 type CreatedDraftOutput = {
   draftId: string;
@@ -358,42 +359,118 @@ const subscribeToHydration = () => () => {};
 const hydratedSnapshot = () => true;
 const serverSnapshot = () => false;
 
+/** D-099: the conversation the panel is on, saved by the server after each reply. */
+export type ActivityAssistantConversation = Readonly<{
+  id: string;
+  messages: ActivityAssistantMessage[];
+  /** When it was last saved, for a conversation reopened from storage. */
+  updatedAt: string | null;
+}>;
+
+type ActivityAssistantConversationControls = Readonly<{
+  conversationId: string;
+  restoredAt: string | null;
+  startNew: (carryText?: string) => void;
+  open: (conversation: ActivityAssistantConversation) => void;
+  /** Whether the history plus this text still fits in one request. */
+  hasRoomFor: (text: string) => boolean;
+  busy: boolean;
+  hasMessages: boolean;
+}>;
+
+const ActivityAssistantConversationContext =
+  createContext<ActivityAssistantConversationControls | null>(null);
+
+function freshConversation(): ActivityAssistantConversation {
+  return { id: crypto.randomUUID(), messages: [], updatedAt: null };
+}
+
 export function ActivityAssistantSessionProvider({
   children,
   api = "/api/assistant/activity-draft",
+  initialConversation = null,
 }: Readonly<{
   children: ReactNode;
   api?: string;
+  initialConversation?: ActivityAssistantConversation | null;
 }>) {
   const pathname = usePathname();
   const pageContext = useMemo(
     () => getTeacherAgentPageContext(pathname),
     [pathname],
   );
+  const [conversation, setConversation] = useState(
+    () => initialConversation ?? freshConversation(),
+  );
   const transport = useMemo(
     () =>
       new DefaultChatTransport<ActivityAssistantMessage>({
         api,
-        prepareSendMessagesRequest: ({ messages }) => ({
+        prepareSendMessagesRequest: ({ id, messages }) => ({
           body: {
             messages,
             pageContext,
+            conversationId: id,
           },
         }),
       }),
     [api, pageContext],
   );
+  // A new id makes useChat start a new chat seeded with these messages.
   const session = useChat<ActivityAssistantMessage>({
+    id: conversation.id,
+    messages: conversation.messages,
     transport,
     sendAutomaticallyWhen:
       lastAssistantMessageIsCompleteWithApprovalResponses,
   });
+  // A message typed into a conversation that had no room goes out as the
+  // first message of the new one, once useChat has switched to it.
+  const carried = useRef<string | null>(null);
+  const { sendMessage } = session;
+  useEffect(() => {
+    const text = carried.current;
+    if (text === null) return;
+    carried.current = null;
+    void sendMessage({ text });
+  }, [conversation.id, sendMessage]);
+
+  const controls = useMemo<ActivityAssistantConversationControls>(
+    () => ({
+      conversationId: conversation.id,
+      restoredAt: conversation.updatedAt,
+      startNew: (carryText) => {
+        carried.current = carryText?.trim() ? carryText.trim() : null;
+        setConversation(freshConversation());
+      },
+      open: (next) => setConversation(next),
+      hasRoomFor: (text) =>
+        assistantHistoryHasRoom(session.messages, text, (all) => ({
+          messages: all,
+          pageContext,
+          conversationId: conversation.id,
+        })),
+      busy: session.status === "submitted" || session.status === "streaming",
+      hasMessages: session.messages.length > 0,
+    }),
+    [conversation.id, conversation.updatedAt, session.messages, session.status, pageContext],
+  );
 
   return (
     <ActivityAssistantSessionContext.Provider value={session}>
-      {children}
+      <ActivityAssistantConversationContext.Provider value={controls}>
+        {children}
+      </ActivityAssistantConversationContext.Provider>
     </ActivityAssistantSessionContext.Provider>
   );
+}
+
+export function useActivityAssistantConversation(): ActivityAssistantConversationControls {
+  const controls = useContext(ActivityAssistantConversationContext);
+  if (!controls) {
+    throw new Error("ACTIVITY_ASSISTANT_SESSION_PROVIDER_REQUIRED");
+  }
+  return controls;
 }
 
 function useActivityAssistantSession(): ActivityAssistantSession {
@@ -776,6 +853,9 @@ export function ActivityAssistant({
     stop,
     addToolApprovalResponse,
   } = useActivityAssistantSession();
+  const conversation = useActivityAssistantConversation();
+  // D-099: text that would not fit in this conversation's next request.
+  const [overflowText, setOverflowText] = useState<string | null>(null);
   const classroomNames = useMemo(
     () => new Map(classrooms.map((classroom) => [classroom.id, classroom.name])),
     [classrooms],
@@ -803,6 +883,10 @@ export function ActivityAssistant({
   const submitPrompt = () => {
     const text = input.trim();
     if (!text || busy || !hydrated) {
+      return;
+    }
+    if (!conversation.hasRoomFor(text)) {
+      setOverflowText(text);
       return;
     }
     void sendMessage({ text });
@@ -890,7 +974,7 @@ export function ActivityAssistant({
         <p className={styles.boundaryNote}>
         {surface === "panel" ? (
           <>
-            可识别当前页面，查询你的班级、草稿、发布与待办，也可检索课程依据、设计活动，并经你确认后创建草稿或发布。所有站内跳转都由你点击；刷新会话即清空，手动流程不受影响。
+            可识别当前页面，查询你的班级、草稿、发布与待办，也可检索课程依据、设计活动，并经你确认后创建草稿或发布。所有站内跳转都由你点击；对话会保存，刷新后接着聊，右上角可开新对话或翻看历史，手动流程不受影响。
           </>
         ) : (
           <>
@@ -903,6 +987,11 @@ export function ActivityAssistant({
 
       {messages.length > 0 ? (
         <div className={styles.transcript} aria-live="polite">
+          {conversation.restoredAt ? (
+            <p className={styles.toolProgress}>
+              接着上次的对话（<LocalizedDateTime dateTime={conversation.restoredAt} />）。要换个话题，可以点右上角的新对话。
+            </p>
+          ) : null}
           {messages.map((message) => (
             <article
               className={styles.turn}
@@ -1602,6 +1691,27 @@ export function ActivityAssistant({
         </p>
       )}
 
+      {overflowText !== null ? (
+        <div className={styles.toolResult} role="status">
+          <strong>这段对话已经很长了</strong>
+          <p>再问一句，就超出了一次能带给助手的内容。开个新对话继续，这段对话会留在历史里。</p>
+          <div className={styles.inlineActions}>
+            <button
+              type="button"
+              onClick={() => {
+                conversation.startNew(overflowText);
+                setOverflowText(null);
+                setInput("");
+              }}
+            >
+              开新对话并发送
+            </button>
+            <button type="button" data-tone="quiet" onClick={() => setOverflowText(null)}>
+              先不发
+            </button>
+          </div>
+        </div>
+      ) : null}
       {error ? (
         <p className={styles.errorText} role="alert">
           助手当前无法完成请求。这次失败不会阻塞下一条消息；你可以调整要求后重试，手动创建与编辑活动仍可正常使用。

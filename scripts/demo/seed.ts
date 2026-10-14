@@ -647,6 +647,8 @@ async function resetDemoActivities(
     await tx.activityDraftWorkingCopy.deleteMany({
       where: { draftId: { in: draftIds } },
     });
+    // D-099: saved assistant conversations point at the drafts being reset.
+    await tx.assistantConversation.deleteMany({ where: { ownerId } });
     if (releaseIds.length > 0) {
       await tx.releaseAnswerSummary.deleteMany({
         where: { releaseId: { in: releaseIds } },
