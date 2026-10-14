@@ -36,6 +36,8 @@ import {
   type ActivityDraftV3ActionState,
 } from "./activity-draft-v3-state";
 import { saveActivityDraftV3Action } from "./v3-actions";
+import { SelectionRewriteBar } from "./selection-rewrite-bar";
+import { withTaskBookText } from "../../../domain/activity/selection-rewrite";
 import {
   autosaveTaskBookAction,
   discardTaskBookWorkingCopyAction,
@@ -106,8 +108,11 @@ export function ActivityDraftV3Form({
   initialState,
   workingCopy = null,
   pendingCopy = null,
+  selectionRewrite = false,
 }: {
   initialState: ActivityDraftV3ActionState;
+  /** D-098: offer an AI rewrite of words selected in a text field. */
+  selectionRewrite?: boolean;
   /** D-093: the unsaved copy these values were restored from. */
   workingCopy?: TaskBookWorkingCopyProp | null;
   /** An unsaved copy made on an older version; the teacher chooses first. */
@@ -150,6 +155,7 @@ export function ActivityDraftV3Form({
     [values.mainDisciplineCode, values.integratedDisciplineCodes],
   );
   const normalized = useMemo(() => normalizeV3Values(values), [values]);
+  const formRef = useRef<HTMLFormElement>(null);
   const serialized = useMemo(() => JSON.stringify(normalized), [normalized]);
   const gaps = useMemo(() => describeTaskBookGaps(normalized), [normalized]);
   const [showGaps, setShowGaps] = useState(false);
@@ -349,6 +355,7 @@ export function ActivityDraftV3Form({
   return (
     <div className={styles.editorLayout}>
       <form
+        ref={formRef}
         id="activity-draft-v3-form"
         data-hydrated={hydrated ? "true" : "false"}
         className={styles.editorForm}
@@ -404,6 +411,7 @@ export function ActivityDraftV3Form({
           <label className={styles.taskFull}>
             任务描述
             <textarea
+              data-rewrite-path="summary"
               value={values.summary}
               onChange={(event) => update("summary", event.target.value)}
               disabled={disabled}
@@ -580,6 +588,7 @@ export function ActivityDraftV3Form({
           <label className={styles.taskFull}>
             背景设定
             <textarea
+              data-rewrite-path="backgroundSetting"
               value={values.backgroundSetting}
               onChange={(event) => update("backgroundSetting", event.target.value)}
               disabled={disabled}
@@ -595,6 +604,7 @@ export function ActivityDraftV3Form({
                 <label>
                   学科贡献
                   <textarea
+                    data-rewrite-path={`disciplineContributions[${index}].contribution`}
                     value={item.contribution}
                     onChange={(event) =>
                       setValues((current) => ({
@@ -615,6 +625,7 @@ export function ActivityDraftV3Form({
                 <label>
                   不可替代性
                   <textarea
+                    data-rewrite-path={`disciplineContributions[${index}].necessity`}
                     value={item.necessity}
                     onChange={(event) =>
                       setValues((current) => ({
@@ -643,6 +654,7 @@ export function ActivityDraftV3Form({
                 <label>
                   可观察目标
                   <textarea
+                    data-rewrite-path={`learningGoals[${index}].description`}
                     value={goal.description}
                     onChange={(event) =>
                       updateAt("learningGoals", index, {
@@ -754,6 +766,7 @@ export function ActivityDraftV3Form({
           <label className={styles.taskFull}>
             总体任务说明
             <textarea
+              data-rewrite-path="taskInstructions"
               value={values.taskInstructions}
               onChange={(event) => update("taskInstructions", event.target.value)}
               disabled={disabled}
@@ -796,6 +809,7 @@ export function ActivityDraftV3Form({
                 <label>
                   核心动作
                   <textarea
+                    data-rewrite-path={`phases[${index}].action`}
                     value={phase.action}
                     onChange={(event) =>
                       updateAt("phases", index, { action: event.target.value })
@@ -808,6 +822,7 @@ export function ActivityDraftV3Form({
                 <label>
                   情境承接
                   <textarea
+                    data-rewrite-path={`phases[${index}].context`}
                     value={phase.context}
                     onChange={(event) =>
                       updateAt("phases", index, { context: event.target.value })
@@ -820,6 +835,7 @@ export function ActivityDraftV3Form({
                 <label>
                   学习支架
                   <textarea
+                    data-rewrite-path={`phases[${index}].support`}
                     value={phase.support}
                     onChange={(event) =>
                       updateAt("phases", index, { support: event.target.value })
@@ -832,6 +848,7 @@ export function ActivityDraftV3Form({
                 <label>
                   评价要点
                   <textarea
+                    data-rewrite-path={`phases[${index}].evaluationFocus`}
                     value={phase.evaluationFocus}
                     onChange={(event) =>
                       updateAt("phases", index, {
@@ -892,6 +909,7 @@ export function ActivityDraftV3Form({
                       <label>
                         任务要求
                         <input
+                          data-rewrite-path={`phases[${index}].evidence[${evidenceIndex}].description`}
                           value={evidence.description}
                           onChange={(event) =>
                             updateAt("phases", index, {
@@ -976,6 +994,7 @@ export function ActivityDraftV3Form({
                   <label key={key}>
                     {label}
                     <textarea
+                      data-rewrite-path={`rubricDimensions[${index}].${key}`}
                       value={dimension[key]}
                       onChange={(event) =>
                         updateAt("rubricDimensions", index, {
@@ -1067,6 +1086,16 @@ export function ActivityDraftV3Form({
           </button>
         </div>
       </form>
+      {selectionRewrite && !disabled ? (
+        <SelectionRewriteBar
+          containerRef={formRef}
+          taskBook={normalized}
+          onApply={(path, text) =>
+            // Paths count from the normalized lists the fields render.
+            setValues((current) => withTaskBookText(normalizeV3Values(current), path, text))
+          }
+        />
+      ) : null}
 
       <aside className={styles.editorRail}>
         <p className={styles.eyebrow}>任务书状态</p>

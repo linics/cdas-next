@@ -214,6 +214,7 @@ export default async function TeacherActivityPage({
             key={`form-${draft.version}-${continuing?.id ?? "saved"}`}
             workingCopy={continuing}
             pendingCopy={pendingCopy}
+            selectionRewrite={draft.status !== "SEALED" && isActivityAssistantEnabled()}
             initialState={{
               status: "idle",
               message: "",

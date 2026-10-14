@@ -93,7 +93,9 @@ export const teacherProductSurfaces: readonly TeacherProductSurface[] = [
       `v3 草稿还可以：${control("打印第 N 版")}（打印页可${control("下载 Word（可编辑）")}）、${control("复制为新活动")}、` +
       `在${control("课程依据")}块记录采纳的官方章节；未封存时还有${control("版本检查")}（AI 按任务书标准指出问题，不改内容）` +
       `和${control("AI 适配")}（按目标年级、总课时或新情境生成改动，教师核对后确认写入为新版本）。` +
-      `从已发布活动复制来的草稿会显示${control("上次发布的课堂信号")}，版本检查也会参考它`,
+      `从已发布活动复制来的草稿会显示${control("上次发布的课堂信号")}，版本检查也会参考它。` +
+      `在文本框里选中一段文字会出现改写条：${control("写具体")}、${control("换成学生的话")}、${control("精简")}、` +
+      `${control("更贴近真实情境")}，或自己写要求；AI 只改选中的那一段，教师点${control("替换")}才填进编辑器，之后照常保存`,
   },
   {
     kind: "ACTIVITY_PREVIEW",
