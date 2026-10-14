@@ -6,7 +6,10 @@ import { z } from "zod";
 import { Prisma, type PrismaClient } from "../../generated/prisma/client";
 import { type CommandContext, resolveCommandContext } from "../commands/command-context";
 import { activityAssistantMessageValidationTools } from "./activity-assistant-tools";
-import type { ActivityAssistantMessage } from "./activity-assistant-request";
+import {
+  type ActivityAssistantMessage,
+  settleServerDeniedApprovals,
+} from "./activity-assistant-request";
 
 /** How many conversations a teacher keeps; older ones are removed on save. */
 export const KEPT_ASSISTANT_CONVERSATIONS = 30;
@@ -135,7 +138,7 @@ export async function getAssistantConversation(
   if (!row) return null;
   try {
     const messages = await validateUIMessages<ActivityAssistantMessage>({
-      messages: row.messages as unknown[],
+      messages: settleServerDeniedApprovals(row.messages as unknown[]),
       tools: activityAssistantMessageValidationTools,
     });
     if (messages.some((message) => !messageIdPattern.test(message.id))) return null;

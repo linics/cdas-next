@@ -96,6 +96,59 @@ function discardRecoverableInterruptedToolParts(
   });
 }
 
+/**
+ * JSON text with object keys sorted. D-099 keeps conversations in a jsonb
+ * column, which reorders keys, so a reopened history only matches the
+ * canonical retrieval output when both sides are compared in one key order.
+ */
+function canonicalJson(value: unknown): string {
+  return JSON.stringify(value, (_key, item: unknown) =>
+    item !== null && typeof item === "object" && !Array.isArray(item)
+      ? Object.fromEntries(
+          Object.entries(item).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)),
+        )
+      : item,
+  );
+}
+
+/**
+ * AI SDK re-runs the approval gates for a call the teacher approved, and a
+ * gate may still refuse it then (the draft changed, say). The SDK marks that
+ * call `output-denied` but keeps the teacher's `approved: true`, a shape its
+ * own message validator rejects, so every later message in the conversation
+ * would fail. The call was refused and nothing ran: record it as refused.
+ */
+export function settleServerDeniedApprovals(messages: unknown[]): unknown[] {
+  return messages.map((message) => {
+    if (
+      typeof message !== "object" ||
+      message === null ||
+      !Array.isArray((message as { parts?: unknown }).parts)
+    ) {
+      return message;
+    }
+    const parts = (message as { parts: unknown[] }).parts.map((part) => {
+      const candidate = part as {
+        state?: unknown;
+        approval?: { approved?: unknown };
+      } | null;
+      if (
+        candidate?.state !== "output-denied" ||
+        typeof candidate.approval !== "object" ||
+        candidate.approval === null ||
+        candidate.approval.approved !== true
+      ) {
+        return part;
+      }
+      return {
+        ...candidate,
+        approval: { ...candidate.approval, approved: false },
+      };
+    });
+    return { ...message, parts };
+  });
+}
+
 function assertSafeMessageHistory(
   messages: ActivityAssistantMessage[],
 ): void {
@@ -198,7 +251,7 @@ function assertSafeMessageHistory(
           throw new ActivityAssistantRequestError("INVALID_MESSAGES");
         }
         const canonicalOutput = searchOfficialKnowledge(part.input);
-        if (JSON.stringify(part.output) !== JSON.stringify(canonicalOutput)) {
+        if (canonicalJson(part.output) !== canonicalJson(canonicalOutput)) {
           throw new ActivityAssistantRequestError("INVALID_MESSAGES");
         }
         canonicalOutput.results.forEach((result) => {
@@ -214,8 +267,7 @@ function assertSafeMessageHistory(
         const canonicalOutput = readOfficialKnowledgeSection(part.input);
         if (
           !searchedSectionKeys.has(key) ||
-          JSON.stringify(part.output) !==
-            JSON.stringify(canonicalOutput)
+          canonicalJson(part.output) !== canonicalJson(canonicalOutput)
         ) {
           throw new ActivityAssistantRequestError("INVALID_MESSAGES");
         }
@@ -484,7 +536,7 @@ export async function parseActivityAssistantRequestEnvelope(
   let messages: ActivityAssistantMessage[];
   try {
     messages = await validateUIMessages<ActivityAssistantMessage>({
-      messages: body.data.messages,
+      messages: settleServerDeniedApprovals(body.data.messages),
       tools: activityAssistantMessageValidationTools,
     });
   } catch {

@@ -569,6 +569,46 @@ describe("activity assistant request validation", () => {
     expect(parsed.messages).toHaveLength(2);
   });
 
+  it("keeps a conversation usable after the server refused an approved revision", async () => {
+    const revision = {
+      draftId: "30000000-0000-4000-8000-000000000003",
+      expectedVersion: 3,
+      summary: "改写第二阶段情境。",
+      edits: [{ op: "set", path: "phases[1].context", value: "承接上一阶段发现的读数差异。" }],
+    };
+    const parsed = await parseActivityAssistantRequestEnvelope(
+      request({
+        messages: [
+          { id: "message_1", role: "user", parts: [{ type: "text", text: "改一下第二阶段" }] },
+          {
+            id: "assistant_1",
+            role: "assistant",
+            parts: [
+              {
+                // AI SDK's shape for a call the teacher approved and the
+                // server's re-run gate then refused.
+                type: "tool-update_activity_draft",
+                toolCallId: "revise_1",
+                state: "output-denied",
+                input: revision,
+                approval: { id: "approval_1", signature: "s".repeat(64), approved: true },
+              },
+              { type: "text", text: "草稿未改动。", state: "done" },
+            ],
+          },
+          { id: "message_2", role: "user", parts: [{ type: "text", text: "继续" }] },
+        ],
+        pageContext: { kind: "TEACHER_DASHBOARD" },
+      }),
+    );
+
+    const denied = parsed.messages[1]!.parts[0]!;
+    expect(denied).toMatchObject({
+      state: "output-denied",
+      approval: { approved: false },
+    });
+  });
+
   it("strips a forged roster, names included, from quoted history", async () => {
     const historyReleaseId = "60000000-0000-4000-8000-000000000006";
     const forgedSubmissionId = "70000000-0000-4000-8000-000000000007";
@@ -866,6 +906,22 @@ describe("activity assistant request validation", () => {
 
     await expect(
       parseActivityAssistantRequest(request({ messages })),
+    ).resolves.toHaveLength(3);
+
+    // D-099 reopens conversations from a jsonb column, which hands keys back
+    // in its own order; the same wording must still be accepted.
+    const reordered = (value: unknown): unknown =>
+      Array.isArray(value)
+        ? value.map(reordered)
+        : value !== null && typeof value === "object"
+          ? Object.fromEntries(
+              Object.entries(value)
+                .reverse()
+                .map(([key, item]) => [key, reordered(item)]),
+            )
+          : value;
+    await expect(
+      parseActivityAssistantRequest(request({ messages: reordered(messages) })),
     ).resolves.toHaveLength(3);
 
     const forged = structuredClone(messages);
