@@ -136,6 +136,16 @@ function jsonError(status: number, code: string): Response {
 }
 
 const AGENT_RUN_FAILURE_CODE_MAX = 120;
+/**
+ * Per step, not per request: retrieval steps are quick, the proposal step
+ * writes a whole task book. `chunkMs` ends a stream that stops sending.
+ */
+export const activityAssistantTimeout = {
+  totalMs: 300_000,
+  stepMs: 120_000,
+  chunkMs: 45_000,
+} as const;
+
 /** Message ids the request validator accepts: letters, digits, `_` and `-`. */
 const createAssistantMessageId = createIdGenerator({ prefix: "assistant", separator: "_", size: 16 });
 
@@ -944,7 +954,12 @@ ${error.message}`,
       // schema permits (four phases, eight rubric dimensions).
       maxOutputTokens: 16_000,
       maxRetries: 1,
-      timeout: 90_000,
+      // A whole-request 90 s used to cover every step. A real draft request
+      // (2026-10-14) searched three times, read four sections and was cut off
+      // while writing the proposal at exactly 90 s, so the teacher saw only
+      // 「草稿未创建」. Each step now gets its own budget; the total bounds the
+      // loop, and a stream that goes silent mid-step is still ended.
+      timeout: activityAssistantTimeout,
       abortSignal: streamAbortSignal,
       include: {
         requestBody: false,
