@@ -36,7 +36,7 @@ export const styles = {
   approval: `${resultBox} [&>strong]:font-semibold [&_dl]:grid [&_dl]:grid-cols-1 [&_dl]:gap-3 sm:[&_dl]:grid-cols-3 ${panel}:[&_dl]:grid-cols-1 [&_dt]:text-xs [&_dt]:text-muted-foreground [&_dd]:mt-0.5 [&_dd]:font-medium`,
   proposalSummary: `my-3 grid! grid-cols-1! gap-3 sm:grid-cols-2! ${panel}:grid-cols-1! [&>div]:border-t [&>div]:pt-2`,
   proposalSection:
-    "mt-3 [&_h3]:mb-2 [&_h3]:text-xs [&_h3]:font-semibold [&_ul]:grid [&_ul]:list-disc [&_ul]:gap-1.5 [&_ul]:pl-4 [&_ul]:text-xs [&_ul]:leading-relaxed [&_ul]:text-muted-foreground [&_dl]:grid-cols-1! [&_dl]:gap-2 [&_dd]:text-xs [&_dd]:font-normal [&_dd]:leading-relaxed",
+    "mt-3 [&_h3]:mb-2 [&_h3]:text-xs [&_h3]:font-semibold [&_ul]:grid [&_ul]:list-disc [&_ul]:gap-1.5 [&_ul]:pl-4 [&_ul]:text-xs [&_ul]:leading-relaxed [&_ul]:text-muted-foreground [&_dl]:grid-cols-1! [&_dl]:gap-2 [&_dd]:text-xs [&_dd]:font-normal [&_dd]:leading-relaxed [&_del]:rounded-sm [&_del]:bg-destructive/10 [&_del]:text-destructive [&_del]:line-through [&_ins]:rounded-sm [&_ins]:bg-primary/15 [&_ins]:font-medium [&_ins]:text-foreground [&_ins]:no-underline",
   referenceList:
     "mt-2 grid list-decimal gap-2 pl-4 text-sm [&_summary]:cursor-pointer [&_summary]:text-sm [&_a]:font-medium [&_a]:underline-offset-4 [&_a:hover]:underline [&_li>p]:mt-1",
   referenceCaveat: "mb-0 text-xs text-muted-foreground",

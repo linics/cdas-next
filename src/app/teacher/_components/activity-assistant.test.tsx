@@ -370,6 +370,67 @@ describe("ActivityAssistant", () => {
     expect(markup).not.toContain("draft_approval_1");
   });
 
+  it("shows each revision edit as before and after against the draft it read (D-097)", () => {
+    const book = waterConservationTaskBookV3;
+    const paragraph = book.taskInstructions;
+    const word = Array.from(paragraph).slice(10, 13).join("");
+    mocks.useChat.mockReturnValue(
+      helpers([
+        {
+          id: "assistant_revision",
+          role: "assistant",
+          parts: [
+            {
+              type: "tool-get_activity_draft",
+              toolCallId: "read_1",
+              state: "output-available",
+              input: { draftId },
+              output: {
+                status: "FOUND",
+                draftId,
+                draftStatus: "EDITING",
+                version: 3,
+                updatedAt: "2026-10-14T02:00:00.000Z",
+                published: false,
+                editHref: `/teacher/activities/${draftId}`,
+                previewHref: `/teacher/activities/${draftId}/preview`,
+                content: book,
+              },
+            },
+            {
+              type: "tool-update_activity_draft",
+              toolCallId: "revise_1",
+              state: "approval-requested",
+              input: {
+                draftId,
+                expectedVersion: 3,
+                summary: "按要求改了阶段名和一处措辞。",
+                edits: [
+                  { op: "set", path: "phases[1].name", value: "读水表，算浪费" },
+                  { op: "replaceText", path: "taskInstructions", find: word, replaceWith: "【改后】" },
+                ],
+              },
+              approval: { id: "revise_approval_1", signature: "never-rendered", isAutomatic: false },
+            },
+          ],
+        },
+      ]),
+    );
+
+    const markup = renderAssistant();
+
+    expect(markup).toContain("先确认这次修改");
+    expect(markup).toContain("按要求改了阶段名和一处措辞。");
+    expect(markup).toContain(`阶段 2「${book.phases[1]!.name}」 · 阶段名称`);
+    expect(markup).toContain(`<del>${book.phases[1]!.name}</del> → <ins>读水表，算浪费</ins>`);
+    expect(markup).toContain("总体任务说明");
+    expect(markup).toContain(`<del>${word}</del><ins>【改后】</ins>`);
+    // Only the words around the change, not the whole paragraph.
+    expect(markup).not.toContain(paragraph);
+    expect(markup).toContain("其余内容保持原文");
+    expect(markup).not.toContain("never-rendered");
+  });
+
   it("keeps the draft-progress copy only while the stream is still open", () => {
     mocks.useChat.mockReturnValue(
       helpers(

@@ -17,7 +17,7 @@ export type TaskBookSection = (typeof taskBookSections)[number]["key"];
 
 export type TaskBookGap = Readonly<{ section: TaskBookSection; label: string }>;
 
-const basicsFields: Record<string, string> = {
+export const basicsFields: Readonly<Record<string, string>> = {
   title: "任务标题",
   topic: "任务主题",
   summary: "任务描述",
@@ -32,7 +32,7 @@ const basicsFields: Record<string, string> = {
   durationWeeks: "周期（周）",
 };
 
-const phaseFields: Record<string, string> = {
+export const phaseFields: Readonly<Record<string, string>> = {
   name: "阶段名称",
   action: "核心动作",
   context: "情境承接",
@@ -42,7 +42,7 @@ const phaseFields: Record<string, string> = {
   suggestedLessons: "课时建议",
 };
 
-const rubricFields: Record<string, string> = {
+export const rubricFields: Readonly<Record<string, string>> = {
   name: "维度名称",
   excellent: `${teacherEvaluationLevelLabels.excellent}描述`,
   good: `${teacherEvaluationLevelLabels.good}描述`,
