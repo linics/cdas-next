@@ -16,6 +16,7 @@ import {
   teacherHomeCrumb,
 } from "../../_components/teacher-shell";
 import { getOwnNewTaskBookWorkingCopy } from "../../../../server/queries/activity-draft-working-copy";
+import { isActivityAssistantEnabled } from "../../../../server/assistant/assistant-config";
 import { ActivityDraftV3Form } from "../activity-draft-v3-form";
 import { emptyActivityDraftV3Values } from "../activity-draft-v3-state";
 import { styles } from "../../teacher-ui";
@@ -86,6 +87,7 @@ export default async function NewTeacherActivityPage({
         <ActivityDraftV3Form
           key={workingCopy?.id ?? "blank"}
           workingCopy={workingCopy}
+          selectionRewrite={isActivityAssistantEnabled()}
           initialState={{
             status: "idle",
             message: "",

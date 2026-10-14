@@ -22,6 +22,9 @@ vi.mock("./working-copy-actions", () => ({
   autosaveTaskBookAction: vi.fn(),
   discardTaskBookWorkingCopyAction: vi.fn(),
 }));
+vi.mock("./selection-rewrite-actions", () => ({
+  suggestSelectionRewriteAction: vi.fn(),
+}));
 
 import { ActivityDraftV3Form } from "./activity-draft-v3-form";
 import { emptyActivityDraftV3Values } from "./activity-draft-v3-state";
@@ -88,6 +91,24 @@ describe("activity draft v3 form", () => {
     expect(markup).toContain("开始填写后会自动保存");
     expect(markup).not.toContain('required=""');
     expect(markup).not.toContain("哈希");
+  });
+
+  it("marks the text fields a selection can be rewritten in (D-098)", () => {
+    const markup = renderForm("EDITING");
+
+    for (const path of [
+      "summary",
+      "backgroundSetting",
+      "taskInstructions",
+      "learningGoals[0].description",
+      "disciplineContributions[0].contribution",
+      "phases[1].context",
+      "phases[2].evidence[0].description",
+      "rubricDimensions[3].pass",
+    ]) {
+      expect(markup).toContain(`data-rewrite-path="${path}"`);
+    }
+    expect(markup).not.toContain('data-rewrite-path="title"');
   });
 
   it("says a complete task book can be saved as a version", () => {
