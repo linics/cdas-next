@@ -338,6 +338,8 @@ export function applyTaskBookEdits<T extends ActivityContentStructured>(
     errors.push({ edit, code, message });
   };
 
+  // Labels name places as the teacher knows them now, before these edits:
+  // renaming a phase is listed under its old name.
   edits.forEach((edit, position) => {
     const number = position + 1;
     const segments = edit.path === null ? [] : parseTaskBookPath(edit.path);
@@ -357,7 +359,7 @@ export function applyTaskBookEdits<T extends ActivityContentStructured>(
       const field = segments.at(-1);
       const next = replaceInText(read(scope.parent, scope.key), typeof field === "number" ? segments.at(-2) : field, [...segments], edit.find, edit.replaceWith, (path, before, after) => {
         replaced += 1;
-        changes.push({ path: formatPath(path), label: taskBookPathLabel(draft, path), kind: "changed", before, after });
+        changes.push({ path: formatPath(path), label: taskBookPathLabel(current, path), kind: "changed", before, after });
       });
       if (replaced === 0) {
         fail(number, "TEXT_NOT_FOUND", `原文里没有「${edit.find}」${edit.path ? `（在 ${edit.path} 中）` : ""}，find 必须逐字照抄原文`);
@@ -381,6 +383,7 @@ export function applyTaskBookEdits<T extends ActivityContentStructured>(
       const at = edit.index === null ? list.length : Math.min(edit.index, list.length);
       list.splice(at, 0, structuredClone(edit.item));
       const path = [...segments, at];
+      // A new item has no name in the original; it is named as it will be.
       changes.push({ path: formatPath(path), label: taskBookPathLabel(draft, path), kind: "added", before: null, after: itemSummary(edit.item) });
       return;
     }
@@ -398,7 +401,7 @@ export function applyTaskBookEdits<T extends ActivityContentStructured>(
         fail(number, "NOT_A_LIST", `${edit.path} 不是列表里的一项，remove 只能删列表项`);
         return;
       }
-      const label = taskBookPathLabel(draft, segments);
+      const label = taskBookPathLabel(current, segments);
       target.parent.splice(target.key, 1);
       changes.push({ path: formatPath(segments), label, kind: "removed", before: itemSummary(before), after: null });
       return;
@@ -412,7 +415,7 @@ export function applyTaskBookEdits<T extends ActivityContentStructured>(
       write(target.parent, target.key, [...edit.values]);
       changes.push({
         path: formatPath(segments),
-        label: taskBookPathLabel(draft, segments),
+        label: taskBookPathLabel(current, segments),
         kind: "changed",
         before: displayValue(draft, field, before),
         after: displayValue(draft, field, edit.values),
@@ -427,7 +430,7 @@ export function applyTaskBookEdits<T extends ActivityContentStructured>(
     write(target.parent, target.key, edit.value);
     changes.push({
       path: formatPath(segments),
-      label: taskBookPathLabel(draft, segments),
+      label: taskBookPathLabel(current, segments),
       kind: "changed",
       before: displayValue(draft, field, before),
       after: displayValue(draft, field, edit.value),

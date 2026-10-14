@@ -33,7 +33,7 @@ describe("applyTaskBookEdits (D-097)", () => {
     expect(result.changes).toEqual([
       {
         path: "phases[1].name",
-        label: "阶段 2「读水表，算浪费」 · 阶段名称",
+        label: `阶段 2「${book.phases[1]!.name}」 · 阶段名称`,
         kind: "changed",
         before: book.phases[1]!.name,
         after: "读水表，算浪费",

@@ -421,7 +421,7 @@ describe("ActivityAssistant", () => {
 
     expect(markup).toContain("先确认这次修改");
     expect(markup).toContain("按要求改了阶段名和一处措辞。");
-    expect(markup).toContain("阶段 2「读水表，算浪费」 · 阶段名称");
+    expect(markup).toContain(`阶段 2「${book.phases[1]!.name}」 · 阶段名称`);
     expect(markup).toContain(`<del>${book.phases[1]!.name}</del> → <ins>读水表，算浪费</ins>`);
     expect(markup).toContain("总体任务说明");
     expect(markup).toContain(`<del>${word}</del><ins>【改后】</ins>`);
