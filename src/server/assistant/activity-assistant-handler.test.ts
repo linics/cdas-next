@@ -641,6 +641,18 @@ describe("buildActivityAssistantInstructions", () => {
     expect(text).not.toContain("合格");
   });
 
+  it("tells the model the current time, in China time and as an instant", () => {
+    // 2026-10-15T22:45Z is 06:45 on 16 October in China: a deadline the model
+    // once called already passed on the 14th, having no clock of its own.
+    const text = buildActivityAssistantInstructions([], new Date("2026-10-14T13:50:00.000Z"));
+
+    expect(text).toContain("2026-10-14T13:50:00.000Z");
+    expect(text).toContain("2026年10月14日");
+    expect(text).toContain("21:50");
+    expect(text).toContain("后天是10月16日星期五");
+    expect(text).toContain("换算成北京时间");
+  });
+
   it("keeps invented addresses out of the reply text", () => {
     // A real run wrote "https://cdas.next/teacher/insights?..." — a host that
     // does not exist — beside a card that already carried the working link.
