@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assistantHistoryHasRoom, assistantRequestLimits } from "./assistant-request-limits";
+import { assistantHistoryHasRoom, assistantReplyReserve, assistantRequestLimits } from "./assistant-request-limits";
 
 function turn(index: number, text = "一句话") {
   return [
@@ -33,5 +33,27 @@ describe("assistantHistoryHasRoom (D-099)", () => {
 
     const bulky = (all: readonly unknown[]) => ({ messages: all, padding: "x".repeat(assistantRequestLimits.maxRequestBytes) });
     expect(assistantHistoryHasRoom(turn(1), "再来", bulky)).toBe(false);
+  });
+
+  it("keeps room for the reply, so the card it brings can still be confirmed", () => {
+    const padded = (size: number) => (all: readonly unknown[]) => ({ messages: all, padding: "x".repeat(size) });
+    const nearlyFull = assistantRequestLimits.maxRequestBytes - assistantReplyReserve.bytes / 2;
+    expect(assistantHistoryHasRoom(turn(1), "再来", padded(nearlyFull))).toBe(false);
+    const roomy = assistantRequestLimits.maxRequestBytes - assistantReplyReserve.bytes * 2;
+    expect(assistantHistoryHasRoom(turn(1), "再来", padded(roomy))).toBe(true);
+
+    const toolsUpTo = (count: number) => [
+      { role: "user", parts: [{ type: "text", text: "查" }] },
+      { role: "assistant", parts: Array.from({ length: count }, () => ({ type: "tool-get_current_context" })) },
+    ];
+    const lastThatFits = assistantRequestLimits.maxToolParts - assistantReplyReserve.toolParts;
+    expect(assistantHistoryHasRoom(toolsUpTo(lastThatFits), "再来")).toBe(true);
+    expect(assistantHistoryHasRoom(toolsUpTo(lastThatFits + 1), "再来")).toBe(false);
+  });
+
+  it("fits a design turn followed by a revision turn (2026-10-14 sizes)", () => {
+    // A real design turn was 41 KB and its revision turn 18 KB.
+    const measured = (all: readonly unknown[]) => ({ messages: all, padding: "x".repeat(59 * 1024) });
+    expect(assistantHistoryHasRoom(turn(1), "继续", measured)).toBe(true);
   });
 });

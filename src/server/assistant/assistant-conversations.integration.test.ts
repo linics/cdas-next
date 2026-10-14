@@ -93,6 +93,48 @@ describeWithDatabase("assistant conversations (D-099)", () => {
     expect(kept[0]!.id).toBe(ids.at(-1));
   });
 
+  it("reopens a conversation in which the server refused a revision the teacher approved", async () => {
+    const teacherId = await createTeacher("改写被退回的教师");
+    const id = randomUUID();
+    await database!.assistantConversation.create({
+      data: {
+        id,
+        ownerId: teacherId,
+        title: "改写被退回",
+        messages: [
+          { id: "u1", role: "user", parts: [{ type: "text", text: "改一下第二阶段" }] },
+          {
+            id: "a1",
+            role: "assistant",
+            parts: [
+              {
+                // How AI SDK leaves a call the teacher approved and a gate
+                // then refused: denied, yet still marked approved.
+                type: "tool-update_activity_draft",
+                toolCallId: "refused_revise",
+                state: "output-denied",
+                input: {
+                  draftId: randomUUID(),
+                  expectedVersion: 1,
+                  summary: "改写第二阶段情境。",
+                  edits: [{ op: "set", path: "phases[1].context", value: "承接上一阶段。" }],
+                },
+                approval: { id: "approval_1", signature: "s".repeat(64), approved: true },
+              },
+              { type: "text", text: "草稿未改动。", state: "done" },
+            ],
+          },
+        ],
+      },
+    });
+
+    const reopened = await getAssistantConversation(database!, contextFor(teacherId), { conversationId: id });
+    expect(reopened?.messages[1]?.parts[0]).toMatchObject({
+      state: "output-denied",
+      approval: { approved: false },
+    });
+  });
+
   it("does not reopen a conversation whose saved tool calls no longer validate", async () => {
     const teacherId = await createTeacher("旧对话教师");
     const id = randomUUID();

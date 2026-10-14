@@ -1337,6 +1337,76 @@ describe("activity assistant route handler", () => {
       // The second model call saw why the first edits were refused.
       expect(prompts[1]).toContain("原文里没有「原文裡沒有的字」");
       expect(mocks.saveDraft).not.toHaveBeenCalled();
+
+      // The teacher confirms the card. The refused first attempt sits in the
+      // same assistant message as an automatic denial; it is not the teacher
+      // saying no, so the confirmed edits must still be written.
+      const refused = events.find(
+        (event) => event.type === "tool-approval-request" && event.isAutomatic === true,
+      );
+      const refusal = events.find(
+        (event) => event.type === "tool-approval-response" && event.approvalId === refused?.approvalId,
+      );
+      const card = humanApprovals[0];
+      const inputOf = (toolCallId: unknown) =>
+        events.find((event) => event.type === "tool-input-available" && event.toolCallId === toolCallId)
+          ?.input;
+      if (!refused || !refusal || !card) {
+        throw new Error("Expected an automatic refusal followed by a signed card");
+      }
+      mocks.saveDraft.mockResolvedValue({
+        draftId,
+        revisionId: "80000000-0000-4000-8000-000000000008",
+        version: 4,
+        status: "READY_FOR_PREVIEW",
+        savedAt: now.toISOString(),
+      });
+      const confirmed = await handleActivityAssistantRequest(
+        messageRequest([
+          ...history,
+          {
+            id: "assistant_d097_card",
+            role: "assistant",
+            parts: [
+              {
+                type: "tool-update_activity_draft",
+                toolCallId: refused.toolCallId,
+                state: "approval-responded",
+                input: inputOf(refused.toolCallId),
+                approval: {
+                  id: refused.approvalId,
+                  signature: refused.signature,
+                  isAutomatic: true,
+                  approved: false,
+                  reason: refusal.reason,
+                },
+              },
+              {
+                type: "tool-update_activity_draft",
+                toolCallId: card.toolCallId,
+                state: "approval-responded",
+                input: inputOf(card.toolCallId),
+                approval: {
+                  id: card.approvalId,
+                  signature: card.signature,
+                  isAutomatic: false,
+                  approved: true,
+                },
+              },
+            ],
+          },
+        ]),
+        dependencies(),
+      );
+      await confirmed.text();
+
+      expect(confirmed.status).toBe(200);
+      expect(mocks.saveDraft).toHaveBeenCalledTimes(1);
+      expect(mocks.saveDraft).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ source: "AGENT", actorId }),
+        expect.objectContaining({ draftId, expectedVersion: 3 }),
+      );
     });
 
     it("stops without a card when the edits still do not fit after a correction", async () => {

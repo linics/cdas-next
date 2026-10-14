@@ -808,6 +808,10 @@ ${error.message}`,
   // follow-up, not another copy of the same proposal in that approval
   // continuation. A later ordinary user turn is a new attempt and can create
   // a revised proposal from the newly supplied facts.
+  // Only the teacher's own refusal counts. The gates below refuse edits that
+  // do not fit with an automatic denial that stays in the same message as the
+  // corrected card; AI SDK re-runs these gates for the approved call, so
+  // counting that refusal would silently drop the edits the teacher confirmed.
   const lastMessage = uiMessages.at(-1);
   let createApprovalSelected =
     lastMessage?.role === "assistant" &&
@@ -815,7 +819,8 @@ ${error.message}`,
       (part) =>
         part.type === "tool-create_activity_draft" &&
         part.state === "approval-responded" &&
-        part.approval.approved === false,
+        part.approval.approved === false &&
+        part.approval.isAutomatic !== true,
     );
   let updateApprovalSelected =
     lastMessage?.role === "assistant" &&
@@ -823,7 +828,8 @@ ${error.message}`,
       (part) =>
         part.type === "tool-update_activity_draft" &&
         part.state === "approval-responded" &&
-        part.approval.approved === false,
+        part.approval.approved === false &&
+        part.approval.isAutomatic !== true,
     );
   let publishApprovalSelected = false;
   // A revision whose edits do not apply is handed back to the model to fix;
